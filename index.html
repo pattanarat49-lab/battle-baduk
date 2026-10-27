@@ -1111,7 +1111,7 @@ function GoNNAI(E, F, net) {
   if (!CHARS[settings.char]) settings.char = 4;
   const KOMI = 7.5;
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null;
-  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5;
+  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5, hopeless = 0;
   let AI = null, gen = 0, engineReady = false;
 
   // ---------- load network ----------
@@ -1265,7 +1265,7 @@ function GoNNAI(E, F, net) {
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
-    said = {}; speak("hello");
+    said = {}; speak("hello"); hopeless = 0;
     gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
     resize(); render(); maybeAI();
   }
@@ -1348,8 +1348,10 @@ function GoNNAI(E, F, net) {
     thinking = false; think = null;
     setEval(res);
     reactTo(res);
-    if (res.winrate < 0.03 && history.length > n * n / 3 && !CHARS[gameChar].search.temperature) {
-      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "AI ประเมินว่าโอกาสชนะเหลือไม่ถึง 3%" }; speak("lose", true); reportEnd(true, "resign"); render(); return;
+    // resign once the player's winning chance has been 99% or more for 5 AI moves in a row
+    hopeless = res.winrate <= 0.01 ? hopeless + 1 : 0;
+    if (hopeless >= 5) {
+      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("lose", true); reportEnd(true, "resign"); render(); return;
     }
     playMove(res.move);
   }
