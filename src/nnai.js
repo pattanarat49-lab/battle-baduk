@@ -95,7 +95,7 @@ function GoNNAI(E, F, net) {
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
     root.N = 1; root.W = util(rootEv);
-    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0); return s; }
+    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;
@@ -154,12 +154,23 @@ function GoNNAI(E, F, net) {
   }
 
   // blunder: chance of a careless move anywhere legal (never filling its own eye), like a real beginner
-  function sampleByPolicy(n, moves, base, ev, temp, blunder) {
-    if (blunder && moves[moves.length - 1] !== PASS && Math.random() < blunder) {
+  // local: answer within this many lines of the opponent's last move, unless the network sees nothing worth playing there
+  function sampleByPolicy(n, moves, base, ev, temp, blunder, local) {
+    const last = moves[moves.length - 1];
+    let near = null;
+    if (local && last !== undefined && last !== PASS) {
+      const [lx, ly] = base.xy(last);
+      near = i => Math.abs(i % 19 - lx) <= local && Math.abs(((i / 19) | 0) - ly) <= local;
+      let mass = 0;
+      for (let i = 0; i < AREA; i++) if (near(i)) mass += ev.policy[i];
+      if (mass < 0.15) near = null;
+    }
+    if (blunder && last !== PASS && Math.random() < blunder) {
       const b = new Board(n); for (const m of moves) b.play(m);
       const me = b.toPlay, cands = [];
       for (const q of b.pts) {
         if (!b.isLegal(q, me)) continue;
+        if (near) { const [x, y] = b.xy(q); if (!near(y * 19 + x)) continue; }
         if (b.dirs.every(d => b.color[q + d] === me || b.color[q + d] === 3)) continue;
         cands.push(q);
       }
@@ -167,6 +178,7 @@ function GoNNAI(E, F, net) {
     }
     const p = softmaxMasked(ev.logits, ev.legal, temp);
     p[AREA] *= 0.05; // weak levels rarely pass on their own
+    if (near) for (let i = 0; i <= AREA; i++) if (i === AREA || !near(i)) p[i] = 0;
     let s = 0; for (let i = 0; i < p.length; i++) s += p[i];
     let r = Math.random() * s;
     for (let i = 0; i < p.length; i++) { r -= p[i]; if (r <= 0) return slotToPoint(base, i); }
