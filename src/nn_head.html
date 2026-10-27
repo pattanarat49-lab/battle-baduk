@@ -171,19 +171,19 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .wr-fill { height: 100%; width: 50%; background: #111; transition: width .5s ease; }
 .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 3px 3px 5px; }
 /* pixel-art buttons: notched dark outline, light top-left edge, darker bottom band */
-.actions button { --px-face: #e4646a; --px-hi: #f59a9a; --px-lo: #b63f4b; --px-ink: #351820;
-  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 15px; letter-spacing: .02em; color: #fff; text-shadow: 1px 1px 0 var(--px-lo);
+.actions button { --px-face: #f0b83c; --px-hi: #ffe08c; --px-lo: #b47a1c; --px-ink: #2a1a0b;
+  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 15px; letter-spacing: .02em; color: #2a1a0b; text-shadow: 1px 1px 0 var(--px-hi);
   background: var(--px-face); border: 0; border-radius: 0; padding: 7px 4px 9px; min-height: 40px;
   display: grid; place-items: center; image-rendering: pixelated;
   box-shadow: -3px 0 0 0 var(--px-ink), 3px 0 0 0 var(--px-ink), 0 -3px 0 0 var(--px-ink), 0 3px 0 0 var(--px-ink),
     inset 0 -4px 0 0 var(--px-lo), inset 3px 3px 0 0 var(--px-hi); }
-.actions button svg { fill: currentColor; shape-rendering: crispEdges; filter: drop-shadow(1px 1px 0 var(--px-lo)); }
-.actions button:hover:not(:disabled) { --px-face: #ec7378; }
+.actions button svg { fill: currentColor; shape-rendering: crispEdges; filter: drop-shadow(1px 1px 0 var(--px-hi)); }
+.actions button:hover:not(:disabled) { --px-face: #f7c752; }
 .actions button:active:not(:disabled) { transform: translateY(2px); box-shadow: -3px 0 0 0 var(--px-ink), 3px 0 0 0 var(--px-ink), 0 -3px 0 0 var(--px-ink), 0 3px 0 0 var(--px-ink),
     inset 0 -1px 0 0 var(--px-lo), inset 3px 3px 0 0 var(--px-lo); }
-.actions button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
-.actions button:disabled { opacity: 1; cursor: default; --px-face: #8a6a6e; --px-hi: #a08488; --px-lo: #6c5054; color: #d9c9c9; }
-.actions button.danger { --px-face: #c9404c; --px-hi: #e2707a; --px-lo: #8e2633; color: #fff; }
+.actions button:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
+.actions button:disabled { opacity: 1; cursor: default; --px-face: #7d6c52; --px-hi: #92826a; --px-lo: #5f503b; color: #c9bba2; text-shadow: none; }
+.actions button.danger { --px-face: #e2902e; --px-hi: #f8bc6a; --px-lo: #a05a14; }
 .actions.four { grid-template-columns: repeat(4, 1fr); }
 .actions.review { grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; align-items: center; }
 .actions.review span { text-align: center; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; }
