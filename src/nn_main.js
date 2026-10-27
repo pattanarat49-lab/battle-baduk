@@ -50,6 +50,7 @@
   const KOMI = 7.5;
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null;
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5, hopeless = 0;
+  let reviewAt = null, reviewBoard = null; // after the game: which move the board shows (null = final position)
   let AI = null, gen = 0, engineReady = false;
 
   // ---------- load network ----------
@@ -204,7 +205,7 @@
   function newGame() {
     cancelAI();
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
-    board = new Board(n); history = []; hint = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0;
+    board = new Board(n); history = []; hint = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     const ch = CHARS[gameChar];
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
@@ -367,6 +368,7 @@
   }
   cv.addEventListener("click", ev => {
     const p = pointAt(ev); if (p === null) return;
+    if (reviewAt !== null) return;
     if (scoring && !scoring.loading) {
       const c = board.color[p]; if (c !== BLACK && c !== WHITE) return;
       const ch = chainOf(p); const isDead = scoring.dead.has(p);
@@ -418,7 +420,31 @@
   }
 
   // ---------- rendering ----------
-  function render() { renderPanel(); renderStatus(); drawBoard(); }
+  function render() { renderPanel(); renderStatus(); renderReview(); drawBoard(); }
+  // ---------- game record review ----------
+  const ended = () => !!over || !!(scoring && !scoring.loading);
+  function reviewTo(k) {
+    if (!ended()) return;
+    k = Math.max(0, Math.min(history.length, k));
+    if (k === history.length) { reviewAt = null; reviewBoard = null; }
+    else { reviewAt = k; reviewBoard = new Board(n); for (let i = 0; i < k; i++) reviewBoard.play(history[i]); }
+    renderReview(); drawBoard();
+  }
+  function renderReview() {
+    const on = !!board && ended();
+    $("review").hidden = !on; $("playActions").hidden = on;
+    if (!on) return;
+    const k = reviewAt === null ? history.length : reviewAt;
+    const mv = k ? `${k % 2 ? "ดำ" : "ขาว"} ${moveName(history[k - 1])}` : "เริ่มเกม";
+    $("rvLabel").innerHTML = `ตา ${k}/${history.length}<br>${mv}`;
+    $("rvFirst").disabled = $("rvPrev").disabled = k === 0;
+    $("rvNext").disabled = $("rvLast").disabled = k === history.length;
+  }
+  const atNow = () => reviewAt === null ? history.length : reviewAt;
+  $("rvFirst").onclick = () => reviewTo(0);
+  $("rvPrev").onclick = () => reviewTo(atNow() - 1);
+  $("rvNext").onclick = () => reviewTo(atNow() + 1);
+  $("rvLast").onclick = () => reviewTo(history.length);
   function renderPanel() {
     $("cB").textContent = "หมากเชลย " + board.caps[BLACK];
     $("cW").textContent = "หมากเชลย " + board.caps[WHITE];
@@ -451,7 +477,7 @@
     const el = $("status"); let html;
     if (flashMsg) html = `<b>${flashMsg}</b>`;
     else if (!engineReady) html = "<b>รอสมอง AI โหลดเสร็จ…</b>";
-    else if (over) html = "เกมจบแล้ว กด \"เริ่มเกมใหม่\" เพื่อเล่นอีกครั้ง";
+    else if (over) html = "เกมจบแล้ว กด ◀ ▶ เพื่อดูย้อนหมากทีละตา หรือกด \"เล่นใหม่\"";
     else if (scoring) html = scoring.loading ? "ทั้งสองฝ่ายผ่าน กำลังประเมินหมากตาย…" : "<b>นับแต้ม</b> ตรวจหมากตายบนกระดาน";
     else if (thinking) {
       const who = board.toPlay === ai ? "AI กำลังคิด" : "AI กำลังหาตาแนะนำ";
@@ -503,6 +529,11 @@
   }
   function drawBoard() {
     if (!board) return;
+    // while reviewing, draw the position after move reviewAt, without the scoring marks or hints
+    if (reviewBoard) drawPosition(reviewBoard, null, history.slice(0, reviewAt), true);
+    else drawPosition(board, scoring, history, false);
+  }
+  function drawPosition(board, scoring, history, reviewing) {
     const W = cv.width; g.setTransform(1, 0, 0, 1, 0, 0);
     g.drawImage(woodLayer(W), 0, 0);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -547,13 +578,13 @@
       g.strokeStyle = c === BLACK ? "#f5f2e8" : "#222"; g.lineWidth = Math.max(1.4, cell / 14);
       g.beginPath(); g.arc(P(x), P(y), r * .45, 0, 7); g.stroke();
     }
-    const target = thinking && think && board.toPlay !== ai ? think.move : hint;
+    const target = reviewing ? null : thinking && think && board.toPlay !== ai ? think.move : hint;
     if (target !== null && target !== undefined && target !== PASS) {
       const [x, y] = board.xy(target);
       g.strokeStyle = "#1f6b55"; g.lineWidth = Math.max(2, cell / 10); g.setLineDash([cell * .14, cell * .1]);
       g.beginPath(); g.arc(P(x), P(y), r * .8, 0, 7); g.stroke(); g.setLineDash([]);
     }
-    if (hover !== null && engineReady && !thinking && !over && !scoring && board.toPlay === human && board.isLegal(hover, human)) {
+    if (!reviewing && hover !== null && engineReady && !thinking && !over && !scoring && board.toPlay === human && board.isLegal(hover, human)) {
       const [x, y] = board.xy(hover); drawStone(P(x), P(y), r, human, .45);
     }
   }
@@ -587,7 +618,10 @@
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
   document.addEventListener("keydown", e => {
-    if ($("home").hidden) return;
+    if ($("home").hidden) {
+      if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
+      return;
+    }
     if (e.key === "ArrowLeft") choose(settings.char - 1); else if (e.key === "ArrowRight") choose(settings.char + 1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });

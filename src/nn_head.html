@@ -171,6 +171,9 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .wr-fill { height: 100%; width: 50%; background: #111; transition: width .5s ease; }
 .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .actions.four { grid-template-columns: repeat(4, 1fr); }
+.actions.review { grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; align-items: center; }
+.actions.review span { text-align: center; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; }
+.actions[hidden] { display: none; }
 .actions.four button { font-size: 13px; min-height: 36px; padding: 6px 4px; }
 .quote { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; line-height: 1.35; align-items: center; display: flex; gap: 10px; align-items: flex-start; }
 .quote .av { width: 36px; height: 36px; flex: none; }
@@ -227,7 +230,14 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="wr-bar"><div class="wr-fill" id="wrFill"></div></div>
     </div>
     <div id="result" class="result" hidden></div>
-    <div class="actions">
+    <div class="actions review" id="review" hidden>
+      <button id="rvFirst" aria-label="ตาแรก">⏮</button>
+      <button id="rvPrev" aria-label="ย้อนหนึ่งตา">◀</button>
+      <span id="rvLabel" aria-live="polite"></span>
+      <button id="rvNext" aria-label="ไปหนึ่งตา">▶</button>
+      <button id="rvLast" aria-label="ตาสุดท้าย">⏭</button>
+    </div>
+    <div class="actions" id="playActions">
       <button id="btnPass">ผ่าน</button>
       <button id="btnHint">แนะนำ</button>
       <button id="btnResign" class="danger">ยอมแพ้</button>
