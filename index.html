@@ -1085,10 +1085,10 @@ function GoNNAI(E, F, net) {
     { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", search: { temperature: 1.6, blunder: 0.15 },
       bio: "เซียนหมากฮอสประจำวินมอเตอร์ไซค์ เพิ่งมาลองเล่นโกะ",
       say: { hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย", ahead: "กินได้กินเลย เหมือนหมากฮอสนั่นแหละ", behind: "เดี๋ยวๆ ขอคิดแป๊บ", win: "เห็นไหม เซียนก็คือเซียน", lose: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่" } },
-    { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03 },
+    { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03 }, early: { temperature: 0.25 },
       bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
       say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
-    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 8 },
+    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 8 }, early: { temperature: 0.1 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
     { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 32 },
@@ -1329,6 +1329,8 @@ function GoNNAI(E, F, net) {
     }
     return null;
   }
+  // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
+  const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.search;
   async function maybeAI() {
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
     const my = ++gen; thinking = true; think = null; render();
@@ -1343,7 +1345,7 @@ function GoNNAI(E, F, net) {
     const res = await AI.think(n, moves, KOMI, Object.assign({
       batch: 8, shouldStop: () => my !== gen,
       onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-    }, CHARS[gameChar].search, STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs) }));
+    }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs) }));
     if (my !== gen) return;
     thinking = false; think = null;
     setEval(res);
