@@ -95,7 +95,7 @@ function GoNNAI(E, F, net) {
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
     root.N = 1; root.W = util(rootEv);
-    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0); return s; }
+    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;
@@ -178,8 +178,21 @@ function GoNNAI(E, F, net) {
 
   // blunder: chance of a careless move anywhere legal (never filling its own eye), like a real beginner
   // local: answer within this many lines of the opponent's last move, unless the network sees nothing worth playing there
-  function sampleByPolicy(n, moves, base, ev, temp, blunder, local) {
+  // noFloat: never a lone stone out in the centre (5th line or higher with no stone within two lines)
+  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat) {
     const last = moves[moves.length - 1];
+    let floating = null;
+    if (noFloat) {
+      const fb = new Board(n); for (const m of moves) fb.play(m);
+      floating = i => {
+        const x = i % 19, y = (i / 19) | 0;
+        if (Math.min(x, y, n - 1 - x, n - 1 - y) < 4) return false;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          const c = fb.color[fb.pt(x + dx, y + dy)]; if (c === E.BLACK || c === E.WHITE) return false;
+        }
+        return true;
+      };
+    }
     let near = nearLast(moves, base, local);
     if (near) {
       let mass = 0;
@@ -191,7 +204,7 @@ function GoNNAI(E, F, net) {
       const me = b.toPlay, cands = [];
       for (const q of b.pts) {
         if (!b.isLegal(q, me)) continue;
-        if (near) { const [x, y] = b.xy(q); if (!near(y * 19 + x)) continue; }
+        { const [x, y] = b.xy(q); if ((near && !near(y * 19 + x)) || (floating && floating(y * 19 + x))) continue; }
         if (b.dirs.every(d => b.color[q + d] === me || b.color[q + d] === 3)) continue;
         cands.push(q);
       }
@@ -200,6 +213,9 @@ function GoNNAI(E, F, net) {
     const p = softmaxMasked(ev.logits, ev.legal, temp);
     p[AREA] *= 0.05; // weak levels rarely pass on their own
     if (near) for (let i = 0; i <= AREA; i++) if (i === AREA || !near(i)) p[i] = 0;
+    if (floating) { const keep = Float32Array.from(p); let left = 0;
+      for (let i = 0; i < AREA; i++) if (p[i] && floating(i)) p[i] = 0; else left += p[i];
+      if (!(left > 0)) p.set(keep); }
     let s = 0; for (let i = 0; i < p.length; i++) s += p[i];
     let r = Math.random() * s;
     for (let i = 0; i < p.length; i++) { r -= p[i]; if (r <= 0) return slotToPoint(base, i); }

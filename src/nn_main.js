@@ -20,7 +20,7 @@
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", search: { temperature: 2.0, blunder: 0.3, local: 3 },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
-    { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", search: { temperature: 1.6, blunder: 0.15, local: 3 },
+    { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", opening: "corners", search: { temperature: 1.6, blunder: 0.15, local: 3, noFloat: true },
       bio: "เซียนหมากฮอสประจำวินมอเตอร์ไซค์ เพิ่งมาลองเล่นโกะ",
       say: { hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย", ahead: "กินได้กินเลย เหมือนหมากฮอสนั่นแหละ", behind: "เดี๋ยวๆ ขอคิดแป๊บ", win: "เห็นไหม เซียนก็คือเซียน", lose: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่" } },
     { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03, local: 3 }, early: { temperature: 0.25, local: 3 },
@@ -255,12 +255,15 @@
       const near = board.dirs.map(d => t + d).filter(ok);
       return near.length ? near[(Math.random() * near.length) | 0] : null;
     }
-    if (ch.opening === "33") {
+    if (ch.opening === "33" || ch.opening === "corners") {
+      // a corner counts as free while its 6x6 area is empty; "corners" picks 4-4, 3-4 or 3-3 there
       const free = [];
       for (const [cx, cy] of [[0, 0], [n - 6, 0], [0, n - 6], [n - 6, n - 6]]) {
         let empty = true;
         for (let y = cy; y < cy + 6 && empty; y++) for (let x = cx; x < cx + 6; x++) if (board.color[board.pt(x, y)] !== EMPTY) { empty = false; break; }
-        const p = board.pt(cx ? n - 3 : 2, cy ? n - 3 : 2);
+        const spots = ch.opening === "33" ? [[2, 2]] : [[3, 3], [3, 3], [2, 3], [3, 2], [2, 2]];
+        const [a, b] = spots[(Math.random() * spots.length) | 0];
+        const p = board.pt(cx ? n - 1 - a : a, cy ? n - 1 - b : b);
         if (empty && ok(p)) free.push(p);
       }
       return free.length ? free[(Math.random() * free.length) | 0] : null;
