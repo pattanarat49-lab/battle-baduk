@@ -169,12 +169,26 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .wr-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 .wr-bar { height: 10px; border-radius: 5px; overflow: hidden; background: #ecebe4; }
 .wr-fill { height: 100%; width: 50%; background: #111; transition: width .5s ease; }
-.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 3px 3px 5px; }
+/* pixel-art buttons: notched dark outline, light top-left edge, darker bottom band */
+.actions button { --px-face: #e4646a; --px-hi: #f59a9a; --px-lo: #b63f4b; --px-ink: #351820;
+  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 15px; letter-spacing: .02em; color: #fff; text-shadow: 1px 1px 0 var(--px-lo);
+  background: var(--px-face); border: 0; border-radius: 0; padding: 7px 4px 9px; min-height: 40px;
+  display: grid; place-items: center; image-rendering: pixelated;
+  box-shadow: -3px 0 0 0 var(--px-ink), 3px 0 0 0 var(--px-ink), 0 -3px 0 0 var(--px-ink), 0 3px 0 0 var(--px-ink),
+    inset 0 -4px 0 0 var(--px-lo), inset 3px 3px 0 0 var(--px-hi); }
+.actions button svg { fill: currentColor; shape-rendering: crispEdges; filter: drop-shadow(1px 1px 0 var(--px-lo)); }
+.actions button:hover:not(:disabled) { --px-face: #ec7378; }
+.actions button:active:not(:disabled) { transform: translateY(2px); box-shadow: -3px 0 0 0 var(--px-ink), 3px 0 0 0 var(--px-ink), 0 -3px 0 0 var(--px-ink), 0 3px 0 0 var(--px-ink),
+    inset 0 -1px 0 0 var(--px-lo), inset 3px 3px 0 0 var(--px-lo); }
+.actions button:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.actions button:disabled { opacity: 1; cursor: default; --px-face: #8a6a6e; --px-hi: #a08488; --px-lo: #6c5054; color: #d9c9c9; }
+.actions button.danger { --px-face: #c9404c; --px-hi: #e2707a; --px-lo: #8e2633; color: #fff; }
 .actions.four { grid-template-columns: repeat(4, 1fr); }
 .actions.review { grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; align-items: center; }
 .actions.review span { text-align: center; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; }
 .actions[hidden] { display: none; }
-.actions.four button { font-size: 13px; min-height: 36px; padding: 6px 4px; }
+.actions.four button { font-size: 13px; min-height: 36px; padding: 6px 2px 8px; }
 .quote { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; line-height: 1.35; align-items: center; display: flex; gap: 10px; align-items: flex-start; }
 .quote .av { width: 36px; height: 36px; flex: none; }
 .quote b { display: block; font-size: 12px; color: var(--accent); font-weight: 600; }
@@ -231,11 +245,11 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     </div>
     <div id="result" class="result" hidden></div>
     <div class="actions review" id="review" hidden>
-      <button id="rvFirst" aria-label="ตาแรก">⏮</button>
-      <button id="rvPrev" aria-label="ย้อนหนึ่งตา">◀</button>
+      <button id="rvFirst" aria-label="ตาแรก"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true" style="transform:scaleX(-1)"><path d="M2 1h1v7h-1zM3 2h1v5h-1zM4 3h1v3h-1zM5 4h1v1h-1zM6 1h2v7h-2z"/></svg></button>
+      <button id="rvPrev" aria-label="ย้อนหนึ่งตา"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true" style="transform:scaleX(-1)"><path d="M3 1h1v7h-1zM4 2h1v5h-1zM5 3h1v3h-1zM6 4h1v1h-1z"/></svg></button>
       <span id="rvLabel" aria-live="polite"></span>
-      <button id="rvNext" aria-label="ไปหนึ่งตา">▶</button>
-      <button id="rvLast" aria-label="ตาสุดท้าย">⏭</button>
+      <button id="rvNext" aria-label="ไปหนึ่งตา"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M3 1h1v7h-1zM4 2h1v5h-1zM5 3h1v3h-1zM6 4h1v1h-1z"/></svg></button>
+      <button id="rvLast" aria-label="ตาสุดท้าย"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M2 1h1v7h-1zM3 2h1v5h-1zM4 3h1v3h-1zM5 4h1v1h-1zM6 1h2v7h-2z"/></svg></button>
     </div>
     <div class="actions" id="playActions">
       <button id="btnPass">ผ่าน</button>
