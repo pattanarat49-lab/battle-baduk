@@ -1237,7 +1237,17 @@ function GoNNAI(E, F, net) {
   }
   function reportEnd(humanWon, how) {
     if (gameReported) return;
-    gameReported = true; track({ type: "end", winner: humanWon ? "human" : "ai", how, moves: history.length });
+    gameReported = true; track({ type: "end", winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() });
+  }
+  // the position as spectators on /watch see it
+  function snapshot() {
+    let b = "";
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const c = board.color[board.pt(x, y)]; b += c === BLACK ? "b" : c === WHITE ? "w" : "."; }
+    const last = history.length ? history[history.length - 1] : PASS;
+    const lastIdx = last === PASS ? -1 : (([x, y]) => y * n + x)(board.xy(last));
+    const ck = c => [Math.round(c.main), c.per, Math.round(c.byo)];
+    return { size: n, board: b, last: lastIdx, moveNo: history.length, toPlay: board.toPlay, human,
+      caps: [board.caps[BLACK], board.caps[WHITE]], clocks: clocks ? [ck(clocks[BLACK]), ck(clocks[WHITE])] : null, winB: Math.round(winBlack * 100) };
   }
 
   // ---------- game flow ----------
@@ -1256,7 +1266,7 @@ function GoNNAI(E, F, net) {
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     said = {}; speak("hello");
-    gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human });
+    gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
     resize(); render(); maybeAI();
   }
   function replay() { board = new Board(n); for (const m of history) board.play(m); }
@@ -1283,6 +1293,7 @@ function GoNNAI(E, F, net) {
     if (p !== PASS) clack();
     clockMoved(board.toPlay);
     board.play(p); history.push(p); hint = null;
+    track({ type: "move", state: snapshot() });
     if (board.passes >= 2) startScoring();
     render();
     if (!over && !scoring) maybeAI();

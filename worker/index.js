@@ -1,7 +1,9 @@
 // Serves the static game and keeps anonymous play statistics in a SQLite-backed Durable Object.
-// POST /api/event  {type: "start"|"end", game, player, char, size, color, winner, how, moves}
-// GET  /stats      summary page,  GET /api/stats  the same numbers as JSON
+// POST /api/event  {type: "start"|"move"|"end", game, player, char, size, color, winner, how, moves, state}
+// GET  /stats      summary page and games in progress,  GET /api/stats  the same numbers as JSON
+// GET  /watch?g=…  live board of one game,  GET /api/game?g=…  its latest position
 import { DurableObject } from "cloudflare:workers";
+import { WATCH } from "./watch.js";
 
 const CHARS = {
   mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", chris: "คริส",
@@ -18,13 +20,36 @@ export class Stats extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS games (
       id TEXT PRIMARY KEY, player TEXT, char TEXT, size INTEGER, color INTEGER,
       started INTEGER, ended INTEGER, winner TEXT, how TEXT, moves INTEGER)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS live (game TEXT PRIMARY KEY, char TEXT, updated INTEGER, ended INTEGER, state TEXT)`);
+  }
+  // latest position of a game, kept for spectators; old rows are dropped as new ones arrive
+  saveState(e, ended) {
+    if (!e.state) return;
+    const now = Date.now();
+    this.sql.exec(`INSERT INTO live (game, char, updated, ended, state) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(game) DO UPDATE SET updated = excluded.updated, ended = COALESCE(live.ended, excluded.ended), state = excluded.state`,
+      e.game, e.char, now, ended ? now : null, JSON.stringify(e.state));
+    this.sql.exec("DELETE FROM live WHERE updated < ?", now - 864e5);
+  }
+  liveGames() {
+    return this.sql.exec(`SELECT game, char, updated, ended, state FROM live WHERE updated >= ? ORDER BY updated DESC LIMIT 50`, Date.now() - 20 * 6e4)
+      .toArray().map(r => { const st = JSON.parse(r.state); return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, size: st.size, moveNo: st.moveNo, human: st.human }; });
+  }
+  game(g) {
+    const r = this.sql.exec("SELECT game, char, updated, ended, state FROM live WHERE game = ?", g).toArray()[0];
+    if (!r) return null;
+    const res = this.sql.exec("SELECT winner, how FROM games WHERE id = ?", g).toArray()[0] || {};
+    return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, winner: res.winner || null, how: res.how || null, now: Date.now(), ...JSON.parse(r.state) };
   }
   record(e) {
     const now = Date.now();
+    if (e.type === "move") { this.saveState(e, false); return; }
     if (e.type === "start") {
+      this.saveState(e, false);
       this.sql.exec("INSERT OR IGNORE INTO games (id, player, char, size, color, started) VALUES (?, ?, ?, ?, ?, ?)",
         e.game, e.player, e.char, e.size, e.color, now);
     } else {
+      this.saveState(e, true);
       // only the first result of a game counts
       this.sql.exec("UPDATE games SET ended = ?, winner = ?, how = ?, moves = ? WHERE id = ? AND ended IS NULL",
         now, e.winner, e.how, e.moves, e.game);
@@ -39,14 +64,25 @@ export class Stats extends DurableObject {
     const since = Date.now() - 14 * 864e5;
     const days = this.sql.exec(`SELECT date(started / 1000, 'unixepoch', '+7 hours') AS day, COUNT(*) AS games, COUNT(DISTINCT player) AS players
       FROM games WHERE started >= ? GROUP BY day ORDER BY day`, since).toArray();
-    return { total, chars: rows, days };
+    return { total, chars: rows, days, live: this.liveGames() };
   }
 }
 
+// only well-formed positions are stored and shown to spectators
+function cleanState(s) {
+  if (!s || ![9, 13, 19].includes(s.size) || typeof s.board !== "string" || s.board.length !== s.size * s.size || !/^[.bw]+$/.test(s.board)) return null;
+  const int = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi ? v : 0;
+  const clock = c => Array.isArray(c) && c.length === 3 ? [int(c[0], 0, 3600), int(c[1], 0, 9), int(c[2], 0, 60)] : null;
+  return { size: s.size, board: s.board, last: int(s.last, -1, 360), moveNo: int(s.moveNo, 0, 2000), toPlay: s.toPlay === 2 ? 2 : 1, human: s.human === 2 ? 2 : 1,
+    caps: Array.isArray(s.caps) ? [int(s.caps[0], 0, 400), int(s.caps[1], 0, 400)] : [0, 0],
+    clocks: Array.isArray(s.clocks) && s.clocks.length === 2 ? [clock(s.clocks[0]), clock(s.clocks[1])] : null, winB: int(s.winB, 0, 100) };
+}
+
 function clean(b) {
-  if (!b || (b.type !== "start" && b.type !== "end")) return null;
-  const e = { type: b.type, game: id(b.game), player: id(b.player), char: b.char };
+  if (!b || !["start", "move", "end"].includes(b.type)) return null;
+  const e = { type: b.type, game: id(b.game), player: id(b.player), char: b.char, state: cleanState(b.state) };
   if (!e.game || !e.player || !(e.char in CHARS)) return null;
+  if (b.type === "move") return e.state ? e : null;
   if (b.type === "start") {
     e.size = [9, 13, 19].includes(b.size) ? b.size : 19;
     e.color = b.color === 2 ? 2 : 1;
@@ -70,7 +106,12 @@ function page(s) {
   }).join("");
   const max = Math.max(1, ...s.days.map(d => d.games));
   const days = s.days.map(d => `<div class="day"><span>${d.day.slice(5)}</span><i style="width:${Math.round(100 * d.games / max)}%"></i><b>${d.games} เกม · ${d.players} คน</b></div>`).join("") || "<p class=\"muted\">ยังไม่มีข้อมูล</p>";
+  const ago = t => { const m = Math.round((s.now - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m + " นาทีที่แล้ว"; };
+  const live = s.live.length ? `<div class="live">${s.live.map(g => `<a class="lg" href="/watch?g=${g.game}"><b>${CHARS[g.char]}</b>
+    <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
+    : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 30 วินาที)</p>`;
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="30">
 <title>Baduk Battle Stats</title>
 <style>
 :root { --bg: #15333a; --surface: #20474f; --fg: #f3ead8; --muted: #b3c8c5; --line: rgba(243,234,216,.14); --accent: #e3b06a; color-scheme: dark; }
@@ -85,10 +126,14 @@ table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nu
 th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
 thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { text-align: left; } tr:last-child > * { border-bottom: 0; }
 .day { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; font-size: 13px; padding: 3px 0; }
+.live { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.lg { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--fg); text-decoration: none; }
+.lg:hover { border-color: var(--accent); } .lg span { font-size: 13px; color: var(--muted); } .lg .on { color: #9fd8c0; }
 .day i { display: block; height: 10px; border-radius: 5px; background: var(--accent); min-width: 4px; } .day span, .day b { color: var(--muted); font-weight: 400; }
 </style></head><body><main>
 <h1>สถิติ Baduk Battle</h1>
 <div class="tiles"><div class="tile"><b>${s.total.games}</b><span>เกมที่เริ่มเล่นทั้งหมด</span></div><div class="tile"><b>${s.total.players}</b><span>ผู้เล่น (นับตามเครื่อง)</span></div></div>
+<section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
 <section><h2>แยกตามตัวละคร</h2><div class="wrap"><table>
 <thead><tr><th style="text-align:left">ตัวละคร</th><th>เกม</th><th>ผู้เล่น</th><th>เล่นจบ</th><th>คนชนะ</th><th>AI ชนะ</th><th>คนชนะ %</th><th>ตาเฉลี่ย</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
@@ -111,9 +156,14 @@ export default {
       await stub().record(e);
       return new Response(null, { status: 204, headers: CORS });
     }
+    const html = body => new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
     if (url.pathname === "/api/stats") return Response.json(await stub().summary(), { headers: CORS });
-    if (url.pathname === "/stats" || url.pathname === "/stats/")
-      return new Response(page(await stub().summary()), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+    if (url.pathname === "/stats" || url.pathname === "/stats/") return html(page({ ...(await stub().summary()), now: Date.now() }));
+    if (url.pathname === "/api/game") {
+      const g = id(url.searchParams.get("g") || ""), st = g && await stub().game(g);
+      return st ? Response.json(st, { headers: { ...CORS, "cache-control": "no-store" } }) : new Response("not found", { status: 404, headers: CORS });
+    }
+    if (url.pathname === "/watch") return html(WATCH);
     return env.ASSETS.fetch(req);
   }
 };
