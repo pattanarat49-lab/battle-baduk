@@ -1110,6 +1110,10 @@ function GoNNAI(E, F, net) {
   function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory) {
     const last = moves[moves.length - 1];
     const edge = i => onEdge(n, i) && ev.policy[i] < EDGE_NEED;
+    // a point already settled for either side (inside a closed area) is a wasted move unless the network wants it;
+    // when only such points are left the game is closed, so pass and let it be counted
+    const settled = i => i < AREA && Math.abs(ev.own[i]) > 0.75 && ev.policy[i] < 0.1;
+    if (ev.policy[AREA] >= 0.5) return PASS;
     const ownPoint = keepTerritory ? (i => i < AREA && ev.own[i] > 0.8 && ev.policy[i] < 0.1) : null;
     let floating = null;
     if (noFloat) {
@@ -1134,7 +1138,7 @@ function GoNNAI(E, F, net) {
       const me = b.toPlay, cands = [];
       for (const q of b.pts) {
         if (!b.isLegal(q, me)) continue;
-        { const [x, y] = b.xy(q), i = y * 19 + x; if (edge(i) || (near && !near(i)) || (floating && floating(i)) || (ownPoint && ownPoint(i))) continue; }
+        { const [x, y] = b.xy(q), i = y * 19 + x; if (edge(i) || settled(i) || (near && !near(i)) || (floating && floating(i)) || (ownPoint && ownPoint(i))) continue; }
         if (b.dirs.every(d => b.color[q + d] === me || b.color[q + d] === 3)) continue;
         cands.push(q);
       }
@@ -1151,6 +1155,7 @@ function GoNNAI(E, F, net) {
       return true;
     };
     if (ownPoint && !filter(ownPoint, true)) return PASS; // only our own territory is left to play: pass instead of filling it
+    if (!filter(settled, true)) return PASS;
     filter(edge, true);
     if (floating) filter(floating, true);
     if (near) filter(i => !near(i), false);
