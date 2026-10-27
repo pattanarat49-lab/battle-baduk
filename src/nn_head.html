@@ -1,0 +1,245 @@
+<title>Baduk Battle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@900&family=Pixelify+Sans:wght@700&family=Noto+Serif+Thai:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* One deliberate theme in both modes: the deep teal of the character portraits with go-board wood as the accent. */
+:root {
+  --bg: #15333a; --bg-2: #1b424a; --surface: #20474f; --surface-2: #285660; --fg: #f3ead8; --muted: #b3c8c5;
+  --line: rgba(243, 234, 216, .14); --accent: #e3b06a; --accent-fg: #2a1a0b; --wood: #c8894a; --wood-dark: #5a331a;
+  --warn: #ff9e80; --ok: #9fd8c0;
+  --f-display: "Noto Serif Thai", "Thonburi", Georgia, serif;
+  --f-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --f-logo: "Londrina Solid", "Impact", var(--f-display);
+  --f-px: "Pixelify Sans", "Courier New", monospace;
+  color-scheme: dark;
+}
+html, body { min-height: 100%; }
+body { margin: 0; color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  background: var(--bg) radial-gradient(120% 70% at 50% -10%, #2a5b65 0%, var(--bg) 60%) no-repeat;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px; }
+[hidden] { display: none !important; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 26px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+.note { color: var(--muted); font-size: 12px; margin: 0; }
+
+button { font: inherit; font-size: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  padding: 9px 6px; cursor: pointer; min-height: 40px; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .42; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+button.primary:hover:not(:disabled) { background: #edc184; }
+button.danger { color: var(--warn); }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg-2); }
+.seg button { border: 0; border-radius: 0; border-right: 1px solid var(--line); min-height: 38px; padding: 6px 4px; background: transparent; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.av { display: block; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
+
+/* ---------- home: arcade character select ---------- */
+.home { --gold: var(--accent); --gold-hi: #f0c888; --gold-dim: var(--wood-dark); --card: var(--surface); --frame: var(--wood);
+  max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; padding-bottom: 24px; }
+.px { font-family: var(--f-px); font-weight: 700; letter-spacing: .02em; }
+.home .logo-sm { font-size: 22px; color: var(--fg); opacity: .9; text-shadow: 0 2px 0 var(--gold-dim); }
+.px-title { font-family: var(--f-px); font-weight: 700; font-size: clamp(30px, 8.5vw, 58px); line-height: 1; color: var(--gold); margin: 0;
+  text-shadow: 3px 3px 0 var(--gold-dim); }
+.carousel { position: relative; width: 100%; display: grid; grid-template-columns: 1fr auto minmax(0, 340px) auto 1fr; align-items: center; gap: 12px; margin-top: 8px; touch-action: pan-y; }
+.ghost { padding: 0; border: 0; background: none; min-height: 0; opacity: .4; overflow: hidden; border-radius: 10px; }
+.ghost:hover:not(:disabled) { opacity: .6; }
+.ghost img { display: block; width: 100%; max-width: 170px; height: auto; border-radius: 10px; }
+.ghost.left img { margin-left: auto; } .ghost.right img { margin-right: auto; }
+.arrow { width: 34px; height: 44px; min-height: 0; padding: 0; border: 0; background: none; color: var(--gold); display: grid; place-items: center; }
+.arrow::before { content: ""; width: 0; height: 0; border-block: 14px solid transparent; }
+.arrow.left::before { border-right: 18px solid currentColor; }
+.arrow.right::before { border-left: 18px solid currentColor; }
+.arrow:hover:not(:disabled) { color: var(--gold-hi); }
+/* stepped corners give the card its pixel frame */
+.card { --s: 8px; background: var(--frame); padding: 6px; width: 100%;
+  clip-path: polygon(var(--s) 0, calc(100% - var(--s)) 0, calc(100% - var(--s)) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - var(--s)) calc(100% - 4px), calc(100% - var(--s)) 100%, var(--s) 100%, var(--s) calc(100% - 4px), 0 calc(100% - 4px), 0 4px, var(--s) 4px); }
+.card-in { background: linear-gradient(180deg, var(--surface-2), var(--bg-2)); box-shadow: inset 0 0 0 3px rgba(243, 234, 216, .22); padding: 16px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cname { font-family: var(--f-px); font-weight: 700; font-size: clamp(28px, 8vw, 40px); line-height: 1; color: var(--fg); text-shadow: 3px 3px 0 var(--wood-dark); }
+.cthai { font-family: var(--f-display); font-weight: 700; font-size: 15px; color: var(--accent); margin-top: -4px; }
+.pxp { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 3px var(--wood-dark); }
+.crank { font-family: var(--f-px); font-weight: 700; font-size: 15px; color: var(--accent-fg); background: var(--accent); padding: 4px 12px; }
+.card.pop { animation: pop .24s steps(3) both; }
+@keyframes pop { from { transform: scale(.92); opacity: .5; } to { transform: none; opacity: 1; } }
+.cinfo { max-width: 46ch; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
+.cinfo .cmeta { color: var(--gold); font-size: 14px; font-weight: 600; }
+.cinfo .cbio { margin: 0; color: var(--fg); font-size: 14px; }
+.cinfo .csay { margin: 0; color: var(--muted); font-size: 13px; font-style: italic; }
+.faces { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.faces button { padding: 0; min-height: 0; border: 3px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--bg-2); line-height: 0; }
+.faces button img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; opacity: .55; }
+.faces button[aria-pressed="true"] { border-color: var(--gold); }
+.faces button[aria-pressed="true"] img { opacity: 1; }
+.opts { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 4px; }
+.opt { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.opt-l { font-size: 12px; color: var(--muted); }
+.home .seg { display: flex; gap: 22px; border: 0; background: none; overflow: visible; }
+.home .seg button { border: 0; background: none; padding: 2px 0 2px 22px; min-height: 36px; position: relative;
+  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 22px; color: rgba(243, 234, 216, .42); }
+.home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
+.home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
+.home .seg button:disabled { opacity: .35; }
+.home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
+.px-start { font-family: var(--f-px); font-weight: 700; font-size: clamp(34px, 9vw, 52px); line-height: 1; color: var(--gold); background: none; border: 0; padding: 8px 14px; min-height: 0;
+  text-shadow: 3px 3px 0 var(--gold-dim); margin-top: 6px; cursor: pointer; transition: transform .1s; }
+.px-start:active { transform: translateY(2px); }
+.px-start:hover:not(:disabled) { color: var(--gold-hi); }
+.px-start .blink { display: inline-block; margin-right: 10px; animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+.timectl { margin: 0; font-size: 13px; color: var(--muted); }
+.home .engine-chip { margin: 0; }
+@media (max-width: 560px) {
+  .carousel { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
+  .ghost { display: none; }
+  .faces { gap: 4px; flex-wrap: nowrap; }
+  .faces button img { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
+
+/* ---------- game ---------- */
+.logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
+.game-title { font-size: 34px; }
+/* The game always fills exactly one screen: portrait stacks players / board / controls,
+   landscape puts the board on the left at full height with players and controls beside it. */
+body.playing { overflow: hidden; padding: 0; }
+.app { position: fixed; inset: 0; display: grid; gap: 10px; overflow: hidden;
+  padding: max(8px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "pbar" "board" "panel"; }
+.app > .pbar { grid-area: pbar; }
+.boardcell { grid-area: board; min-height: 0; min-width: 0; container-type: size; display: grid; place-items: center; }
+canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cqh) - 12px); border-radius: 8px; touch-action: manipulation;
+  box-shadow: 0 0 0 6px var(--wood-dark), 0 18px 34px -20px rgba(0,0,0,.9); cursor: pointer; }
+.app > .panel { grid-area: panel; min-height: 0; overflow-y: auto; }
+@media (min-aspect-ratio: 9/8) {
+  .app { grid-template-columns: minmax(0, 1fr) clamp(280px, 34vw, 400px); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "board pbar" "board panel"; gap: 12px 16px; }
+}
+.ghead { display: none; }
+@media (min-aspect-ratio: 9/8) and (min-height: 620px) { .ghead { display: block; } }
+.app .note { display: none; }
+@media (min-aspect-ratio: 9/8) and (min-height: 760px) { .app .note { display: block; } }
+.pbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: stretch; }
+.player { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: grid;
+  grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "av who" "clk clk"; gap: 6px 10px; align-items: center; min-width: 0; transition: border-color .2s, box-shadow .2s; }
+.player.turn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.player .avbox { grid-area: av; position: relative; width: 48px; height: 48px; }
+.player .avbox .av { width: 48px; height: 48px; }
+.player .avbox .stone { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
+.stone.b { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); }
+.stone.w { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.who { grid-area: who; min-width: 0; }
+.pname { font-weight: 600; font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prank { font-size: 12px; color: var(--accent); }
+.pcap { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.clock { grid-area: clk; display: flex; align-items: baseline; justify-content: space-between; gap: 6px; background: var(--bg); border-radius: 8px; padding: 4px 8px; min-width: 0; }
+.clk { font-family: var(--f-mono); font-weight: 600; font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.byo { font-size: 11px; color: var(--muted); text-align: right; line-height: 1.25; }
+.player.turn .clock { background: #0f262b; }
+.player.low .clk { color: var(--warn); }
+.player.out .clk { color: var(--warn); text-decoration: line-through; }
+.komi { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 4px; color: var(--muted); font-size: 11px; text-align: center; }
+.komi b { font-family: var(--f-mono); font-size: 15px; color: var(--fg); }
+@media (max-height: 520px) and (min-aspect-ratio: 9/8) {
+  .player .avbox, .player .avbox .av { width: 36px; height: 36px; }
+  .player { padding: 6px 8px; gap: 4px 8px; } .clk { font-size: 18px; } .pcap { display: none; }
+  .wr { gap: 2px; } .status { min-height: 0; font-size: 14px; }
+  .clock { flex-direction: column; align-items: flex-start; gap: 0; } .byo { text-align: left; white-space: nowrap; }
+  .quote { padding: 4px 8px; font-size: 13px; } .quote .av { display: none; }
+  .quote span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quote b { display: inline; margin-right: 6px; }
+  .app { gap: 8px 14px; } .panel { gap: 8px; }
+}
+@media (max-width: 420px) {
+  .player { grid-template-columns: auto minmax(0, 1fr); padding: 6px 8px; }
+  .player .avbox, .player .avbox .av { width: 38px; height: 38px; }
+  .clk { font-size: 19px; }
+  .komi { padding: 0; }
+}
+.panel { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.status { min-height: 42px; font-size: 15px; line-height: 1.35; }
+.status b { font-weight: 600; }
+.status .meta { display: block; color: var(--muted); font-size: 12px; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wr { display: flex; flex-direction: column; gap: 6px; }
+.wr-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wr-bar { height: 10px; border-radius: 5px; overflow: hidden; background: #ecebe4; }
+.wr-fill { height: 100%; width: 50%; background: #111; transition: width .5s ease; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.actions.four { grid-template-columns: repeat(4, 1fr); }
+.actions.four button { font-size: 13px; min-height: 36px; padding: 6px 4px; }
+.quote { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; line-height: 1.35; align-items: center; display: flex; gap: 10px; align-items: flex-start; }
+.quote .av { width: 36px; height: 36px; flex: none; }
+.quote b { display: block; font-size: 12px; color: var(--accent); font-weight: 600; }
+.settings { display: flex; flex-direction: column; gap: 10px; }
+.result { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+.result h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 4px; }
+.result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } }
+</style>
+
+<section class="home" id="home">
+  <div class="logo logo-sm">Baduk Battle</div>
+  <h1 class="px-title">Character Select</h1>
+  <div class="carousel" id="chars"></div>
+  <div class="cinfo" id="pick" aria-live="polite"></div>
+  <div class="faces" id="faces" aria-label="ตัวละครทั้งหมด"></div>
+  <div class="opts">
+    <div class="opt"><span class="opt-l" id="sizeLegend">กระดาน</span>
+      <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
+    <div class="opt"><span class="opt-l">คุณถือ (ดำเดินก่อน)</span>
+      <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
+  </div>
+  <button id="btnNew" class="px-start">GAME START</button>
+  <p class="timectl">15 นาที + เบียวโยมิ 10 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
+  <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
+</section>
+
+<main class="app" id="game" hidden>
+  <div class="pbar">
+    <div class="player" id="pB">
+      <div class="avbox"><span id="avB"></span><span class="stone b" id="sB"></span></div>
+      <div class="who"><div class="pname" id="nB">คุณ</div><div class="prank" id="rkB"></div><div class="pcap" id="cB">หมากเชลย 0</div></div>
+      <div class="clock"><span class="clk" id="clkB">15:00</span><span class="byo" id="byB">เบียวโยมิ 3×10</span></div>
+    </div>
+    <div class="komi">โคมิ<b>7.5</b></div>
+    <div class="player" id="pW">
+      <div class="avbox"><span id="avW"></span><span class="stone w" id="sW"></span></div>
+      <div class="who"><div class="pname" id="nW">AI</div><div class="prank" id="rkW"></div><div class="pcap" id="cW">หมากเชลย 0</div></div>
+      <div class="clock"><span class="clk" id="clkW">15:00</span><span class="byo" id="byW">เบียวโยมิ 3×10</span></div>
+    </div>
+  </div>
+  <section class="boardcell" aria-label="กระดานหมากล้อม"><canvas id="board" width="800" height="800"></canvas></section>
+  <aside class="panel">
+    <div class="ghead">
+      <h1 class="logo game-title">Baduk Battle</h1>
+      <p class="sub" id="sub">กระดาน 19×19 · กติกาจีน · โคมิ 7.5</p>
+      <p class="sub" id="engine">กำลังโหลดสมอง AI…</p>
+    </div>
+    <div class="quote" id="quote" hidden></div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="wr" id="wrBox">
+      <div class="wr-label"><span id="wrB">ดำ 50%</span><span id="wrMid">โอกาสชนะ</span><span id="wrW">ขาว 50%</span></div>
+      <div class="wr-bar"><div class="wr-fill" id="wrFill"></div></div>
+    </div>
+    <div id="result" class="result" hidden></div>
+    <div class="actions">
+      <button id="btnPass">ผ่าน</button>
+      <button id="btnHint">แนะนำ</button>
+      <button id="btnResign" class="danger">ยอมแพ้</button>
+    </div>
+    <div class="settings">
+      <div class="actions four">
+        <button id="btnRestart">เล่นใหม่</button>
+        <button id="btnHome">เปลี่ยนตัว</button>
+        <button id="btnSound">เสียง: เปิด</button>
+        <button id="btnFull">เต็มจอ</button>
+      </div>
+      <p class="note">กดจุดตัดบนกระดานเพื่อวางหมาก เวลาหลัก 15 นาที หมดแล้วเข้าเบียวโยมิ ต้องเดินภายใน 10 วินาที ถ้าเกินจะเสีย 1 ครั้ง เสียครบ 3 ครั้งแพ้เพราะหมดเวลา เมื่อทั้งสองฝ่ายผ่านติดกัน เกมจะนับแต้มแบบพื้นที่ ตอนนับแต้มแตะกลุ่มหมากเพื่อสลับว่าตายหรือไม่</p>
+    </div>
+  </aside>
+</main>

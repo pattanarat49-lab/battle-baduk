@@ -1,0 +1,1628 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Baduk Battle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@900&family=Pixelify+Sans:wght@700&family=Noto+Serif+Thai:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* One deliberate theme in both modes: the deep teal of the character portraits with go-board wood as the accent. */
+:root {
+  --bg: #15333a; --bg-2: #1b424a; --surface: #20474f; --surface-2: #285660; --fg: #f3ead8; --muted: #b3c8c5;
+  --line: rgba(243, 234, 216, .14); --accent: #e3b06a; --accent-fg: #2a1a0b; --wood: #c8894a; --wood-dark: #5a331a;
+  --warn: #ff9e80; --ok: #9fd8c0;
+  --f-display: "Noto Serif Thai", "Thonburi", Georgia, serif;
+  --f-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --f-logo: "Londrina Solid", "Impact", var(--f-display);
+  --f-px: "Pixelify Sans", "Courier New", monospace;
+  color-scheme: dark;
+}
+html, body { min-height: 100%; }
+body { margin: 0; color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  background: var(--bg) radial-gradient(120% 70% at 50% -10%, #2a5b65 0%, var(--bg) 60%) no-repeat;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px; }
+[hidden] { display: none !important; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 26px; line-height: 1.2; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+.note { color: var(--muted); font-size: 12px; margin: 0; }
+
+button { font: inherit; font-size: 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  padding: 9px 6px; cursor: pointer; min-height: 40px; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .42; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+button.primary:hover:not(:disabled) { background: #edc184; }
+button.danger { color: var(--warn); }
+fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg-2); }
+.seg button { border: 0; border-radius: 0; border-right: 1px solid var(--line); min-height: 38px; padding: 6px 4px; background: transparent; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.av { display: block; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
+
+/* ---------- home: arcade character select ---------- */
+.home { --gold: var(--accent); --gold-hi: #f0c888; --gold-dim: var(--wood-dark); --card: var(--surface); --frame: var(--wood);
+  max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; padding-bottom: 24px; }
+.px { font-family: var(--f-px); font-weight: 700; letter-spacing: .02em; }
+.home .logo-sm { font-size: 22px; color: var(--fg); opacity: .9; text-shadow: 0 2px 0 var(--gold-dim); }
+.px-title { font-family: var(--f-px); font-weight: 700; font-size: clamp(30px, 8.5vw, 58px); line-height: 1; color: var(--gold); margin: 0;
+  text-shadow: 3px 3px 0 var(--gold-dim); }
+.carousel { position: relative; width: 100%; display: grid; grid-template-columns: 1fr auto minmax(0, 340px) auto 1fr; align-items: center; gap: 12px; margin-top: 8px; touch-action: pan-y; }
+.ghost { padding: 0; border: 0; background: none; min-height: 0; opacity: .4; overflow: hidden; border-radius: 10px; }
+.ghost:hover:not(:disabled) { opacity: .6; }
+.ghost img { display: block; width: 100%; max-width: 170px; height: auto; border-radius: 10px; }
+.ghost.left img { margin-left: auto; } .ghost.right img { margin-right: auto; }
+.arrow { width: 34px; height: 44px; min-height: 0; padding: 0; border: 0; background: none; color: var(--gold); display: grid; place-items: center; }
+.arrow::before { content: ""; width: 0; height: 0; border-block: 14px solid transparent; }
+.arrow.left::before { border-right: 18px solid currentColor; }
+.arrow.right::before { border-left: 18px solid currentColor; }
+.arrow:hover:not(:disabled) { color: var(--gold-hi); }
+/* stepped corners give the card its pixel frame */
+.card { --s: 8px; background: var(--frame); padding: 6px; width: 100%;
+  clip-path: polygon(var(--s) 0, calc(100% - var(--s)) 0, calc(100% - var(--s)) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - var(--s)) calc(100% - 4px), calc(100% - var(--s)) 100%, var(--s) 100%, var(--s) calc(100% - 4px), 0 calc(100% - 4px), 0 4px, var(--s) 4px); }
+.card-in { background: linear-gradient(180deg, var(--surface-2), var(--bg-2)); box-shadow: inset 0 0 0 3px rgba(243, 234, 216, .22); padding: 16px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cname { font-family: var(--f-px); font-weight: 700; font-size: clamp(28px, 8vw, 40px); line-height: 1; color: var(--fg); text-shadow: 3px 3px 0 var(--wood-dark); }
+.cthai { font-family: var(--f-display); font-weight: 700; font-size: 15px; color: var(--accent); margin-top: -4px; }
+.pxp { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 3px var(--wood-dark); }
+.crank { font-family: var(--f-px); font-weight: 700; font-size: 15px; color: var(--accent-fg); background: var(--accent); padding: 4px 12px; }
+.card.pop { animation: pop .24s steps(3) both; }
+@keyframes pop { from { transform: scale(.92); opacity: .5; } to { transform: none; opacity: 1; } }
+.cinfo { max-width: 46ch; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
+.cinfo .cmeta { color: var(--gold); font-size: 14px; font-weight: 600; }
+.cinfo .cbio { margin: 0; color: var(--fg); font-size: 14px; }
+.cinfo .csay { margin: 0; color: var(--muted); font-size: 13px; font-style: italic; }
+.faces { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.faces button { padding: 0; min-height: 0; border: 3px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--bg-2); line-height: 0; }
+.faces button img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; opacity: .55; }
+.faces button[aria-pressed="true"] { border-color: var(--gold); }
+.faces button[aria-pressed="true"] img { opacity: 1; }
+.opts { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 4px; }
+.opt { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.opt-l { font-size: 12px; color: var(--muted); }
+.home .seg { display: flex; gap: 22px; border: 0; background: none; overflow: visible; }
+.home .seg button { border: 0; background: none; padding: 2px 0 2px 22px; min-height: 36px; position: relative;
+  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 22px; color: rgba(243, 234, 216, .42); }
+.home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
+.home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
+.home .seg button:disabled { opacity: .35; }
+.home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
+.px-start { font-family: var(--f-px); font-weight: 700; font-size: clamp(34px, 9vw, 52px); line-height: 1; color: var(--gold); background: none; border: 0; padding: 8px 14px; min-height: 0;
+  text-shadow: 3px 3px 0 var(--gold-dim); margin-top: 6px; cursor: pointer; transition: transform .1s; }
+.px-start:active { transform: translateY(2px); }
+.px-start:hover:not(:disabled) { color: var(--gold-hi); }
+.px-start .blink { display: inline-block; margin-right: 10px; animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+.timectl { margin: 0; font-size: 13px; color: var(--muted); }
+.home .engine-chip { margin: 0; }
+@media (max-width: 560px) {
+  .carousel { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
+  .ghost { display: none; }
+  .faces { gap: 4px; flex-wrap: nowrap; }
+  .faces button img { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
+
+/* ---------- game ---------- */
+.logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
+.game-title { font-size: 34px; }
+/* The game always fills exactly one screen: portrait stacks players / board / controls,
+   landscape puts the board on the left at full height with players and controls beside it. */
+body.playing { overflow: hidden; padding: 0; }
+.app { position: fixed; inset: 0; display: grid; gap: 10px; overflow: hidden;
+  padding: max(8px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "pbar" "board" "panel"; }
+.app > .pbar { grid-area: pbar; }
+.boardcell { grid-area: board; min-height: 0; min-width: 0; container-type: size; display: grid; place-items: center; }
+canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cqh) - 12px); border-radius: 8px; touch-action: manipulation;
+  box-shadow: 0 0 0 6px var(--wood-dark), 0 18px 34px -20px rgba(0,0,0,.9); cursor: pointer; }
+.app > .panel { grid-area: panel; min-height: 0; overflow-y: auto; }
+@media (min-aspect-ratio: 9/8) {
+  .app { grid-template-columns: minmax(0, 1fr) clamp(280px, 34vw, 400px); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "board pbar" "board panel"; gap: 12px 16px; }
+}
+.ghead { display: none; }
+@media (min-aspect-ratio: 9/8) and (min-height: 620px) { .ghead { display: block; } }
+.app .note { display: none; }
+@media (min-aspect-ratio: 9/8) and (min-height: 760px) { .app .note { display: block; } }
+.pbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: stretch; }
+.player { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: grid;
+  grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "av who" "clk clk"; gap: 6px 10px; align-items: center; min-width: 0; transition: border-color .2s, box-shadow .2s; }
+.player.turn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.player .avbox { grid-area: av; position: relative; width: 48px; height: 48px; }
+.player .avbox .av { width: 48px; height: 48px; }
+.player .avbox .stone { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface); }
+.stone.b { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); }
+.stone.w { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.who { grid-area: who; min-width: 0; }
+.pname { font-weight: 600; font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prank { font-size: 12px; color: var(--accent); }
+.pcap { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.clock { grid-area: clk; display: flex; align-items: baseline; justify-content: space-between; gap: 6px; background: var(--bg); border-radius: 8px; padding: 4px 8px; min-width: 0; }
+.clk { font-family: var(--f-mono); font-weight: 600; font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.byo { font-size: 11px; color: var(--muted); text-align: right; line-height: 1.25; }
+.player.turn .clock { background: #0f262b; }
+.player.low .clk { color: var(--warn); }
+.player.out .clk { color: var(--warn); text-decoration: line-through; }
+.komi { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 4px; color: var(--muted); font-size: 11px; text-align: center; }
+.komi b { font-family: var(--f-mono); font-size: 15px; color: var(--fg); }
+@media (max-height: 520px) and (min-aspect-ratio: 9/8) {
+  .player .avbox, .player .avbox .av { width: 36px; height: 36px; }
+  .player { padding: 6px 8px; gap: 4px 8px; } .clk { font-size: 18px; } .pcap { display: none; }
+  .wr { gap: 2px; } .status { min-height: 0; font-size: 14px; }
+  .clock { flex-direction: column; align-items: flex-start; gap: 0; } .byo { text-align: left; white-space: nowrap; }
+  .quote { padding: 4px 8px; font-size: 13px; } .quote .av { display: none; }
+  .quote span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quote b { display: inline; margin-right: 6px; }
+  .app { gap: 8px 14px; } .panel { gap: 8px; }
+}
+@media (max-width: 420px) {
+  .player { grid-template-columns: auto minmax(0, 1fr); padding: 6px 8px; }
+  .player .avbox, .player .avbox .av { width: 38px; height: 38px; }
+  .clk { font-size: 19px; }
+  .komi { padding: 0; }
+}
+.panel { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.status { min-height: 42px; font-size: 15px; line-height: 1.35; }
+.status b { font-weight: 600; }
+.status .meta { display: block; color: var(--muted); font-size: 12px; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wr { display: flex; flex-direction: column; gap: 6px; }
+.wr-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wr-bar { height: 10px; border-radius: 5px; overflow: hidden; background: #ecebe4; }
+.wr-fill { height: 100%; width: 50%; background: #111; transition: width .5s ease; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.actions.four { grid-template-columns: repeat(4, 1fr); }
+.actions.four button { font-size: 13px; min-height: 36px; padding: 6px 4px; }
+.quote { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; line-height: 1.35; align-items: center; display: flex; gap: 10px; align-items: flex-start; }
+.quote .av { width: 36px; height: 36px; flex: none; }
+.quote b { display: block; font-size: 12px; color: var(--accent); font-weight: 600; }
+.settings { display: flex; flex-direction: column; gap: 10px; }
+.result { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+.result h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 4px; }
+.result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } }
+</style>
+
+</head><body><section class="home" id="home">
+  <div class="logo logo-sm">Baduk Battle</div>
+  <h1 class="px-title">Character Select</h1>
+  <div class="carousel" id="chars"></div>
+  <div class="cinfo" id="pick" aria-live="polite"></div>
+  <div class="faces" id="faces" aria-label="ตัวละครทั้งหมด"></div>
+  <div class="opts">
+    <div class="opt"><span class="opt-l" id="sizeLegend">กระดาน</span>
+      <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
+    <div class="opt"><span class="opt-l">คุณถือ (ดำเดินก่อน)</span>
+      <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
+  </div>
+  <button id="btnNew" class="px-start">GAME START</button>
+  <p class="timectl">15 นาที + เบียวโยมิ 10 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
+  <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
+</section>
+
+<main class="app" id="game" hidden>
+  <div class="pbar">
+    <div class="player" id="pB">
+      <div class="avbox"><span id="avB"></span><span class="stone b" id="sB"></span></div>
+      <div class="who"><div class="pname" id="nB">คุณ</div><div class="prank" id="rkB"></div><div class="pcap" id="cB">หมากเชลย 0</div></div>
+      <div class="clock"><span class="clk" id="clkB">15:00</span><span class="byo" id="byB">เบียวโยมิ 3×10</span></div>
+    </div>
+    <div class="komi">โคมิ<b>7.5</b></div>
+    <div class="player" id="pW">
+      <div class="avbox"><span id="avW"></span><span class="stone w" id="sW"></span></div>
+      <div class="who"><div class="pname" id="nW">AI</div><div class="prank" id="rkW"></div><div class="pcap" id="cW">หมากเชลย 0</div></div>
+      <div class="clock"><span class="clk" id="clkW">15:00</span><span class="byo" id="byW">เบียวโยมิ 3×10</span></div>
+    </div>
+  </div>
+  <section class="boardcell" aria-label="กระดานหมากล้อม"><canvas id="board" width="800" height="800"></canvas></section>
+  <aside class="panel">
+    <div class="ghead">
+      <h1 class="logo game-title">Baduk Battle</h1>
+      <p class="sub" id="sub">กระดาน 19×19 · กติกาจีน · โคมิ 7.5</p>
+      <p class="sub" id="engine">กำลังโหลดสมอง AI…</p>
+    </div>
+    <div class="quote" id="quote" hidden></div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="wr" id="wrBox">
+      <div class="wr-label"><span id="wrB">ดำ 50%</span><span id="wrMid">โอกาสชนะ</span><span id="wrW">ขาว 50%</span></div>
+      <div class="wr-bar"><div class="wr-fill" id="wrFill"></div></div>
+    </div>
+    <div id="result" class="result" hidden></div>
+    <div class="actions">
+      <button id="btnPass">ผ่าน</button>
+      <button id="btnHint">แนะนำ</button>
+      <button id="btnResign" class="danger">ยอมแพ้</button>
+    </div>
+    <div class="settings">
+      <div class="actions four">
+        <button id="btnRestart">เล่นใหม่</button>
+        <button id="btnHome">เปลี่ยนตัว</button>
+        <button id="btnSound">เสียง: เปิด</button>
+        <button id="btnFull">เต็มจอ</button>
+      </div>
+      <p class="note">กดจุดตัดบนกระดานเพื่อวางหมาก เวลาหลัก 15 นาที หมดแล้วเข้าเบียวโยมิ ต้องเดินภายใน 10 วินาที ถ้าเกินจะเสีย 1 ครั้ง เสียครบ 3 ครั้งแพ้เพราะหมดเวลา เมื่อทั้งสองฝ่ายผ่านติดกัน เกมจะนับแต้มแบบพื้นที่ ตอนนับแต้มแตะกลุ่มหมากเพื่อสลับว่าตายหรือไม่</p>
+    </div>
+  </aside>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script>if (!window.tf) document.write('<script src="tf.min.js"><\/script>');</script>
+<script>
+function GoEngine(ctx) {
+  "use strict";
+  const EMPTY = 0, BLACK = 1, WHITE = 2, BORDER = 3, PASS = -1;
+
+  let rs = (Date.now() ^ 0x9e3779b9) | 0 || 12345;
+  function rnd() { rs ^= rs << 13; rs ^= rs >>> 17; rs ^= rs << 5; return rs >>> 0; }
+  function randInt(n) { return rnd() % n; }
+  const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+
+  class Board {
+    constructor(n) {
+      this.n = n; const w = n + 2; this.w = w; const L = w * w; this.L = L;
+      this.color = new Uint8Array(L); this.head = new Int32Array(L); this.nxt = new Int32Array(L);
+      this.plib = new Int32Array(L); this.gsize = new Int32Array(L);
+      this.empt = new Int32Array(L); this.eidx = new Int32Array(L).fill(-1); this.ne = 0;
+      this.mark = new Int32Array(L); this.stamp = 0; this.lib1 = PASS;
+      this.ko = PASS; this.toPlay = BLACK; this.passes = 0; this.last = PASS; this.caps = [0, 0, 0]; this.moveNo = 0;
+      this.dirs = [1, -1, w, -w]; this.diag = [w + 1, w - 1, 1 - w, -1 - w];
+      this.pts = []; this.line = new Uint8Array(L);
+      for (let y = 0; y < w; y++) for (let x = 0; x < w; x++) {
+        const p = y * w + x;
+        if (x === 0 || y === 0 || x === w - 1 || y === w - 1) this.color[p] = BORDER;
+        else {
+          this.pts.push(p); this.eidx[p] = this.ne; this.empt[this.ne++] = p;
+          this.line[p] = Math.min(x, y, n + 1 - x, n + 1 - y);
+        }
+      }
+    }
+    copyFrom(b) {
+      this.color.set(b.color); this.head.set(b.head); this.nxt.set(b.nxt); this.plib.set(b.plib);
+      this.gsize.set(b.gsize); this.empt.set(b.empt); this.eidx.set(b.eidx); this.ne = b.ne;
+      this.ko = b.ko; this.toPlay = b.toPlay; this.passes = b.passes; this.last = b.last; this.moveNo = b.moveNo;
+      this.caps[1] = b.caps[1]; this.caps[2] = b.caps[2];
+    }
+    pt(x, y) { return (y + 1) * this.w + x + 1; }
+    xy(p) { return [(p % this.w) - 1, ((p / this.w) | 0) - 1]; }
+    remEmpty(p) { const i = this.eidx[p], q = this.empt[--this.ne]; this.empt[i] = q; this.eidx[q] = i; this.eidx[p] = -1; }
+    addEmpty(p) { this.eidx[p] = this.ne; this.empt[this.ne++] = p; }
+    // number of p's neighbours belonging to group h
+    adj(p, h) {
+      let k = 0; const col = this.color, hd = this.head;
+      for (let i = 0; i < 4; i++) { const q = p + this.dirs[i]; const c = col[q]; if ((c === BLACK || c === WHITE) && hd[q] === h) k++; }
+      return k;
+    }
+    isLegal(p, c) {
+      if (p === PASS) return true;
+      const col = this.color;
+      if (col[p] !== EMPTY || p === this.ko) return false;
+      const d = this.dirs;
+      for (let i = 0; i < 4; i++) if (col[p + d[i]] === EMPTY) return true;
+      const o = 3 - c;
+      for (let i = 0; i < 4; i++) {
+        const q = p + d[i], cq = col[q];
+        if (cq === c) { const h = this.head[q]; if (this.plib[h] > this.adj(p, h)) return true; }
+        else if (cq === o) { const h = this.head[q]; if (this.plib[h] === this.adj(p, h)) return true; }
+      }
+      return false;
+    }
+    // would playing p capture something?
+    captures(p, c) {
+      const o = 3 - c;
+      for (let i = 0; i < 4; i++) {
+        const q = p + this.dirs[i];
+        if (this.color[q] === o) { const h = this.head[q]; if (this.plib[h] === this.adj(p, h)) return true; }
+      }
+      return false;
+    }
+    isEye(p, c) {
+      const col = this.color;
+      for (let i = 0; i < 4; i++) { const cq = col[p + this.dirs[i]]; if (cq !== c && cq !== BORDER) return false; }
+      let bad = 0, edge = 0; const o = 3 - c;
+      for (let i = 0; i < 4; i++) { const cq = col[p + this.diag[i]]; if (cq === BORDER) edge = 1; else if (cq === o) bad++; }
+      return edge ? bad === 0 : bad < 2;
+    }
+    // distinct liberties of group h, stops counting at max; sets lib1 to one of them
+    libs(h, max) {
+      const st = ++this.stamp, mk = this.mark, col = this.color, nx = this.nxt, d = this.dirs;
+      let n = 0, s = h;
+      do {
+        for (let i = 0; i < 4; i++) {
+          const q = s + d[i];
+          if (col[q] === EMPTY && mk[q] !== st) { mk[q] = st; this.lib1 = q; if (++n >= max) return n; }
+        }
+        s = nx[s];
+      } while (s !== h);
+      return n;
+    }
+    // liberties a stone of colour c at p would have (approx, distinct, up to max) - used to avoid self-atari
+    libsAfter(p, c, max) {
+      const st = ++this.stamp, mk = this.mark, col = this.color, d = this.dirs;
+      mk[p] = st; let n = 0;
+      for (let i = 0; i < 4; i++) {
+        const q = p + d[i], cq = col[q];
+        if (cq === EMPTY) { if (mk[q] !== st) { mk[q] = st; if (++n >= max) return n; } }
+        else if (cq === c) {
+          const h = this.head[q]; let s = h;
+          do {
+            for (let j = 0; j < 4; j++) { const r = s + d[j]; if (col[r] === EMPTY && mk[r] !== st) { mk[r] = st; if (++n >= max) return n; } }
+            s = this.nxt[s];
+          } while (s !== h);
+        } else if (cq === 3 - c) {
+          const h = this.head[q];
+          if (this.plib[h] === this.adj(p, h)) return max; // captures: fine
+        }
+      }
+      return n;
+    }
+    merge(a, b) {
+      if (this.gsize[a] < this.gsize[b]) { const t = a; a = b; b = t; }
+      const hd = this.head; let s = b;
+      do { hd[s] = a; s = this.nxt[s]; } while (s !== b);
+      const t = this.nxt[a]; this.nxt[a] = this.nxt[b]; this.nxt[b] = t;
+      this.plib[a] += this.plib[b]; this.gsize[a] += this.gsize[b];
+      return a;
+    }
+    removeGroup(h) {
+      const col = this.color, nx = this.nxt, d = this.dirs; let s = h;
+      do { col[s] = EMPTY; this.addEmpty(s); s = nx[s]; } while (s !== h);
+      s = h;
+      do {
+        for (let i = 0; i < 4; i++) { const q = s + d[i], cq = col[q]; if (cq === BLACK || cq === WHITE) this.plib[this.head[q]]++; }
+        s = nx[s];
+      } while (s !== h);
+    }
+    play(p) {
+      const c = this.toPlay, o = 3 - c;
+      this.last = p; this.toPlay = o; this.moveNo++;
+      if (p === PASS) { this.passes++; this.ko = PASS; return; }
+      this.passes = 0;
+      const col = this.color, hd = this.head, pl = this.plib, d = this.dirs;
+      col[p] = c; this.remEmpty(p); hd[p] = p; this.nxt[p] = p; this.gsize[p] = 1;
+      let lib = 0;
+      for (let i = 0; i < 4; i++) { const q = p + d[i], cq = col[q]; if (cq === EMPTY) lib++; else if (cq !== BORDER) pl[hd[q]]--; }
+      pl[p] = lib;
+      let g = p;
+      for (let i = 0; i < 4; i++) { const q = p + d[i]; if (col[q] === c && hd[q] !== g) g = this.merge(g, hd[q]); }
+      let captured = 0, capPos = PASS;
+      for (let i = 0; i < 4; i++) {
+        const q = p + d[i];
+        if (col[q] === o && pl[hd[q]] === 0) { captured += this.gsize[hd[q]]; capPos = q; this.removeGroup(hd[q]); }
+      }
+      this.caps[c] += captured;
+      g = hd[p];
+      this.ko = (captured === 1 && this.gsize[g] === 1 && pl[g] === 1) ? capPos : PASS;
+    }
+    areaScore(komi) {
+      let s = 0; const col = this.color, d = this.dirs;
+      for (const p of this.pts) {
+        const c = col[p];
+        if (c === BLACK) s++; else if (c === WHITE) s--;
+        else {
+          let b = 0, w = 0;
+          for (let i = 0; i < 4; i++) { const cq = col[p + d[i]]; if (cq === BLACK) b = 1; else if (cq === WHITE) w = 1; }
+          if (b && !w) s++; else if (w && !b) s--;
+        }
+      }
+      return s - komi;
+    }
+  }
+
+  // ---------- playout policy ----------
+  const near = [0, 0, 0, 0, 0];
+  function policyMove(b, c) {
+    const L = b.last, o = 3 - c, col = b.color;
+    if (L !== PASS) {
+      near[0] = L; near[1] = L + 1; near[2] = L - 1; near[3] = L + b.w; near[4] = L - b.w;
+      // capture the opponent stones next to the last move if in atari
+      for (let i = 0; i < 5; i++) {
+        const q = near[i];
+        if (col[q] === o && b.libs(b.head[q], 2) === 1) { const m = b.lib1; if (b.isLegal(m, c)) return m; }
+      }
+      // save own group put in atari by the last move
+      for (let i = 1; i < 5; i++) {
+        const q = near[i];
+        if (col[q] === c && b.libs(b.head[q], 2) === 1) {
+          const m = b.lib1;
+          if (b.isLegal(m, c) && b.libsAfter(m, c, 3) >= 3) return m;
+        }
+      }
+    }
+    const ne = b.ne; if (ne === 0) return PASS;
+    let i = randInt(ne);
+    for (let k = 0; k < ne; k++) {
+      const p = b.empt[i];
+      if (!b.isEye(p, c) && b.isLegal(p, c)) {
+        // reject most self-ataris of more than one stone
+        if (b.libsAfter(p, c, 2) >= 2 || (rnd() & 7) === 0) return p;
+      }
+      if (++i === ne) i = 0;
+    }
+    // fallback: any non-eye legal move
+    for (let k = 0; k < ne; k++) { const p = b.empt[k]; if (!b.isEye(p, c) && b.isLegal(p, c)) return p; }
+    return PASS;
+  }
+
+  function playout(b, maxMoves, seqM, seqC, sl) {
+    let moves = 0;
+    while (b.passes < 2 && moves < maxMoves) {
+      const c = b.toPlay, p = policyMove(b, c);
+      if (p !== PASS) { seqM[sl] = p; seqC[sl] = c; sl++; }
+      b.play(p); moves++;
+    }
+    return sl;
+  }
+
+  // ---------- MCTS with RAVE ----------
+  function Node(move, toPlay) { this.move = move; this.toPlay = toPlay; this.N = 0; this.W = 0; this.aN = 0; this.aW = 0; this.children = null; }
+
+  function expand(node, b) {
+    const c = b.toPlay, ch = [], n = b.n, early = b.moveNo < n * n / 8, L = b.last;
+    let lx = -99, ly = -99; if (L !== PASS) [lx, ly] = b.xy(L);
+    for (const p of b.pts) {
+      if (b.color[p] !== EMPTY || b.isEye(p, c) || !b.isLegal(p, c)) continue;
+      const nd = new Node(p, 3 - c);
+      let pw = 10; const line = b.line[p];
+      if (n >= 9) {
+        if (line === 1) pw = early ? 2 : 5;
+        else if (line === 2) pw = early ? 6 : 9;
+        else if (early && n >= 13 && (line === 3 || line === 4)) pw = 13;
+      }
+      if (b.captures(p, c)) pw = 17;
+      else if (b.libsAfter(p, c, 2) < 2) pw = 3;
+      if (L !== PASS) { const [x, y] = b.xy(p); if (Math.abs(x - lx) + Math.abs(y - ly) <= 2) pw += 2; }
+      nd.aN = 20; nd.aW = pw;
+      ch.push(nd);
+    }
+    node.children = ch;
+  }
+
+  const B2 = 4 * 0.03 * 0.03, CEXP = 0.08;
+  function select(node) {
+    let best = null, bv = -1; const ln = Math.log(node.N + 1);
+    const ch = node.children;
+    for (let i = 0; i < ch.length; i++) {
+      const c = ch[i]; const aq = c.aW / c.aN; let v;
+      if (c.N === 0) v = aq + CEXP * Math.sqrt(ln);
+      else {
+        const beta = c.aN / (c.aN + c.N + c.aN * c.N * B2);
+        v = (1 - beta) * (c.W / c.N) + beta * aq + CEXP * Math.sqrt(ln / c.N);
+      }
+      if (v > bv) { bv = v; best = c; }
+    }
+    return best;
+  }
+
+  function search(root, rb, timeMs, komi, onProgress, maxIt) {
+    const n = rb.n, L = rb.L, b = new Board(n);
+    const seqM = new Int32Array(n * n * 4 + 16), seqC = new Uint8Array(n * n * 4 + 16);
+    const mapS = new Int32Array(L), mapC = new Uint8Array(L);
+    const EXP = n <= 9 ? 2 : 4, maxMoves = n * n * 3;
+    if (!root.children) expand(root, rb);
+    const t0 = now(); let tp = t0, it = 0;
+    if (root.children.length === 0) return 0;
+    while (true) {
+      if ((it & 31) === 0) {
+        const t = now();
+        if (t - t0 > timeMs || (maxIt && it >= maxIt)) break;
+        if (onProgress && t - tp > 250) { tp = t; onProgress(root, it); }
+      }
+      it++;
+      b.copyFrom(rb);
+      let node = root; const path = [root]; let sl = 0;
+      while (node.children !== null && node.children.length > 0) {
+        const ch = select(node); seqM[sl] = ch.move; seqC[sl] = b.toPlay; sl++;
+        b.play(ch.move); node = ch; path.push(ch);
+      }
+      if (node.children === null && b.passes < 2 && node.N >= EXP) {
+        expand(node, b);
+        if (node.children.length) {
+          const ch = select(node); seqM[sl] = ch.move; seqC[sl] = b.toPlay; sl++;
+          b.play(ch.move); node = ch; path.push(ch);
+        }
+      }
+      sl = playout(b, maxMoves, seqM, seqC, sl);
+      const winner = b.areaScore(komi) > 0 ? BLACK : WHITE;
+      let idx = sl;
+      for (let d = path.length - 1; d >= 0; d--) {
+        const nd = path[d];
+        nd.N++; if (winner !== nd.toPlay) nd.W++;
+        while (idx > d) { idx--; mapS[seqM[idx]] = it; mapC[seqM[idx]] = seqC[idx]; }
+        const chs = nd.children;
+        if (chs) {
+          const tp2 = nd.toPlay, win = winner === tp2 ? 1 : 0;
+          for (let i = 0; i < chs.length; i++) { const c = chs[i], m = c.move; if (mapS[m] === it && mapC[m] === tp2) { c.aN++; c.aW += win; } }
+        }
+      }
+    }
+    return it;
+  }
+
+  function bestChild(root) {
+    let best = null;
+    for (const c of root.children) if (!best || c.N > best.N) best = c;
+    return best;
+  }
+
+  function topMoves(root, k) {
+    return root.children.filter(c => c.N > 0).sort((a, b) => b.N - a.N).slice(0, k)
+      .map(c => ({ move: c.move, visits: c.N, winrate: c.W / c.N }));
+  }
+
+  function ownership(rb, timeMs, komi) {
+    const n = rb.n, b = new Board(n), own = new Float32Array(rb.L);
+    const seqM = new Int32Array(n * n * 4 + 16), seqC = new Uint8Array(n * n * 4 + 16);
+    const t0 = now(); let cnt = 0, sum = 0, bw = 0; const d = rb.dirs;
+    while (cnt < 64 || now() - t0 < timeMs) {
+      b.copyFrom(rb); playout(b, n * n * 3, seqM, seqC, 0);
+      for (const p of b.pts) {
+        const c = b.color[p];
+        if (c === BLACK) own[p]++; else if (c === WHITE) own[p]--;
+        else {
+          let bl = 0, wh = 0;
+          for (let i = 0; i < 4; i++) { const cq = b.color[p + d[i]]; if (cq === BLACK) bl = 1; else if (cq === WHITE) wh = 1; }
+          if (bl && !wh) own[p]++; else if (wh && !bl) own[p]--;
+        }
+      }
+      const s = b.areaScore(komi); sum += s; if (s > 0) bw++;
+      cnt++;
+      if (cnt >= 20000) break;
+    }
+    const out = [];
+    for (const p of rb.pts) out.push(own[p] / cnt);
+    return { own: out, score: sum / cnt, blackWin: bw / cnt, playouts: cnt };
+  }
+
+  function handle(msg, post) {
+    const { id, kind, n, komi, moves, time } = msg;
+    const b = new Board(n);
+    for (const m of moves) b.play(m);
+    if (kind === "own") { const r = ownership(b, time, komi); post({ id, kind: "own", own: r.own, score: r.score, blackWin: r.blackWin }); return; }
+    const c = b.toPlay;
+    // Opponent passed: pass too if we are ahead once the game is played out.
+    if (b.last === PASS && moves.length > 0) {
+      const r = ownership(b, Math.min(time, 1200), komi);
+      const myWin = c === BLACK ? r.blackWin : 1 - r.blackWin;
+      if (myWin > 0.6) { post({ id, kind: "move", move: PASS, winrate: myWin, playouts: r.playouts, top: [] }); return; }
+    }
+    const root = new Node(PASS, c);
+    const report = (rt, it) => {
+      const bc = bestChild(rt);
+      post({ id, kind: "progress", playouts: it, winrate: bc && bc.N ? bc.W / bc.N : 0.5, best: bc ? bc.move : PASS });
+    };
+    const it = search(root, b, time, komi, msg.progress ? report : null);
+    if (!root.children.length) { post({ id, kind: "move", move: PASS, winrate: 0.5, playouts: 0, top: [] }); return; }
+    const bc = bestChild(root); const wr = bc.W / Math.max(1, bc.N);
+    const resign = msg.allowResign && wr < 0.04 && b.moveNo > n * n / 3 && it > 2000;
+    post({ id, kind: "move", move: bc.move, winrate: wr, playouts: it, resign, top: topMoves(root, 5) });
+  }
+
+  if (ctx) ctx.onmessage = e => handle(e.data, m => ctx.postMessage(m));
+  return { Board, handle, search, ownership, Node, bestChild, PASS, EMPTY, BLACK, WHITE, BORDER };
+}
+
+// KataGo V7 input features (22 spatial planes, 19 global), ported from KataGo's NNInputs::fillRowV7
+// for Chinese-style rules: area scoring, simple ko, no suicide, no tax, no encore.
+// Uses the Board class from GoEngine. Buffer is always 19x19, smaller boards sit in the top-left corner.
+function GoFeatures(E) {
+  "use strict";
+  const { Board, PASS, EMPTY, BLACK, WHITE } = E;
+  const NN = 19, AREA = NN * NN, NSP = 22, NGL = 19;
+
+  // ---------- ladders ----------
+  const LADDER_BUDGET = 25000;
+  function makeLadderSolver(n) {
+    const pool = [];
+    let nodes = 0, maxDepth = 0;
+    function boardAt(d) { while (pool.length <= d) pool.push(new Board(n)); return pool[d]; }
+    function chainLibs(b, p) {
+      const h = b.head[p], out = [], st = ++b.stamp, mk = b.mark;
+      let s = h;
+      do {
+        for (const d of b.dirs) { const q = s + d; if (b.color[q] === EMPTY && mk[q] !== st) { mk[q] = st; out.push(q); } }
+        s = b.nxt[s];
+      } while (s !== h);
+      return out;
+    }
+    // opponent chains next to the defender chain that are in atari: capturing them gains liberties
+    function captureMoves(b, p) {
+      const h = b.head[p], c = b.color[p], o = 3 - c, out = [];
+      const seenHeads = [];
+      let s = h;
+      do {
+        for (const d of b.dirs) {
+          const q = s + d;
+          if (b.color[q] === o) {
+            const oh = b.head[q];
+            if (seenHeads.indexOf(oh) < 0) {
+              seenHeads.push(oh);
+              if (b.libs(oh, 2) === 1 && out.indexOf(b.lib1) < 0) out.push(b.lib1);
+            }
+          }
+        }
+        s = b.nxt[s];
+      } while (s !== h);
+      return out;
+    }
+    function search(b, p, isDefender, depth) {
+      if (++nodes > LADDER_BUDGET) throw "budget";
+      if (depth >= maxDepth) return true;
+      const libs = b.libs(b.head[p], 3);
+      if (!isDefender) { if (libs <= 1) return true; if (libs >= 3) return false; }
+      else { if (libs >= 2) return false; if (b.ko !== PASS) return false; }
+      const defC = b.color[p], mover = isDefender ? defC : 3 - defC;
+      let moves;
+      if (isDefender) { moves = captureMoves(b, p); for (const l of chainLibs(b, p)) if (moves.indexOf(l) < 0) moves.push(l); }
+      else moves = chainLibs(b, p);
+      for (const m of moves) {
+        if (!b.isLegal(m, mover)) continue;
+        const nb = boardAt(depth + 1); nb.copyFrom(b); nb.toPlay = mover; nb.play(m);
+        const r = search(nb, p, !isDefender, depth + 1);
+        if (isDefender && !r) return false;
+        if (!isDefender && r) return true;
+      }
+      return isDefender;
+    }
+    function run(b, p, defenderFirst) {
+      const root = boardAt(0); root.copyFrom(b);
+      if (defenderFirst) root.ko = PASS;
+      try { return search(root, p, defenderFirst, 0); } catch (e) { if (e === "budget") return false; throw e; }
+    }
+    // returns null if not laddered, else array of working attacker moves (empty for 1-liberty chains)
+    return function laddered(b, p, libs) {
+      nodes = 0; maxDepth = Math.floor(n * n * 3 / 2);
+      if (libs === 1) return run(b, p, true) ? [] : null;
+      const c = b.color[p], o = 3 - c, working = [];
+      const two = chainLibs(b, p);
+      const tmp = new Board(n);
+      for (const m of two) {
+        if (!b.isLegal(m, o)) continue;
+        tmp.copyFrom(b); tmp.toPlay = o; tmp.play(m);
+        nodes = 0;
+        if (run(tmp, p, true)) working.push(m);
+      }
+      return working.length ? working : null;
+    };
+  }
+
+  function iterLadders(b, laddered, f) {
+    const solved = new Map();
+    for (const p of b.pts) {
+      const c = b.color[p];
+      if (c !== BLACK && c !== WHITE) continue;
+      const libs = b.libs(b.head[p], 3);
+      if (libs !== 1 && libs !== 2) continue;
+      const h = b.head[p];
+      if (solved.has(h)) { if (solved.get(h)) f(p, []); continue; }
+      const w = laddered(b, p, libs);
+      solved.set(h, w !== null);
+      if (w !== null) f(p, w);
+    }
+  }
+
+  function nnPos(b, p) { const [x, y] = b.xy(p); return y * NN + x; }
+
+  // moves: list of board points / PASS from the empty board, black first. komi from white's view.
+  function featurize(n, moves, komi, out, pda) {
+    const spatial = out ? out.spatial : new Float32Array(NSP * AREA);
+    const glob = out ? out.global : new Float32Array(NGL);
+    spatial.fill(0); glob.fill(0);
+    // boards after moves.length, -1, -2
+    const L = moves.length;
+    const boards = [null, null, null];
+    const b = new Board(n);
+    for (let i = 0; i <= L; i++) {
+      const back = L - i;
+      if (back <= 2) { const c = new Board(n); c.copyFrom(b); boards[2 - back] = c; }
+      if (i < L) b.play(moves[i]);
+    }
+    const cur = boards[2];
+    const pla = cur.toPlay, opp = 3 - pla;
+    const set = (pos, ch) => { spatial[ch * AREA + pos] = 1; };
+
+    for (const p of cur.pts) {
+      const pos = nnPos(cur, p);
+      set(pos, 0);
+      const c = cur.color[p];
+      if (c === pla) set(pos, 1); else if (c === opp) set(pos, 2);
+      if (c === pla || c === opp) {
+        const libs = cur.libs(cur.head[p], 4);
+        if (libs === 1) set(pos, 3); else if (libs === 2) set(pos, 4); else if (libs === 3) set(pos, 5);
+      }
+    }
+    if (cur.ko !== PASS) set(nnPos(cur, cur.ko), 6);
+
+    // area: stones plus empty regions bordered by a single colour
+    let areaScore = 0;
+    const seen = new Uint8Array(cur.L);
+    for (const p of cur.pts) {
+      const c = cur.color[p];
+      if (c === BLACK || c === WHITE) { set(nnPos(cur, p), c === pla ? 18 : 19); areaScore += c === pla ? 1 : -1; continue; }
+      if (seen[p]) continue;
+      const region = [p]; seen[p] = 1; let bb = false, ww = false;
+      for (let i = 0; i < region.length; i++) for (const d of cur.dirs) {
+        const q = region[i] + d, cq = cur.color[q];
+        if (cq === BLACK) bb = true; else if (cq === WHITE) ww = true;
+        else if (cq === EMPTY && !seen[q]) { seen[q] = 1; region.push(q); }
+      }
+      const owner = bb && !ww ? BLACK : ww && !bb ? WHITE : 0;
+      if (owner) for (const q of region) { set(nnPos(cur, q), owner === pla ? 18 : 19); areaScore += owner === pla ? 1 : -1; }
+    }
+
+    // move history
+    const hist = Math.min(5, L);
+    for (let k = 0; k < hist; k++) {
+      const m = moves[L - 1 - k];
+      if (m === PASS) glob[k] = 1; else set(nnPos(cur, m), 9 + k);
+    }
+
+    // ladders
+    const laddered = makeLadderSolver(n);
+    iterLadders(cur, laddered, (p, working) => {
+      set(nnPos(cur, p), 14);
+      if (cur.color[p] === opp && cur.libs(cur.head[p], 2) > 1) for (const w of working) set(nnPos(cur, w), 17);
+    });
+    const prev = hist < 1 ? cur : boards[1];
+    iterLadders(prev, laddered, p => set(nnPos(prev, p), 15));
+    const prev2 = hist < 2 ? prev : boards[0];
+    iterLadders(prev2, laddered, p => set(nnPos(prev2, p), 16));
+
+    // globals
+    let selfKomi = pla === WHITE ? komi : -komi;
+    const bArea = n * n;
+    selfKomi = Math.max(-bArea - 20, Math.min(bArea + 20, selfKomi));
+    glob[5] = selfKomi / 20;
+    glob[14] = L > 0 && moves[L - 1] === PASS ? 1 : 0;
+    // playout doubling advantage: >0 plays as if stronger than the opponent (sharper), <0 more cautious
+    if (pda) { glob[15] = 1; glob[16] = 0.5 * pda; }
+    const even = (n * n) % 2 === 0;
+    const komiFloor = even ? Math.floor(selfKomi / 2) * 2 : Math.floor((selfKomi - 1) / 2) * 2 + 1;
+    let delta = Math.max(0, Math.min(2, selfKomi - komiFloor));
+    glob[18] = delta < 0.5 ? delta : delta < 1.5 ? 1 - delta : delta - 2;
+    return { spatial, global: glob, pla, board: cur };
+  }
+
+  return { featurize, NN, AREA, NSP, NGL };
+}
+
+// KataGo residual network (model versions 8-10) evaluated with TensorFlow.js, NHWC layout.
+function GoTFNet(tf) {
+  "use strict";
+  function halfToFloat(u16) {
+    const out = new Float32Array(u16.length);
+    for (let i = 0; i < u16.length; i++) {
+      const h = u16[i], s = h & 0x8000 ? -1 : 1, e = (h >> 10) & 0x1f, f = h & 0x3ff;
+      out[i] = e === 0 ? s * f * 5.960464477539063e-8 : e === 31 ? (f ? NaN : s * Infinity) : s * (1 + f / 1024) * Math.pow(2, e - 15);
+    }
+    return out;
+  }
+
+  // meta: parsed JSON layout, buf: ArrayBuffer of float16 weights
+  function build(meta, buf) {
+    const all = halfToFloat(new Uint16Array(buf));
+    const W = {};
+    for (const t of meta.tensors) {
+      const size = t.shape.reduce((a, b) => a * b, 1);
+      W[t.name] = tf.tensor(all.subarray(t.offset, t.offset + size), t.shape, "float32");
+    }
+    const conv = (x, name) => tf.conv2d(x, W[name], 1, "same");
+    const bnAct = (x, name, mask, act = true) => {
+      let y = tf.add(tf.mul(x, W[name + ".s"]), W[name + ".b"]);
+      if (act) y = tf.relu(y);
+      return tf.mul(y, mask);
+    };
+    const asBias = v => tf.expandDims(tf.expandDims(v, 1), 1);
+
+    // spatial: [N,19,19,22] float32, global: [N,19]
+    function forward(spatial, global) {
+      return tf.tidy(() => {
+        const mask = tf.slice(spatial, [0, 0, 0, 0], [-1, -1, -1, 1]);
+        const maskSum = tf.sum(mask, [1, 2]);            // [N,1]
+        const f14 = tf.mul(tf.sub(tf.sqrt(maskSum), 14), 0.1);
+        const f14sq = tf.sub(tf.mul(f14, f14), 0.1);
+        const maskM1 = tf.sub(mask, 1);
+        const gpool = (x, valueHead) => {
+          const mean = tf.div(tf.sum(x, [1, 2]), maskSum);
+          const third = valueHead ? tf.mul(mean, f14sq) : tf.max(tf.add(x, maskM1), [1, 2]);
+          return tf.concat([mean, tf.mul(mean, f14), third], 1);
+        };
+        let x = tf.add(conv(spatial, "init.conv"), asBias(tf.matMul(global, W["init.mm"])));
+        meta.blocks.forEach((kind, i) => {
+          const p = "b" + i + ".";
+          const o = bnAct(x, p + "pre", mask);
+          let a = conv(o, p + "conv1");
+          if (kind === "gpool_block") {
+            const g = bnAct(conv(o, p + "gconv"), p + "gbn", mask);
+            a = tf.add(a, asBias(tf.matMul(gpool(g, false), W[p + "gmm"])));
+          }
+          a = bnAct(a, p + "mid", mask);
+          x = tf.add(x, conv(a, p + "conv2"));
+        });
+        const trunk = bnAct(x, "tip", mask);
+        const g1 = bnAct(conv(trunk, "p.g1"), "p.g1bn", mask);
+        const pooled = gpool(g1, false);
+        let p1 = tf.add(conv(trunk, "p.p1"), asBias(tf.matMul(pooled, W["p.gmm"])));
+        p1 = bnAct(p1, "p.p1bn", mask);
+        let p2 = conv(p1, "p.p2");
+        p2 = tf.add(tf.mul(p2, mask), tf.mul(maskM1, 5000));
+        const n = spatial.shape[0];
+        const policy = tf.concat([tf.reshape(p2, [n, 361]), tf.matMul(pooled, W["p.pass"])], 1);
+        const v1 = bnAct(conv(trunk, "v.v1"), "v.v1bn", mask);
+        const v2 = tf.relu(tf.add(tf.matMul(gpool(v1, true), W["v.v2"]), W["v.v2b"]));
+        const value = tf.add(tf.matMul(v2, W["v.v3"]), W["v.v3b"]);
+        const score = tf.add(tf.matMul(v2, W["v.sv3"]), W["v.sv3b"]);
+        const own = tf.reshape(tf.tanh(tf.mul(conv(v1, "v.own"), mask)), [n, 361]);
+        return [policy, value, score, own];
+      });
+    }
+
+    // inputs in KataGo NCHW order (22*361 per position); returns plain arrays per position
+    async function run(batch) {
+      const n = batch.length;
+      const sp = new Float32Array(n * 361 * 22), gl = new Float32Array(n * 19);
+      batch.forEach((b, k) => {
+        const s = b.spatial, base = k * 361 * 22;
+        for (let c = 0; c < 22; c++) { const off = c * 361; for (let i = 0; i < 361; i++) sp[base + i * 22 + c] = s[off + i]; }
+        gl.set(b.global, k * 19);
+      });
+      const tsp = tf.tensor4d(sp, [n, 19, 19, 22]), tgl = tf.tensor2d(gl, [n, 19]);
+      const outs = forward(tsp, tgl);
+      tsp.dispose(); tgl.dispose();
+      const data = await Promise.all(outs.map(t => t.data()));
+      outs.forEach(t => t.dispose());
+      const res = [];
+      for (let k = 0; k < n; k++) res.push({
+        policy: data[0].subarray(k * 362, k * 362 + 362), value: data[1].subarray(k * 3, k * 3 + 3),
+        score: data[2].subarray(k * 4, k * 4 + 4), own: data[3].subarray(k * 361, k * 361 + 361)
+      });
+      return res;
+    }
+    return { run, forward, name: meta.name };
+  }
+  return { build };
+}
+
+// Neural-net guided MCTS (PUCT with batched leaf evaluation) on top of a KataGo network.
+// net.run(batch of {spatial, global}) -> [{policy(362 logits), value(3 logits), score, own}]
+function GoNNAI(E, F, net) {
+  "use strict";
+  const { Board, PASS } = E;
+  const AREA = F.AREA;
+  const cache = new Map();
+  const CACHE_MAX = 30000;
+
+  function softmaxMasked(logits, legal, temp) {
+    let mx = -Infinity;
+    for (let i = 0; i < legal.length; i++) if (legal[i] && logits[i] > mx) mx = logits[i];
+    const p = new Float32Array(legal.length); let s = 0;
+    for (let i = 0; i < legal.length; i++) if (legal[i]) { p[i] = Math.exp((logits[i] - mx) / temp); s += p[i]; }
+    for (let i = 0; i < p.length; i++) p[i] /= s;
+    return p;
+  }
+  const keyOf = (n, moves, komi, pda) => n + ":" + komi + ":" + (pda || 0) + ":" + moves.join(",");
+
+  // Evaluate several positions at once; values are from the view of the player to move.
+  // pdaFor(moves) gives the playout-doubling-advantage input for the player to move in that position
+  async function evalMany(n, list, komi, pdaFor) {
+    const out = new Array(list.length), todo = [], feats = [];
+    list.forEach((moves, i) => {
+      const pda = pdaFor ? pdaFor(moves) : 0;
+      const hit = cache.get(keyOf(n, moves, komi, pda));
+      if (hit) out[i] = hit; else { todo.push(i); feats.push(F.featurize(n, moves, komi, null, pda)); }
+    });
+    if (todo.length) {
+      const res = await net.run(feats);
+      todo.forEach((i, k) => {
+        const f = feats[k], r = res[k], b = f.board, legal = new Uint8Array(AREA + 1);
+        for (const p of b.pts) if (b.isLegal(p, b.toPlay)) { const [x, y] = b.xy(p); legal[y * 19 + x] = 1; }
+        legal[AREA] = 1;
+        const logits = Float32Array.from(r.policy);
+        const v = r.value, m = Math.max(v[0], v[1], v[2]);
+        const ew = Math.exp(v[0] - m), el = Math.exp(v[1] - m), en = Math.exp(v[2] - m), es = ew + el + en;
+        const ev = {
+          policy: softmaxMasked(logits, legal, 1), logits, legal, win: ew / es, loss: el / es,
+          scoreMean: r.score[0] * 20, lead: r.score[2] * 20, own: Float32Array.from(r.own), pla: b.toPlay
+        };
+        if (cache.size > CACHE_MAX) cache.clear();
+        cache.set(keyOf(n, list[i], komi, pdaFor ? pdaFor(list[i]) : 0), ev);
+        out[i] = ev;
+      });
+    }
+    return out;
+  }
+  async function evaluate(n, moves, komi, pdaFor) { return (await evalMany(n, [moves], komi, pdaFor))[0]; }
+
+  function Node() { this.N = 0; this.W = 0; this.vl = 0; this.slots = null; this.priors = null; this.kids = null; this.pending = false; }
+  function expandFrom(node, ev) {
+    const slots = [], pri = [];
+    for (let i = 0; i <= AREA; i++) if (ev.legal[i] && ev.policy[i] > 1e-5) { slots.push(i); pri.push(ev.policy[i]); }
+    node.slots = Int16Array.from(slots); node.priors = Float32Array.from(pri); node.kids = new Array(slots.length).fill(null);
+  }
+
+  const CPUCT = 1.1, FPU = 0.2;
+  function selectChild(node) {
+    const sq = Math.sqrt(Math.max(1, node.N + node.vl));
+    const parentQ = node.N > 0 ? node.W / node.N : 0;
+    let visitedP = 0;
+    for (let i = 0; i < node.kids.length; i++) { const k = node.kids[i]; if (k && k.N + k.vl > 0) visitedP += node.priors[i]; }
+    const fpu = parentQ - FPU * Math.sqrt(visitedP);
+    let best = -1, bv = -Infinity;
+    for (let i = 0; i < node.kids.length; i++) {
+      const k = node.kids[i];
+      const n = k ? k.N + k.vl : 0;
+      // child W is from the child's player-to-move view, so negate; virtual losses count against the parent
+      const q = n > 0 ? (-k.W - k.vl) / n : fpu;
+      const v = q + CPUCT * node.priors[i] * sq / (1 + n);
+      if (v > bv) { bv = v; best = i; }
+    }
+    return best;
+  }
+
+  function terminalValue(n, moves, komi, sw) {
+    const b = new Board(n); for (const m of moves) b.play(m);
+    const v = (b.areaScore(komi) > 0 ? 1 : -1) * (1 + sw);
+    return b.toPlay === E.BLACK ? v : -v;
+  }
+  const slotToPoint = (b, slot) => slot === AREA ? PASS : b.pt(slot % 19, (slot / 19) | 0);
+
+  // opts: visits, timeMs, batch, onProgress(info), temperature (weak levels play from the raw policy)
+  async function think(n, moves, komi, opts) {
+    opts = opts || {};
+    const maxVisits = opts.visits || 100, timeMs = opts.timeMs || 1e9, B = opts.batch || 8;
+    const t0 = Date.now(), base = new Board(n);
+    // style: pda > 0 plays sharper (as if stronger than the opponent), < 0 safer; sw rewards bigger margins
+    const pdaVal = opts.pda || 0, sw = opts.scoreWeight || 0;
+    const rootParity = moves.length % 2;
+    const pdaFor = pdaVal ? (ms => ms.length % 2 === rootParity ? pdaVal : -pdaVal) : null;
+    const util = ev => ev.win - ev.loss + sw * (2 / Math.PI) * Math.atan(ev.lead / 15);
+    const root = new Node();
+    const rootEv = await evaluate(n, moves, komi, pdaFor);
+    expandFrom(root, rootEv);
+    root.N = 1; root.W = util(rootEv);
+    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0); return s; }
+    let lastReport = 0;
+    while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
+      if (opts.shouldStop && opts.shouldStop()) break;
+      const want = Math.min(B, maxVisits - (root.N - 1));
+      const leaves = [];
+      for (let k = 0; k < want; k++) {
+        let node = root; const path = [root]; const ms = moves.slice(); let done = null;
+        while (true) {
+          const i = selectChild(node);
+          ms.push(slotToPoint(base, node.slots[i]));
+          let c = node.kids[i]; if (!c) c = node.kids[i] = new Node();
+          path.push(c); node = c;
+          const L = ms.length;
+          if (L >= 2 && ms[L - 1] === PASS && ms[L - 2] === PASS) { done = terminalValue(n, ms, komi, sw); break; }
+          if (!node.slots) break;
+        }
+        if (done === null && node.pending) break; // collided with a leaf already queued
+        for (const p of path) p.vl++;
+        if (done !== null) { leaves.push({ path, value: done }); continue; }
+        node.pending = true;
+        leaves.push({ path, ms, node });
+      }
+      if (!leaves.length) break;
+      const need = leaves.filter(l => l.ms);
+      if (need.length) {
+        const evs = await evalMany(n, need.map(l => l.ms), komi, pdaFor);
+        need.forEach((l, i) => { expandFrom(l.node, evs[i]); l.node.pending = false; l.value = util(evs[i]); });
+      }
+      for (const l of leaves) {
+        let v = l.value;
+        for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; v = -v; }
+      }
+      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
+    }
+    const s = summary(root, base, rootEv);
+    s.elapsed = Date.now() - t0;
+    if (pdaVal || sw) {
+      // style settings bias the search values, so report an unbiased evaluation for display
+      const plain = await evaluate(n, moves, komi);
+      s.winrate = plain.win / (plain.win + plain.loss); s.lead = plain.lead; s.own = plain.own;
+    }
+    return s;
+  }
+
+  function summary(root, base, rootEv) {
+    const list = [];
+    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i] }); }
+    list.sort((a, b) => b.N - a.N);
+    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi] }); }
+    const best = list[0];
+    return {
+      move: slotToPoint(base, best.slot), winrate: Math.max(0, Math.min(1, (best.q + 1) / 2)), visits: root.N - 1, lead: rootEv.lead,
+      top: list.slice(0, 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior })),
+      own: rootEv.own, pla: rootEv.pla, rootWin: rootEv.win
+    };
+  }
+
+  // blunder: chance of a careless move anywhere legal (never filling its own eye), like a real beginner
+  function sampleByPolicy(n, moves, base, ev, temp, blunder) {
+    if (blunder && moves[moves.length - 1] !== PASS && Math.random() < blunder) {
+      const b = new Board(n); for (const m of moves) b.play(m);
+      const me = b.toPlay, cands = [];
+      for (const q of b.pts) {
+        if (!b.isLegal(q, me)) continue;
+        if (b.dirs.every(d => b.color[q + d] === me || b.color[q + d] === 3)) continue;
+        cands.push(q);
+      }
+      if (cands.length) return cands[(Math.random() * cands.length) | 0];
+    }
+    const p = softmaxMasked(ev.logits, ev.legal, temp);
+    p[AREA] *= 0.05; // weak levels rarely pass on their own
+    let s = 0; for (let i = 0; i < p.length; i++) s += p[i];
+    let r = Math.random() * s;
+    for (let i = 0; i < p.length; i++) { r -= p[i]; if (r <= 0) return slotToPoint(base, i); }
+    return PASS;
+  }
+
+  return { evaluate, evalMany, think };
+}
+
+</script>
+<script>
+(function () {
+  const E = GoEngine(null);
+  const F = GoFeatures(E);
+  const { Board, PASS, EMPTY, BLACK, WHITE } = E;
+  const LETTERS = "ABCDEFGHJKLMNOPQRST";
+  const $ = id => document.getElementById(id);
+  const cv = $("board"), g = cv.getContext("2d");
+  const MODEL = window.GO_MODEL || "b10";
+
+  function load(k, d) { try { const v = localStorage.getItem("gonn." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} }
+
+  const STYLE = {
+    balance: { label: "สมดุล", opts: {} },
+    attack: { label: "บุกสุดๆ", opts: { pda: 1.5, scoreWeight: 0.5 } },
+    defend: { label: "ตั้งรับสุดๆ", opts: { pda: -1.25 } }
+  };
+  // Strength comes from how much the network reads ahead; ranks are estimates, not measured against people.
+  const CHARS = [
+    { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", search: { temperature: 2.0, blunder: 0.3 },
+      bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
+      say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
+    { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", search: { temperature: 1.6, blunder: 0.15 },
+      bio: "เซียนหมากฮอสประจำวินมอเตอร์ไซค์ เพิ่งมาลองเล่นโกะ",
+      say: { hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย", ahead: "กินได้กินเลย เหมือนหมากฮอสนั่นแหละ", behind: "เดี๋ยวๆ ขอคิดแป๊บ", win: "เห็นไหม เซียนก็คือเซียน", lose: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่" } },
+    { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03 },
+      bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
+      say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
+    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 8 },
+      bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
+      say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
+    { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 32 },
+      bio: "ดาวรุ่งอายุน้อยจากจีน เปิดเทนเง็นทุกกระดาน บุกหนักทุกตา ไล่ฆ่าทุกกลุ่มที่เห็น",
+      say: { hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่", ahead: "กลุ่มนั้นตายแล้ว", behind: "ยังไม่จบ! เดี๋ยวบุกกลับ", win: "บอกแล้วว่าไม่มีใครหนีพ้น", lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่" } },
+    { id: "tora", en: "TORA", name: "โทระ", country: "ญี่ปุ่น", rank: "4 ดั้ง", style: "defend", opening: "33", search: { visits: 64 },
+      bio: "คู่แข่งตลอดกาลของเว่ยฉี ยึด 3-3 ทุกมุมที่ว่าง ตั้งรับแน่นหนา แทบไม่มีช่องโหว่",
+      say: { hello: "บุกมาเลย ผมรับได้หมด", ahead: "ป้อมของผมไม่มีวันแตก", behind: "ยังรับไหว", win: "การป้องกันที่ดีที่สุดคือการไม่ให้โอกาส", lose: "ทะลวงป้อมผมได้... ไม่เลว" } },
+    { id: "kan", en: "KAN", name: "กัน", country: "ไทย", rank: "5 ดั้ง", style: "balance", search: { visits: 120, timeMs: 10000 },
+      bio: "นักหมากล้อมทีมชาติไทย นิ่ง แม่นยำ อ่านเกมขาด",
+      say: { hello: "เล่นเต็มที่นะครับ", ahead: "เกมนี้อยู่ในมือแล้ว", behind: "ยังมีทางสู้", win: "ขอบคุณที่เล่นด้วยครับ ฝึกต่อไปนะ", lose: "ฝีมือระดับทีมชาติเลยนะครับ" } },
+    { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 15000 },
+      bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
+      say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } }
+  ];
+  function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
+  // a plain silhouette for the human player until real profiles exist
+  const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
+  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4) };
+  if (!CHARS[settings.char]) settings.char = 4;
+  const KOMI = 7.5;
+  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null;
+  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5;
+  let AI = null, gen = 0, engineReady = false;
+
+  // ---------- load network ----------
+  // weights as raw float16 (.bin), or base64 text where binary files can't be served
+  async function loadWeights() {
+    try {
+      const r = await fetch(MODEL + ".bin");
+      if (r.ok && !(r.headers.get("content-type") || "").includes("text/html")) return await r.arrayBuffer();
+    } catch (e) {}
+    const r = await fetch(MODEL + ".b64.txt");
+    if (!r.ok) throw new Error("model weights " + r.status);
+    const bin = atob((await r.text()).trim()), out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+  async function initEngine() {
+    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; } };
+    try {
+      if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
+      let backend = "cpu";
+      try { if (await tf.setBackend("webgl")) backend = "webgl"; } catch (e) {}
+      if (backend !== "webgl") await tf.setBackend("cpu");
+      await tf.ready();
+      el.textContent = "กำลังดาวน์โหลดสมอง AI (6 MB)…";
+      const [meta, buf] = await Promise.all([
+        fetch(MODEL + ".json").then(r => { if (!r.ok) throw new Error("model json " + r.status); return r.json(); }),
+        loadWeights()
+      ]);
+      const net = GoTFNet(tf).build(meta, buf);
+      AI = GoNNAI(E, F, net);
+      el.textContent = "กำลังอุ่นเครื่อง AI…";
+      const t0 = performance.now();
+      await AI.evalMany(19, [[], [E.PASS]], KOMI);
+      const t1 = performance.now();
+      await AI.evalMany(19, Array.from({ length: 8 }, (_, i) => [new Board(19).pt(i, 3)]), KOMI);
+      const ms = Math.round((performance.now() - t1) / 8);
+      engineReady = true;
+      el.textContent = `สมอง AI พร้อม · KataGo b10 · ${backend === "webgl" ? "ใช้การ์ดจอ" : "ใช้ CPU (ช้า)"} · ~${ms} ms ต่อการประเมิน`;
+      console.log("warmup", Math.round(t1 - t0), "ms; per eval", ms, "ms");
+      if (board) { render(); maybeAI(); }
+    } catch (e) {
+      console.error(e);
+      el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
+    }
+  }
+
+  // ---------- character speech ----------
+  let said = {};
+  function speak(kind, force) {
+    if (said[kind] && !force) return;
+    said[kind] = true;
+    const c = CHARS[gameChar], q = $("quote");
+    q.hidden = false;
+    q.innerHTML = `${avatarSVG(c)}<span><b>${c.name}</b>${c.say[kind]}</span>`;
+  }
+  function reactTo(res) {
+    // res.winrate is for the AI, the player to move when it searched
+    if (history.length < 20) return;
+    if (res.winrate > 0.85) speak("ahead"); else if (res.winrate < 0.2) speak("behind");
+  }
+
+  // ---------- clocks: 15 min main time, then byo-yomi 10 s x 3 ----------
+  const MAIN_S = 900, BYO_S = 10, PERIODS = 3;
+  let clocks = null, lastTick = 0;
+  const freshClock = () => ({ main: MAIN_S, byo: BYO_S, per: PERIODS });
+  const clockLive = () => board && engineReady && !over && !scoring;
+  function tick() {
+    const now = performance.now(), dt = (now - lastTick) / 1000; lastTick = now;
+    if (!clocks || !clockLive()) return;
+    const c = clocks[board.toPlay];
+    let t = dt;
+    if (c.main > 0) { const use = Math.min(c.main, t); c.main -= use; t -= use; }
+    if (t > 0) {
+      c.byo -= t;
+      while (c.byo <= 0 && c.per > 0) { c.per--; if (c.per > 0) c.byo += BYO_S; }
+      if (c.per === 0) { c.byo = 0; timeout(board.toPlay); return; }
+    }
+    renderClocks();
+  }
+  // after a move the mover's byo-yomi period starts fresh
+  function clockMoved(color) { if (clocks && clocks[color].main <= 0) clocks[color].byo = BYO_S; }
+  function timeout(color) {
+    cancelAI();
+    const name = CHARS[gameChar].name;
+    over = color === human ? { text: `คุณหมดเวลา ${name} ชนะ`, detail: "ใช้เบียวโยมิครบ 3 ครั้งแล้ว" }
+      : { text: `${name} หมดเวลา คุณชนะ!`, detail: "" };
+    speak(color === human ? "win" : "lose", true); render();
+  }
+  // how long the AI may think this move without risking its clock
+  function aiBudget(base) {
+    const c = clocks[ai];
+    const limit = c.main > 0 ? Math.max(c.main * 1000 / 25, 6000) : (BYO_S - 3.5) * 1000;
+    return Math.min(base || 1e9, limit);
+  }
+  const fmt = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function renderClocks() {
+    if (!clocks) return;
+    for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
+      const c = clocks[col], inByo = c.main <= 0;
+      $("clk" + k).textContent = inByo ? fmt(c.byo) : fmt(c.main);
+      $("by" + k).textContent = c.per === 0 ? "หมดเวลา" : inByo ? `เบียวโยมิ เหลือ ${c.per} ครั้ง` : `+ ${PERIODS}×${BYO_S} วิ`;
+      $("p" + k).classList.toggle("low", inByo ? c.byo <= 5 : c.main <= 30);
+      $("p" + k).classList.toggle("out", c.per === 0);
+    }
+  }
+  setInterval(tick, 200);
+
+  // ---------- game flow ----------
+  function cancelAI() { gen++; thinking = false; think = null; }
+  function newGame() {
+    cancelAI();
+    n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
+    board = new Board(n); history = []; hint = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0;
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    const ch = CHARS[gameChar];
+    for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
+      const me = col === human;
+      $("n" + k).textContent = me ? "คุณ" : ch.name;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+    }
+    clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
+    said = {}; speak("hello");
+    resize(); render(); maybeAI();
+  }
+  function replay() { board = new Board(n); for (const m of history) board.play(m); }
+  // ---------- sound: a short wooden click, synthesised so no audio file is needed ----------
+  let actx = null, soundOn = load("sound", true);
+  function unlockAudio() {
+    try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); } catch (e) {}
+  }
+  function clack() {
+    if (!actx || !soundOn) return;
+    const t = actx.currentTime, len = Math.floor(actx.sampleRate * 0.09), buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6);
+    const src = actx.createBufferSource(); src.buffer = buf;
+    const bp = actx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2200; bp.Q.value = 1.2;
+    const ng = actx.createGain(); ng.gain.value = 0.9;
+    src.connect(bp).connect(ng).connect(actx.destination);
+    const o = actx.createOscillator(), og = actx.createGain();
+    o.frequency.setValueAtTime(1100, t); o.frequency.exponentialRampToValueAtTime(520, t + 0.05);
+    og.gain.setValueAtTime(0.35, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    o.connect(og).connect(actx.destination);
+    src.start(t); o.start(t); o.stop(t + 0.08);
+  }
+  function playMove(p) {
+    if (p !== PASS) clack();
+    clockMoved(board.toPlay);
+    board.play(p); history.push(p); hint = null;
+    if (board.passes >= 2) startScoring();
+    render();
+    if (!over && !scoring) maybeAI();
+  }
+  function setEval(res) {
+    // res values are for the player to move at the searched position
+    const forBlack = res.pla === BLACK;
+    winBlack = forBlack ? res.winrate : 1 - res.winrate;
+    leadBlack = forBlack ? res.lead : -res.lead;
+  }
+  // signature openings: Weiqi takes tengen (or attaches to it), Tora takes 3-3 in every empty corner
+  function openingMove() {
+    const ch = CHARS[gameChar];
+    if (!ch.opening) return null;
+    for (const p of board.pts) if (board.color[p] === ai && board.libs(board.head[p], 2) === 1) return null; // a group in atari comes first
+    const ok = p => board.color[p] === EMPTY && board.isLegal(p, ai);
+    if (ch.opening === "tengen") {
+      if (history.some((m, i) => (i % 2 === 0 ? BLACK : WHITE) === ai)) return null;
+      const c = (n - 1) / 2, t = board.pt(c, c);
+      if (ok(t)) return t;
+      const near = board.dirs.map(d => t + d).filter(ok);
+      return near.length ? near[(Math.random() * near.length) | 0] : null;
+    }
+    if (ch.opening === "33") {
+      const free = [];
+      for (const [cx, cy] of [[0, 0], [n - 6, 0], [0, n - 6], [n - 6, n - 6]]) {
+        let empty = true;
+        for (let y = cy; y < cy + 6 && empty; y++) for (let x = cx; x < cx + 6; x++) if (board.color[board.pt(x, y)] !== EMPTY) { empty = false; break; }
+        const p = board.pt(cx ? n - 3 : 2, cy ? n - 3 : 2);
+        if (empty && ok(p)) free.push(p);
+      }
+      return free.length ? free[(Math.random() * free.length) | 0] : null;
+    }
+    return null;
+  }
+  async function maybeAI() {
+    if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
+    const my = ++gen; thinking = true; think = null; render();
+    const moves = history.slice();
+    await new Promise(r => setTimeout(r, 30));
+    const book = openingMove();
+    if (book !== null) {
+      await new Promise(r => setTimeout(r, 600));
+      if (my !== gen) return;
+      thinking = false; playMove(book); return;
+    }
+    const res = await AI.think(n, moves, KOMI, Object.assign({
+      batch: 8, shouldStop: () => my !== gen,
+      onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
+    }, CHARS[gameChar].search, STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs) }));
+    if (my !== gen) return;
+    thinking = false; think = null;
+    setEval(res);
+    reactTo(res);
+    if (res.winrate < 0.03 && history.length > n * n / 3 && !CHARS[gameChar].search.temperature) {
+      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "AI ประเมินว่าโอกาสชนะเหลือไม่ถึง 3%" }; speak("lose", true); render(); return;
+    }
+    playMove(res.move);
+  }
+
+  async function startScoring() {
+    scoring = { dead: new Set(), loading: true, terr: null };
+    render();
+    const my = gen;
+    const ev = await AI.evaluate(n, history.slice(), KOMI);
+    if (my !== gen || !scoring) return;
+    const dead = new Set(), seen = new Set();
+    const ownBlack = q => { const [x, y] = board.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
+    for (const p of board.pts) {
+      const c = board.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
+      const chain = chainOf(p); let s = 0;
+      for (const q of chain) { seen.add(q); s += ownBlack(q); }
+      s /= chain.length;
+      if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
+    }
+    scoring.dead = dead; scoring.loading = false; render();
+  }
+  function chainOf(p) {
+    const c = board.color[p], out = [p], seen = new Set([p]);
+    for (let i = 0; i < out.length; i++) for (const d of board.dirs) {
+      const q = out[i] + d; if (board.color[q] === c && !seen.has(q)) { seen.add(q); out.push(q); }
+    }
+    return out;
+  }
+  function areaCount(dead) {
+    const terr = new Map(); let b = 0, w = 0; const seen = new Set();
+    for (const p of board.pts) {
+      const c = board.color[p];
+      if ((c === BLACK || c === WHITE) && !dead.has(p)) { if (c === BLACK) b++; else w++; continue; }
+      if (seen.has(p)) continue;
+      const region = [p]; seen.add(p); let tb = false, tw = false;
+      for (let i = 0; i < region.length; i++) for (const d of board.dirs) {
+        const q = region[i] + d, cq = board.color[q];
+        if (cq === 3) continue;
+        if ((cq === BLACK || cq === WHITE) && !dead.has(q)) { if (cq === BLACK) tb = true; else tw = true; }
+        else if (!seen.has(q)) { seen.add(q); region.push(q); }
+      }
+      const owner = tb && !tw ? BLACK : tw && !tb ? WHITE : 0;
+      for (const q of region) terr.set(q, owner);
+      if (owner === BLACK) b += region.length; else if (owner === WHITE) w += region.length;
+    }
+    return { b, w, terr };
+  }
+
+  // ---------- input ----------
+  function pointAt(ev) {
+    const r = cv.getBoundingClientRect(); const cell = r.width / (n + 1);
+    const x = Math.round((ev.clientX - r.left) / cell) - 1, y = Math.round((ev.clientY - r.top) / cell) - 1;
+    if (x < 0 || y < 0 || x >= n || y >= n) return null;
+    return board.pt(x, y);
+  }
+  cv.addEventListener("click", ev => {
+    const p = pointAt(ev); if (p === null) return;
+    if (scoring && !scoring.loading) {
+      const c = board.color[p]; if (c !== BLACK && c !== WHITE) return;
+      const ch = chainOf(p); const isDead = scoring.dead.has(p);
+      ch.forEach(q => isDead ? scoring.dead.delete(q) : scoring.dead.add(q));
+      render(); return;
+    }
+    unlockAudio();
+    if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
+    if (board.color[p] !== EMPTY) return;
+    if (!board.isLegal(p, human)) { flash(p === board.ko ? "ห้ามเดินตรงนี้ทันที เพราะเป็นโค ให้เดินที่อื่นก่อนหนึ่งตา" : "จุดนี้วางไม่ได้ (ไม่มีลมหายใจ)"); return; }
+    playMove(p);
+  });
+  cv.addEventListener("pointermove", ev => { if (ev.pointerType !== "mouse" || !board) return; const p = pointAt(ev); if (p !== hover) { hover = p; drawBoard(); } });
+  cv.addEventListener("pointerleave", () => { hover = null; drawBoard(); });
+
+  let flashMsg = null, flashT = 0;
+  function flash(t) { flashMsg = t; clearTimeout(flashT); flashT = setTimeout(() => { flashMsg = null; renderStatus(); }, 2600); renderStatus(); }
+
+  $("btnPass").onclick = () => { if (!engineReady || over || scoring || thinking || board.toPlay !== human) return; playMove(PASS); };
+  $("btnHint").onclick = async () => {
+    if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
+    const my = ++gen; thinking = true; think = null; render();
+    const res = await AI.think(n, history.slice(), KOMI, { visits: 120, timeMs: Math.min(8000, clocks[human].main > 0 ? 8000 : Math.max(1000, (clocks[human].byo - 2.5) * 1000)), batch: 8, shouldStop: () => my !== gen,
+      onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } } });
+    if (my !== gen) return;
+    thinking = false; think = null; hint = res.move; setEval(res); render();
+    if (res.move === PASS) flash("AI แนะนำให้ผ่าน");
+  };
+  $("btnResign").onclick = () => {
+    if (over || scoring || !history.length) return;
+    cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("win", true); render();
+  };
+  // characters from 3 kyu up (index 3 onwards) only play on the full 19x19 board
+  const only19 = i => i >= 3;
+  const boardSize = () => only19(settings.char) ? 19 : settings.size;
+  function seg(id, key) {
+    const el = $(id);
+    const sync = () => {
+      const val = key === "size" ? boardSize() : settings[key];
+      el.querySelectorAll("button").forEach(b => {
+        b.setAttribute("aria-pressed", String(+b.dataset.v === val));
+        if (key === "size") b.disabled = only19(settings.char) && +b.dataset.v !== 19;
+      });
+      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (ตัวนี้เล่น 19×19 เท่านั้น)" : "กระดาน";
+    };
+    el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; settings[key] = +b.dataset.v; save(key, settings[key]); sync(); });
+    sync();
+    return sync;
+  }
+
+  // ---------- rendering ----------
+  function render() { renderPanel(); renderStatus(); drawBoard(); }
+  function renderPanel() {
+    $("cB").textContent = "หมากเชลย " + board.caps[BLACK];
+    $("cW").textContent = "หมากเชลย " + board.caps[WHITE];
+    renderClocks();
+    const live = !over && !scoring;
+    $("pB").classList.toggle("turn", live && board.toPlay === BLACK);
+    $("pW").classList.toggle("turn", live && board.toPlay === WHITE);
+    const pct = Math.round(winBlack * 100);
+    $("wrFill").style.width = pct + "%"; $("wrB").textContent = "ดำ " + pct + "%"; $("wrW").textContent = "ขาว " + (100 - pct) + "%";
+    const lead = Math.abs(leadBlack).toFixed(1);
+    $("wrMid").textContent = history.length ? `${leadBlack >= 0 ? "ดำ" : "ขาว"} นำ ~${lead} แต้ม` : "โอกาสชนะ";
+    const myTurn = engineReady && live && !thinking && board.toPlay === human;
+    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn;
+    $("btnResign").disabled = !live || !history.length;
+    const res = $("result");
+    if (over) { res.hidden = false; res.innerHTML = `<h2>${over.text}</h2><div class="nums">${over.detail}</div>`; }
+    else if (scoring && !scoring.loading) {
+      const r = areaCount(scoring.dead); scoring.terr = r.terr;
+      const diff = r.b - (r.w + KOMI);
+      const winner = diff > 0 ? BLACK : WHITE;
+      res.hidden = false;
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", true); }
+      res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
+        <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
+        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>`;
+    } else res.hidden = true;
+  }
+  function moveName(p) { if (p === PASS) return "ผ่าน"; const [x, y] = board.xy(p); return LETTERS[x] + (n - y); }
+  function renderStatus() {
+    const el = $("status"); let html;
+    if (flashMsg) html = `<b>${flashMsg}</b>`;
+    else if (!engineReady) html = "<b>รอสมอง AI โหลดเสร็จ…</b>";
+    else if (over) html = "เกมจบแล้ว กด \"เริ่มเกมใหม่\" เพื่อเล่นอีกครั้ง";
+    else if (scoring) html = scoring.loading ? "ทั้งสองฝ่ายผ่าน กำลังประเมินหมากตาย…" : "<b>นับแต้ม</b> ตรวจหมากตายบนกระดาน";
+    else if (thinking) {
+      const who = board.toPlay === ai ? "AI กำลังคิด" : "AI กำลังหาตาแนะนำ";
+      html = `<b>${who}…</b><span class="meta">${think ? think.visits.toLocaleString() + " รูปแบบ · คิดว่า " + moveName(think.move) + " (" + Math.round(think.winrate * 100) + "%)" : "เริ่มอ่าน"}</span>`;
+    } else {
+      const last = history.length ? `ตาที่แล้ว: ${history.length % 2 ? "ดำ" : "ขาว"} ${moveName(history[history.length - 1])}` : "เริ่มเกม";
+      const mine = board.toPlay === human ? `ตาคุณ (${human === BLACK ? "ดำ" : "ขาว"})` : "ตา AI";
+      html = `<b>${mine}</b><span class="meta">ตาที่ ${history.length + 1} · ${last}${hint !== null ? " · แนะนำ " + moveName(hint) : ""}</span>`;
+    }
+    el.innerHTML = html;
+    const live = !over && !scoring, myTurn = engineReady && live && !thinking && board.toPlay === human;
+    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn;
+  }
+
+  let dpr = 1, S = 800;
+  function resize() {
+    const w = cv.getBoundingClientRect().width || 600;
+    dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    S = w; cv.width = Math.round(w * dpr); cv.height = Math.round(w * dpr);
+    drawBoard();
+  }
+  window.addEventListener("resize", () => { if (board) resize(); });
+  if (window.ResizeObserver) new ResizeObserver(() => { if (board && !$("game").hidden) resize(); }).observe(cv.parentElement);
+
+  let grain = null, grainKey = "";
+  function woodLayer(W) {
+    if (grainKey === String(W)) return grain;
+    const c = document.createElement("canvas"); c.width = c.height = W; const x = c.getContext("2d");
+    const lg = x.createLinearGradient(0, 0, W, W); lg.addColorStop(0, "#e6c07a"); lg.addColorStop(.5, "#ddb267"); lg.addColorStop(1, "#cf9f52");
+    x.fillStyle = lg; x.fillRect(0, 0, W, W);
+    let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 90; i++) {
+      const y0 = r() * W, amp = 3 + r() * 10, f = 0.002 + r() * 0.006;
+      x.strokeStyle = `rgba(120,72,20,${0.04 + r() * 0.07})`; x.lineWidth = 0.6 + r() * 2.2 * (W / 800);
+      x.beginPath();
+      for (let px = 0; px <= W; px += 8) { const py = y0 + Math.sin(px * f + i) * amp; px ? x.lineTo(px, py) : x.moveTo(px, py); }
+      x.stroke();
+    }
+    grain = c; grainKey = String(W); return c;
+  }
+  function drawStone(cx, cy, r, color, alpha) {
+    g.save(); g.globalAlpha = alpha == null ? 1 : alpha;
+    if (alpha == null) { g.fillStyle = "rgba(40,22,0,.35)"; g.beginPath(); g.arc(cx + r * .08, cy + r * .12, r, 0, 7); g.fill(); }
+    const gr = g.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r);
+    if (color === BLACK) { gr.addColorStop(0, "#6b6b6b"); gr.addColorStop(.45, "#202020"); gr.addColorStop(1, "#050505"); }
+    else { gr.addColorStop(0, "#ffffff"); gr.addColorStop(.6, "#ecebe5"); gr.addColorStop(1, "#bdbcb3"); }
+    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+    g.restore();
+  }
+  function drawBoard() {
+    if (!board) return;
+    const W = cv.width; g.setTransform(1, 0, 0, 1, 0, 0);
+    g.drawImage(woodLayer(W), 0, 0);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cell = S / (n + 1), P = i => cell * (i + 1);
+    g.strokeStyle = "rgba(42,29,12,.85)"; g.lineWidth = Math.max(0.8, cell / 34);
+    g.beginPath();
+    for (let i = 0; i < n; i++) { g.moveTo(P(0), P(i)); g.lineTo(P(n - 1), P(i)); g.moveTo(P(i), P(0)); g.lineTo(P(i), P(n - 1)); }
+    g.stroke();
+    g.lineWidth = Math.max(1.4, cell / 18); g.strokeRect(P(0), P(0), P(n - 1) - P(0), P(n - 1) - P(0));
+    const stars = n === 19 ? [3, 9, 15] : n === 13 ? [3, 6, 9] : [2, 4, 6];
+    g.fillStyle = "#2a1d0c";
+    for (const a of stars) for (const b of stars) {
+      if (n === 9 && (a === 4) !== (b === 4)) continue;
+      g.beginPath(); g.arc(P(a), P(b), Math.max(2, cell * .11), 0, 7); g.fill();
+    }
+    g.fillStyle = "rgba(42,29,12,.75)"; g.font = `500 ${Math.max(8, cell * .34)}px "IBM Plex Mono", monospace`;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    for (let i = 0; i < n; i++) {
+      g.fillText(LETTERS[i], P(i), cell * .42); g.fillText(LETTERS[i], P(i), S - cell * .42);
+      g.fillText(String(n - i), cell * .42, P(i)); g.fillText(String(n - i), S - cell * .42, P(i));
+    }
+    const r = cell * .475, dead = scoring ? scoring.dead : null, terr = scoring && !scoring.loading ? scoring.terr : null;
+    for (const p of board.pts) {
+      const c = board.color[p]; const [x, y] = board.xy(p);
+      if (c === BLACK || c === WHITE) {
+        const isDead = dead && dead.has(p);
+        drawStone(P(x), P(y), r, c, isDead ? 0.45 : null);
+        if (isDead) {
+          g.strokeStyle = c === BLACK ? "#f3f3ee" : "#1a1a1a"; g.lineWidth = Math.max(1.2, cell / 14); const k = r * .4;
+          g.beginPath(); g.moveTo(P(x) - k, P(y) - k); g.lineTo(P(x) + k, P(y) + k); g.moveTo(P(x) + k, P(y) - k); g.lineTo(P(x) - k, P(y) + k); g.stroke();
+        }
+      }
+      if (terr) {
+        const owner = terr.get(p);
+        if (owner) { const k = cell * .2; g.fillStyle = owner === BLACK ? "rgba(10,10,10,.85)" : "rgba(255,255,255,.95)";
+          g.fillRect(P(x) - k, P(y) - k, 2 * k, 2 * k); if (owner === WHITE) { g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 1; g.strokeRect(P(x) - k, P(y) - k, 2 * k, 2 * k); } }
+      }
+    }
+    const last = history.length ? history[history.length - 1] : PASS;
+    if (last !== PASS && !scoring) {
+      const [x, y] = board.xy(last); const c = board.color[last];
+      g.strokeStyle = c === BLACK ? "#f5f2e8" : "#222"; g.lineWidth = Math.max(1.4, cell / 14);
+      g.beginPath(); g.arc(P(x), P(y), r * .45, 0, 7); g.stroke();
+    }
+    const target = thinking && think && board.toPlay !== ai ? think.move : hint;
+    if (target !== null && target !== undefined && target !== PASS) {
+      const [x, y] = board.xy(target);
+      g.strokeStyle = "#1f6b55"; g.lineWidth = Math.max(2, cell / 10); g.setLineDash([cell * .14, cell * .1]);
+      g.beginPath(); g.arc(P(x), P(y), r * .8, 0, 7); g.stroke(); g.setLineDash([]);
+    }
+    if (hover !== null && engineReady && !thinking && !over && !scoring && board.toPlay === human && board.isLegal(hover, human)) {
+      const [x, y] = board.xy(hover); drawStone(P(x), P(y), r, human, .45);
+    }
+  }
+
+  const syncSize = seg("segSize", "size"); seg("segColor", "human");
+  // home screen: arcade-style character select, one featured card with its neighbours either side
+  const charsEl = $("chars"), L8 = CHARS.length;
+  const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
+  function blip(f) {
+    if (!actx || !soundOn) return;
+    const t = actx.currentTime, o = actx.createOscillator(), g2 = actx.createGain();
+    o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+    o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
+  }
+  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  function syncChars(anim) {
+    const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
+    charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
+      <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
+      <div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
+      <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
+      <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
+    $("pick").innerHTML = `<div class="cmeta">${c.country} · ${STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
+    $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === i)));
+    syncSize();
+  }
+  function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("char8", settings.char); syncChars(true); blip(660); }
+  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
+  $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
+  let swipeX = null;
+  charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
+  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
+  document.addEventListener("keydown", e => {
+    if ($("home").hidden) return;
+    if (e.key === "ArrowLeft") choose(settings.char - 1); else if (e.key === "ArrowRight") choose(settings.char + 1);
+    else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
+  });
+  ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
+  syncChars();
+  document.body.classList.add("arcade");
+  function showHome() { cancelAI(); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function startGame() { blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+  $("btnNew").onclick = () => { unlockAudio(); startGame(); };
+  const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
+  $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };
+  syncSound();
+  // true fullscreen where the browser allows it (Android, desktop); the layout already fits the screen either way
+  const fsEl = document.documentElement, canFs = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+  const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  $("btnFull").hidden = !canFs;
+  $("btnFull").onclick = () => {
+    try {
+      if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else { const r = (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen).call(fsEl); if (r && r.catch) r.catch(() => {}); }
+    } catch (e) {}
+  };
+  const syncFs = () => { $("btnFull").textContent = isFs() ? "ออกเต็มจอ" : "เต็มจอ"; if (board) resize(); };
+  document.addEventListener("fullscreenchange", syncFs); document.addEventListener("webkitfullscreenchange", syncFs);
+  $("btnRestart").onclick = () => { settings.char = gameChar; newGame(); };
+  $("btnHome").onclick = showHome;
+  initEngine();
+})();
+
+</script>
+</body></html>
