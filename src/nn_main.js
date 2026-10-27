@@ -286,11 +286,13 @@
   async function maybeAI() {
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
     const my = ++gen; thinking = true; think = null; render();
-    const moves = history.slice();
+    const moves = history.slice(), started = Date.now();
+    // every character takes at least about a second before playing
+    const minThink = async () => { const w = 1000 - (Date.now() - started); if (w > 0) await new Promise(r => setTimeout(r, w)); };
     await new Promise(r => setTimeout(r, 30));
     const book = openingMove();
     if (book !== null) {
-      await new Promise(r => setTimeout(r, 600));
+      await minThink();
       if (my !== gen) return;
       thinking = false; playMove(book); return;
     }
@@ -298,6 +300,8 @@
       batch: 8, shouldStop: () => my !== gen,
       onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
     }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs) }));
+    if (my !== gen) return;
+    await minThink();
     if (my !== gen) return;
     thinking = false; think = null;
     setEval(res);
