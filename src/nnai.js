@@ -95,7 +95,7 @@ function GoNNAI(E, F, net) {
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
     root.N = 1; root.W = util(rootEv);
-    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat); return s; }
+    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;
@@ -179,8 +179,10 @@ function GoNNAI(E, F, net) {
   // blunder: chance of a careless move anywhere legal (never filling its own eye), like a real beginner
   // local: answer within this many lines of the opponent's last move, unless the network sees nothing worth playing there
   // noFloat: never a lone stone out in the centre (5th line or higher with no stone within two lines)
-  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat) {
+  // keepTerritory: skip points the network already counts as solidly ours, unless it rates the move as needed there
+  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory) {
     const last = moves[moves.length - 1];
+    const ownPoint = keepTerritory ? (i => i < AREA && ev.own[i] > 0.8 && ev.policy[i] < 0.1) : null;
     let floating = null;
     if (noFloat) {
       const fb = new Board(n); for (const m of moves) fb.play(m);
@@ -204,7 +206,7 @@ function GoNNAI(E, F, net) {
       const me = b.toPlay, cands = [];
       for (const q of b.pts) {
         if (!b.isLegal(q, me)) continue;
-        { const [x, y] = b.xy(q); if ((near && !near(y * 19 + x)) || (floating && floating(y * 19 + x))) continue; }
+        { const [x, y] = b.xy(q), i = y * 19 + x; if ((near && !near(i)) || (floating && floating(i)) || (ownPoint && ownPoint(i))) continue; }
         if (b.dirs.every(d => b.color[q + d] === me || b.color[q + d] === 3)) continue;
         cands.push(q);
       }
@@ -212,10 +214,17 @@ function GoNNAI(E, F, net) {
     }
     const p = softmaxMasked(ev.logits, ev.legal, temp);
     p[AREA] *= 0.05; // weak levels rarely pass on their own
-    if (near) for (let i = 0; i <= AREA; i++) if (i === AREA || !near(i)) p[i] = 0;
-    if (floating) { const keep = Float32Array.from(p); let left = 0;
-      for (let i = 0; i < AREA; i++) if (p[i] && floating(i)) p[i] = 0; else left += p[i];
-      if (!(left > 0)) p.set(keep); }
+    // drop the moves a rule rules out; returns false (leaving p as it was) when no board move would remain
+    const filter = (drop, keepPass) => {
+      const keep = Float32Array.from(p); let left = 0;
+      for (let i = 0; i < AREA; i++) if (p[i] && drop(i)) p[i] = 0; else left += p[i];
+      if (!(left > 0)) { p.set(keep); return false; }
+      if (!keepPass) p[AREA] = 0;
+      return true;
+    };
+    if (ownPoint && !filter(ownPoint, true)) return PASS; // only our own territory is left to play: pass instead of filling it
+    if (floating) filter(floating, true);
+    if (near) filter(i => !near(i), false);
     let s = 0; for (let i = 0; i < p.length; i++) s += p[i];
     let r = Math.random() * s;
     for (let i = 0; i < p.length; i++) { r -= p[i]; if (r <= 0) return slotToPoint(base, i); }
