@@ -1,0 +1,9 @@
+{
+  // Static game from the repo root, plus a small Worker for /api/event and /stats.
+  "name": "battle-baduk",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-06-01",
+  "assets": { "directory": "./", "binding": "ASSETS" },
+  "durable_objects": { "bindings": [{ "name": "STATS", "class_name": "Stats" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Stats"] }]
+}

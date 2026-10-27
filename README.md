@@ -7,3 +7,8 @@ AI ใช้เครือข่าย KataGo (g170e-b10c128) รันใน�
 - `b10.json`, `b10.bin` น้ำหนักเครือข่าย (fp16)
 - `tf.min.js` สำรองไว้เผื่อโหลด TensorFlow.js จาก CDN ไม่ได้
 - `chars/` รูปตัวละคร
+
+## สถิติ
+`worker/index.js` (ตั้งค่าใน `wrangler.jsonc`) เสิร์ฟไฟล์เกม และเก็บสถิติแบบไม่ระบุตัวตนใน Durable Object
+- `POST /api/event` เกมส่งตอนเริ่มเกมและจบเกม
+- `/stats` หน้าสรุปสถิติแยกตามตัวละคร, `/api/stats` ข้อมูลเดียวกันแบบ JSON

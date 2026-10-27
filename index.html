@@ -1198,7 +1198,7 @@ function GoNNAI(E, F, net) {
     const name = CHARS[gameChar].name;
     over = color === human ? { text: `คุณหมดเวลา ${name} ชนะ`, detail: "ใช้เบียวโยมิครบ 3 ครั้งแล้ว" }
       : { text: `${name} หมดเวลา คุณชนะ!`, detail: "" };
-    speak(color === human ? "win" : "lose", true); render();
+    speak(color === human ? "win" : "lose", true); reportEnd(color !== human, "timeout"); render();
   }
   // how long the AI may think this move without risking its clock
   function aiBudget(base) {
@@ -1219,6 +1219,27 @@ function GoNNAI(E, F, net) {
   }
   setInterval(tick, 200);
 
+  // ---------- anonymous play statistics, stored by the site's Worker at /api/event ----------
+  const host = location.hostname;
+  const STATS_URL = /workers\.dev$|^localhost$|^127\.0\.0\.1$/.test(host) ? "/api/event"
+    : /github\.io$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev/api/event" : null;
+  const rid = () => (Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).replace(/[^a-z0-9]/g, "");
+  let playerId = load("pid", null);
+  if (!playerId) { playerId = rid(); save("pid", playerId); }
+  let gameId = null, gameReported = false;
+  function track(ev) {
+    if (!STATS_URL || !gameId) return;
+    try {
+      const body = JSON.stringify(Object.assign({ player: playerId, game: gameId, char: CHARS[gameChar].id }, ev));
+      if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
+        fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+  function reportEnd(humanWon, how) {
+    if (gameReported) return;
+    gameReported = true; track({ type: "end", winner: humanWon ? "human" : "ai", how, moves: history.length });
+  }
+
   // ---------- game flow ----------
   function cancelAI() { gen++; thinking = false; think = null; }
   function newGame() {
@@ -1235,6 +1256,7 @@ function GoNNAI(E, F, net) {
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     said = {}; speak("hello");
+    gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human });
     resize(); render(); maybeAI();
   }
   function replay() { board = new Board(n); for (const m of history) board.play(m); }
@@ -1316,7 +1338,7 @@ function GoNNAI(E, F, net) {
     setEval(res);
     reactTo(res);
     if (res.winrate < 0.03 && history.length > n * n / 3 && !CHARS[gameChar].search.temperature) {
-      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "AI ประเมินว่าโอกาสชนะเหลือไม่ถึง 3%" }; speak("lose", true); render(); return;
+      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "AI ประเมินว่าโอกาสชนะเหลือไม่ถึง 3%" }; speak("lose", true); reportEnd(true, "resign"); render(); return;
     }
     playMove(res.move);
   }
@@ -1404,7 +1426,7 @@ function GoNNAI(E, F, net) {
   };
   $("btnResign").onclick = () => {
     if (over || scoring || !history.length) return;
-    cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("win", true); render();
+    cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("win", true); reportEnd(false, "resign"); render();
   };
   // characters from 3 kyu up (index 3 onwards) only play on the full 19x19 board
   const only19 = i => i >= 3;
@@ -1447,7 +1469,7 @@ function GoNNAI(E, F, net) {
       const diff = r.b - (r.w + KOMI);
       const winner = diff > 0 ? BLACK : WHITE;
       res.hidden = false;
-      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", true); }
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", true); reportEnd(winner === human, "score"); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>`;
