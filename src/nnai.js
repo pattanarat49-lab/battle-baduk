@@ -132,12 +132,35 @@ function GoNNAI(E, F, net) {
     }
     const s = summary(root, base, rootEv);
     s.elapsed = Date.now() - t0;
+    if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
       s.winrate = plain.win / (plain.win + plain.loss); s.lead = plain.lead; s.own = plain.own;
     }
     return s;
+  }
+
+  // Answer near the opponent's last move when that costs at most `margin` win rate against the best move found;
+  // a clearly bigger point elsewhere is still played.
+  function nearLast(moves, base, local) {
+    const last = moves[moves.length - 1];
+    if (!local || last === undefined || last === PASS) return null;
+    const [lx, ly] = base.xy(last);
+    return i => i < AREA && Math.abs(i % 19 - lx) <= local && Math.abs(((i / 19) | 0) - ly) <= local;
+  }
+  async function preferLocal(n, moves, komi, base, root, rootEv, s, local, margin, pdaFor) {
+    const near = nearLast(moves, base, local);
+    if (!near || s.move === PASS) return;
+    const [bx, by] = base.xy(s.move);
+    if (near(by * 19 + bx)) return;
+    let mass = 0, li = -1;
+    for (let i = 0; i < root.slots.length; i++) if (near(root.slots[i])) { mass += root.priors[i]; if (li < 0 || root.priors[i] > root.priors[li]) li = i; }
+    if (li < 0 || mass < 0.15) return;
+    const localMove = slotToPoint(base, root.slots[li]);
+    const [eb, el] = await evalMany(n, [moves.concat([s.move]), moves.concat([localMove])], komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    if (mine(el) >= mine(eb) - margin) { s.move = localMove; s.winrate = mine(el); }
   }
 
   function summary(root, base, rootEv) {
@@ -157,10 +180,8 @@ function GoNNAI(E, F, net) {
   // local: answer within this many lines of the opponent's last move, unless the network sees nothing worth playing there
   function sampleByPolicy(n, moves, base, ev, temp, blunder, local) {
     const last = moves[moves.length - 1];
-    let near = null;
-    if (local && last !== undefined && last !== PASS) {
-      const [lx, ly] = base.xy(last);
-      near = i => Math.abs(i % 19 - lx) <= local && Math.abs(((i / 19) | 0) - ly) <= local;
+    let near = nearLast(moves, base, local);
+    if (near) {
       let mass = 0;
       for (let i = 0; i < AREA; i++) if (near(i)) mass += ev.policy[i];
       if (mass < 0.15) near = null;

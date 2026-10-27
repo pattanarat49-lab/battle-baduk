@@ -26,7 +26,7 @@
     { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03, local: 3 }, early: { temperature: 0.25, local: 3 },
       bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
       say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
-    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 8 }, early: { temperature: 0.1 },
+    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 8, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
     { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 32 },
