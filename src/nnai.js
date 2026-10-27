@@ -133,6 +133,7 @@ function GoNNAI(E, F, net) {
     const s = summary(root, base, rootEv);
     s.elapsed = Date.now() - t0;
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
+    await avoidEdge(n, moves, komi, base, root, s, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -163,6 +164,26 @@ function GoNNAI(E, F, net) {
     if (mine(el) >= mine(eb) - margin) { s.move = localMove; s.winrate = mine(el); }
   }
 
+  // first-line points (the edge of the board) are only played when the network sees them as needed
+  const EDGE_NEED = 0.15;
+  const onEdge = (n, i) => { const x = i % 19, y = (i / 19) | 0; return i < AREA && (x === 0 || y === 0 || x === n - 1 || y === n - 1); };
+  async function avoidEdge(n, moves, komi, base, root, s, pdaFor) {
+    if (s.move === PASS) return;
+    const [bx, by] = base.xy(s.move), bi = by * 19 + bx;
+    if (!onEdge(n, bi)) return;
+    let k = -1, alt = -1;
+    for (let i = 0; i < root.slots.length; i++) {
+      if (root.slots[i] === bi) k = i;
+      else if (root.slots[i] < AREA && !onEdge(n, root.slots[i]) && (alt < 0 || root.priors[i] > root.priors[alt])) alt = i;
+    }
+    if (k >= 0 && root.priors[k] >= EDGE_NEED) return;
+    if (alt < 0) return;
+    const other = slotToPoint(base, root.slots[alt]);
+    const [eb, eo] = await evalMany(n, [moves.concat([s.move]), moves.concat([other])], komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss);
+    if (mine(eo) >= mine(eb) - 0.03) { s.move = other; s.winrate = mine(eo); }
+  }
+
   function summary(root, base, rootEv) {
     const list = [];
     for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i] }); }
@@ -182,6 +203,7 @@ function GoNNAI(E, F, net) {
   // keepTerritory: skip points the network already counts as solidly ours, unless it rates the move as needed there
   function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory) {
     const last = moves[moves.length - 1];
+    const edge = i => onEdge(n, i) && ev.policy[i] < EDGE_NEED;
     const ownPoint = keepTerritory ? (i => i < AREA && ev.own[i] > 0.8 && ev.policy[i] < 0.1) : null;
     let floating = null;
     if (noFloat) {
@@ -206,7 +228,7 @@ function GoNNAI(E, F, net) {
       const me = b.toPlay, cands = [];
       for (const q of b.pts) {
         if (!b.isLegal(q, me)) continue;
-        { const [x, y] = b.xy(q), i = y * 19 + x; if ((near && !near(i)) || (floating && floating(i)) || (ownPoint && ownPoint(i))) continue; }
+        { const [x, y] = b.xy(q), i = y * 19 + x; if (edge(i) || (near && !near(i)) || (floating && floating(i)) || (ownPoint && ownPoint(i))) continue; }
         if (b.dirs.every(d => b.color[q + d] === me || b.color[q + d] === 3)) continue;
         cands.push(q);
       }
@@ -223,6 +245,7 @@ function GoNNAI(E, F, net) {
       return true;
     };
     if (ownPoint && !filter(ownPoint, true)) return PASS; // only our own territory is left to play: pass instead of filling it
+    filter(edge, true);
     if (floating) filter(floating, true);
     if (near) filter(i => !near(i), false);
     let s = 0; for (let i = 0; i < p.length; i++) s += p[i];

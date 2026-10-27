@@ -26,13 +26,13 @@
     { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03, local: 3, keepTerritory: true }, early: { temperature: 0.25, local: 3, keepTerritory: true },
       bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
       say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
-    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 8, local: 3 }, early: { temperature: 0.1, local: 3 },
+    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
-    { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 32 },
+    { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 28 },
       bio: "ดาวรุ่งอายุน้อยจากจีน เปิดเทนเง็นทุกกระดาน บุกหนักทุกตา ไล่ฆ่าทุกกลุ่มที่เห็น",
       say: { hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่", ahead: "กลุ่มนั้นตายแล้ว", behind: "ยังไม่จบ! เดี๋ยวบุกกลับ", win: "บอกแล้วว่าไม่มีใครหนีพ้น", lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่" } },
-    { id: "tora", en: "TORA", name: "โทระ", country: "ญี่ปุ่น", rank: "4 ดั้ง", style: "defend", opening: "33", search: { visits: 64 },
+    { id: "tora", en: "TORA", name: "โทระ", country: "ญี่ปุ่น", rank: "4 ดั้ง", style: "defend", opening: "33", search: { visits: 48 },
       bio: "คู่แข่งตลอดกาลของเว่ยฉี ยึด 3-3 ทุกมุมที่ว่าง ตั้งรับแน่นหนา แทบไม่มีช่องโหว่",
       say: { hello: "บุกมาเลย ผมรับได้หมด", ahead: "ป้อมของผมไม่มีวันแตก", behind: "ยังรับไหว", win: "การป้องกันที่ดีที่สุดคือการไม่ให้โอกาส", lose: "ทะลวงป้อมผมได้... ไม่เลว" } },
     { id: "kan", en: "KAN", name: "กัน", country: "ไทย", rank: "5 ดั้ง", style: "balance", search: { visits: 120, timeMs: 10000 },
@@ -78,8 +78,19 @@
         fetch(MODEL + ".json").then(r => { if (!r.ok) throw new Error("model json " + r.status); return r.json(); }),
         loadWeights()
       ]);
-      const net = GoTFNet(tf).build(meta, buf);
+      let net = GoTFNet(tf).build(meta, buf);
       AI = GoNNAI(E, F, net);
+      // some phone GPUs compute the network wrongly; after black D16 the reference answer is a corner (Q4/Q16/D4) at ~49%
+      const sane = async () => {
+        const ev = (await AI.evalMany(19, [[new Board(19).pt(3, 3)]], KOMI))[0];
+        let bi = 0; for (let i = 1; i < 361; i++) if (ev.policy[i] > ev.policy[bi]) bi = i;
+        return [72, 300, 288].includes(bi) && Math.abs(ev.win / (ev.win + ev.loss) - 0.494) < 0.06;
+      };
+      if (backend === "webgl" && !(await sane())) {
+        console.warn("webgl results look wrong, switching to cpu");
+        await tf.setBackend("cpu"); await tf.ready(); backend = "cpu";
+        net = GoTFNet(tf).build(meta, buf); AI = GoNNAI(E, F, net);
+      }
       el.textContent = "กำลังอุ่นเครื่อง AI…";
       const t0 = performance.now();
       await AI.evalMany(19, [[], [E.PASS]], KOMI);
