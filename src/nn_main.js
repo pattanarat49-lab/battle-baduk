@@ -26,6 +26,10 @@
     { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "5 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03, local: 3, keepTerritory: true }, early: { temperature: 0.25, local: 3, keepTerritory: true },
       bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
       say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
+    { id: "joker", en: "JOKER", name: "โจ๊กเกอร์", country: "ไม่ทราบ", rank: "3 คิว", style: "attack", opening: "raid",
+      search: { temperature: 0.6, blunder: 0.02, keepTerritory: true }, early: { temperature: 1.2, keepTerritory: true },
+      bio: "นักเล่นนอกตำรา ไม่เคยเปิดมุมของตัวเอง เดินหมากแปลกใหม่ที่ไม่มีใครเดิน แล้วไล่ตีมุมคนอื่นก่อนเสมอ",
+      say: { hello: "กฎมีไว้แหก… มาเล่นสนุกกันเถอะ", ahead: "ไม่มีใครอ่านมุกผมออกหรอก", behind: "สนุกขึ้นแล้วสิ", win: "ฮ่าๆ ตำราไม่ได้ช่วยอะไรเลยใช่ไหม", lose: "เก่งนี่… ผมชักชอบคุณแล้วสิ" } },
     { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
@@ -117,6 +121,30 @@
       resigned: "ขอบคุณที่เล่นจนจบครับ|ยอมแพ้อย่างสง่างามครับ ขอบคุณครับ",
       timeoutWin: "เสียดายจังครับ หมดเวลาซะแล้ว|นาฬิกาก็เป็นส่วนหนึ่งของเกมครับ",
       giveUp: "มาเกะมาชิตะ ผมยอมแพ้ครับ|ไม่มีทางสู้แล้วครับ ขอบคุณที่ชี้แนะ"
+    },
+    joker: {
+      hello: "กฎมีไว้แหก… มาเล่นสนุกกันเถอะ|มุมของผมเหรอ? ไม่มีหรอก ผมจะไปเอามุมของคุณ|ตำราน่ะ ผมโยนทิ้งไปนานแล้ว",
+      goodMove: "โอ้โห ตานี้มีสไตล์นี่|ผมชอบ ตานี้ไม่อยู่ในตำราเหมือนกัน|เอาล่ะ เริ่มสนุกแล้ว",
+      badMove: "ฮ่าๆ ตานี้ผมยังไม่กล้าเดินเลย|ขอบคุณสำหรับของขวัญนะ|อ้าว นึกว่าจะเล่นมุกเดียวกับผม",
+      caught: "ฮะ! ไปแค่ {n} เม็ด ผมยังมีอีกเยอะ|เสียหมากนิดหน่อย ถือเป็นค่าตั๋วการแสดง|โดนกินแล้ว… แต่นั่นอาจเป็นมุกก็ได้นะ",
+      capture: "ตาย {n} เม็ด! เซอร์ไพรส์!|หมากคุณหายไปเหมือนมายากล|ฮ่าๆ ไม่ทันตั้งตัวใช่ไหม",
+      ahead: "ไม่มีใครอ่านมุกผมออกหรอก|ตำราสอนไว้แบบนี้ไหม? ไม่สินะ|ยิ่งแปลกยิ่งได้ผล",
+      behind: "สนุกขึ้นแล้วสิ|แพ้อยู่ก็ดี มุกใหม่จะได้ออกมา|อย่าเพิ่งดีใจ ไพ่ใบสุดท้ายยังอยู่ในมือผม",
+      comeback: "ใครบอกว่าเกมนี้จบแล้ว ฮ่าๆ|เซอร์ไพรส์! กลับมาแล้ว",
+      humanPass: "ผ่านเหรอ? น่าเบื่อจัง|จบแล้วเหรอ ผมยังมีมุกเหลืออีกเยอะเลย",
+      aiPass: "หมดมุกแล้ว… ผ่านก็ได้|โชว์จบแล้ว ผ่าน",
+      ko: "โค! เกมแย่งชิงที่ผมชอบที่สุด|ไปหาขู่ที่อื่นก่อนสิ ผมรอได้",
+      hint: "แอบดูโพยเหรอ? ผมไม่มีโพยให้ดูหรอกนะ|คำใบ้ก็ช่วยอ่านใจผมไม่ได้",
+      slow: "คิดนานจัง กำลังหาว่าผมจะเล่นมุกอะไรเหรอ|ยิ่งคิดยิ่งงงใช่ไหม ฮ่าๆ",
+      byoyomi: "ติ๊กต่อก ติ๊กต่อก…|เวลาเหลือน้อยแล้วนะ ใจเต้นไหม",
+      lastPeriod: "ครั้งสุดท้ายแล้ว อย่าพลาดล่ะ|ตาเดียวพลาดก็จบโชว์นะ",
+      aiByo: "เวลาน้อยแบบนี้แหละ มุกดีๆ ถึงจะออก|ไม่ต้องคิด เดินตามใจ",
+      mid: "มุมของคุณสวยดี ขอยืมหน่อยนะ|ทำไมต้องเดินเหมือนคนอื่นด้วยล่ะ|ไม่มีกฎข้อไหนบอกว่าต้องเปิดมุมก่อน",
+      win: "ฮ่าๆ ตำราไม่ได้ช่วยอะไรเลยใช่ไหม|โชว์จบแล้ว ขอบคุณที่มาชมนะ|สนุกดี มาเล่นกันอีกสิ",
+      lose: "เก่งนี่… ผมชักชอบคุณแล้วสิ|มุกนี้ไม่ขำ แต่เกมสนุกมาก|ครั้งหน้าผมจะเอามุกใหม่มา",
+      resigned: "ยอมแล้วเหรอ? เพิ่งจะสนุกเอง|ฮ่าๆ หนีไปซะแล้ว",
+      timeoutWin: "เวลาหมดซะแล้ว มุกตลกร้ายจริงๆ|นาฬิกาก็เป็นตัวตลกได้นะ",
+      giveUp: "โอเค โชว์นี้ล่มแล้ว ผมยอม|ยอมก็ได้ แต่ผมจะกลับมาพร้อมมุกใหม่"
     },
     chris: {
       hello: "Good game ahead. เชิญเลยครับ|Shall we? ชาเย็นพร้อมแล้ว|ขอให้เป็นเกมที่มีเหตุผลนะครับ",
@@ -243,6 +271,9 @@
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
   const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4) };
+  // the pick is saved by id so adding a character doesn't move anyone's choice
+  const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
+  if (byId >= 0) settings.char = byId; else if (settings.char >= 3 && savedId === null) settings.char++;
   if (!CHARS[settings.char]) settings.char = 4;
   const KOMI = 7.5;
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null;
@@ -501,6 +532,7 @@
       const near = board.dirs.map(d => t + d).filter(ok);
       return near.length ? near[(Math.random() * near.length) | 0] : null;
     }
+    if (ch.opening === "raid") return raidMove();
     if (ch.opening === "33" || ch.opening === "corners") {
       // a corner counts as free while its 6x6 area is empty; "corners" picks 4-4, 3-4 or 3-3 there
       const free = [];
@@ -515,6 +547,39 @@
       return free.length ? free[(Math.random() * free.length) | 0] : null;
     }
     return null;
+  }
+  // Joker never takes an empty corner of his own: early on he approaches or invades each corner the opponent holds,
+  // and with nothing to attack yet he opens on the side or in the centre
+  function raidMove() {
+    if (history.length >= Math.round(n * n / 9) || n < 13) return null;
+    const ok = p => board.color[p] === EMPTY && board.isLegal(p, ai) && board.dirs.every(d => board.color[p + d] === EMPTY);
+    const at = (cx, cy, a, b) => board.pt(cx ? n - 1 - a : a, cy ? n - 1 - b : b);
+    const raids = [];
+    for (const [cx, cy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+      // a corner is a target when the opponent has a stone on its 3rd-5th lines and we have nothing within 7 lines of it
+      let theirs = null, mine = false;
+      for (let a = 0; a < 7; a++) for (let b = 0; b < 7; b++) {
+        const c = board.color[at(cx, cy, a, b)];
+        if (c === ai) mine = true;
+        else if (c === human && a >= 2 && b >= 2 && a <= 4 && b <= 4) theirs = [a, b];
+      }
+      if (!theirs || mine) continue;
+      const [a, b] = theirs, cand = [];
+      if (a + b >= 5) cand.push([2, 2]); // 3-3 invasion under a 4-4 or a high stone
+      for (const [da, db] of [[2, -1], [-1, 2], [3, -1], [-1, 3], [2, 0], [0, 2], [1, -2], [-2, 1]]) {
+        const x = a + da, y = b + db;
+        if (x >= 2 && y >= 2 && x <= 5 && y <= 5 && Math.min(x, y) <= 3) cand.push([x, y]);
+      }
+      for (const [x, y] of cand) { const p = at(cx, cy, x, y); if (ok(p)) raids.push(p); }
+    }
+    if (raids.length) return raids[(Math.random() * raids.length) | 0];
+    if (history.some((m, i) => (i % 2 === 0 ? BLACK : WHITE) === ai)) return null;
+    // first stone with nothing to attack: a side star point or near tengen, never a corner
+    const c = (n - 1) / 2, odd = [];
+    for (const [x, y] of [[3, c], [c, 3], [n - 4, c], [c, n - 4], [c, c], [c - 1, c + 1], [c + 2, c - 1], [4, c - 2], [c + 3, 4]]) {
+      const p = board.pt(x, y); if (ok(p)) odd.push(p);
+    }
+    return odd.length ? odd[(Math.random() * odd.length) | 0] : null;
   }
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.search;
@@ -858,7 +923,7 @@
     $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === i)));
     syncSize();
   }
-  function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("char8", settings.char); syncChars(true); blip(660); }
+  function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
   charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;

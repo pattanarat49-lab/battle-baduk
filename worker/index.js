@@ -6,7 +6,8 @@ import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
 
 const CHARS = {
-  mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", chris: "คริส",
+  mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
+  chris: "คริส",
   weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด"
 };
 const HOWS = new Set(["score", "resign", "timeout"]);
