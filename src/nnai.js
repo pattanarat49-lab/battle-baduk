@@ -287,8 +287,8 @@ function GoNNAI(E, F, net) {
     if (s.move === PASS || s.top.length < 2) return s;
     const base = new Board(n), target = opts.target || 0.5;
     const natural = c => {
-      // opening: only standard joseki-level moves; later any move the network rates at 3% or more
-      if (c.move === PASS || c.prior < (moves.length < 40 ? 0.08 : 0.03)) return false;
+      // opening: only standard joseki-level moves; later any move the network rates at 2% or more
+      if (c.move === PASS || c.prior < (moves.length < 40 ? 0.08 : 0.02)) return false;
       const [x, y] = base.xy(c.move), i = y * 19 + x;
       return !(onEdge(n, i) && c.prior < EDGE_NEED) && !(s.own[i] > 0.8 && c.prior < 0.1);
     };
@@ -299,10 +299,17 @@ function GoNNAI(E, F, net) {
     for (const i of order.slice(0, 12)) { const c = { move: slotToPoint(base, i), prior: ev0.policy[i] }; if (c.move !== cands[0].move && natural(c)) cands.push(c); }
     const evs = await evalMany(n, cands.map(c => moves.concat([c.move])), komi);
     cands.forEach((c, i) => { c.leadAfter = -evs[i].lead; });
+    // ahead: give back about as many points per move as the player has been losing (opts.give), a little more when far
+    // ahead, but never more than 5 points in one move, so every move Hikaru plays would still grade Normal or better
     let pick = cands[0];
-    const maxGive = Math.max(3, 0.4 * (pick.leadAfter - target)); // concede more per move the further ahead we are
-    if (pick.leadAfter > target + 1) // ahead: the weakest candidate that still keeps us at or above the target
-      for (const c of cands) if (c.leadAfter >= target && c.leadAfter < pick.leadAfter && cands[0].leadAfter - c.leadAfter <= maxGive) pick = c;
+    const ahead = pick.leadAfter - target;
+    if (ahead > 1) {
+      const want = Math.min(5, ahead, Math.max(opts.give || 2, ahead / 8));
+      for (const c of cands) {
+        const loss = cands[0].leadAfter - c.leadAfter;
+        if (c.leadAfter >= target && loss <= want + 0.5 && loss > cands[0].leadAfter - pick.leadAfter) pick = c;
+      }
+    }
     s.move = pick.move; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
     return s;
   }

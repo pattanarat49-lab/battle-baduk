@@ -632,6 +632,12 @@
       return { s, bestChild };
     })() };
   }
+  // points the player has been losing per move lately; Hikaru gives back about that much while ahead
+  function examGive() {
+    if (!exam) return 0;
+    const gs = exam.grades.filter(Boolean).slice(-30);
+    return gs.length < 5 ? 2 : gs.reduce((t, g) => t + Math.min(g.loss, 10), 0) / gs.length;
+  }
   // takes what pondering found for the player's last move; the grade itself is computed by runGrade later
   function gradeJob() {
     const pm = history.length - 1, pre = ponder && ponder.at === pm ? ponder.promise : null;
@@ -751,7 +757,7 @@
     const res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
       batch: evalMs > 300 ? 2 : 8, earlyStop: true, shouldStop: () => my !== gen,
       onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-    }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000) }));
+    }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), give: examGive() }));
     if (my !== gen) return;
     await minThink();
     if (my !== gen) return;
