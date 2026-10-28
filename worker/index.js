@@ -25,6 +25,9 @@ export class Stats extends DurableObject {
     // placement-test results (games against Hikaru); rank: 1 kyu = 0, 15 kyu = -14, 1 dan = 1
     this.sql.exec(`CREATE TABLE IF NOT EXISTS exams (game TEXT PRIMARY KEY, player TEXT, ended INTEGER, how TEXT, moves INTEGER,
       graded INTEGER, not_best REAL, rank REAL)`);
+    // games that ended before the rank threshold was lowered still get a rank from the share of non-Best moves they stored
+    for (const r of this.sql.exec("SELECT game, not_best FROM exams WHERE rank IS NULL AND graded >= 20 AND moves >= 100 AND not_best IS NOT NULL").toArray())
+      this.sql.exec("UPDATE exams SET rank = ? WHERE game = ?", Math.round(estimateRank(r.not_best) * 10) / 10, r.game);
   }
   // latest position of a game, kept for spectators; old rows are dropped as new ones arrive
   saveState(e, ended) {
@@ -103,13 +106,24 @@ function clean(b) {
     const x = b.exam;
     if (e.char === "hikaru" && x && Number.isInteger(x.graded) && x.graded >= 0 && x.graded < 1000) {
       const num = (v, lo, hi) => typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? v : null;
-      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), rank: x.graded >= 20 && e.moves >= 100 ? num(x.rank, -30, 10) : null };
+      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), rank: null };
+      // an older page may leave the rank out; it is the same estimate the game shows
+      if (x.graded >= 20 && e.moves >= 100) e.exam.rank = num(x.rank, -30, 10) ?? (e.exam.notBest === null ? null : Math.round(estimateRank(e.exam.notBest) * 10) / 10);
     }
   }
   return e;
 }
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
+// same table as EXAM_CALIB in src/nn_main.js: share of non-Best moves each character plays, and its rank
+const EXAM_CALIB = [{ rank: -14, avg: 60 }, { rank: -7, avg: 57 }, { rank: -4, avg: 39 }, { rank: 2, avg: 21.5 }, { rank: 4, avg: 13 }, { rank: 5, avg: 5 }];
+function estimateRank(avg) {
+  if (avg >= EXAM_CALIB[0].avg) return EXAM_CALIB[0].rank;
+  for (let i = 1; i < EXAM_CALIB.length; i++) if (avg >= EXAM_CALIB[i].avg) {
+    const a = EXAM_CALIB[i - 1], b = EXAM_CALIB[i]; return a.rank + (a.avg - avg) / (a.avg - b.avg) * (b.rank - a.rank);
+  }
+  return EXAM_CALIB[EXAM_CALIB.length - 1].rank;
+}
 const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
 const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
 function page(s) {
