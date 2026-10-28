@@ -412,7 +412,7 @@
         b.setAttribute("aria-pressed", String(+b.dataset.v === val));
         if (key === "size") b.disabled = only19(settings.char) && +b.dataset.v !== 19;
       });
-      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (19×19 เท่านั้น)" : "กระดาน";
+      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (ตัวนี้เล่น 19×19 เท่านั้น)" : "กระดาน";
     };
     el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; settings[key] = +b.dataset.v; save(key, settings[key]); sync(); });
     sync();
@@ -591,17 +591,16 @@
 
   const syncSize = seg("segSize", "size"); seg("segColor", "human");
   // home screen: Street Fighter III style select, big portrait on the left and the face icons in an arc on the right
-  const charsEl = $("home"), L8 = CHARS.length;
-  // face icon centres in % of the screen: an arc like the SF3 roster in landscape, a zigzag row in portrait
-  const ARC = [[80, 9], [92, 16], [74, 23], [86, 30], [68, 37], [80, 44], [62, 51], [74, 58]];
-  const ROW = CHARS.map((c, i) => [7.5 + i * 12.1, i % 2 ? 72 : 28]);
+  const charsEl = $("chars"), L8 = CHARS.length;
+  // face icon centres in cqw (stage is 100 x 75), zigzagging down an arc like the SF3 roster
+  const ARC = [[82, 8], [93, 14], [76, 20], [88, 26], [71, 32], [83, 38], [66, 44], [78, 50]];
   function blip(f) {
     if (!actx || !soundOn) return;
     const t = actx.currentTime, o = actx.createOscillator(), g2 = actx.createGain();
     o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
   }
-  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}" style="--x:${ARC[i][0]};--y:${ARC[i][1]};--px:${ROW[i][0]};--py:${ROW[i][1]}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}" style="left:${ARC[i][0]}cqw;top:${ARC[i][1]}cqw"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
   function syncChars(anim) {
     const i = settings.char, c = CHARS[i], port = $("port");
     port.src = `chars/${c.id}.jpg`; port.alt = c.name;

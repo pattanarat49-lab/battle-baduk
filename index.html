@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@900&family=Knewave&family=Pixelify+Sans:wght@700&family=Noto+Serif+Thai:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@900&family=Pixelify+Sans:wght@700&family=Noto+Serif+Thai:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
 /* One deliberate theme in both modes: the deep teal of the character portraits with go-board wood as the accent. */
 :root {
@@ -14,7 +14,6 @@
   --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --f-logo: "Londrina Solid", "Impact", var(--f-display);
   --f-px: "Pixelify Sans", "Courier New", monospace;
-  --f-sf: "Knewave", var(--f-logo);
   color-scheme: dark;
 }
 html, body { min-height: 100%; }
@@ -42,87 +41,69 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
 .av { display: block; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
 
-/* ---------- home: full-screen Street Fighter III style select ---------- */
-body.arcade { overflow: hidden; }
-.home { --gold: var(--accent); --gold-hi: #f0c888; --gold-dim: var(--wood-dark); --edge: max(16px, env(safe-area-inset-left, 0px));
-  position: fixed; inset: 0; overflow: hidden; container-type: size; user-select: none; touch-action: pan-y; text-align: left;
-  background: repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 22px, transparent 22px 56px),
-    radial-gradient(55% 70% at 88% 30%, #f0b45e 0%, rgba(240,180,94,0) 70%),
-    linear-gradient(112deg, #1d4a52 0%, #23565e 36%, #7a4a2c 62%, #c9702e 82%, #e89a48 100%); }
+/* ---------- home: arcade character select ---------- */
+.home { --gold: var(--accent); --gold-hi: #f0c888; --gold-dim: var(--wood-dark); --card: var(--surface); --frame: var(--wood);
+  max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; padding-bottom: 24px; }
 .px { font-family: var(--f-px); font-weight: 700; letter-spacing: .02em; }
-.home .port { position: absolute; left: 0; bottom: 0; height: 100cqh; width: 100cqh; max-width: 68cqw; object-fit: cover; object-position: 50% 15%;
-  -webkit-mask-image: linear-gradient(90deg, #000 62%, transparent 98%); mask-image: linear-gradient(90deg, #000 62%, transparent 98%); }
-.home .port.in { animation: slidein .28s steps(4) both; }
-@keyframes slidein { from { transform: translateX(-5cqw); opacity: .3; } to { transform: none; opacity: 1; } }
-.sf-top { position: absolute; left: 0; top: max(14px, env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-.sf-tag { padding: 4px 8cqmin 6px var(--edge); background: linear-gradient(90deg, rgba(10, 22, 26, .8) 70%, rgba(10, 22, 26, 0)); border-bottom: 3px solid var(--fg); }
-.sf-tag .nm { display: inline-block; font-family: var(--f-sf); font-weight: 400; font-size: clamp(30px, 9cqmin, 80px); line-height: 1; color: var(--fg); padding: 2px 16px 0;
-  border: 3px solid var(--fg); transform: skewX(-12deg); letter-spacing: .02em; text-shadow: 3px 3px 0 #000; white-space: nowrap; }
-.sf-sub { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-left: var(--edge); }
-.sf-sub span { font-family: var(--f-display); font-weight: 700; font-size: clamp(14px, 3cqmin, 22px); line-height: 1.25; color: var(--fg); background: rgba(10, 22, 26, .72); padding: 3px 12px; }
+.home .logo-sm { font-size: 22px; color: var(--fg); opacity: .9; text-shadow: 0 2px 0 var(--gold-dim); }
+.px-title { font-family: var(--f-px); font-weight: 700; font-size: clamp(30px, 8.5vw, 58px); line-height: 1; color: var(--gold); margin: 0;
+  text-shadow: 3px 3px 0 var(--gold-dim); }
+/* Street Fighter III style select stage: everything is sized in cqw so the whole scene scales as one picture */
+.stage { position: relative; width: 100%; max-width: 720px; aspect-ratio: 4 / 3; container-type: inline-size; overflow: hidden; touch-action: pan-y; user-select: none;
+  background: repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 2cqw, transparent 2cqw 5cqw),
+    radial-gradient(60% 70% at 88% 30%, #f0b45e 0%, rgba(240,180,94,0) 70%),
+    linear-gradient(112deg, #1d4a52 0%, #23565e 38%, #7a4a2c 64%, #c9702e 82%, #e89a48 100%);
+  box-shadow: 0 0 0 4px var(--wood-dark), 0 20px 40px -24px #000; border-radius: 4px; }
+.stage .port { position: absolute; left: -3cqw; bottom: 0; width: 72cqw; height: 72cqw; object-fit: cover; object-position: 50% 20%;
+  -webkit-mask-image: linear-gradient(90deg, #000 58%, transparent 92%), linear-gradient(0deg, transparent 0, #000 22%);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, #000 58%, transparent 92%); }
+.stage .port.in { animation: slidein .28s steps(4) both; }
+@keyframes slidein { from { transform: translateX(-7cqw); opacity: .3; } to { transform: none; opacity: 1; } }
+.sf-tag { position: absolute; left: 0; top: 2.4cqw; display: flex; align-items: flex-end; gap: 1.6cqw; padding: 0 5cqw 0 2cqw; height: 9.5cqw;
+  background: linear-gradient(90deg, rgba(10, 22, 26, .78) 70%, rgba(10, 22, 26, 0)); border-bottom: .5cqw solid var(--fg); }
+.sf-tag .p1 { font-family: var(--f-logo); font-weight: 900; font-style: italic; font-size: 10cqw; line-height: .9; color: var(--fg); transform: skewX(-12deg); text-shadow: .5cqw .5cqw 0 #000; }
+.sf-tag .nm { font-family: var(--f-logo); font-weight: 900; font-size: 6.6cqw; line-height: 1; color: var(--fg); padding: .4cqw 2cqw .2cqw; margin-bottom: .6cqw;
+  border: .45cqw solid var(--fg); transform: skewX(-12deg); letter-spacing: .04em; text-shadow: .4cqw .4cqw 0 #000; white-space: nowrap; }
+.sf-sub { position: absolute; left: 2cqw; top: 13.5cqw; display: flex; gap: 1.2cqw; align-items: center; }
+.sf-sub span { font-family: var(--f-display); font-weight: 700; font-size: 3.2cqw; line-height: 1.2; color: var(--fg); background: rgba(10, 22, 26, .7); padding: .4cqw 1.6cqw; }
 .sf-sub .rk { font-family: var(--f-px); color: var(--accent-fg); background: var(--accent); }
-.home .cinfo { position: absolute; left: var(--edge); bottom: max(16px, env(safe-area-inset-bottom, 0px)); max-width: min(34cqw, 46ch);
-  background: rgba(10, 22, 26, .74); padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; }
-.cinfo .cmeta { color: var(--gold); font-size: 13px; font-weight: 600; }
-.cinfo .cbio { margin: 0; color: var(--fg); font-size: 13px; line-height: 1.45; }
-.cinfo .csay { margin: 0; color: var(--muted); font-size: 12px; font-style: italic; }
-/* face icons: x/y are percentages of the screen, --x/--y for landscape, --px/--py for portrait */
-.sf-faces { position: absolute; inset: 0; --d: min(14cqh, 10cqw); --ys: 1; pointer-events: none; }
-.sf-faces button { pointer-events: auto; position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * var(--ys) * 1%); width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
-  padding: 0; min-height: 0; border-radius: 50%; border: 4px solid rgba(20, 12, 6, .85); background: var(--bg-2); line-height: 0;
-  box-shadow: 4px 6px 0 rgba(0,0,0,.35); transition: transform .12s; }
+.sf-faces { position: absolute; inset: 0; }
+.sf-faces button { position: absolute; width: 13cqw; height: 13cqw; margin: -6.5cqw 0 0 -6.5cqw; padding: 0; min-height: 0; border-radius: 50%;
+  border: .6cqw solid rgba(20, 12, 6, .85); background: var(--bg-2); line-height: 0; box-shadow: .5cqw .7cqw 0 rgba(0,0,0,.35); transition: transform .12s; }
 .sf-faces button img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; filter: saturate(.75) brightness(.85); }
 .sf-faces button:hover:not(:disabled) { border-color: var(--fg); transform: scale(1.06); }
-.sf-faces button[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 4px #c8203a, 4px 6px 0 rgba(0,0,0,.35); transform: scale(1.12); z-index: 2; }
+.sf-faces button[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 .5cqw #c8203a, .5cqw .7cqw 0 rgba(0,0,0,.35); transform: scale(1.1); z-index: 2; }
 .sf-faces button[aria-pressed="true"] img { filter: none; }
-.sf-band { position: absolute; left: 38cqw; right: 0; bottom: 0; background: linear-gradient(180deg, #b8264a, #8e1636); border-top: 3px solid rgba(255,255,255,.5);
-  clip-path: polygon(6cqmin 0, 100% 0, 100% 100%, 0 100%); padding: clamp(10px, 2.4cqh, 24px) max(16px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) calc(6cqmin + 20px);
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 20px; align-items: center; }
-.sf-title { margin: 0; font-family: var(--f-sf); font-weight: 400; font-size: clamp(30px, 7.5cqh, 72px); line-height: .95; letter-spacing: .03em;
-  color: #4a0a1c; -webkit-text-stroke: 2px #f3b6c4; transform: skewX(-6deg); text-transform: uppercase; }
-.sf-title b { display: block; font-weight: 400; }
-.sf-ctl { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; }
-.opt { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
-.opt-l { font-size: 12px; color: #f3c9d3; white-space: nowrap; }
-.home .seg { display: flex; gap: 16px; border: 0; background: none; overflow: visible; }
-.home .seg button { border: 0; background: none; padding: 0 0 0 18px; min-height: 32px; position: relative;
-  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: clamp(15px, 3cqh, 22px); color: rgba(243, 234, 216, .5); }
-.home .seg button[aria-pressed="true"] { color: #ffe1a6; background: none; }
-.home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 1px; top: 50%; margin-top: -8px; border-block: 8px solid transparent; border-left: 11px solid #ffe1a6; }
+.sf-faces button[aria-pressed="true"]::after { content: "1P"; position: absolute; right: -3.2cqw; top: -1.6cqw; font-family: var(--f-logo); font-weight: 900; font-style: italic;
+  font-size: 3.6cqw; line-height: 1; color: #fff; background: #c8203a; padding: .3cqw .9cqw; border-radius: .6cqw; animation: blink .8s steps(2, start) infinite; }
+.sf-band { position: absolute; left: 36cqw; right: -2cqw; bottom: 2cqw; height: 15cqw; background: linear-gradient(180deg, #b8264a, #8e1636);
+  clip-path: polygon(5cqw 0, 100% 0, 100% 100%, 0 100%); display: flex; flex-direction: column; justify-content: center; padding-left: 7cqw; text-align: left;
+  border-top: .5cqw solid rgba(255,255,255,.5); }
+.sf-band b { display: block; font-family: var(--f-logo); font-weight: 900; font-style: italic; font-size: 6.2cqw; line-height: .95; letter-spacing: .03em;
+  color: #4a0a1c; -webkit-text-stroke: .25cqw #f3b6c4; transform: skewX(-12deg); text-transform: uppercase; }
+.cinfo { max-width: 46ch; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
+.cinfo .cmeta { color: var(--gold); font-size: 14px; font-weight: 600; }
+.cinfo .cbio { margin: 0; color: var(--fg); font-size: 14px; }
+.cinfo .csay { margin: 0; color: var(--muted); font-size: 13px; font-style: italic; }
+.opts { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 4px; }
+.opt { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.opt-l { font-size: 12px; color: var(--muted); }
+.home .seg { display: flex; gap: 22px; border: 0; background: none; overflow: visible; }
+.home .seg button { border: 0; background: none; padding: 2px 0 2px 22px; min-height: 36px; position: relative;
+  font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 22px; color: rgba(243, 234, 216, .42); }
+.home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
+.home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
-.home .seg button:hover:not(:disabled) { color: #fff; }
-.px-start { font-family: var(--f-sf); font-weight: 400; font-size: clamp(24px, 6cqh, 46px); line-height: 1; color: #ffe1a6; background: none; border: 0; padding: 4px 0; min-height: 0;
-  text-shadow: 3px 3px 0 #4a0a1c; cursor: pointer; transition: transform .1s; }
+.home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
+.px-start { font-family: var(--f-px); font-weight: 700; font-size: clamp(34px, 9vw, 52px); line-height: 1; color: var(--gold); background: none; border: 0; padding: 8px 14px; min-height: 0;
+  text-shadow: 3px 3px 0 var(--gold-dim); margin-top: 6px; cursor: pointer; transition: transform .1s; }
 .px-start:active { transform: translateY(2px); }
-.px-start:hover:not(:disabled) { color: #fff; }
+.px-start:hover:not(:disabled) { color: var(--gold-hi); }
+.px-start .blink { display: inline-block; margin-right: 10px; animation: blink 1s steps(2, start) infinite; }
 @keyframes blink { to { visibility: hidden; } }
-.sf-note { grid-column: 1 / -1; margin: 2px 0 0; font-size: 11px; color: #f3c9d3; display: flex; flex-wrap: wrap; gap: 0 12px; justify-content: space-between; }
-.sf-note p { margin: 0; }
-/* tall phone screens: portrait on top, faces in a zigzag row, the band across the bottom */
-@media (orientation: portrait) {
-  .home { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; }
-  .home .port { position: relative; width: 100%; max-width: none; height: 100%; min-height: 0; object-position: 50% 18%;
-    -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent); mask-image: linear-gradient(180deg, #000 72%, transparent); }
-  .home .cinfo { display: none; }
-  .sf-faces { position: relative; inset: auto; --d: min(15cqw, 9cqh); height: calc(var(--d) * 1.85); }
-  .sf-faces button { left: calc(var(--px) * 1%); top: calc(var(--py) * 1%); }
-  .sf-band { position: relative; left: auto; clip-path: polygon(0 18px, 100% 0, 100% 100%, 0 100%); padding: 24px var(--edge) max(12px, env(safe-area-inset-bottom, 0px));
-    grid-template-columns: minmax(0, 1fr); gap: 4px; }
-  .sf-title { font-size: clamp(30px, 10cqw, 52px); }
-  .sf-title b { display: inline; }
-  .sf-ctl { align-items: stretch; }
-  .opt { justify-content: space-between; }
-  .px-start { align-self: center; margin-top: 4px; }
-}
-/* short landscape (phone on its side): pull the arc up and tighten the band */
-@media (orientation: landscape) and (max-height: 520px) {
-  .sf-faces { --ys: .84; }
-  .home .seg button { min-height: 26px; }
-  .sf-note p:first-child { display: none; }
-}
-@media (orientation: portrait) and (max-width: 380px) { .opt-l { font-size: 11px; } .home .seg { gap: 10px; } }
-@media (prefers-reduced-motion: reduce) { .home .port.in { animation: none; } }
-
+.timectl { margin: 0; font-size: 13px; color: var(--muted); }
+.home .engine-chip { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .stage .port.in, .px-start .blink, 
 /* ---------- game ---------- */
 .logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
 .game-title { font-size: 34px; }
@@ -220,24 +201,24 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 </style>
 
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="home" id="home">
-  <img class="port" id="port" alt="" width="480" height="480">
-  <div class="sf-faces" id="faces" aria-label="ตัวละครทั้งหมด"></div>
-  <div class="sf-top">
-    <div class="sf-tag"><span class="nm" id="sfName"></span></div>
+  <div class="logo logo-sm">Baduk Battle</div>
+  <div class="stage" id="chars">
+    <img class="port" id="port" alt="" width="480" height="480">
+    <div class="sf-tag"><span class="p1">1P</span><span class="nm" id="sfName"></span></div>
     <div class="sf-sub"><span id="sfThai"></span><span class="rk" id="sfRank"></span></div>
+    <div class="sf-faces" id="faces" aria-label="ตัวละครทั้งหมด"></div>
+    <h1 class="sf-band"><b>Player</b><b>Select</b></h1>
   </div>
   <div class="cinfo" id="pick" aria-live="polite"></div>
-  <div class="sf-band">
-    <h1 class="sf-title"><b>Player</b> <b>Select</b></h1>
-    <div class="sf-ctl">
-      <div class="opt"><span class="opt-l" id="sizeLegend">กระดาน</span>
-        <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
-      <div class="opt"><span class="opt-l">คุณถือ</span>
-        <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
-      <button id="btnNew" class="px-start">GAME START</button>
-    </div>
-    <div class="sf-note"><p>Baduk Battle · 15 นาที + เบียวโยมิ 10 วิ × 3</p><p id="engineHome">กำลังโหลดสมอง AI…</p></div>
+  <div class="opts">
+    <div class="opt"><span class="opt-l" id="sizeLegend">กระดาน</span>
+      <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
+    <div class="opt"><span class="opt-l">คุณถือ (ดำเดินก่อน)</span>
+      <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
   </div>
+  <button id="btnNew" class="px-start">GAME START</button>
+  <p class="timectl">15 นาที + เบียวโยมิ 10 วิ × 3 · แตะหน้าหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
+  <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
 </section>
 
 <main class="app" id="game" hidden>
@@ -1608,7 +1589,7 @@ function GoNNAI(E, F, net) {
         b.setAttribute("aria-pressed", String(+b.dataset.v === val));
         if (key === "size") b.disabled = only19(settings.char) && +b.dataset.v !== 19;
       });
-      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (19×19 เท่านั้น)" : "กระดาน";
+      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (ตัวนี้เล่น 19×19 เท่านั้น)" : "กระดาน";
     };
     el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; settings[key] = +b.dataset.v; save(key, settings[key]); sync(); });
     sync();
@@ -1787,17 +1768,16 @@ function GoNNAI(E, F, net) {
 
   const syncSize = seg("segSize", "size"); seg("segColor", "human");
   // home screen: Street Fighter III style select, big portrait on the left and the face icons in an arc on the right
-  const charsEl = $("home"), L8 = CHARS.length;
-  // face icon centres in % of the screen: an arc like the SF3 roster in landscape, a zigzag row in portrait
-  const ARC = [[80, 9], [92, 16], [74, 23], [86, 30], [68, 37], [80, 44], [62, 51], [74, 58]];
-  const ROW = CHARS.map((c, i) => [7.5 + i * 12.1, i % 2 ? 72 : 28]);
+  const charsEl = $("chars"), L8 = CHARS.length;
+  // face icon centres in cqw (stage is 100 x 75), zigzagging down an arc like the SF3 roster
+  const ARC = [[82, 8], [93, 14], [76, 20], [88, 26], [71, 32], [83, 38], [66, 44], [78, 50]];
   function blip(f) {
     if (!actx || !soundOn) return;
     const t = actx.currentTime, o = actx.createOscillator(), g2 = actx.createGain();
     o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
   }
-  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}" style="--x:${ARC[i][0]};--y:${ARC[i][1]};--px:${ROW[i][0]};--py:${ROW[i][1]}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}" style="left:${ARC[i][0]}cqw;top:${ARC[i][1]}cqw"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
   function syncChars(anim) {
     const i = settings.char, c = CHARS[i], port = $("port");
     port.src = `chars/${c.id}.jpg`; port.alt = c.name;
