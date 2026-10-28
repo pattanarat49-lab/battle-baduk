@@ -2009,6 +2009,17 @@ function GoNNAI(E, F, net) {
     o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
   }
+  // in-game buttons: short arcade notes in the same voice as the select screen, one tune per button
+  function tune(notes) { notes.forEach(([f, ms]) => setTimeout(() => blip(f), ms)); }
+  const BUTTON_TUNES = {
+    btnPass: [[440, 0]], btnHint: [[660, 0], [990, 70]], btnResign: [[520, 0], [390, 90], [260, 180]],
+    btnRestart: [[660, 0], [880, 70]], btnHome: [[880, 0], [660, 70]], btnFull: [[520, 0]],
+    rvFirst: [[700, 0]], rvPrev: [[800, 0]], rvNext: [[900, 0]], rvLast: [[1000, 0]]
+  };
+  $("game").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || b.disabled) return;
+    unlockAudio(); tune(BUTTON_TUNES[b.id] || (b.id === "btnSound" ? [] : [[700, 0]]));
+  }, true);
   $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
   function syncChars(anim) {
     const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
