@@ -47,7 +47,7 @@
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 4000, timeMs: 15000 },
-      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 150 ตา) แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
+      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 150 ตา) เวลา 15 นาที + เบียวโยมิ 45 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
       say: { hello: "มาวัดฝีมือกันหน่อย", ahead: "ลองหาตาที่ดีกว่านี้ดูนะ", behind: "เก่งนี่", win: "จบการสอบ ดูผลด้านล่างได้เลย", lose: "จบการสอบ ดูผลด้านล่างได้เลย" } }
   ];
   // ---------- in-game lines: each kind is "|"-separated variants, {n} is a stone count ----------
@@ -432,7 +432,9 @@
   }
 
   // ---------- clocks: 15 min main time, then byo-yomi 10 s x 3 ----------
-  const MAIN_S = 900, BYO_S = 10, PERIODS = 3;
+  // the placement test (Hikaru) gives 45 s per byo-yomi period so the player can think each move through
+  const MAIN_S = 900, PERIODS = 3;
+  let BYO_S = 10;
   let clocks = null, lastTick = 0, humanSince = 0, slowTold = false;
   const freshClock = () => ({ main: MAIN_S, byo: BYO_S, per: PERIODS });
   const clockLive = () => board && engineReady && !over && !scoring;
@@ -530,6 +532,7 @@
       $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
+    BYO_S = CHARS[gameChar].exam ? 45 : 10;
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
     speak("hello", { force: true }); hopeless = 0;
