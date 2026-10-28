@@ -44,7 +44,11 @@
       say: { hello: "เล่นเต็มที่นะครับ", ahead: "เกมนี้อยู่ในมือแล้ว", behind: "ยังมีทางสู้", win: "ขอบคุณที่เล่นด้วยครับ ฝึกต่อไปนะ", lose: "ฝีมือระดับทีมชาติเลยนะครับ" } },
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 15000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
-      say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } }
+      say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
+    // placement test: reads like Todo but keeps the game close, and grades every move the player makes
+    { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 4000, timeMs: 15000 },
+      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ",
+      say: { hello: "มาวัดฝีมือกันหน่อย", ahead: "ลองหาตาที่ดีกว่านี้ดูนะ", behind: "เก่งนี่", win: "จบการสอบ ดูผลด้านล่างได้เลย", lose: "จบการสอบ ดูผลด้านล่างได้เลย" } }
   ];
   // ---------- in-game lines: each kind is "|"-separated variants, {n} is a stone count ----------
   // goodMove/badMove: the player's last move moved their winning chance a lot; caught: the player captured
@@ -265,8 +269,55 @@
       resigned: "รู้จักยอมแพ้ ก็คือรู้จักเกม|ดี",
       timeoutWin: "เวลาไม่รอใคร|...",
       giveUp: "ข้ายอม|...ยอมแพ้"
+    },
+    hikaru: {
+      hello: "มาวัดฝีมือกันหน่อย ทุกตาที่เดินจะถูกให้คะแนนนะ|เล่นให้เต็มที่ ผลสอบจะบอกระดับคร่าวๆ ให้",
+      goodMove: "ตานี้ดีมาก|อ่านขาดเลยนี่|นั่นแหละตาที่ผมรออยู่",
+      badMove: "ลองคิดอีกทีสิ ตานี้มีทางที่ดีกว่า|อืม จดไว้ก่อน ดูตอนจบนะ|ตานี้เสียไปเยอะเลย",
+      caught: "โดนเข้าแล้ว {n} เม็ด|อ่านได้ดี",
+      capture: "ขอ {n} เม็ดนะ|ต้องระวังลมหายใจด้วย",
+      ahead: "ยังตามทันนะ ลองหาจุดที่ใหญ่ที่สุดดู|อย่าเพิ่งท้อ",
+      behind: "เก่งนี่|ผมต้องตั้งใจแล้ว",
+      comeback: "กลับมาได้ดี",
+      humanPass: "ผ่านแล้วใช่ไหม งั้นจบการสอบ",
+      aiPass: "ผมผ่าน",
+      ko: "โคแล้ว ต้องหาตาบังคับก่อนนะ",
+      hint: "ช่วงสอบใช้คำแนะนำไม่ได้นะ",
+      slow: "คิดให้ละเอียด ไม่ต้องรีบ",
+      byoyomi: "เบียวโยมิแล้ว ระวังเวลา",
+      lastPeriod: "ครั้งสุดท้ายแล้วนะ",
+      aiByo: "ขอคิดหน่อย",
+      mid: "ตาที่ไม่ใช่ตาที่ดีที่สุด อาจเป็นตาทดสอบนะ|ดูทั้งกระดานก่อนเดิน",
+      win: "จบการสอบ ดูผลด้านล่างได้เลย",
+      lose: "จบการสอบ ดูผลด้านล่างได้เลย",
+      resigned: "จบการสอบ ดูผลด้านล่างได้เลย",
+      timeoutWin: "หมดเวลาแล้ว จบการสอบ",
+      giveUp: "ผมยอมแพ้ จบการสอบ ดูผลด้านล่างได้เลย"
     }
   };
+  // Placement-test calibration: share of moves that were not "Best" for each character in teaching games
+  // against Hikaru (24 distinct arena games, 2026-10-28). rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...
+  // Chris and Weiqi measured alike, so they share one point; the grader cannot separate anything above about 5 dan.
+  const EXAM_CALIB = [
+    { id: "mek", rank: -14, avg: 60, label: "15 คิว" }, { id: "win", rank: -7, avg: 57, label: "8 คิว" },
+    { id: "yuto", rank: -4, avg: 39, label: "5 คิว" }, { id: "chris", rank: 2, avg: 21.5, label: "1–3 ดั้ง" },
+    { id: "tora", rank: 4, avg: 13, label: "4 ดั้ง" }, { id: "kan", rank: 5, avg: 5, label: "5 ดั้ง" }
+  ];
+  const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
+  function rankName(v) {
+    if (v >= 5) return "5 ดั้งขึ้นไป";
+    const r = Math.round(v);
+    return r >= 1 ? r + " ดั้ง" : (1 - r) + " คิว";
+  }
+  function estimateRank(avg) {
+    const pts = EXAM_CALIB.slice().sort((a, b) => b.avg - a.avg); // weakest (most points lost) first
+    if (pts.length < 2) return null;
+    if (avg >= pts[0].avg) return pts[0].rank; // weaker than the weakest reference: shown as that level
+    for (let i = 1; i < pts.length; i++) if (avg >= pts[i].avg) {
+      const a = pts[i - 1], b = pts[i]; return a.rank + (a.avg - avg) / (a.avg - b.avg || 1) * (b.rank - a.rank);
+    }
+    return pts[pts.length - 1].rank;
+  }
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
@@ -278,7 +329,7 @@
   const KOMI = 7.5;
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null;
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5, hopeless = 0;
-  let reviewAt = null, reviewBoard = null; // after the game: which move the board shows (null = final position)
+  let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
   let AI = null, gen = 0, engineReady = false;
 
   // ---------- load network ----------
@@ -329,7 +380,7 @@
       engineReady = true;
       el.textContent = `สมอง AI พร้อม · KataGo b10 · ${backend === "webgl" ? "ใช้การ์ดจอ" : "ใช้ CPU (ช้า)"} · ~${ms} ms ต่อการประเมิน`;
       console.log("warmup", Math.round(t1 - t0), "ms; per eval", ms, "ms");
-      if (board) { render(); maybeAI(); }
+      if (board) { render(); maybeAI(); startPonder(); }
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
@@ -466,6 +517,7 @@
     cancelAI();
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     board = new Board(n); history = []; hint = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
+    exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     const ch = CHARS[gameChar];
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
@@ -478,7 +530,7 @@
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
     speak("hello", { force: true }); hopeless = 0;
     gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
-    resize(); render(); maybeAI();
+    resize(); render(); maybeAI(); startPonder();
   }
   function replay() { board = new Board(n); for (const m of history) board.play(m); }
   // ---------- sound: a short wooden click, synthesised so no audio file is needed ----------
@@ -500,6 +552,26 @@
     o.connect(og).connect(actx.destination);
     src.start(t); o.start(t); o.stop(t + 0.08);
   }
+  // examiner reads the player's position while they think; that search grades the move they then make
+  function startPonder() {
+    if (!exam || !engineReady || over || scoring || board.toPlay !== human) return;
+    const at = history.length, my = gen;
+    const moves = history.slice(), stop = () => my !== gen;
+    ponder = { at, promise: (async () => {
+      const s = await AI.think(n, moves, KOMI, { visits: 400, timeMs: 10000, batch: 8, shouldStop: stop });
+      const bestChild = s.move === PASS || stop() ? null : await AI.think(n, moves.concat([s.move]), KOMI, { visits: 100, timeMs: 5000, batch: 8, shouldStop: stop });
+      return { s, bestChild };
+    })() };
+  }
+  async function gradeLast(my) {
+    const pm = history.length - 1;
+    if (!exam || pm < 0 || history[pm] === PASS) { ponder = null; return; }
+    const pre = ponder && ponder.at === pm ? await ponder.promise : { s: await AI.think(n, history.slice(0, pm), KOMI, { visits: 200, timeMs: 6000, batch: 8 }) };
+    ponder = null;
+    if (my !== gen) return;
+    const g = await AI.gradeWith(n, history.slice(0, pm), history[pm], KOMI, pre.s, { childVisits: 100, bestChild: pre.bestChild });
+    if (my === gen) exam.grades[pm] = { loss: g.loss, best: g.best, cls: AI.gradeOf(g) };
+  }
   function playMove(p) {
     if (p !== PASS) clack();
     const mover = board.toPlay, caps = board.caps[mover];
@@ -511,7 +583,7 @@
     else if (p === PASS) speak(mover === human ? "humanPass" : "aiPass", { pri: 3, gap: 8 });
     else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
     render();
-    if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); }
+    if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); }
   }
   function setEval(res) {
     // res values are for the player to move at the searched position
@@ -592,13 +664,15 @@
     await new Promise(r => setTimeout(r, 30));
     await judgeHumanMove();
     if (my !== gen) return;
-    const book = openingMove();
+    if (exam) await gradeLast(my);
+    if (my !== gen) return;
+    const book = exam ? null : openingMove();
     if (book !== null) {
       await minThink();
       if (my !== gen) return;
       thinking = false; playMove(book); return;
     }
-    const res = await AI.think(n, moves, KOMI, Object.assign({
+    const res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
       batch: 8, shouldStop: () => my !== gen,
       onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
     }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs) }));
@@ -736,7 +810,8 @@
     $("review").hidden = !on; $("playActions").hidden = on;
     if (!on) return;
     const k = reviewAt === null ? history.length : reviewAt;
-    const mv = k ? `${k % 2 ? "ดำ" : "ขาว"} ${moveName(history[k - 1])}` : "เริ่มเกม";
+    const g = exam && k ? exam.grades[k - 1] : null;
+    const mv = (k ? `${k % 2 ? "ดำ" : "ขาว"} ${moveName(history[k - 1])}` : "เริ่มเกม") + (g ? ` · <span class="g-t g-${g.cls}">${GRADE_LABEL[g.cls]}${g.cls === "best" ? "" : " −" + g.loss.toFixed(1)}</span>` : "");
     $("rvLabel").innerHTML = `ตา ${k}/${history.length}<br>${mv}`;
     $("rvFirst").disabled = $("rvPrev").disabled = k === 0;
     $("rvNext").disabled = $("rvLast").disabled = k === history.length;
@@ -758,10 +833,10 @@
     const lead = Math.abs(leadBlack).toFixed(1);
     $("wrMid").textContent = history.length ? `${leadBlack >= 0 ? "ดำ" : "ขาว"} นำ ~${lead} แต้ม` : "โอกาสชนะ";
     const myTurn = engineReady && live && !thinking && board.toPlay === human;
-    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn;
+    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn || !!exam;
     $("btnResign").disabled = !live || !history.length;
     const res = $("result");
-    if (over) { res.hidden = false; res.innerHTML = `<h2>${over.text}</h2><div class="nums">${over.detail}</div>`; }
+    if (over) { res.hidden = false; res.innerHTML = `<h2>${over.text}</h2><div class="nums">${over.detail}</div>` + examReport(); }
     else if (scoring && !scoring.loading) {
       const r = areaCount(scoring.dead); scoring.terr = r.terr;
       const diff = r.b - (r.w + KOMI);
@@ -770,8 +845,23 @@
       if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
-        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>`;
+        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
     } else res.hidden = true;
+  }
+  function examReport() {
+    if (!exam) return "";
+    const gs = exam.grades.filter(Boolean);
+    if (gs.length < 20) return `<div class="exam"><b>ผลสอบ</b><p class="note">เดินไป ${gs.length} ตา ยังน้อยเกินไปที่จะประเมินระดับ (ต้องมีอย่างน้อย 20 ตา)</p></div>`;
+    const cnt = { best: 0, good: 0, normal: 0, bad: 0 }; let sum = 0;
+    for (const g of gs) { cnt[g.cls]++; sum += Math.min(g.loss, 20); }
+    const avg = sum / gs.length, notBest = 100 * (gs.length - cnt.best) / gs.length, est = estimateRank(notBest);
+    const bar = Object.keys(cnt).map(k => `<i class="g-${k}" style="flex:${cnt[k]}"></i>`).join("");
+    const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
+    const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - notBest) < Math.abs(a.avg - notBest) ? b : a) : null;
+    return `<div class="exam"><b>ผลสอบวัดระดับ</b>
+      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">ผลประมาณการ คลาดได้ราว ±2 ระดับ</div>
+      <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
+      <p class="note">ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
   function moveName(p) { if (p === PASS) return "ผ่าน"; const [x, y] = board.xy(p); return LETTERS[x] + (n - y); }
   function renderStatus() {
@@ -790,7 +880,7 @@
     }
     el.innerHTML = html;
     const live = !over && !scoring, myTurn = engineReady && live && !thinking && board.toPlay === human;
-    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn;
+    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn || !!exam;
   }
 
   let dpr = 1, S = 800;
@@ -879,6 +969,12 @@
       g.strokeStyle = c === BLACK ? "#f5f2e8" : "#222"; g.lineWidth = Math.max(1.4, cell / 14);
       g.beginPath(); g.arc(P(x), P(y), r * .45, 0, 7); g.stroke();
     }
+    const graded = reviewing && exam ? exam.grades[history.length - 1] : null;
+    if (graded && graded.cls !== "best" && graded.best !== PASS) { // where the examiner would have played instead
+      const [x, y] = board.xy(graded.best);
+      g.strokeStyle = "#1f6b55"; g.lineWidth = Math.max(2, cell / 10); g.setLineDash([cell * .14, cell * .1]);
+      g.beginPath(); g.arc(P(x), P(y), r * .8, 0, 7); g.stroke(); g.setLineDash([]);
+    }
     const target = reviewing ? null : thinking && think && board.toPlay !== ai ? think.move : hint;
     if (target !== null && target !== undefined && target !== PASS) {
       const [x, y] = board.xy(target);
@@ -916,7 +1012,7 @@
     const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
     charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      <div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
+      <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
     $("pick").innerHTML = `<div class="cmeta">${c.country} · ${STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;

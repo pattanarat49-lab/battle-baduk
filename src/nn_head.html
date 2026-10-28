@@ -122,7 +122,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 }
 .ghead { display: none; }
 @media (min-aspect-ratio: 9/8) and (min-height: 620px) { .ghead { display: block; } }
-.app .note { display: none; }
+.app .note { display: none; } .app .exam .note { display: block; }
 @media (min-aspect-ratio: 9/8) and (min-height: 760px) { .app .note { display: block; } }
 .pbar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: stretch; }
 .player { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; display: grid;
@@ -197,6 +197,15 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .settings { display: flex; flex-direction: column; gap: 10px; }
 .result { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
 .result h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 4px; }
+.exam { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.exam-rank { font-family: var(--f-px), var(--f-display); font-weight: 700; font-size: 26px; color: var(--accent); line-height: 1.1; }
+.gbar { display: flex; height: 14px; border-radius: 3px; overflow: hidden; background: var(--bg-2); }
+.glegend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.glegend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.g-best { background: #5fc08f; } .g-good { background: #9fd8c0; } .g-normal { background: #e3b06a; } .g-bad { background: #ef6f5e; }
+.g-t { background: none !important; font-weight: 700; } .g-t.g-best { color: #5fc08f; } .g-t.g-good { color: #9fd8c0; } .g-t.g-normal { color: #e3b06a; } .g-t.g-bad { color: #ff8a78; }
+.cexam { font-family: var(--f-px), var(--f-display); font-weight: 700; font-size: clamp(30px, 8vw, 44px); line-height: 1; color: var(--bg); background: var(--accent);
+  padding: 6px 14px 8px; margin-bottom: 6px; text-align: center; box-shadow: 0 4px 0 var(--wood-dark); }
 .result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
 </style>

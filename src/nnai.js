@@ -48,7 +48,7 @@ function GoNNAI(E, F, net) {
   }
   async function evaluate(n, moves, komi, pdaFor) { return (await evalMany(n, [moves], komi, pdaFor))[0]; }
 
-  function Node() { this.N = 0; this.W = 0; this.vl = 0; this.slots = null; this.priors = null; this.kids = null; this.pending = false; }
+  function Node() { this.N = 0; this.W = 0; this.L = 0; this.vl = 0; this.slots = null; this.priors = null; this.kids = null; this.pending = false; }
   function expandFrom(node, ev) {
     const slots = [], pri = [];
     for (let i = 0; i <= AREA; i++) if (ev.legal[i] && ev.policy[i] > 1e-5) { slots.push(i); pri.push(ev.policy[i]); }
@@ -79,6 +79,10 @@ function GoNNAI(E, F, net) {
     const v = (b.areaScore(komi) > 0 ? 1 : -1) * (1 + sw);
     return b.toPlay === E.BLACK ? v : -v;
   }
+  function terminalLead(n, moves, komi) {
+    const b = new Board(n); for (const m of moves) b.play(m);
+    const d = b.areaScore(komi); return b.toPlay === E.BLACK ? d : -d;
+  }
   const slotToPoint = (b, slot) => slot === AREA ? PASS : b.pt(slot % 19, (slot / 19) | 0);
 
   // opts: visits, timeMs, batch, onProgress(info), temperature (weak levels play from the raw policy)
@@ -94,7 +98,7 @@ function GoNNAI(E, F, net) {
     const root = new Node();
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
-    root.N = 1; root.W = util(rootEv);
+    root.N = 1; root.W = util(rootEv); root.L = rootEv.lead;
     if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
@@ -102,19 +106,19 @@ function GoNNAI(E, F, net) {
       const want = Math.min(B, maxVisits - (root.N - 1));
       const leaves = [];
       for (let k = 0; k < want; k++) {
-        let node = root; const path = [root]; const ms = moves.slice(); let done = null;
+        let node = root; const path = [root]; const ms = moves.slice(); let done = null, doneLead = 0;
         while (true) {
           const i = selectChild(node);
           ms.push(slotToPoint(base, node.slots[i]));
           let c = node.kids[i]; if (!c) c = node.kids[i] = new Node();
           path.push(c); node = c;
           const L = ms.length;
-          if (L >= 2 && ms[L - 1] === PASS && ms[L - 2] === PASS) { done = terminalValue(n, ms, komi, sw); break; }
+          if (L >= 2 && ms[L - 1] === PASS && ms[L - 2] === PASS) { done = terminalValue(n, ms, komi, sw); doneLead = terminalLead(n, ms, komi); break; }
           if (!node.slots) break;
         }
         if (done === null && node.pending) break; // collided with a leaf already queued
         for (const p of path) p.vl++;
-        if (done !== null) { leaves.push({ path, value: done }); continue; }
+        if (done !== null) { leaves.push({ path, value: done, lead: doneLead }); continue; }
         node.pending = true;
         leaves.push({ path, ms, node });
       }
@@ -122,11 +126,11 @@ function GoNNAI(E, F, net) {
       const need = leaves.filter(l => l.ms);
       if (need.length) {
         const evs = await evalMany(n, need.map(l => l.ms), komi, pdaFor);
-        need.forEach((l, i) => { expandFrom(l.node, evs[i]); l.node.pending = false; l.value = util(evs[i]); });
+        need.forEach((l, i) => { expandFrom(l.node, evs[i]); l.node.pending = false; l.value = util(evs[i]); l.lead = evs[i].lead; });
       }
       for (const l of leaves) {
-        let v = l.value;
-        for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; v = -v; }
+        let v = l.value, ld = l.lead;
+        for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; p.L += ld; v = -v; ld = -ld; }
       }
       if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
     }
@@ -193,7 +197,7 @@ function GoNNAI(E, F, net) {
     return {
       move: slotToPoint(base, best.slot), winrate: Math.max(0, Math.min(1, (best.q + 1) / 2)), visits: root.N - 1, lead: rootEv.lead,
       top: list.slice(0, 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior })),
-      own: rootEv.own, pla: rootEv.pla, rootWin: rootEv.win
+      own: rootEv.own, pla: rootEv.pla, rootWin: rootEv.win, searchLead: root.L / root.N
     };
   }
 
@@ -259,6 +263,48 @@ function GoNNAI(E, F, net) {
     return PASS;
   }
 
-  return { evaluate, evalMany, think };
+  // Teaching game: read as usual; when clearly ahead, give back points with the smallest natural concession,
+  // a move strong players would consider (never a first-line or own-territory filler), so the game stays close.
+  async function teach(n, moves, komi, opts) {
+    const s = await think(n, moves, komi, opts);
+    // the player passed in the late game: they consider it finished, so end it and count
+    if (moves.length > 100 && moves[moves.length - 1] === PASS) { s.move = PASS; return s; }
+    if (s.move === PASS || s.top.length < 2) return s;
+    const base = new Board(n), target = opts.target || 0.5;
+    const natural = c => {
+      // opening: only standard joseki-level moves; later any move the network rates at 3% or more
+      if (c.move === PASS || c.prior < (moves.length < 40 ? 0.08 : 0.03)) return false;
+      const [x, y] = base.xy(c.move), i = y * 19 + x;
+      return !(onEdge(n, i) && c.prior < EDGE_NEED) && !(s.own[i] > 0.8 && c.prior < 0.1);
+    };
+    // candidates: the searched best plus every move the network gives at least 1% (up to 12)
+    const ev0 = await evaluate(n, moves, komi), cands = [s.top[0]];
+    const order = []; for (let i = 0; i < AREA; i++) if (ev0.policy[i] >= 0.01) order.push(i);
+    order.sort((a, b) => ev0.policy[b] - ev0.policy[a]);
+    for (const i of order.slice(0, 12)) { const c = { move: slotToPoint(base, i), prior: ev0.policy[i] }; if (c.move !== cands[0].move && natural(c)) cands.push(c); }
+    const evs = await evalMany(n, cands.map(c => moves.concat([c.move])), komi);
+    cands.forEach((c, i) => { c.leadAfter = -evs[i].lead; });
+    let pick = cands[0];
+    const maxGive = Math.max(3, 0.4 * (pick.leadAfter - target)); // concede more per move the further ahead we are
+    if (pick.leadAfter > target + 1) // ahead: the weakest candidate that still keeps us at or above the target
+      for (const c of cands) if (c.leadAfter >= target && c.leadAfter < pick.leadAfter && cands[0].leadAfter - c.leadAfter <= maxGive) pick = c;
+    s.move = pick.move; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
+    return s;
+  }
+  // Grade a move: points it gives up against the best move found by a search of the position before it.
+  // Grade a move by the points it gives up: the positions after the best move and after the played move
+  // each get the same search, and their averaged score leads are compared.
+  async function grade(n, moves, played, komi, opts) { return gradeWith(n, moves, played, komi, await think(n, moves, komi, opts), opts); }
+  // same, reusing a search already made of that position (the examiner reads while the player thinks)
+  // opts.bestChild: a search already made of the position after the best move
+  async function gradeWith(n, moves, played, komi, s, opts) {
+    if (played === s.move) return { loss: 0, best: s.move, same: true };
+    const cv = { visits: (opts && opts.childVisits) || 100, timeMs: (opts && opts.childMs) || 4000, batch: 8 };
+    const a = (opts && opts.bestChild) || await think(n, moves.concat([s.move]), komi, cv), b = await think(n, moves.concat([played]), komi, cv);
+    return { loss: Math.max(0, b.searchLead - a.searchLead), best: s.move, same: false }; // both from the opponent's view
+  }
+  const gradeOf = g => g.same || g.loss <= 0.5 ? "best" : g.loss <= 2 ? "good" : g.loss <= 5 ? "normal" : "bad";
+
+  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf };
 }
 if (typeof module !== "undefined") module.exports = GoNNAI;
