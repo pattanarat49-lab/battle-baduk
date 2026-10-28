@@ -48,43 +48,35 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .logo-sm { font-size: 22px; color: var(--fg); opacity: .9; text-shadow: 0 2px 0 var(--gold-dim); }
 .px-title { font-family: var(--f-px); font-weight: 700; font-size: clamp(30px, 8.5vw, 58px); line-height: 1; color: var(--gold); margin: 0;
   text-shadow: 3px 3px 0 var(--gold-dim); }
-/* Street Fighter III style select stage: everything is sized in cqw so the whole scene scales as one picture */
-.stage { position: relative; width: 100%; max-width: 720px; aspect-ratio: 4 / 3; container-type: inline-size; overflow: hidden; touch-action: pan-y; user-select: none;
-  background: repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 2cqw, transparent 2cqw 5cqw),
-    radial-gradient(60% 70% at 88% 30%, #f0b45e 0%, rgba(240,180,94,0) 70%),
-    linear-gradient(112deg, #1d4a52 0%, #23565e 38%, #7a4a2c 64%, #c9702e 82%, #e89a48 100%);
-  box-shadow: 0 0 0 4px var(--wood-dark), 0 20px 40px -24px #000; border-radius: 4px; }
-.stage .port { position: absolute; left: -3cqw; bottom: 0; width: 72cqw; height: 72cqw; object-fit: cover; object-position: 50% 20%;
-  -webkit-mask-image: linear-gradient(90deg, #000 58%, transparent 92%), linear-gradient(0deg, transparent 0, #000 22%);
-  -webkit-mask-composite: source-in; mask-image: linear-gradient(90deg, #000 58%, transparent 92%); }
-.stage .port.in { animation: slidein .28s steps(4) both; }
-@keyframes slidein { from { transform: translateX(-7cqw); opacity: .3; } to { transform: none; opacity: 1; } }
-.sf-tag { position: absolute; left: 0; top: 2.4cqw; display: flex; align-items: flex-end; gap: 1.6cqw; padding: 0 5cqw 0 2cqw; height: 9.5cqw;
-  background: linear-gradient(90deg, rgba(10, 22, 26, .78) 70%, rgba(10, 22, 26, 0)); border-bottom: .5cqw solid var(--fg); }
-.sf-tag .p1 { font-family: var(--f-logo); font-weight: 900; font-style: italic; font-size: 10cqw; line-height: .9; color: var(--fg); transform: skewX(-12deg); text-shadow: .5cqw .5cqw 0 #000; }
-.sf-tag .nm { font-family: var(--f-logo); font-weight: 900; font-size: 6.6cqw; line-height: 1; color: var(--fg); padding: .4cqw 2cqw .2cqw; margin-bottom: .6cqw;
-  border: .45cqw solid var(--fg); transform: skewX(-12deg); letter-spacing: .04em; text-shadow: .4cqw .4cqw 0 #000; white-space: nowrap; }
-.sf-sub { position: absolute; left: 2cqw; top: 13.5cqw; display: flex; gap: 1.2cqw; align-items: center; }
-.sf-sub span { font-family: var(--f-display); font-weight: 700; font-size: 3.2cqw; line-height: 1.2; color: var(--fg); background: rgba(10, 22, 26, .7); padding: .4cqw 1.6cqw; }
-.sf-sub .rk { font-family: var(--f-px); color: var(--accent-fg); background: var(--accent); }
-.sf-faces { position: absolute; inset: 0; }
-.sf-faces button { position: absolute; width: 13cqw; height: 13cqw; margin: -6.5cqw 0 0 -6.5cqw; padding: 0; min-height: 0; border-radius: 50%;
-  border: .6cqw solid rgba(20, 12, 6, .85); background: var(--bg-2); line-height: 0; box-shadow: .5cqw .7cqw 0 rgba(0,0,0,.35); transition: transform .12s; }
-.sf-faces button img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; filter: saturate(.75) brightness(.85); }
-.sf-faces button:hover:not(:disabled) { border-color: var(--fg); transform: scale(1.06); }
-.sf-faces button[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 .5cqw #c8203a, .5cqw .7cqw 0 rgba(0,0,0,.35); transform: scale(1.1); z-index: 2; }
-.sf-faces button[aria-pressed="true"] img { filter: none; }
-.sf-faces button[aria-pressed="true"]::after { content: "1P"; position: absolute; right: -3.2cqw; top: -1.6cqw; font-family: var(--f-logo); font-weight: 900; font-style: italic;
-  font-size: 3.6cqw; line-height: 1; color: #fff; background: #c8203a; padding: .3cqw .9cqw; border-radius: .6cqw; animation: blink .8s steps(2, start) infinite; }
-.sf-band { position: absolute; left: 36cqw; right: -2cqw; bottom: 2cqw; height: 15cqw; background: linear-gradient(180deg, #b8264a, #8e1636);
-  clip-path: polygon(5cqw 0, 100% 0, 100% 100%, 0 100%); display: flex; flex-direction: column; justify-content: center; padding-left: 7cqw; text-align: left;
-  border-top: .5cqw solid rgba(255,255,255,.5); }
-.sf-band b { display: block; font-family: var(--f-logo); font-weight: 900; font-style: italic; font-size: 6.2cqw; line-height: .95; letter-spacing: .03em;
-  color: #4a0a1c; -webkit-text-stroke: .25cqw #f3b6c4; transform: skewX(-12deg); text-transform: uppercase; }
+.carousel { position: relative; width: 100%; display: grid; grid-template-columns: 1fr auto minmax(0, 340px) auto 1fr; align-items: center; gap: 12px; margin-top: 8px; touch-action: pan-y; }
+.ghost { padding: 0; border: 0; background: none; min-height: 0; opacity: .4; overflow: hidden; border-radius: 10px; }
+.ghost:hover:not(:disabled) { opacity: .6; }
+.ghost img { display: block; width: 100%; max-width: 170px; height: auto; border-radius: 10px; }
+.ghost.left img { margin-left: auto; } .ghost.right img { margin-right: auto; }
+.arrow { width: 34px; height: 44px; min-height: 0; padding: 0; border: 0; background: none; color: var(--gold); display: grid; place-items: center; }
+.arrow::before { content: ""; width: 0; height: 0; border-block: 14px solid transparent; }
+.arrow.left::before { border-right: 18px solid currentColor; }
+.arrow.right::before { border-left: 18px solid currentColor; }
+.arrow:hover:not(:disabled) { color: var(--gold-hi); }
+/* stepped corners give the card its pixel frame */
+.card { --s: 8px; background: var(--frame); padding: 6px; width: 100%;
+  clip-path: polygon(var(--s) 0, calc(100% - var(--s)) 0, calc(100% - var(--s)) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - var(--s)) calc(100% - 4px), calc(100% - var(--s)) 100%, var(--s) 100%, var(--s) calc(100% - 4px), 0 calc(100% - 4px), 0 4px, var(--s) 4px); }
+.card-in { background: linear-gradient(180deg, var(--surface-2), var(--bg-2)); box-shadow: inset 0 0 0 3px rgba(243, 234, 216, .22); padding: 16px 16px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cname { font-family: var(--f-px); font-weight: 700; font-size: clamp(28px, 8vw, 40px); line-height: 1; color: var(--fg); text-shadow: 3px 3px 0 var(--wood-dark); }
+.cthai { font-family: var(--f-display); font-weight: 700; font-size: 15px; color: var(--accent); margin-top: -4px; }
+.pxp { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 3px var(--wood-dark); }
+.crank { font-family: var(--f-px); font-weight: 700; font-size: 15px; color: var(--accent-fg); background: var(--accent); padding: 4px 12px; }
+.card.pop { animation: pop .24s steps(3) both; }
+@keyframes pop { from { transform: scale(.92); opacity: .5; } to { transform: none; opacity: 1; } }
 .cinfo { max-width: 46ch; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
 .cinfo .cmeta { color: var(--gold); font-size: 14px; font-weight: 600; }
 .cinfo .cbio { margin: 0; color: var(--fg); font-size: 14px; }
 .cinfo .csay { margin: 0; color: var(--muted); font-size: 13px; font-style: italic; }
+.faces { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.faces button { padding: 0; min-height: 0; border: 3px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--bg-2); line-height: 0; }
+.faces button img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; opacity: .55; }
+.faces button[aria-pressed="true"] { border-color: var(--gold); }
+.faces button[aria-pressed="true"] img { opacity: 1; }
 .opts { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 4px; }
 .opt { display: flex; flex-direction: column; gap: 4px; align-items: center; }
 .opt-l { font-size: 12px; color: var(--muted); }
@@ -103,7 +95,14 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 @keyframes blink { to { visibility: hidden; } }
 .timectl { margin: 0; font-size: 13px; color: var(--muted); }
 .home .engine-chip { margin: 0; }
-@media (prefers-reduced-motion: reduce) { .stage .port.in, .px-start .blink, 
+@media (max-width: 560px) {
+  .carousel { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
+  .ghost { display: none; }
+  .faces { gap: 4px; flex-wrap: nowrap; }
+  .faces button img { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
+
 /* ---------- game ---------- */
 .logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
 .game-title { font-size: 34px; }
@@ -202,14 +201,10 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 
 <section class="home" id="home">
   <div class="logo logo-sm">Baduk Battle</div>
-  <div class="stage" id="chars">
-    <img class="port" id="port" alt="" width="480" height="480">
-    <div class="sf-tag"><span class="p1">1P</span><span class="nm" id="sfName"></span></div>
-    <div class="sf-sub"><span id="sfThai"></span><span class="rk" id="sfRank"></span></div>
-    <div class="sf-faces" id="faces" aria-label="ตัวละครทั้งหมด"></div>
-    <h1 class="sf-band"><b>Player</b><b>Select</b></h1>
-  </div>
+  <h1 class="px-title">Character Select</h1>
+  <div class="carousel" id="chars"></div>
   <div class="cinfo" id="pick" aria-live="polite"></div>
+  <div class="faces" id="faces" aria-label="ตัวละครทั้งหมด"></div>
   <div class="opts">
     <div class="opt"><span class="opt-l" id="sizeLegend">กระดาน</span>
       <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
@@ -217,7 +212,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
   </div>
   <button id="btnNew" class="px-start">GAME START</button>
-  <p class="timectl">15 นาที + เบียวโยมิ 10 วิ × 3 · แตะหน้าหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
+  <p class="timectl">15 นาที + เบียวโยมิ 10 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
   <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
 </section>
 
