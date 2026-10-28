@@ -47,7 +47,7 @@
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 4000, timeMs: 15000 },
-      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ",
+      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
       say: { hello: "มาวัดฝีมือกันหน่อย", ahead: "ลองหาตาที่ดีกว่านี้ดูนะ", behind: "เก่งนี่", win: "จบการสอบ ดูผลด้านล่างได้เลย", lose: "จบการสอบ ดูผลด้านล่างได้เลย" } }
   ];
   // ---------- in-game lines: each kind is "|"-separated variants, {n} is a stone count ----------
@@ -498,7 +498,11 @@
   }
   function reportEnd(humanWon, how) {
     if (gameReported) return;
-    gameReported = true; track({ type: "end", winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() });
+    gameReported = true;
+    if (exam) exam.how = how;
+    const r = examResult();
+    track(Object.assign({ type: "end", winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() },
+      r ? { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } } : {}));
   }
   // the position as spectators on /watch see it
   function snapshot() {
@@ -848,18 +852,26 @@
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
     } else res.hidden = true;
   }
-  function examReport() {
-    if (!exam) return "";
+  // the placement result so far: counts per grade, average points lost, share of non-Best moves and the estimated rank
+  function examResult() {
+    if (!exam) return null;
     const gs = exam.grades.filter(Boolean);
-    if (gs.length < 20) return `<div class="exam"><b>ผลสอบ</b><p class="note">เดินไป ${gs.length} ตา ยังน้อยเกินไปที่จะประเมินระดับ (ต้องมีอย่างน้อย 20 ตา)</p></div>`;
     const cnt = { best: 0, good: 0, normal: 0, bad: 0 }; let sum = 0;
     for (const g of gs) { cnt[g.cls]++; sum += Math.min(g.loss, 20); }
-    const avg = sum / gs.length, notBest = 100 * (gs.length - cnt.best) / gs.length, est = estimateRank(notBest);
+    if (!gs.length) return { graded: 0, cnt, avg: 0, notBest: 0, est: null };
+    const notBest = 100 * (gs.length - cnt.best) / gs.length;
+    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, est: gs.length >= 20 ? estimateRank(notBest) : null };
+  }
+  function examReport() {
+    if (!exam) return "";
+    const R = examResult(), gs = exam.grades.filter(Boolean);
+    if (R.graded < 20) return `<div class="exam"><b>ผลสอบ</b><p class="note">เดินไป ${R.graded} ตา ยังน้อยเกินไปที่จะประเมินระดับ (ต้องมีอย่างน้อย 20 ตา) แนะนำให้เล่นจนจบกระดานและนับแต้ม</p></div>`;
+    const { cnt, avg, notBest, est } = R;
     const bar = Object.keys(cnt).map(k => `<i class="g-${k}" style="flex:${cnt[k]}"></i>`).join("");
     const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
     const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - notBest) < Math.abs(a.avg - notBest) ? b : a) : null;
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
-      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">ผลประมาณการ คลาดได้ราว ±2 ระดับ</div>
+      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
       <p class="note">ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }

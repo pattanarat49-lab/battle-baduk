@@ -8,7 +8,7 @@ import { WATCH } from "./watch.js";
 const CHARS = {
   mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
   chris: "คริส",
-  weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด"
+  weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", hikaru: "ฮิคารุ"
 };
 const HOWS = new Set(["score", "resign", "timeout"]);
 const id = v => typeof v === "string" && /^[a-z0-9]{6,32}$/.test(v) ? v : null;
@@ -22,6 +22,9 @@ export class Stats extends DurableObject {
       id TEXT PRIMARY KEY, player TEXT, char TEXT, size INTEGER, color INTEGER,
       started INTEGER, ended INTEGER, winner TEXT, how TEXT, moves INTEGER)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS live (game TEXT PRIMARY KEY, char TEXT, updated INTEGER, ended INTEGER, state TEXT)`);
+    // placement-test results (games against Hikaru); rank: 1 kyu = 0, 15 kyu = -14, 1 dan = 1
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS exams (game TEXT PRIMARY KEY, player TEXT, ended INTEGER, how TEXT, moves INTEGER,
+      graded INTEGER, not_best REAL, rank REAL)`);
   }
   // latest position of a game, kept for spectators; old rows are dropped as new ones arrive
   saveState(e, ended) {
@@ -54,6 +57,8 @@ export class Stats extends DurableObject {
       // only the first result of a game counts
       this.sql.exec("UPDATE games SET ended = ?, winner = ?, how = ?, moves = ? WHERE id = ? AND ended IS NULL",
         now, e.winner, e.how, e.moves, e.game);
+      if (e.exam) this.sql.exec("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank);
     }
   }
   summary() {
@@ -65,7 +70,11 @@ export class Stats extends DurableObject {
     const since = Date.now() - 14 * 864e5;
     const days = this.sql.exec(`SELECT date(started / 1000, 'unixepoch', '+7 hours') AS day, COUNT(*) AS games, COUNT(DISTINCT player) AS players
       FROM games WHERE started >= ? GROUP BY day ORDER BY day`, since).toArray();
-    return { total, chars: rows, days, live: this.liveGames() };
+    const exams = this.sql.exec(`SELECT COUNT(*) AS tests, COUNT(DISTINCT player) AS players, SUM(rank IS NOT NULL) AS ranked,
+        SUM(rank IS NOT NULL AND how = 'score') AS full FROM exams`).one();
+    const examRanks = this.sql.exec("SELECT ROUND(rank) AS r, COUNT(*) AS n FROM exams WHERE rank IS NOT NULL GROUP BY r ORDER BY r DESC").toArray();
+    const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank FROM exams ORDER BY ended DESC LIMIT 10").toArray();
+    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent };
   }
 }
 
@@ -91,11 +100,18 @@ function clean(b) {
     if (b.winner !== "human" && b.winner !== "ai") return null;
     e.winner = b.winner; e.how = HOWS.has(b.how) ? b.how : "score";
     e.moves = Number.isInteger(b.moves) && b.moves >= 0 && b.moves < 2000 ? b.moves : null;
+    const x = b.exam;
+    if (e.char === "hikaru" && x && Number.isInteger(x.graded) && x.graded >= 0 && x.graded < 1000) {
+      const num = (v, lo, hi) => typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? v : null;
+      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), rank: x.graded >= 20 ? num(x.rank, -30, 10) : null };
+    }
   }
   return e;
 }
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
+const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
+const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
 function page(s) {
   const order = Object.keys(CHARS);
   const by = Object.fromEntries(s.chars.map(r => [r.char, r]));
@@ -107,7 +123,7 @@ function page(s) {
   }).join("");
   const max = Math.max(1, ...s.days.map(d => d.games));
   const days = s.days.map(d => `<div class="day"><span>${d.day.slice(5)}</span><i style="width:${Math.round(100 * d.games / max)}%"></i><b>${d.games} เกม · ${d.players} คน</b></div>`).join("") || "<p class=\"muted\">ยังไม่มีข้อมูล</p>";
-  const ago = t => { const m = Math.round((s.now - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m + " นาทีที่แล้ว"; };
+  const ago = t => { const m = Math.round((s.now - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m < 60 ? m + " นาทีที่แล้ว" : m < 1440 ? Math.round(m / 60) + " ชั่วโมงที่แล้ว" : Math.round(m / 1440) + " วันที่แล้ว"; };
   const live = s.live.length ? `<div class="live">${s.live.map(g => `<a class="lg" href="/watch?g=${g.game}"><b>${CHARS[g.char]}</b>
     <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
     : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 30 วินาที)</p>`;
@@ -135,6 +151,12 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <h1>สถิติ Baduk Battle</h1>
 <div class="tiles"><div class="tile"><b>${s.total.games}</b><span>เกมที่เริ่มเล่นทั้งหมด</span></div><div class="tile"><b>${s.total.players}</b><span>ผู้เล่น (นับตามเครื่อง)</span></div></div>
 <section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
+<section><h2>สอบวัดระดับ (ฮิคารุ)</h2>
+<div class="tiles"><div class="tile"><b>${s.exams.tests || 0}</b><span>สอบจบแล้ว (${s.exams.players || 0} คน)</span></div>
+<div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เดินอย่างน้อย 20 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
+${s.examRanks.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ระดับที่ได้</th><th>จำนวน</th></tr></thead><tbody>${s.examRanks.map(r => `<tr><th>${rankName(r.r)}</th><td>${r.n}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">ยังไม่มีใครสอบจบ</p>`}
+${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ล่าสุด</th><th>ผล</th><th>ไม่ใช่ Best</th><th>ตาที่ให้คะแนน</th><th>จบด้วย</th></tr></thead><tbody>${s.examRecent.map(r => `<tr><th>${ago(r.ended)}</th><td>${r.rank === null ? "ไม่พอประเมิน" : rankName(r.rank)}</td><td>${r.not_best === null ? "–" : Math.round(r.not_best) + "%"}</td><td>${r.graded}</td><td>${HOW_TH[r.how] || r.how}</td></tr>`).join("")}</tbody></table></div>` : ""}
+<p class="muted">แนะนำให้ผู้สอบเล่นจนจบกระดานและนับแต้ม ผลจะใกล้เคียงที่สุด</p></section>
 <section><h2>แยกตามตัวละคร</h2><div class="wrap"><table>
 <thead><tr><th style="text-align:left">ตัวละคร</th><th>เกม</th><th>ผู้เล่น</th><th>เล่นจบ</th><th>คนชนะ</th><th>AI ชนะ</th><th>คนชนะ %</th><th>ตาเฉลี่ย</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
