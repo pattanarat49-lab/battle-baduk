@@ -2,6 +2,8 @@
 // POST /api/event  {type: "start"|"move"|"end", game, player, char, size, color, winner, how, moves, state}
 // GET  /stats      summary page and games in progress,  GET /api/stats  the same numbers as JSON
 // GET  /watch?g=…  live board of one game,  GET /api/game?g=…  its latest position
+// GET  /api/cancel  the current cancel number (the game polls it),  POST /api/cancel {key}  cancels every game in progress
+// GET  /admin  page with the cancel button; the key is the Worker secret ADMIN_KEY
 import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
 
@@ -25,6 +27,8 @@ export class Stats extends DurableObject {
     // placement-test results (games against Hikaru); rank: 1 kyu = 0, 15 kyu = -14, 1 dan = 1
     this.sql.exec(`CREATE TABLE IF NOT EXISTS exams (game TEXT PRIMARY KEY, player TEXT, ended INTEGER, how TEXT, moves INTEGER,
       graded INTEGER, not_best REAL, rank REAL)`);
+    // each cancel bumps this number; open games that see it change stop and apologise
+    this.sql.exec("CREATE TABLE IF NOT EXISTS cancels (n INTEGER PRIMARY KEY, at INTEGER)");
     // games that ended before the rank threshold was lowered still get a rank from the share of non-Best moves they stored
     for (const r of this.sql.exec("SELECT game, not_best FROM exams WHERE rank IS NULL AND graded >= 20 AND moves >= 100 AND not_best IS NOT NULL").toArray())
       this.sql.exec("UPDATE exams SET rank = ? WHERE game = ?", Math.round(estimateRank(r.not_best) * 10) / 10, r.game);
@@ -39,14 +43,25 @@ export class Stats extends DurableObject {
     this.sql.exec("DELETE FROM live WHERE updated < ?", now - 864e5);
   }
   liveGames() {
-    return this.sql.exec(`SELECT game, char, updated, ended, state FROM live WHERE updated >= ? ORDER BY updated DESC LIMIT 50`, Date.now() - 20 * 6e4)
-      .toArray().map(r => { const st = JSON.parse(r.state); return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, size: st.size, moveNo: st.moveNo, human: st.human }; });
+    return this.sql.exec(`SELECT live.game, live.char, updated, live.ended, state, games.how FROM live LEFT JOIN games ON games.id = live.game
+        WHERE updated >= ? ORDER BY updated DESC LIMIT 50`, Date.now() - 20 * 6e4)
+      .toArray().map(r => { const st = JSON.parse(r.state); return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, how: r.how, size: st.size, moveNo: st.moveNo, human: st.human }; });
   }
   game(g) {
     const r = this.sql.exec("SELECT game, char, updated, ended, state FROM live WHERE game = ?", g).toArray()[0];
     if (!r) return null;
     const res = this.sql.exec("SELECT winner, how FROM games WHERE id = ?", g).toArray()[0] || {};
     return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, winner: res.winner || null, how: res.how || null, now: Date.now(), ...JSON.parse(r.state) };
+  }
+  cancelNo() { return this.sql.exec("SELECT COALESCE(MAX(n), 0) AS n FROM cancels").one().n; }
+  // ends every unfinished game as cancelled; results sent later for those games are ignored
+  cancelAll() {
+    const now = Date.now();
+    this.sql.exec("INSERT INTO cancels (at) VALUES (?)", now);
+    // games started in the last 6 hours; older unfinished ones were closed long ago
+    const n = this.sql.exec("UPDATE games SET ended = ?, how = 'cancel' WHERE ended IS NULL AND started >= ?", now, now - 6 * 36e5).rowsWritten;
+    this.sql.exec("UPDATE live SET ended = ? WHERE ended IS NULL AND game IN (SELECT id FROM games WHERE how = 'cancel')", now);
+    return { n: this.cancelNo(), cancelled: n };
   }
   record(e) {
     const now = Date.now();
@@ -60,13 +75,14 @@ export class Stats extends DurableObject {
       // only the first result of a game counts
       this.sql.exec("UPDATE games SET ended = ?, winner = ?, how = ?, moves = ? WHERE id = ? AND ended IS NULL",
         now, e.winner, e.how, e.moves, e.game);
-      if (e.exam) this.sql.exec("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      const cancelled = this.sql.exec("SELECT how FROM games WHERE id = ?", e.game).toArray()[0]?.how === "cancel";
+      if (e.exam && !cancelled) this.sql.exec("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank);
     }
   }
   summary() {
     const rows = this.sql.exec(`SELECT char, COUNT(*) AS games, COUNT(DISTINCT player) AS players,
-        SUM(ended IS NOT NULL) AS finished, SUM(winner = 'human') AS human_wins, SUM(winner = 'ai') AS ai_wins,
+        SUM(ended IS NOT NULL AND how != 'cancel') AS finished, SUM(how = 'cancel') AS cancelled, SUM(winner = 'human') AS human_wins, SUM(winner = 'ai') AS ai_wins,
         SUM(how = 'resign') AS resigns, SUM(how = 'timeout') AS timeouts, AVG(moves) AS avg_moves
       FROM games GROUP BY char`).toArray();
     const total = this.sql.exec("SELECT COUNT(*) AS games, COUNT(DISTINCT player) AS players FROM games").one();
@@ -125,7 +141,7 @@ function estimateRank(avg) {
   return EXAM_CALIB[EXAM_CALIB.length - 1].rank;
 }
 const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
-const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 function page(s) {
   const order = Object.keys(CHARS);
   const by = Object.fromEntries(s.chars.map(r => [r.char, r]));
@@ -139,7 +155,7 @@ function page(s) {
   const days = s.days.map(d => `<div class="day"><span>${d.day.slice(5)}</span><i style="width:${Math.round(100 * d.games / max)}%"></i><b>${d.games} เกม · ${d.players} คน</b></div>`).join("") || "<p class=\"muted\">ยังไม่มีข้อมูล</p>";
   const ago = t => { const m = Math.round((s.now - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m < 60 ? m + " นาทีที่แล้ว" : m < 1440 ? Math.round(m / 60) + " ชั่วโมงที่แล้ว" : Math.round(m / 1440) + " วันที่แล้ว"; };
   const live = s.live.length ? `<div class="live">${s.live.map(g => `<a class="lg" href="/watch?g=${g.game}"><b>${CHARS[g.char]}</b>
-    <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
+    <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.how === "cancel" ? "ยกเลิก" : g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
     : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 30 วินาที)</p>`;
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="30">
@@ -201,6 +217,38 @@ export default {
       return st ? Response.json(st, { headers: { ...CORS, "cache-control": "no-store" } }) : new Response("not found", { status: 404, headers: CORS });
     }
     if (url.pathname === "/watch") return html(WATCH);
+    if (url.pathname === "/api/cancel") {
+      if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+      if (req.method === "GET") return Response.json({ n: await stub().cancelNo() }, { headers: { ...CORS, "cache-control": "no-store" } });
+      if (!env.ADMIN_KEY) return Response.json({ error: "ยังไม่ได้ตั้งรหัส ADMIN_KEY ใน Cloudflare" }, { status: 503 });
+      let key = "";
+      try { key = String((await req.json()).key || ""); } catch (e) {}
+      if (key !== env.ADMIN_KEY) return Response.json({ error: "รหัสไม่ถูกต้อง" }, { status: 403 });
+      return Response.json(await stub().cancelAll());
+    }
+    if (url.pathname === "/admin") return html(ADMIN);
     return env.ASSETS.fetch(req);
   }
 };
+
+const ADMIN = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Baduk Battle Admin</title><meta name="robots" content="noindex">
+<style>body{font-family:system-ui,sans-serif;background:#0f3b3a;color:#f3ead2;margin:0;padding:24px 16px}main{max-width:420px;margin:auto}
+h1{font-size:22px}input,button{font:inherit;width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:0;margin-top:10px}
+button{background:#e2902e;color:#2a1a0b;font-weight:700;cursor:pointer}p{line-height:1.5}#out{margin-top:14px;font-weight:600}</style></head>
+<body><main><h1>ยกเลิกเกมที่กำลังเล่นอยู่</h1>
+<p>ทุกเกมที่ยังไม่จบจะถูกยกเลิก ผู้เล่นจะเห็นข้อความ "ยกเลิก ขออภัยด้วยครับ" บนจอภายในประมาณ 30 วินาที และผลเกมเหล่านั้นจะไม่ถูกนับ</p>
+<input id="key" type="password" placeholder="รหัสผู้ดูแล" autocomplete="current-password">
+<button id="go">ยกเลิกทุกเกมตอนนี้</button><div id="out"></div></main>
+<script>
+document.getElementById("go").onclick = async () => {
+  const out = document.getElementById("out");
+  if (!confirm("ยกเลิกทุกเกมที่กำลังเล่นอยู่?")) return;
+  out.textContent = "กำลังยกเลิก…";
+  try {
+    const r = await fetch("/api/cancel", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: document.getElementById("key").value }) });
+    const j = await r.json();
+    out.textContent = r.ok ? "ยกเลิกแล้ว " + j.cancelled + " เกม" : j.error;
+  } catch (e) { out.textContent = "ส่งไม่สำเร็จ: " + e.message; }
+};
+</script></body></html>`;

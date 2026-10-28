@@ -28,7 +28,7 @@ canvas { width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cq
 </main>
 <script>
 const NAMES = { mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", chris: "คริส", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด" };
-const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 const g = new URLSearchParams(location.search).get("g");
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 let st = null, offset = 0, gotAt = 0;
@@ -78,8 +78,8 @@ function renderInfo() {
   const s = document.getElementById("status");
   if (!st) return;
   if (st.ended) {
-    const who = st.winner === "human" ? "ผู้เล่นชนะ" : st.winner === "ai" ? NAMES[st.char] + " ชนะ" : "จบเกม";
-    s.innerHTML = '<span class="done">' + who + (st.how ? " (" + HOW[st.how] + ")" : "") + '</span> · ' + st.moveNo + ' ตา';
+    const who = st.how === "cancel" ? "ยกเลิก ขออภัยด้วยครับ" : st.winner === "human" ? "ผู้เล่นชนะ" : st.winner === "ai" ? NAMES[st.char] + " ชนะ" : "จบเกม";
+    s.innerHTML = '<span class="done">' + who + (st.how && st.how !== "cancel" ? " (" + HOW[st.how] + ")" : "") + '</span> · ' + st.moveNo + ' ตา';
   } else s.innerHTML = '<span class="live">● กำลังเล่น</span> · ตาที่ ' + (st.moveNo + 1) + ' · ตา' + (st.toPlay === st.human ? "ผู้เล่น" : NAMES[st.char]);
   document.getElementById("wr").style.width = st.winB + "%";
   document.getElementById("wrl").textContent = "โอกาสชนะ ดำ " + st.winB + "% · ขาว " + (100 - st.winB) + "% (ตามที่ AI ประเมิน)";

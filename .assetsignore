@@ -8,3 +8,4 @@ wrangler.jsonc
 README.md
 .assetsignore
 .gitignore
+.dev.vars

@@ -498,6 +498,24 @@
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
   }
+  // the site owner can cancel every game in progress from /admin; open games poll the cancel number and stop when it changes
+  const CANCEL_URL = STATS_URL && STATS_URL.replace(/event$/, "cancel");
+  let cancelSeen = null;
+  async function checkCancel() {
+    if (!CANCEL_URL) return;
+    try {
+      const n = (await (await fetch(CANCEL_URL, { cache: "no-store" })).json()).n;
+      if (typeof n !== "number") return;
+      if (cancelSeen !== null && n > cancelSeen && board && !over && !scoring && history.length) cancelGame();
+      cancelSeen = n;
+    } catch (e) {}
+  }
+  function cancelGame() {
+    cancelAI(); gameReported = true; // the server has already ended this game
+    over = { text: "ยกเลิก ขออภัยด้วยครับ", detail: "ผู้ดูแลยกเลิกเกมนี้ชั่วคราว กด \"เล่นใหม่\" เพื่อเริ่มเกมใหม่ได้เลยครับ" };
+    render();
+  }
+  checkCancel(); setInterval(checkCancel, 30000);
   function reportEnd(humanWon, how) {
     if (gameReported) return;
     gameReported = true;
