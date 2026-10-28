@@ -103,7 +103,7 @@ function clean(b) {
     const x = b.exam;
     if (e.char === "hikaru" && x && Number.isInteger(x.graded) && x.graded >= 0 && x.graded < 1000) {
       const num = (v, lo, hi) => typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? v : null;
-      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), rank: x.graded >= 20 ? num(x.rank, -30, 10) : null };
+      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), rank: x.graded >= 20 && e.moves >= 150 ? num(x.rank, -30, 10) : null };
     }
   }
   return e;
@@ -153,7 +153,7 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
 <section><h2>สอบวัดระดับ (ฮิคารุ)</h2>
 <div class="tiles"><div class="tile"><b>${s.exams.tests || 0}</b><span>สอบจบแล้ว (${s.exams.players || 0} คน)</span></div>
-<div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เดินอย่างน้อย 20 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
+<div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เกมยาวอย่างน้อย 150 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
 ${s.examRanks.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ระดับที่ได้</th><th>จำนวน</th></tr></thead><tbody>${s.examRanks.map(r => `<tr><th>${rankName(r.r)}</th><td>${r.n}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">ยังไม่มีใครสอบจบ</p>`}
 ${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ล่าสุด</th><th>ผล</th><th>ไม่ใช่ Best</th><th>ตาที่ให้คะแนน</th><th>จบด้วย</th></tr></thead><tbody>${s.examRecent.map(r => `<tr><th>${ago(r.ended)}</th><td>${r.rank === null ? "ไม่พอประเมิน" : rankName(r.rank)}</td><td>${r.not_best === null ? "–" : Math.round(r.not_best) + "%"}</td><td>${r.graded}</td><td>${HOW_TH[r.how] || r.how}</td></tr>`).join("")}</tbody></table></div>` : ""}
 <p class="muted">แนะนำให้ผู้สอบเล่นจนจบกระดานและนับแต้ม ผลจะใกล้เคียงที่สุด</p></section>
