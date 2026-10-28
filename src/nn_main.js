@@ -47,7 +47,7 @@
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 4000, timeMs: 15000 },
-      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 150 ตา) เวลา 15 นาที + เบียวโยมิ 45 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
+      bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 15 นาที + เบียวโยมิ 45 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
       say: { hello: "มาวัดฝีมือกันหน่อย", ahead: "ลองหาตาที่ดีกว่านี้ดูนะ", behind: "เก่งนี่", win: "จบการสอบ ดูผลด้านล่างได้เลย", lose: "จบการสอบ ดูผลด้านล่างได้เลย" } }
   ];
   // ---------- in-game lines: each kind is "|"-separated variants, {n} is a stone count ----------
@@ -857,7 +857,7 @@
   }
   // the placement result so far: counts per grade, average points lost, share of non-Best moves and the estimated rank
   // a rank is only given once the game reached this many moves (both sides together)
-  const EXAM_MIN_MOVES = 150;
+  const EXAM_MIN_MOVES = 100;
   function examResult() {
     if (!exam) return null;
     const gs = exam.grades.filter(Boolean);
