@@ -412,7 +412,7 @@
         b.setAttribute("aria-pressed", String(+b.dataset.v === val));
         if (key === "size") b.disabled = only19(settings.char) && +b.dataset.v !== 19;
       });
-      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (19×19 เท่านั้น)" : "กระดาน";
+      if (key === "size") $("sizeLegend").textContent = only19(settings.char) ? "กระดาน (ตัวนี้เล่น 19×19 เท่านั้น)" : "กระดาน";
     };
     el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.disabled) return; settings[key] = +b.dataset.v; save(key, settings[key]); sync(); });
     sync();
@@ -590,28 +590,29 @@
   }
 
   const syncSize = seg("segSize", "size"); seg("segColor", "human");
-  // home screen: Street Fighter III style select, big portrait on the left and the face icons in an arc on the right
-  const charsEl = $("home"), L8 = CHARS.length;
-  // face icon centres in % of the screen: an arc like the SF3 roster in landscape, a zigzag row in portrait
-  const ARC = [[80, 9], [92, 16], [74, 23], [86, 30], [68, 37], [80, 44], [62, 51], [74, 58]];
-  const ROW = CHARS.map((c, i) => [7.5 + i * 12.1, i % 2 ? 72 : 28]);
+  // home screen: arcade-style character select, one featured card with its neighbours either side
+  const charsEl = $("chars"), L8 = CHARS.length;
+  const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
     if (!actx || !soundOn) return;
     const t = actx.currentTime, o = actx.createOscillator(), g2 = actx.createGain();
     o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
   }
-  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}" style="--x:${ARC[i][0]};--y:${ARC[i][1]};--px:${ROW[i][0]};--py:${ROW[i][1]}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
   function syncChars(anim) {
-    const i = settings.char, c = CHARS[i], port = $("port");
-    port.src = `chars/${c.id}.jpg`; port.alt = c.name;
-    if (anim) { port.classList.remove("in"); void port.offsetWidth; port.classList.add("in"); }
-    $("sfName").textContent = c.en; $("sfThai").textContent = c.name; $("sfRank").textContent = c.rank;
+    const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
+    charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
+      <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
+      <div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
+      <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
+      <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
     $("pick").innerHTML = `<div class="cmeta">${c.country} · ${STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
     $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === i)));
     syncSize();
   }
   function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("char8", settings.char); syncChars(true); blip(660); }
+  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
@@ -621,7 +622,7 @@
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
     }
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") choose(settings.char - 1); else if (e.key === "ArrowRight" || e.key === "ArrowDown") choose(settings.char + 1);
+    if (e.key === "ArrowLeft") choose(settings.char - 1); else if (e.key === "ArrowRight") choose(settings.char + 1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
