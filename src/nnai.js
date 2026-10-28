@@ -133,6 +133,7 @@ function GoNNAI(E, F, net) {
         for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; p.L += ld; v = -v; ld = -ld; }
       }
       if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
+      if (opts.earlyStop && root.N > 64 && settledEarly(root, maxVisits, timeMs, t0)) break;
     }
     const s = summary(root, base, rootEv);
     s.elapsed = Date.now() - t0;
@@ -144,6 +145,18 @@ function GoNNAI(E, F, net) {
       s.winrate = plain.win / (plain.win + plain.loss); s.lead = plain.lead; s.own = plain.own;
     }
     return s;
+  }
+
+  // stop searching once more thinking cannot change the move: the runner-up could not catch up with the visits left,
+  // or one move has taken nearly all the visits (a forced answer, an obvious capture)
+  function settledEarly(root, maxVisits, timeMs, t0) {
+    if (!root.kids) return false;
+    let a = 0, b = 0;
+    for (const k of root.kids) if (k) { if (k.N > a) { b = a; a = k.N; } else if (k.N > b) b = k.N; }
+    const done = root.N - 1, spent = Date.now() - t0;
+    const left = Math.min(maxVisits - done, done / Math.max(spent, 1) * (timeMs - spent));
+    if (a - b > left) return true;
+    return done >= Math.max(150, maxVisits * 0.15) && a >= 0.9 * done;
   }
 
   // Answer near the opponent's last move when that costs at most `margin` win rate against the best move found;

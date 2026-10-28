@@ -1050,6 +1050,7 @@ function GoNNAI(E, F, net) {
         for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; p.L += ld; v = -v; ld = -ld; }
       }
       if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
+      if (opts.earlyStop && root.N > 64 && settledEarly(root, maxVisits, timeMs, t0)) break;
     }
     const s = summary(root, base, rootEv);
     s.elapsed = Date.now() - t0;
@@ -1061,6 +1062,18 @@ function GoNNAI(E, F, net) {
       s.winrate = plain.win / (plain.win + plain.loss); s.lead = plain.lead; s.own = plain.own;
     }
     return s;
+  }
+
+  // stop searching once more thinking cannot change the move: the runner-up could not catch up with the visits left,
+  // or one move has taken nearly all the visits (a forced answer, an obvious capture)
+  function settledEarly(root, maxVisits, timeMs, t0) {
+    if (!root.kids) return false;
+    let a = 0, b = 0;
+    for (const k of root.kids) if (k) { if (k.N > a) { b = a; a = k.N; } else if (k.N > b) b = k.N; }
+    const done = root.N - 1, spent = Date.now() - t0;
+    const left = Math.min(maxVisits - done, done / Math.max(spent, 1) * (timeMs - spent));
+    if (a - b > left) return true;
+    return done >= Math.max(150, maxVisits * 0.15) && a >= 0.9 * done;
   }
 
   // Answer near the opponent's last move when that costs at most `margin` win rate against the best move found;
@@ -1275,7 +1288,7 @@ function GoNNAI(E, F, net) {
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
-    { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 4000, timeMs: 15000 },
+    { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 8000 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 15 นาที + เบียวโยมิ 45 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
       say: { hello: "มาวัดฝีมือกันหน่อย", ahead: "ลองหาตาที่ดีกว่านี้ดูนะ", behind: "เก่งนี่", win: "จบการสอบ ดูผลด้านล่างได้เลย", lose: "จบการสอบ ดูผลด้านล่างได้เลย" } }
   ];
@@ -1731,9 +1744,14 @@ function GoNNAI(E, F, net) {
     if (gameReported) return;
     gameReported = true;
     if (exam) exam.how = how;
-    const r = examResult();
-    track(Object.assign({ type: "end", winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() },
-      r ? { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } } : {}));
+    const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
+    if (!exam) return track(ev);
+    // the last move's grade may still be computing; the event keeps this game's id in case a new game starts meanwhile
+    const ex = exam, len = history.length;
+    grading.then(() => {
+      const r = examResult(ex, len);
+      track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
+    });
   }
   // the position as spectators on /watch see it
   function snapshot() {
@@ -1789,24 +1807,37 @@ function GoNNAI(E, F, net) {
     src.start(t); o.start(t); o.stop(t + 0.08);
   }
   // examiner reads the player's position while they think; that search grades the move they then make
+  // grading the player's move runs after Hikaru has replied, while the player thinks, so it never delays Hikaru's move;
+  // the next pondering search waits for it so the two do not share the GPU
+  let grading = Promise.resolve();
   function startPonder() {
     if (!exam || !engineReady || over || scoring || board.toPlay !== human) return;
-    const at = history.length, my = gen;
-    const moves = history.slice(), stop = () => my !== gen;
+    const at = history.length, my = gen, ex = exam;
+    const moves = history.slice(), stop = () => my !== gen || exam !== ex;
+    const before = grading;
     ponder = { at, promise: (async () => {
+      await before;
       const s = await AI.think(n, moves, KOMI, { visits: 400, timeMs: 10000, batch: 8, shouldStop: stop });
       const bestChild = s.move === PASS || stop() ? null : await AI.think(n, moves.concat([s.move]), KOMI, { visits: 100, timeMs: 5000, batch: 8, shouldStop: stop });
       return { s, bestChild };
     })() };
   }
-  async function gradeLast(my) {
-    const pm = history.length - 1;
-    if (!exam || pm < 0 || history[pm] === PASS) { ponder = null; return; }
-    const pre = ponder && ponder.at === pm ? await ponder.promise : { s: await AI.think(n, history.slice(0, pm), KOMI, { visits: 200, timeMs: 6000, batch: 8 }) };
+  // takes what pondering found for the player's last move; the grade itself is computed by runGrade later
+  function gradeJob() {
+    const pm = history.length - 1, pre = ponder && ponder.at === pm ? ponder.promise : null;
     ponder = null;
-    if (my !== gen) return;
-    const g = await AI.gradeWith(n, history.slice(0, pm), history[pm], KOMI, pre.s, { childVisits: 100, bestChild: pre.bestChild });
-    if (my === gen) exam.grades[pm] = { loss: g.loss, best: g.best, cls: AI.gradeOf(g) };
+    if (!exam || pm < 0 || history[pm] === PASS) return null;
+    return { ex: exam, pm, base: history.slice(0, pm), played: history[pm], pre };
+  }
+  function runGrade(job) {
+    if (!job) return;
+    grading = grading.then(async () => {
+      const pre = (job.pre && await job.pre) || { s: await AI.think(n, job.base, KOMI, { visits: 200, timeMs: 6000, batch: 8 }) };
+      if (exam !== job.ex) return;
+      const g = await AI.gradeWith(n, job.base, job.played, KOMI, pre.s, { childVisits: 100, bestChild: pre.bestChild });
+      job.ex.grades[job.pm] = { loss: g.loss, best: g.best, cls: AI.gradeOf(g) };
+      if (ended()) render();
+    }).catch(e => console.error(e));
   }
   function playMove(p) {
     if (p !== PASS) clack();
@@ -1900,8 +1931,7 @@ function GoNNAI(E, F, net) {
     await new Promise(r => setTimeout(r, 30));
     await judgeHumanMove();
     if (my !== gen) return;
-    if (exam) await gradeLast(my);
-    if (my !== gen) return;
+    const job = exam ? gradeJob() : null;
     const book = exam ? null : openingMove();
     if (book !== null) {
       await minThink();
@@ -1909,13 +1939,14 @@ function GoNNAI(E, F, net) {
       thinking = false; playMove(book); return;
     }
     const res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-      batch: 8, shouldStop: () => my !== gen,
+      batch: 8, earlyStop: true, shouldStop: () => my !== gen,
       onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
     }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs) }));
     if (my !== gen) return;
     await minThink();
     if (my !== gen) return;
     thinking = false; think = null;
+    runGrade(job);
     setEval(res);
     reactTo(res);
     // resign once the player's winning chance has been 99% or more for 5 AI moves in a row
@@ -2087,14 +2118,14 @@ function GoNNAI(E, F, net) {
   // the placement result so far: counts per grade, average points lost, share of non-Best moves and the estimated rank
   // a rank is only given once the game reached this many moves (both sides together)
   const EXAM_MIN_MOVES = 100;
-  function examResult() {
-    if (!exam) return null;
-    const gs = exam.grades.filter(Boolean);
+  function examResult(ex = exam, len = history.length) {
+    if (!ex) return null;
+    const gs = ex.grades.filter(Boolean);
     const cnt = { best: 0, good: 0, normal: 0, bad: 0 }; let sum = 0;
     for (const g of gs) { cnt[g.cls]++; sum += Math.min(g.loss, 20); }
     if (!gs.length) return { graded: 0, cnt, avg: 0, notBest: 0, est: null };
     const notBest = 100 * (gs.length - cnt.best) / gs.length;
-    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, est: gs.length >= 20 && history.length >= EXAM_MIN_MOVES ? estimateRank(notBest) : null };
+    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? estimateRank(notBest) : null };
   }
   function examReport() {
     if (!exam) return "";
