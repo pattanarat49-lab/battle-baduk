@@ -103,6 +103,8 @@ function GoNNAI(E, F, net) {
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;
+      // let the page draw and take clicks between batches; the WebAssembly and CPU backends never yield on their own
+      await new Promise(r => setTimeout(r, 0));
       const want = Math.min(B, maxVisits - (root.N - 1));
       const leaves = [];
       for (let k = 0; k < want; k++) {
