@@ -151,7 +151,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   .wr { gap: 2px; } .status { min-height: 0; font-size: 14px; }
   .clock { flex-direction: column; align-items: flex-start; gap: 0; } .byo { text-align: left; white-space: nowrap; }
   .quote { padding: 4px 8px; font-size: 13px; } .quote .av { display: none; }
-  .quote span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quote span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-width: 0; overflow: hidden; }
   .quote b { display: inline; margin-right: 6px; }
   .app { gap: 8px 14px; } .panel { gap: 8px; }
 }
@@ -192,11 +192,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .quote { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; line-height: 1.35; align-items: center; display: flex; gap: 10px; align-items: flex-start; }
 .quote .av { width: 36px; height: 36px; flex: none; }
 .quote b { display: block; font-size: 12px; color: var(--accent); font-weight: 600; }
+.quote.say { animation: say .35s ease-out; }
+@keyframes say { from { transform: translateY(4px) scale(.97); opacity: .4; } to { transform: none; opacity: 1; } }
 .settings { display: flex; flex-direction: column; gap: 10px; }
 .result { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
 .result h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 4px; }
 .result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
-@media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
 </style>
 
 <section class="home" id="home">

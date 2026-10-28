@@ -151,7 +151,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   .wr { gap: 2px; } .status { min-height: 0; font-size: 14px; }
   .clock { flex-direction: column; align-items: flex-start; gap: 0; } .byo { text-align: left; white-space: nowrap; }
   .quote { padding: 4px 8px; font-size: 13px; } .quote .av { display: none; }
-  .quote span { display: block; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .quote span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-width: 0; overflow: hidden; }
   .quote b { display: inline; margin-right: 6px; }
   .app { gap: 8px 14px; } .panel { gap: 8px; }
 }
@@ -192,11 +192,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .quote { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 10px; font-size: 14px; line-height: 1.35; align-items: center; display: flex; gap: 10px; align-items: flex-start; }
 .quote .av { width: 36px; height: 36px; flex: none; }
 .quote b { display: block; font-size: 12px; color: var(--accent); font-weight: 600; }
+.quote.say { animation: say .35s ease-out; }
+@keyframes say { from { transform: translateY(4px) scale(.97); opacity: .4; } to { transform: none; opacity: 1; } }
 .settings { display: flex; flex-direction: column; gap: 10px; }
 .result { background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
 .result h2 { font-family: var(--f-display); font-size: 20px; margin: 0 0 4px; }
 .result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
-@media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
 </style>
 
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="home" id="home">
@@ -1214,6 +1216,203 @@ function GoNNAI(E, F, net) {
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } }
   ];
+  // ---------- in-game lines: each kind is "|"-separated variants, {n} is a stone count ----------
+  // goodMove/badMove: the player's last move moved their winning chance a lot; caught: the player captured
+  // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
+  const TALK = {
+    mek: {
+      hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย|ครูที่โรงเรียนบอกให้มาลองเล่นกับคนเก่งๆ ครับ|ผมจำกติกาได้แล้วนะ น่าจะได้…มั้ง",
+      goodMove: "หา? ตานี้เก่งมากเลยพี่|เดินแบบนี้ก็ได้เหรอ จดไว้ก่อน|ว้าว ผมไม่ได้คิดถึงตรงนั้นเลย",
+      badMove: "เอ๊ะ พี่ให้ผมเหรอครับ|ตานี้ผมว่าพี่พลาดนะ… หรือผมดูผิด|ผมก็เดินแบบนั้นบ่อยเหมือนกันครับ ฮ่าๆ",
+      caught: "ไม่นะ หมากผมหายไป {n} เม็ด|อ้าว โดนกินแล้ว ผมไม่ทันเห็นเลย|เดี๋ยวๆ มันตายตั้งแต่ตอนไหนครับ",
+      capture: "กินได้! กินได้ {n} เม็ด|เย้ ได้หมากเชลยแล้ว|ขอโทษนะพี่ ผมเห็นว่ามันไม่มีลมแล้ว",
+      ahead: "เอ๊ะ ผมนำอยู่เหรอ|ถ้าชนะผมจะเอาไปอวดเพื่อนที่ห้อง|ใจเต้นแรงเลยครับตอนนี้",
+      behind: "โห พี่เล่นเก่งจัง|กระดานผมเหลือนิดเดียวแล้ว|ไม่เป็นไร ผมมาเพื่อเรียนรู้ครับ",
+      comeback: "เดี๋ยวนะ ผมกลับมาได้ไง|ดวงล้วนๆ เลยครับเกมนี้",
+      humanPass: "พี่ผ่านเหรอครับ ผมต้องผ่านด้วยไหม|เอ่อ… ผ่านแปลว่าจบแล้วใช่ไหมครับ",
+      aiPass: "ผมไม่รู้จะลงตรงไหนแล้ว ขอผ่านครับ|ผมว่าเต็มแล้ว ผ่านครับ",
+      ko: "อ๋อ อันนี้ที่เรียกว่าโคใช่ไหมครับ ผมก็งงเหมือนกัน|ต้องไปเดินที่อื่นก่อนนะพี่ ผมเพิ่งอ่านเจอ",
+      hint: "พี่แอบดูคำแนะนำ ผมขอบ้างได้ไหม|โกงนิดๆ ไม่เป็นไรครับ ผมก็อยากโกง",
+      slow: "พี่คิดนานจัง ผมไปกินข้าวก่อนได้ไหม|ไม่ต้องรีบนะครับ ผมก็คิดไม่ออกเหมือนกัน",
+      byoyomi: "เหลือ 10 วิแล้วนะพี่ รีบๆ|นาฬิกาเดินแล้วพี่!",
+      lastPeriod: "ครั้งสุดท้ายแล้วนะพี่ ระวังหมดเวลา|อย่าหมดเวลาเพราะผมนะครับ",
+      aiByo: "ผมใช้เวลาหมดแล้ว ต้องรีบแล้ว|เวลาเหลือน้อย มือสั่นเลย",
+      mid: "ผมเริ่มเข้าใจคำว่าลมหายใจแล้วครับ|เกมนี้ยาวกว่าที่คิดเยอะเลย|ผมชอบเสียงวางหมากตอนลงกระดานมาก",
+      win: "ชนะแล้ว! ไม่อยากเชื่อเลย|ขอถ่ายรูปกระดานเก็บไว้ได้ไหมครับ",
+      lose: "สอนผมบ้างได้ไหมครับ|แพ้แต่สนุกมากครับ มาเล่นอีกนะ|ผมจะกลับไปดูคลิปสอนเพิ่มครับ",
+      resigned: "พี่ยอมเลยเหรอ ผมยังไม่รู้ตัวเลยว่าชนะ|เอ๊ะ จบแล้ว? ขอบคุณที่เล่นด้วยครับ",
+      timeoutWin: "พี่หมดเวลา… ผมชนะแบบนี้ได้เหรอครับ|ไม่เป็นไรนะพี่ ผมก็ลืมดูนาฬิกาบ่อย",
+      giveUp: "ผมยอมแล้วครับ ไม่เหลืออะไรให้สู้เลย|ยอมครับ พี่เก่งเกินไป"
+    },
+    win: {
+      hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย|รอลูกค้าอยู่ ขอตาสองตาก่อนแล้วกัน|มาๆ ลุงให้เดินก่อนก็ได้นะไอ้หนู",
+      goodMove: "เฮ้ย ตานี้แสบ|เดินแบบนี้ลุงต้องเกาหัวแล้ว|ไอ้หนูนี่ไม่ธรรมดาแฮะ",
+      badMove: "ฮ่าๆ เข้าทางลุงเลย|ตานี้ลุงขอบใจนะ|ไปลงตรงนั้นทำไมล่ะหลาน",
+      caught: "เฮ้ย หมากลุงหายไป {n} เม็ด!|โกะนี่กินกันง่ายกว่าหมากฮอสอีก|เดี๋ยว ลุงไม่ได้ตั้งใจให้กินนะ",
+      capture: "กินได้กินเลย {n} เม็ด เหมือนหมากฮอสนั่นแหละ|เสร็จลุง!|ฮึ่ย กินซะเลย",
+      ahead: "กินได้กินเลย เหมือนหมากฮอสนั่นแหละ|วันนี้ลุงมือขึ้น|ช่วงนี้ไม่มีผู้โดยสาร ลุงเลยมีเวลาเต็มที่",
+      behind: "เดี๋ยวๆ ขอคิดแป๊บ|ไม่ได้การละ ลุงต้องเอาจริงแล้ว|ถ้าเป็นหมากฮอสลุงพลิกได้นะ",
+      comeback: "เห็นไหม คนแก่ยังไม่ตาย|ลุงบอกแล้วว่าเซียนพลิกได้",
+      humanPass: "ผ่าน? ใจป้ำดีนี่|หลานผ่านลุงก็สบาย",
+      aiPass: "ลุงว่าพอแล้ว ผ่าน|ไม่มีที่ลงละ ผ่านเลย",
+      ko: "ตรงนั้นห้ามนะหลาน ลุงก็โดนมาแล้ว|กติกานี้แปลกดีเนอะ ไปเดินที่อื่นก่อน",
+      hint: "ดูโพยเหรอหลาน ลุงเห็นนะ|เปิดโพยก็ได้ ลุงไม่ว่า",
+      slow: "ลุงต้องไปรับลูกค้าแล้วนะเนี่ย|คิดนานจริง ลุงสูบยาเสร็จพอดี",
+      byoyomi: "นาฬิกาเดินแล้วหลาน!|รีบหน่อย ลูกค้าลุงรออยู่",
+      lastPeriod: "เหลือครั้งเดียวแล้ว ระวังนะหลาน|เร็วเข้าๆ เดี๋ยวหมดเวลา",
+      aiByo: "เวลาลุงหมดแล้ว ต้องรีบแบบซิ่งมอไซค์|มาเร็วเคลมเร็ว!",
+      mid: "สมัยหนุ่มๆ ลุงเล่นหมากฮอสทั้งวิน|โกะนี่กระดานใหญ่จริง ตาลายเลย|ลุงว่าลุงเริ่มติดเกมนี้ละ",
+      win: "เห็นไหม เซียนก็คือเซียน|ไปเล่ามาเลยว่าแพ้วินมอไซค์|เดี๋ยวลุงเลี้ยงกาแฟเย็น",
+      lose: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่|แพ้แล้วก็แพ้ ไปวิ่งรถต่อดีกว่า|เอาไว้ล้างตาวันหลัง",
+      resigned: "ยอมเลยเหรอ ลุงยังไม่ทันได้เกร็งเลย|ไม่เป็นไรหลาน มาเล่นใหม่ได้",
+      timeoutWin: "หมดเวลาหลาน ช้ากว่าลุงขับรถอีก|ชนะเพราะนาฬิกา ลุงก็เอานะ",
+      giveUp: "พอๆ ลุงยอม ไปขับรถดีกว่า|ลุงยอม หลานเก่งจริง"
+    },
+    yuto: {
+      hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ|วันนี้ชมรมไม่มีซ้อม เลยมาขอเล่นด้วยครับ|รุ่นพี่บอกว่าให้เล่นกับคนเก่งเยอะๆ ครับ",
+      goodMove: "ซุโกย! ตานี้เหมือนในตำราเลย|ตาสวยมากครับ ขอจดไว้ให้รุ่นพี่ดู|ผมไม่ได้คาดไว้เลยครับ",
+      badMove: "เอ๊ะ ตานี้ผิดทรงนะครับ|รุ่นพี่บอกว่าหมากแบบนี้เรียกว่าหมากหนักครับ|ขอโทษนะครับ แต่ผมจะลงโทษตานี้ครับ",
+      caught: "อ๊ะ หมากผมโดนกิน {n} เม็ด|มัตตะ… ผมอ่านพลาดครับ|โดนจับได้ ต้องตั้งใจกว่านี้",
+      capture: "ขออนุญาตกินนะครับ {n} เม็ด|แบบนี้เรียกว่าชิโจใช่ไหมครับ|ตามตำราเลยครับ",
+      ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย|ต้องเล่นให้หนักแน่นไว้ครับ|อย่าเพิ่งประมาท อย่าเพิ่งประมาท",
+      behind: "ต้องตั้งใจกว่านี้แล้ว|กัมบาริมัส!|รุ่นพี่จะว่าผมแน่เลยครับ",
+      comeback: "ยังไม่ยอมแพ้ครับ! กลับมาแล้ว|ความพยายามไม่เคยทรยศครับ",
+      humanPass: "ผ่านเหรอครับ งั้นผมขอนับดูก่อนนะครับ|เข้าใจแล้วครับ",
+      aiPass: "ผมว่าเขตแดนปิดหมดแล้วครับ ขอผ่าน|ขอผ่านครับ",
+      ko: "โคครับ ต้องหาที่ขู่ก่อนนะครับ|ห้ามเก็บโคทันทีครับ ตามกติกา",
+      hint: "ใช้คำแนะนำไม่ผิดครับ ผมก็ถามรุ่นพี่บ่อย|ดูเฉลยแล้วอย่าลืมจำนะครับ",
+      slow: "คิดอย่างรอบคอบดีมากครับ|ผมรอได้ครับ ที่ชมรมเคยคิดกันตาละสิบนาที",
+      byoyomi: "เบียวโยมิแล้วครับ ฮาจิเมะ!|เข้าช่วงนับเวลาแล้วนะครับ",
+      lastPeriod: "ครั้งสุดท้ายแล้วครับ ระวังนะครับ|อย่าหมดเวลานะครับ เสียดาย",
+      aiByo: "ผมก็เข้าเบียวโยมิแล้วครับ ใจเต้นเลย|ต้องเล่นเร็วขึ้นแล้วครับ",
+      mid: "ช่วงกลางกระดานนี่ยากที่สุดเลยครับ|ผมชอบความเงียบตอนเล่นโกะครับ|ที่ญี่ปุ่นเราเรียกเกมนี้ว่าอิโกะครับ",
+      win: "ขอบคุณสำหรับเกมครับ|อาริงาโตะโกไซมัสตะ! เป็นเกมที่ดีมากครับ",
+      lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ|มาเกะมาชิตะ… ขอบคุณที่ชี้แนะครับ|ผมได้เรียนรู้เยอะเลยครับ",
+      resigned: "ขอบคุณที่เล่นจนจบครับ|ยอมแพ้อย่างสง่างามครับ ขอบคุณครับ",
+      timeoutWin: "เสียดายจังครับ หมดเวลาซะแล้ว|นาฬิกาก็เป็นส่วนหนึ่งของเกมครับ",
+      giveUp: "มาเกะมาชิตะ ผมยอมแพ้ครับ|ไม่มีทางสู้แล้วครับ ขอบคุณที่ชี้แนะ"
+    },
+    chris: {
+      hello: "Good game ahead. เชิญเลยครับ|Shall we? ชาเย็นพร้อมแล้ว|ขอให้เป็นเกมที่มีเหตุผลนะครับ",
+      goodMove: "Oh, nice one. ตานี้ดีมาก|Excellent. ผมไม่ได้คาดไว้เลย|ตาที่มีเหตุผลมากครับ",
+      badMove: "Hmm, are you sure? ผมว่าตรงนั้นช้าไปหน่อย|That's a pity. ผมจะไม่ปล่อยไปนะ|ตานี้ให้โอกาสผมแล้วครับ",
+      caught: "Ah, my stones… {n} เม็ด ราคาแพงเลย|Fair enough. ผมประเมินผิดเอง|Well spotted ครับ",
+      capture: "Sorry, ขอเก็บ {n} เม็ดนะครับ|ตามคาด ไม่มีลมหายใจแล้ว|Elementary ครับ",
+      ahead: "เป็นไปตามแผน|Steady. ค่อยเป็นค่อยไป|ตัวเลขกำลังเข้าข้างผม",
+      behind: "Interesting... น่าสนใจมาก|ผมต้องคำนวณใหม่แล้ว|Quite a pickle ครับ",
+      comeback: "Keep calm and carry on ครับ|ความใจเย็นมักได้ผลตอบแทนเสมอ",
+      humanPass: "Pass? ผมขอตรวจกระดานก่อนนะครับ|Very well.",
+      aiPass: "I think we're done. ผ่านครับ|ผมไม่เห็นตาที่มีค่าเหลือแล้ว ผ่าน",
+      ko: "A ko fight! ต้องหาที่ขู่ก่อนนะครับ|ตามกติกา ยังเก็บคืนไม่ได้ครับ",
+      hint: "Getting a second opinion? ไม่ว่ากันครับ|ข้อมูลดีๆ ช่วยให้ตัดสินใจได้ดีขึ้น",
+      slow: "Take your time ครับ ผมจิบชารอได้|การคิดนานคือการเคารพเกม",
+      byoyomi: "Byo-yomi ครับ เหลือ 10 วินาที|Clock's ticking ครับ",
+      lastPeriod: "Last period ครับ ระวังด้วย|ครั้งสุดท้ายแล้วนะครับ",
+      aiByo: "Time is short. ผมต้องเร่งแล้ว|ขอโทษที่ต้องเล่นเร็วขึ้นครับ",
+      mid: "Go เหมือนหมากรุกแต่มีกระดานใหญ่กว่า และใจกว้างกว่า|ที่ลอนดอนผมเล่นที่ผับทุกวันพุธ|ทุกตามีเหตุผลของมันเสมอ",
+      win: "Well played, เกมดีครับ|Cheers! ขอบคุณสำหรับเกมครับ",
+      lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม|Hats off ครับ ผมแพ้อย่างยอมรับ|Jolly good game ครับ",
+      resigned: "A gracious resignation. ขอบคุณครับ|Good game ครับ เกมหน้ามาอีกนะ",
+      timeoutWin: "Unlucky. หมดเวลาซะก่อน|เสียดายครับ เกมกำลังสนุก",
+      giveUp: "I resign. คุณสมควรชนะครับ|ไม่มีเหตุผลที่จะเล่นต่อแล้ว ผมยอมครับ"
+    },
+    weiqi: {
+      hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่|เทนเง็นรออยู่ตรงกลางแล้ว|ถ้าเจอโทระบอกเขาด้วยว่าผมมา",
+      goodMove: "หึ ตานี้พอใช้ได้|ดิ้นได้ดีนี่|ตานี้ผมจะจำไว้",
+      badMove: "เห็นจุดอ่อนแล้ว!|ผิดพลาดตานี้ราคาแพงนะ|นั่นแหละที่ผมรอ",
+      caught: "{n} เม็ดเหรอ ไม่เป็นไร ผมจะเอาคืนเป็นกลุ่ม|ฮึ่ม! อย่าคิดว่าจบแค่นี้|แค่เสียหน้าหมากนิดหน่อย",
+      capture: "{n} เม็ดลงกล่อง!|บอกแล้วว่าไม่มีใครรอด|ต่อไปกลุ่มไหนดี",
+      ahead: "กลุ่มนั้นตายแล้ว|บุกต่อไม่หยุด!|นับกระดานไม่ต้อง นับศพแทน",
+      behind: "ยังไม่จบ! เดี๋ยวบุกกลับ|ผมจะไม่ตั้งรับแบบโทระเด็ดขาด|ต้องฆ่าให้ได้สักกลุ่ม",
+      comeback: "เห็นไหม! การบุกคือคำตอบ|กลับมาแล้ว ทีนี้ไม่ปล่อยแล้ว",
+      humanPass: "ผ่าน? ไม่สู้แล้วเหรอ|หนีไม่พ้นหรอก",
+      aiPass: "ไม่มีอะไรให้ฆ่าแล้ว ผ่าน|ผ่าน น่าเบื่อ",
+      ko: "โคเหรอ ผมชอบสู้โค!|ห้ามเก็บคืนทันที ไปหาที่ขู่มาก่อน",
+      hint: "ขอให้ AI ช่วยก็ไม่รอดหรอก|ดูคำใบ้ไปก็เท่านั้น",
+      slow: "คิดนานไปก็ไม่รอดหรอก|เร็วเข้า ผมอยากบุกต่อแล้ว",
+      byoyomi: "เวลาเริ่มบีบแล้ว!|10 วิ! รีบตายหรือรีบหนี",
+      lastPeriod: "ครั้งสุดท้าย! ไม่มีที่ให้หนีแล้ว|อย่าหมดเวลาก่อนผมได้ฆ่านะ",
+      aiByo: "เวลาน้อยไม่เป็นไร การบุกไม่ต้องคิดนาน|บุกเร็วขึ้นอีก!",
+      mid: "เทนเง็นคือหัวใจของกระดาน|โทระชอบนั่งเฝ้ามุม ผมชอบยึดกลาง|หมากที่ไม่บุกคือหมากที่ตายแล้ว",
+      win: "บอกแล้วว่าไม่มีใครหนีพ้น|อีกหนึ่งชัยชนะของเทนเง็น",
+      lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่|ฮึ่ม! อย่าบอกโทระนะว่าผมแพ้|ผมจะกลับมาแก้แค้น",
+      resigned: "หนีไปแล้วเหรอ ฮ่าๆ|ยอมก่อนโดนฆ่า ฉลาดดี",
+      timeoutWin: "เวลาก็ฆ่าคุณได้เหมือนกันนะ|หมดเวลาก็ตายเหมือนกัน",
+      giveUp: "ฮึ่ม… ผมยอม แต่ไม่ลืมแน่|ครั้งนี้ยอมให้ ครั้งหน้าไม่มีแน่"
+    },
+    tora: {
+      hello: "บุกมาเลย ผมรับได้หมด|มุมทั้งสี่ของผมพร้อมแล้ว|ถ้าคุณบุกเหมือนเว่ยฉี ผมรู้วิธีรับ",
+      goodMove: "ตานี้แทงเข้ามาลึก|หึ ลองเจาะป้อมดูสิ|ตาดี แต่ผมยังไม่สะเทือน",
+      badMove: "ตรงนั้นมีช่องโหว่นะ|บุกเกินไปแล้ว|ขอบคุณที่ส่งหมากมาให้ผมจับ",
+      caught: "เสีย {n} เม็ด แต่ป้อมยังอยู่|แค่รอยขีดข่วน|ผนังร้าวนิดหน่อย ซ่อมได้",
+      capture: "เข้ามาในป้อมก็ไม่ได้ออกไป {n} เม็ด|บุกเข้ามาก็ตายในเขตผม|ผมบอกแล้วว่ารับได้",
+      ahead: "ป้อมของผมไม่มีวันแตก|ยิ่งบุกยิ่งเสีย|ค่อยๆ เก็บแต้มไปเรื่อยๆ",
+      behind: "ยังรับไหว|อดทนไว้ โอกาสต้องมา|ผมต้องรักษาสิ่งที่มีก่อน",
+      comeback: "รับไว้ แล้วโต้กลับ นี่แหละวิถีผม|อดทนจนได้ผล",
+      humanPass: "ผ่าน? งั้นผมจะปิดประตูให้เรียบร้อย|ได้เลย",
+      aiPass: "เขตแดนผมปิดหมดแล้ว ผ่าน|ไม่มีรอยรั่ว ผ่าน",
+      ko: "โคก็ต้องรอจังหวะ เหมือนการตั้งรับ|ห้ามเก็บทันที ไปขู่ที่อื่นก่อน",
+      hint: "ถามคำใบ้ไปก็ยังหาช่องไม่เจอหรอก|ใช้ทุกทางที่มีเถอะ",
+      slow: "ผมรอได้ การรอคือจุดแข็งผม|คิดให้ดี เพราะผมไม่ปล่อยช่องให้",
+      byoyomi: "เวลาหมดแล้ว รีบอาจพลาดนะ|ใจเย็นแม้เวลาน้อย",
+      lastPeriod: "ครั้งสุดท้ายแล้ว อย่าทิ้งเกมเพราะนาฬิกา|ระวังนะ ครั้งสุดท้าย",
+      aiByo: "เวลาน้อย แต่ป้อมไม่ต้องคิดนาน|ตั้งรับไม่ต้องรีบ",
+      mid: "สามสามคือบ้านที่ปลอดภัยที่สุด|เว่ยฉีชอบบุกกลาง ผมชอบนับแต้ม|กำแพงที่ดีไม่ต้องสูง แค่ไม่มีรู",
+      win: "การป้องกันที่ดีที่สุดคือการไม่ให้โอกาส|ป้อมยังไม่แตก ขอบคุณที่เล่น",
+      lose: "ทะลวงป้อมผมได้... ไม่เลว|ต้องกลับไปสร้างกำแพงใหม่|อย่าเล่าให้เว่ยฉีฟังนะ",
+      resigned: "ยอมก่อนเจาะป้อมได้ ฉลาดดี|ไว้มาลองใหม่",
+      timeoutWin: "เวลาก็เป็นกำแพงอย่างหนึ่ง|หมดเวลาแล้ว น่าเสียดาย",
+      giveUp: "ป้อมแตกแล้ว ผมยอม|ไม่มีอะไรให้รักษาแล้ว ยอมครับ"
+    },
+    kan: {
+      hello: "เล่นเต็มที่นะครับ|สวัสดีครับ วันนี้มาเล่นกันสนุกๆ|ถ้าสงสัยตาไหน จบเกมแล้วมาดูย้อนหลังกันได้ครับ",
+      goodMove: "ตานี้ดีครับ ตรงจุดเลย|อ่านเกมได้ดีครับ|ตาแบบนี้นักกีฬาทีมชาติยังเดินกันครับ",
+      badMove: "ตานี้ช้าไปจังหวะนึงครับ|ลองย้อนดูตานี้หลังจบเกมนะครับ|ผมว่าตานี้มีที่ใหญ่กว่าครับ",
+      caught: "เสีย {n} เม็ด ผมประเมินผิดครับ|ตานี้คุณอ่านไกลกว่าผม|เสียหน้าหมาก แต่ยังมีงานต่อครับ",
+      capture: "ขอเก็บ {n} เม็ดนะครับ|กลุ่มนั้นลมไม่พอครับ|ตรงนี้ต้องระวังลมหายใจด้วยนะครับ",
+      ahead: "เกมนี้อยู่ในมือแล้ว|ผมได้เปรียบอยู่ แต่ยังไม่ประมาทครับ|ค่อยๆ ปิดเกมครับ",
+      behind: "ยังมีทางสู้|ต้องหาจุดพลิกเกมแล้ว|คุณเล่นแน่นมากครับ",
+      comeback: "เกมพลิกแล้วครับ ห้ามประมาทจนวินาทีสุดท้าย|โกะไม่จบจนกว่าจะนับแต้มครับ",
+      humanPass: "ผ่านนะครับ ผมขอตรวจเขตก่อน|รับทราบครับ",
+      aiPass: "ผมว่าปิดเขตครบแล้วครับ ผ่าน|ผ่านครับ ถ้าตรงไหนยังไม่จบเล่นต่อได้นะครับ",
+      ko: "เป็นโคครับ ต้องเดินที่อื่นก่อนหนึ่งตา|หาที่ขู่ดีๆ แล้วค่อยกลับมาเก็บครับ",
+      hint: "ใช้คำแนะนำเพื่อเรียนรู้ดีครับ|ลองคิดเองก่อนด้วยนะครับ จะเก่งเร็วขึ้น",
+      slow: "ไม่ต้องรีบครับ คิดให้รอบคอบ|ตาสำคัญควรใช้เวลาครับ",
+      byoyomi: "เข้าเบียวโยมิแล้วครับ เดินตามสัญชาตญาณได้เลย|เหลือ 10 วิต่อตาแล้วครับ",
+      lastPeriod: "เหลือครั้งสุดท้ายแล้วครับ ระวังนะครับ|อย่าเสียเกมเพราะเวลานะครับ",
+      aiByo: "ผมเข้าเบียวโยมิแล้วครับ|เวลาผมเหลือน้อย ต้องเชื่อสัญชาตญาณแล้ว",
+      mid: "กลางเกมแบบนี้ต้องดูภาพรวมครับ|ทีมชาติซ้อมอ่านเกมวันละหลายชั่วโมงครับ|ลองนับแต้มคร่าวๆ ระหว่างเกมดูครับ ช่วยได้เยอะ",
+      win: "ขอบคุณที่เล่นด้วยครับ ฝึกต่อไปนะ|เกมดีครับ ลองดูย้อนหลังจุดพลิกเกมนะครับ",
+      lose: "ฝีมือระดับทีมชาติเลยนะครับ|คุณเก่งมากครับ สนใจลงแข่งไหมครับ|ผมได้เรียนรู้จากเกมนี้เยอะครับ",
+      resigned: "ขอบคุณครับ ยอมแพ้ก็เป็นมารยาทที่ดีครับ|เกมนี้มีบทเรียนดีๆ ลองดูย้อนหลังนะครับ",
+      timeoutWin: "เสียดายครับ ครั้งหน้าลองแบ่งเวลาดีๆ นะครับ|การบริหารเวลาก็สำคัญครับ",
+      giveUp: "ผมยอมครับ คุณเล่นดีมาก|ยอมแพ้ครับ ฝีมือดีจริงๆ"
+    },
+    todo: {
+      hello: "...เชิญ|กระดานรออยู่|ข้าจะดูว่าเจ้ามาไกลแค่ไหน",
+      goodMove: "หืม|ดี|ตานี้… น่าสนใจ",
+      badMove: "...|ช้าไป|ตานั้นมีราคา",
+      caught: "{n} เม็ด… ข้ายอมให้|อืม|ข้ามองข้ามไป",
+      capture: "{n} เม็ด|ตามที่เห็น|หมดลมแล้ว",
+      ahead: "จบแล้ว|ทางออกไม่มี|ข้าเห็นตอนจบแล้ว",
+      behind: "อืม|น่าสนใจ|เจ้าเก่งขึ้น",
+      comeback: "เกมยังไม่จบ|ข้ายังอยู่",
+      humanPass: "ผ่าน|...",
+      aiPass: "ผ่าน|จบแล้ว",
+      ko: "โค|อดทน",
+      hint: "ถามเครื่องจักรรึ|ตาที่ได้มาง่าย ลืมง่าย",
+      slow: "ข้ารอได้|เวลาเป็นของเจ้า",
+      byoyomi: "สิบวินาที|เวลาหมดแล้ว",
+      lastPeriod: "ครั้งสุดท้าย|ระวัง",
+      aiByo: "...|เวลาไม่สำคัญ",
+      mid: "กระดานพูดได้ ถ้าเจ้าฟังเป็น|ทุกหินมีที่ของมัน|...",
+      win: "ยังต้องฝึกอีกมาก|อีกสิบปีค่อยมาใหม่",
+      lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน|ข้าแพ้… ดี|ในที่สุด",
+      resigned: "รู้จักยอมแพ้ ก็คือรู้จักเกม|ดี",
+      timeoutWin: "เวลาไม่รอใคร|...",
+      giveUp: "ข้ายอม|...ยอมแพ้"
+    }
+  };
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
@@ -1281,23 +1480,52 @@ function GoNNAI(E, F, net) {
   }
 
   // ---------- character speech ----------
-  let said = {};
-  function speak(kind, force) {
-    if (said[kind] && !force) return;
-    said[kind] = true;
-    const c = CHARS[gameChar], q = $("quote");
+  // pri: a line about this move only replaces one said on the same move if it matters as much;
+  // gap: skip unless the character has been quiet for that many moves; once: a kind is used once a game
+  let saidKinds = new Set(), saidLines = new Set(), spokeAt = -99, spokePri = 0;
+  function speak(kind, o = {}) {
+    const at = history.length, pri = o.pri || 0;
+    if (!o.force) {
+      if (o.once && saidKinds.has(kind)) return false;
+      if (o.gap && at - spokeAt < o.gap) return false;
+      if (at === spokeAt && pri < spokePri) return false;
+    }
+    const c = CHARS[gameChar], all = (TALK[c.id][kind] || c.say[kind] || "").split("|").filter(Boolean);
+    if (!all.length) return false;
+    const fresh = all.filter(l => !saidLines.has(l)), list = fresh.length ? fresh : all;
+    const line = list[(Math.random() * list.length) | 0];
+    saidKinds.add(kind); saidLines.add(line); spokeAt = at; spokePri = pri;
+    const q = $("quote");
     q.hidden = false;
-    q.innerHTML = `${avatarSVG(c)}<span><b>${c.name}</b>${c.say[kind]}</span>`;
+    q.innerHTML = `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
+    q.classList.remove("say"); void q.offsetWidth; q.classList.add("say");
+    return true;
+  }
+  // how good the player's last move was: their winning chance from the raw network before and after it
+  let lowestAI = 1;
+  async function judgeHumanMove() {
+    const last = history[history.length - 1];
+    if (last === PASS || history.length < 8) return;
+    let before, after;
+    try { [before, after] = await AI.evalMany(n, [history.slice(0, -1), history.slice()], KOMI); } catch (e) { return; }
+    const was = before.win / (before.win + before.loss), now = after.loss / (after.win + after.loss);
+    if (was < 0.05 || was > 0.95) return;
+    if (now - was >= 0.15) speak("goodMove", { pri: 2 });
+    else if (now - was <= -0.15) speak("badMove", { pri: 2 });
   }
   function reactTo(res) {
     // res.winrate is for the AI, the player to move when it searched
+    const was = lowestAI; lowestAI = Math.min(lowestAI, res.winrate);
     if (history.length < 20) return;
-    if (res.winrate > 0.85) speak("ahead"); else if (res.winrate < 0.2) speak("behind");
+    if (was < 0.25 && res.winrate > 0.75 && speak("comeback", { once: true, pri: 1 })) return;
+    if (res.winrate > 0.85) speak("ahead", { gap: 14 });
+    else if (res.winrate < 0.2) speak("behind", { gap: 14 });
+    else if (history.length >= 40 && Math.random() < 0.08) speak("mid", { gap: 16 });
   }
 
   // ---------- clocks: 15 min main time, then byo-yomi 10 s x 3 ----------
   const MAIN_S = 900, BYO_S = 10, PERIODS = 3;
-  let clocks = null, lastTick = 0;
+  let clocks = null, lastTick = 0, humanSince = 0, slowTold = false;
   const freshClock = () => ({ main: MAIN_S, byo: BYO_S, per: PERIODS });
   const clockLive = () => board && engineReady && !over && !scoring;
   function tick() {
@@ -1307,10 +1535,13 @@ function GoNNAI(E, F, net) {
     let t = dt;
     if (c.main > 0) { const use = Math.min(c.main, t); c.main -= use; t -= use; }
     if (t > 0) {
+      if (c.byo === BYO_S && c.per === PERIODS) speak(board.toPlay === human ? "byoyomi" : "aiByo", { once: true, pri: 1 });
       c.byo -= t;
       while (c.byo <= 0 && c.per > 0) { c.per--; if (c.per > 0) c.byo += BYO_S; }
       if (c.per === 0) { c.byo = 0; timeout(board.toPlay); return; }
+      if (c.per === 1 && board.toPlay === human) speak("lastPeriod", { once: true, pri: 1 });
     }
+    if (board.toPlay === human && !slowTold && now - humanSince > 90000) { slowTold = true; speak("slow", { gap: 20 }); }
     renderClocks();
   }
   // after a move the mover's byo-yomi period starts fresh
@@ -1320,7 +1551,7 @@ function GoNNAI(E, F, net) {
     const name = CHARS[gameChar].name;
     over = color === human ? { text: `คุณหมดเวลา ${name} ชนะ`, detail: "ใช้เบียวโยมิครบ 3 ครั้งแล้ว" }
       : { text: `${name} หมดเวลา คุณชนะ!`, detail: "" };
-    speak(color === human ? "win" : "lose", true); reportEnd(color !== human, "timeout"); render();
+    speak(color === human ? "timeoutWin" : "lose", { force: true }); reportEnd(color !== human, "timeout"); render();
   }
   // how long the AI may think this move without risking its clock
   function aiBudget(base) {
@@ -1387,7 +1618,8 @@ function GoNNAI(E, F, net) {
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
-    said = {}; speak("hello"); hopeless = 0;
+    saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
+    speak("hello", { force: true }); hopeless = 0;
     gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
     resize(); render(); maybeAI();
   }
@@ -1413,12 +1645,16 @@ function GoNNAI(E, F, net) {
   }
   function playMove(p) {
     if (p !== PASS) clack();
-    clockMoved(board.toPlay);
+    const mover = board.toPlay, caps = board.caps[mover];
+    clockMoved(mover);
     board.play(p); history.push(p); hint = null;
     track({ type: "move", state: snapshot() });
+    const took = board.caps[mover] - caps;
     if (board.passes >= 2) startScoring();
+    else if (p === PASS) speak(mover === human ? "humanPass" : "aiPass", { pri: 3, gap: 8 });
+    else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
     render();
-    if (!over && !scoring) maybeAI();
+    if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); }
   }
   function setEval(res) {
     // res values are for the player to move at the searched position
@@ -1463,6 +1699,8 @@ function GoNNAI(E, F, net) {
     // every character takes at least about a second before playing
     const minThink = async () => { const w = 1000 - (Date.now() - started); if (w > 0) await new Promise(r => setTimeout(r, w)); };
     await new Promise(r => setTimeout(r, 30));
+    await judgeHumanMove();
+    if (my !== gen) return;
     const book = openingMove();
     if (book !== null) {
       await minThink();
@@ -1482,7 +1720,7 @@ function GoNNAI(E, F, net) {
     // resign once the player's winning chance has been 99% or more for 5 AI moves in a row
     hopeless = res.winrate <= 0.01 ? hopeless + 1 : 0;
     if (hopeless >= 5) {
-      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("lose", true); reportEnd(true, "resign"); render(); return;
+      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("giveUp", { force: true }); reportEnd(true, "resign"); render(); return;
     }
     playMove(res.move);
   }
@@ -1550,7 +1788,7 @@ function GoNNAI(E, F, net) {
     unlockAudio();
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     if (board.color[p] !== EMPTY) return;
-    if (!board.isLegal(p, human)) { flash(p === board.ko ? "ห้ามเดินตรงนี้ทันที เพราะเป็นโค ให้เดินที่อื่นก่อนหนึ่งตา" : "จุดนี้วางไม่ได้ (ไม่มีลมหายใจ)"); return; }
+    if (!board.isLegal(p, human)) { if (p === board.ko) speak("ko", { gap: 4 }); flash(p === board.ko ? "ห้ามเดินตรงนี้ทันที เพราะเป็นโค ให้เดินที่อื่นก่อนหนึ่งตา" : "จุดนี้วางไม่ได้ (ไม่มีลมหายใจ)"); return; }
     playMove(p);
   });
   cv.addEventListener("pointermove", ev => { if (ev.pointerType !== "mouse" || !board) return; const p = pointAt(ev); if (p !== hover) { hover = p; drawBoard(); } });
@@ -1562,7 +1800,7 @@ function GoNNAI(E, F, net) {
   $("btnPass").onclick = () => { if (!engineReady || over || scoring || thinking || board.toPlay !== human) return; playMove(PASS); };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
-    const my = ++gen; thinking = true; think = null; render();
+    const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
     const res = await AI.think(n, history.slice(), KOMI, { visits: 120, timeMs: Math.min(8000, clocks[human].main > 0 ? 8000 : Math.max(1000, (clocks[human].byo - 2.5) * 1000)), batch: 8, shouldStop: () => my !== gen,
       onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } } });
     if (my !== gen) return;
@@ -1571,7 +1809,7 @@ function GoNNAI(E, F, net) {
   };
   $("btnResign").onclick = () => {
     if (over || scoring || !history.length) return;
-    cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("win", true); reportEnd(false, "resign"); render();
+    cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("resigned", { force: true }); reportEnd(false, "resign"); render();
   };
   // characters from 3 kyu up (index 3 onwards) only play on the full 19x19 board
   const only19 = i => i >= 3;
@@ -1638,7 +1876,7 @@ function GoNNAI(E, F, net) {
       const diff = r.b - (r.w + KOMI);
       const winner = diff > 0 ? BLACK : WHITE;
       res.hidden = false;
-      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", true); reportEnd(winner === human, "score"); }
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>`;
