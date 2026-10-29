@@ -327,7 +327,7 @@
   if (byId >= 0) settings.char = byId; else if (settings.char >= 3 && savedId === null) settings.char++;
   if (!CHARS[settings.char]) settings.char = 4;
   const KOMI = 7.5;
-  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null;
+  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5, hopeless = 0;
   let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
   let AI = null, gen = 0, engineReady = false;
@@ -579,7 +579,7 @@
   function newGame() {
     cancelAI();
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
-    board = new Board(n); history = []; hint = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
+    board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     const ch = CHARS[gameChar];
@@ -659,7 +659,7 @@
     if (p !== PASS) clack();
     const mover = board.toPlay, caps = board.caps[mover];
     clockMoved(mover);
-    board.play(p); history.push(p); hint = null;
+    board.play(p); history.push(p); hint = null; pending = null;
     track({ type: "move", state: snapshot() });
     const took = board.caps[mover] - caps;
     if (board.passes >= 2) startScoring();
@@ -837,15 +837,27 @@
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     if (board.color[p] !== EMPTY) return;
     if (!board.isLegal(p, human)) { if (p === board.ko) speak("ko", { gap: 4 }); flash(p === board.ko ? "ห้ามเดินตรงนี้ทันที เพราะเป็นโค ให้เดินที่อื่นก่อนหนึ่งตา" : "จุดนี้วางไม่ได้ (ไม่มีลมหายใจ)"); return; }
+    // on a touch screen the first tap only marks the point; the move is made with the confirm button or a second tap on the same point
+    if (lastPtr !== "mouse" && p !== pending) { pending = p; blip(700); render(); return; }
     playMove(p);
   });
+  cv.addEventListener("pointerdown", ev => { lastPtr = ev.pointerType || "mouse"; });
   cv.addEventListener("pointermove", ev => { if (ev.pointerType !== "mouse" || !board) return; const p = pointAt(ev); if (p !== hover) { hover = p; drawBoard(); } });
   cv.addEventListener("pointerleave", () => { hover = null; drawBoard(); });
 
   let flashMsg = null, flashT = 0;
   function flash(t) { flashMsg = t; clearTimeout(flashT); flashT = setTimeout(() => { flashMsg = null; renderStatus(); }, 2600); renderStatus(); }
 
-  $("btnPass").onclick = () => { if (!engineReady || over || scoring || thinking || board.toPlay !== human) return; playMove(PASS); };
+  const pendingOk = () => pending !== null && reviewAt === null && engineReady && !over && !scoring && !thinking && board.toPlay === human && board.isLegal(pending, human);
+  // the pass button turns into the confirm button while a stone is waiting to be placed
+  function syncPass(myTurn) {
+    const b = $("btnPass"), ok = pendingOk();
+    b.disabled = !myTurn; b.textContent = ok ? "วางหมาก" : "ผ่าน"; b.classList.toggle("confirm", ok);
+  }
+  $("btnPass").onclick = () => {
+    if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
+    if (pendingOk()) playMove(pending); else playMove(PASS);
+  };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
@@ -916,7 +928,7 @@
     const lead = Math.abs(leadBlack).toFixed(1);
     $("wrMid").textContent = history.length ? `${leadBlack >= 0 ? "ดำ" : "ขาว"} นำ ~${lead} แต้ม` : "โอกาสชนะ";
     const myTurn = engineReady && live && !thinking && board.toPlay === human;
-    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn || !!exam;
+    syncPass(myTurn); $("btnHint").disabled = !myTurn || !!exam;
     $("btnResign").disabled = !live || !history.length;
     const res = $("result");
     if (over) { res.hidden = false; res.innerHTML = `<h2>${over.text}</h2><div class="nums">${over.detail}</div>` + examReport(); }
@@ -973,7 +985,7 @@
     }
     el.innerHTML = html;
     const live = !over && !scoring, myTurn = engineReady && live && !thinking && board.toPlay === human;
-    $("btnPass").disabled = !myTurn; $("btnHint").disabled = !myTurn || !!exam;
+    syncPass(myTurn); $("btnHint").disabled = !myTurn || !!exam;
   }
 
   let dpr = 1, S = 800;
@@ -1076,6 +1088,10 @@
     }
     if (!reviewing && hover !== null && engineReady && !thinking && !over && !scoring && board.toPlay === human && board.isLegal(hover, human)) {
       const [x, y] = board.xy(hover); drawStone(P(x), P(y), r, human, .45);
+    }
+    if (!reviewing && pendingOk()) { // stone waiting for confirmation: see-through with a red dot
+      const [x, y] = board.xy(pending); drawStone(P(x), P(y), r, human, .7);
+      g.fillStyle = "#e0402e"; g.beginPath(); g.arc(P(x), P(y), r * .3, 0, 7); g.fill();
     }
   }
 

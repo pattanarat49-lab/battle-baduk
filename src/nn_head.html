@@ -183,6 +183,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     inset 0 -1px 0 0 var(--px-lo), inset 3px 3px 0 0 var(--px-lo); }
 .actions button:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
 .actions button:disabled { opacity: 1; cursor: default; --px-face: #7d6c52; --px-hi: #92826a; --px-lo: #5f503b; color: #c9bba2; text-shadow: none; }
+.actions button.confirm { --px-face: #4cc38a; --px-hi: #a6efc8; --px-lo: #237a52; animation: pulse 1s steps(2) infinite; }
+@keyframes pulse { 50% { --px-face: #6fdca6; } }
 .actions button.danger { --px-face: #e2902e; --px-hi: #f8bc6a; --px-lo: #a05a14; }
 .actions.four { grid-template-columns: repeat(4, 1fr); }
 .actions.review { grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; align-items: center; }
