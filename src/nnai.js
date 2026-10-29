@@ -140,10 +140,10 @@ function GoNNAI(E, F, net) {
         let v = l.value, ld = l.lead;
         for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; p.L += ld; v = -v; ld = -ld; }
       }
-      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
+      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv, opts.top)); }
       if (opts.earlyStop && root.N > 64 && settledEarly(root, maxVisits, timeMs, t0)) break;
     }
-    const s = summary(root, base, rootEv);
+    const s = summary(root, base, rootEv, opts.top);
     s.elapsed = Date.now() - t0;
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
@@ -209,15 +209,16 @@ function GoNNAI(E, F, net) {
     if (mine(eo) >= mine(eb) - 0.03) { s.move = other; s.winrate = mine(eo); }
   }
 
-  function summary(root, base, rootEv) {
+  // topN: how many of the searched moves to report (5 unless asked); each with its average score lead for the player to move
+  function summary(root, base, rootEv, topN) {
     const list = [];
-    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i] }); }
+    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i], lead: -k.L / k.N }); }
     list.sort((a, b) => b.N - a.N);
-    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi] }); }
+    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi], lead: rootEv.lead }); }
     const best = list[0];
     return {
       move: slotToPoint(base, best.slot), winrate: Math.max(0, Math.min(1, (best.q + 1) / 2)), visits: root.N - 1, lead: rootEv.lead,
-      top: list.slice(0, 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior })),
+      top: list.slice(0, topN || 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior, lead: c.lead })),
       own: rootEv.own, pla: rootEv.pla, rootWin: rootEv.win, searchLead: root.L / root.N
     };
   }

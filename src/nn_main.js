@@ -565,6 +565,7 @@
   checkCancel(); setInterval(checkCancel, 30000);
   function reportEnd(humanWon, how) {
     save("game", null);
+    save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
     if (exam) { exam.how = how; exam.won = humanWon; }
@@ -1020,7 +1021,7 @@
   }
   function renderReview() {
     const on = !!board && ended();
-    $("review").hidden = !on; $("playActions").hidden = on;
+    $("review").hidden = !on; $("playActions").hidden = on; $("btnAnalyze").hidden = !on;
     if (!on) return;
     const k = reviewAt === null ? history.length : reviewAt;
     const g = exam && k ? exam.grades[k - 1] : null;
@@ -1261,7 +1262,7 @@
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden) return; // the tutorial has its own keys
+    if (!$("tutor").hidden || !$("anel").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
@@ -1278,6 +1279,22 @@
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
   function startGame() { if (CHARS[settings.char].tutorial) return openTutorial(); blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
+  // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
+  Analysis.E = E;
+  Analysis.ai = () => engineReady ? AI : null;
+  Analysis.evalMs = () => evalMs;
+  Analysis.lastGame = () => load("lastGame", null);
+  Analysis.onBack = from => {
+    if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
+    else showHome();
+  };
+  $("btnAnal").onclick = () => { unlockAudio(); blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Analysis.open({ n: 19, moves: [], from: "home" }); };
+  $("btnAnalyze").onclick = () => {
+    if (!ended()) return;
+    unlockAudio(); blip(880); cancelAI();
+    $("game").hidden = true; document.body.classList.remove("playing");
+    Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
+  };
   const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };
   syncSound();
