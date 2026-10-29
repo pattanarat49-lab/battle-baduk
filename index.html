@@ -1334,9 +1334,24 @@ function GoNNAI(E, F, net) {
     const ahead = pick.leadAfter - target, random = (opts.give || 0) > 6;
     if (ahead > 1) {
       const want = random ? Math.min(5, ahead, Math.max(opts.give, ahead / 8)) : Math.min(ahead, Math.max(2, ahead * 0.6));
-      for (const c of cands) {
-        const loss = cands[0].leadAfter - c.leadAfter;
-        if (c.leadAfter >= target && loss <= want + 0.5 && (loss <= 10 || c.prior >= 0.02) && loss > cands[0].leadAfter - pick.leadAfter) pick = c;
+      const ok = cands.filter((c, i) => i > 0 && c.leadAfter >= target && cands[0].leadAfter - c.leadAfter <= want + 0.5 &&
+        (cands[0].leadAfter - c.leadAfter <= 10 || c.prior >= 0.02)).sort((a, b) => a.leadAfter - b.leadAfter);
+      if (ok.length) {
+        // the network's first look can miss a tactic (a group left in atari, a cut): check the player's likeliest replies
+        // to each concession and keep it only if it still costs about what was meant, otherwise try a smaller one
+        const worst = async c => {
+          const after = moves.concat([c.move]), ev = await evaluate(n, after, komi), rs = [];
+          for (let i = 0; i < AREA; i++) if (ev.policy[i] >= 0.02) rs.push(i);
+          rs.sort((a, b) => ev.policy[b] - ev.policy[a]);
+          if (!rs.length) return c.leadAfter;
+          const evs = await evalMany(n, rs.slice(0, 4).map(i => after.concat([slotToPoint(base, i)])), komi);
+          return Math.min(...evs.map(e => e.lead));
+        };
+        const w0 = await worst(cands[0]);
+        for (const c of ok.slice(0, 3)) {
+          const wc = await worst(c);
+          if (w0 - wc <= want + 1.5 && wc >= target - 1) { pick = c; break; }
+        }
       }
     }
     s.move = pick.move; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
@@ -1720,7 +1735,7 @@ const Tutorial = (function () {
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
-    { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 8000 },
+    { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 30 นาที + เบียวโยมิ 30 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
       say: { hello: "มาวัดฝีมือกันหน่อย", ahead: "ลองหาตาที่ดีกว่านี้ดูนะ", behind: "เก่งนี่", win: "จบการสอบ ดูผลด้านล่างได้เลย", lose: "จบการสอบ ดูผลด้านล่างได้เลย" } }
   ];

@@ -326,9 +326,24 @@ function GoNNAI(E, F, net) {
     const ahead = pick.leadAfter - target, random = (opts.give || 0) > 6;
     if (ahead > 1) {
       const want = random ? Math.min(5, ahead, Math.max(opts.give, ahead / 8)) : Math.min(ahead, Math.max(2, ahead * 0.6));
-      for (const c of cands) {
-        const loss = cands[0].leadAfter - c.leadAfter;
-        if (c.leadAfter >= target && loss <= want + 0.5 && (loss <= 10 || c.prior >= 0.02) && loss > cands[0].leadAfter - pick.leadAfter) pick = c;
+      const ok = cands.filter((c, i) => i > 0 && c.leadAfter >= target && cands[0].leadAfter - c.leadAfter <= want + 0.5 &&
+        (cands[0].leadAfter - c.leadAfter <= 10 || c.prior >= 0.02)).sort((a, b) => a.leadAfter - b.leadAfter);
+      if (ok.length) {
+        // the network's first look can miss a tactic (a group left in atari, a cut): check the player's likeliest replies
+        // to each concession and keep it only if it still costs about what was meant, otherwise try a smaller one
+        const worst = async c => {
+          const after = moves.concat([c.move]), ev = await evaluate(n, after, komi), rs = [];
+          for (let i = 0; i < AREA; i++) if (ev.policy[i] >= 0.02) rs.push(i);
+          rs.sort((a, b) => ev.policy[b] - ev.policy[a]);
+          if (!rs.length) return c.leadAfter;
+          const evs = await evalMany(n, rs.slice(0, 4).map(i => after.concat([slotToPoint(base, i)])), komi);
+          return Math.min(...evs.map(e => e.lead));
+        };
+        const w0 = await worst(cands[0]);
+        for (const c of ok.slice(0, 3)) {
+          const wc = await worst(c);
+          if (w0 - wc <= want + 1.5 && wc >= target - 1) { pick = c; break; }
+        }
       }
     }
     s.move = pick.move; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
