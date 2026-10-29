@@ -1311,7 +1311,7 @@
   };
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
-    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร หรือเปิดคัมภีร์สอนเล่น" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง หรือเปิดคัมภีร์สอนเล่น" },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true }
   ];
