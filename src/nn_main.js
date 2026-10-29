@@ -825,6 +825,11 @@
       flash("สมอง AI ทำงานผิดพลาด กรุณารีเฟรชหน้าเว็บ"); render(); return;
     }
     if (my !== gen) return;
+    if (res.move === PASS && exam) {
+      const m = await openBorderMove();
+      if (my !== gen) return;
+      if (m !== null) res = Object.assign({}, res, { move: m });
+    }
     await minThink();
     if (my !== gen) return;
     thinking = false; think = null;
@@ -855,6 +860,30 @@
       if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
     }
     scoring.dead = dead; scoring.loading = false; render();
+  }
+  // Hikaru (placement test) never passes while a border is still open, even right after the player passes: an empty point next to stones that neither side clearly owns yet
+  // (a gap in a wall, a neutral point) is played first, so the game ends with every area sealed and the count is clear.
+  // Points inside a settled area and self-ataris (such as a shared liberty in seki) are left alone.
+  async function openBorderMove() {
+    const ev = await AI.evaluate(n, history.slice(), KOMI), me = board.toPlay;
+    let best = null, bp = -1;
+    for (const p of board.pts) {
+      if (board.color[p] !== EMPTY || !board.isLegal(p, me)) continue;
+      const [x, y] = board.xy(p), i = y * 19 + x;
+      if (Math.abs(ev.own[i]) > 0.5 || !board.dirs.some(d => board.color[p + d] === BLACK || board.color[p + d] === WHITE)) continue;
+      const b = new Board(n); b.copyFrom(board); b.play(p);
+      if (libertiesOf(b, p) < 2) continue;
+      if (ev.policy[i] > bp) { best = p; bp = ev.policy[i]; }
+    }
+    return best;
+  }
+  function libertiesOf(b, p) {
+    const c = b.color[p], seen = new Set([p]), libs = new Set(), st = [p];
+    while (st.length) {
+      const q = st.pop();
+      for (const d of b.dirs) { const r = q + d; if (b.color[r] === EMPTY) libs.add(r); else if (b.color[r] === c && !seen.has(r)) { seen.add(r); st.push(r); } }
+    }
+    return libs.size;
   }
   function chainOf(p) {
     const c = board.color[p], out = [p], seen = new Set([p]);
