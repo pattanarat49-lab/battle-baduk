@@ -28,6 +28,12 @@ function GoNNAI(E, F, net) {
     });
     if (todo.length) {
       const res = await net.run(feats);
+      // a GPU that has stopped working returns zeros or NaN: a real network never gives a flat policy
+      for (const r of res) {
+        let lo = Infinity, hi = -Infinity;
+        for (let i = 0; i < AREA; i++) { const v = r.policy[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+        if (!(hi - lo > 1e-3) || !isFinite(r.value[0] + r.value[1] + r.value[2])) throw new Error("bad network output");
+      }
       todo.forEach((i, k) => {
         const f = feats[k], r = res[k], b = f.board, legal = new Uint8Array(AREA + 1);
         for (const p of b.pts) if (b.isLegal(p, b.toPlay)) { const [x, y] = b.xy(p); legal[y * 19 + x] = 1; }
@@ -329,6 +335,6 @@ function GoNNAI(E, F, net) {
   }
   const gradeOf = g => g.same || g.loss <= 0.5 ? "best" : g.loss <= 2 ? "good" : g.loss <= 5 ? "normal" : "bad";
 
-  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf };
+  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear() };
 }
 if (typeof module !== "undefined") module.exports = GoNNAI;

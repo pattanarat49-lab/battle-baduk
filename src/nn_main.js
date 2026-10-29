@@ -347,7 +347,7 @@
     return out.buffer;
   }
   // measured at startup; on a slow device searches send smaller batches so they stop close to their time limit
-  let evalMs = 50;
+  let evalMs = 50, checkEngine = null, engineRetries = 0;
   async function initEngine() {
     const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; } };
     try {
@@ -365,7 +365,7 @@
       AI = GoNNAI(E, F, net);
       // some phone GPUs compute the network wrongly; after black D16 the reference answer is a corner (Q4/Q16/D4) at ~49%
       const sane = async () => {
-        const ev = (await AI.evalMany(19, [[new Board(19).pt(3, 3)]], KOMI))[0];
+        let ev; try { ev = (await AI.evalMany(19, [[new Board(19).pt(3, 3)]], KOMI))[0]; } catch (e) { return false; }
         let bi = 0; for (let i = 1; i < 361; i++) if (ev.policy[i] > ev.policy[bi]) bi = i;
         return [72, 300, 288].includes(bi) && Math.abs(ev.win / (ev.win + ev.loss) - 0.494) < 0.06;
       };
@@ -395,7 +395,10 @@
           await tf.setBackend("cpu"); await tf.ready(); backend = "cpu";
           net = GoTFNet(tf).build(meta, buf); AI = GoNNAI(E, F, net);
         }
-      } else if (backend === "cpu") await useWasm();
+      } else if (backend === "cpu" && (await useWasm()) && !(await sane())) {
+        await tf.setBackend("cpu"); await tf.ready(); backend = "cpu";
+        net = GoTFNet(tf).build(meta, buf); AI = GoNNAI(E, F, net);
+      }
       else if (forced !== "webgl") {
         // a weak GPU can be slower than WebAssembly: time both and keep the faster
         const glMs = await bench();
@@ -404,6 +407,19 @@
         if (ok && wMs < glMs * 0.8) {}
         else if (backend === "wasm") { await tf.setBackend("webgl"); await tf.ready(); backend = "webgl"; net = GoTFNet(tf).build(meta, buf); AI = GoNNAI(E, F, net); }
       }
+      // the GPU can stop computing correctly mid-game (a phone app switch can lose the WebGL context);
+      // checkEngine re-runs the sanity test, and if it fails rebuilds the network on WebAssembly or the CPU
+      checkEngine = async () => {
+        AI.clearCache();
+        if (await sane()) return "ok";
+        console.warn("network output went wrong on", backend);
+        if (backend !== "wasm" && (await useWasm()) && (await sane())) { label(); return "rebuilt"; }
+        await tf.setBackend("cpu"); await tf.ready(); backend = "cpu";
+        net = GoTFNet(tf).build(meta, buf); AI = GoNNAI(E, F, net);
+        label();
+        return (await sane()) ? "rebuilt" : "broken";
+      };
+      const label = () => { el.textContent = `สมอง AI พร้อม · KataGo b10 · ${backend === "webgl" ? "ใช้การ์ดจอ" : backend === "wasm" ? "ใช้ CPU (WebAssembly)" : "ใช้ CPU (ช้า)"} · ~${evalMs} ms ต่อการประเมิน`; };
       el.textContent = "กำลังอุ่นเครื่อง AI…";
       const t0 = performance.now();
       await AI.evalMany(19, [[], [E.PASS]], KOMI);
@@ -412,7 +428,7 @@
       const ms = Math.round((performance.now() - t1) / 8);
       evalMs = ms;
       engineReady = true;
-      el.textContent = `สมอง AI พร้อม · KataGo b10 · ${backend === "webgl" ? "ใช้การ์ดจอ" : backend === "wasm" ? "ใช้ CPU (WebAssembly)" : "ใช้ CPU (ช้า)"} · ~${ms} ms ต่อการประเมิน`;
+      label();
       console.log("warmup", Math.round(t1 - t0), "ms; per eval", ms, "ms");
       if (board) { render(); maybeAI(); startPonder(); }
     } catch (e) {
@@ -752,10 +768,23 @@
       if (my !== gen) return;
       thinking = false; playMove(book); return;
     }
-    const res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-      batch: evalMs > 300 ? 2 : 8, earlyStop: true, shouldStop: () => my !== gen,
-      onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-    }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), give: examGive() }));
+    let res;
+    try {
+      res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
+        batch: evalMs > 300 ? 2 : 8, earlyStop: true, shouldStop: () => my !== gen,
+        onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
+      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), give: examGive() }));
+      engineRetries = 0;
+    } catch (e) {
+      // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
+      // which fills the board row by row from the top-left corner
+      console.warn(e);
+      const state = checkEngine ? await checkEngine() : "broken";
+      if (my !== gen) return;
+      thinking = false;
+      if (state !== "broken" && ++engineRetries <= 2) return maybeAI();
+      flash("สมอง AI ทำงานผิดพลาด กรุณารีเฟรชหน้าเว็บ"); render(); return;
+    }
     if (my !== gen) return;
     await minThink();
     if (my !== gen) return;
@@ -859,8 +888,15 @@
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
-    const res = await AI.think(n, history.slice(), KOMI, { visits: 120, timeMs: Math.min(8000, clocks[human].main > 0 ? 8000 : Math.max(1000, (clocks[human].byo - 2.5) * 1000)), batch: 8, shouldStop: () => my !== gen,
-      onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } } });
+    let res;
+    try {
+      res = await AI.think(n, history.slice(), KOMI, { visits: 120, timeMs: Math.min(8000, clocks[human].main > 0 ? 8000 : Math.max(1000, (clocks[human].byo - 2.5) * 1000)), batch: 8, shouldStop: () => my !== gen,
+        onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } } });
+    } catch (e) {
+      if (my === gen) { thinking = false; think = null; render(); }
+      if (checkEngine) await checkEngine();
+      return;
+    }
     if (my !== gen) return;
     thinking = false; think = null; hint = res.move; setEval(res); render();
     if (res.move === PASS) flash("AI แนะนำให้ผ่าน");

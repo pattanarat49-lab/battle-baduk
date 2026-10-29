@@ -27,7 +27,7 @@ canvas { width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cq
     <a href="/stats">← กลับไปหน้าสถิติ</a></div>
 </main>
 <script>
-const NAMES = { mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", chris: "คริส", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด" };
+const NAMES = { mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์", chris: "คริส", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", hikaru: "ฮิคารุ" };
 const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 const g = new URLSearchParams(location.search).get("g");
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
@@ -44,7 +44,7 @@ function renderPanels() {
   if (!st) return;
   const live = !st.ended;
   for (const [col, id] of [[1, "pB"], [2, "pW"]]) {
-    const name = col === st.human ? "ผู้เล่น" : NAMES[st.char];
+    const name = col === st.human ? "ผู้เล่น" : (NAMES[st.char] || "AI");
     const [c, s] = clockText(st.clocks && st.clocks[col - 1], live && st.toPlay === col);
     const el = document.getElementById(id);
     el.className = "p" + (live && st.toPlay === col ? " turn" : "");
@@ -78,9 +78,9 @@ function renderInfo() {
   const s = document.getElementById("status");
   if (!st) return;
   if (st.ended) {
-    const who = st.how === "cancel" ? "ยกเลิก ขออภัยด้วยครับ" : st.winner === "human" ? "ผู้เล่นชนะ" : st.winner === "ai" ? NAMES[st.char] + " ชนะ" : "จบเกม";
+    const who = st.how === "cancel" ? "ยกเลิก ขออภัยด้วยครับ" : st.winner === "human" ? "ผู้เล่นชนะ" : st.winner === "ai" ? (NAMES[st.char] || "AI") + " ชนะ" : "จบเกม";
     s.innerHTML = '<span class="done">' + who + (st.how && st.how !== "cancel" ? " (" + HOW[st.how] + ")" : "") + '</span> · ' + st.moveNo + ' ตา';
-  } else s.innerHTML = '<span class="live">● กำลังเล่น</span> · ตาที่ ' + (st.moveNo + 1) + ' · ตา' + (st.toPlay === st.human ? "ผู้เล่น" : NAMES[st.char]);
+  } else s.innerHTML = '<span class="live">● กำลังเล่น</span> · ตาที่ ' + (st.moveNo + 1) + ' · ตา' + (st.toPlay === st.human ? "ผู้เล่น" : (NAMES[st.char] || "AI"));
   document.getElementById("wr").style.width = st.winB + "%";
   document.getElementById("wrl").textContent = "โอกาสชนะ ดำ " + st.winB + "% · ขาว " + (100 - st.winB) + "% (ตามที่ AI ประเมิน)";
 }
