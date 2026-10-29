@@ -295,14 +295,14 @@
       giveUp: "ผมยอมแพ้ จบการสอบ ดูผลด้านล่างได้เลย"
     }
   };
-  // Placement-test calibration: share of moves that were not "Best" for each character against Hikaru.
-  // rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ... Chosen by the site owner from real players' results
-  // (2026-10-29): each point is midway between the 2026-10-28 table and the one measured against Hikaru's
-  // even-score play on 2026-10-29. The grader cannot separate anything above about 5 dan.
+  // Placement-test calibration: each character's average move score against Hikaru (Best 0, Good 1, Normal 2, Bad 3,
+  // divided by the graded moves; lower is stronger), measured 2026-10-29 against Hikaru's even-score play.
+  // rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ... The site owner asked for every rank one step easier than the
+  // characters' own levels (Uncle Win, 8 kyu, reads as 7 kyu). The grader cannot separate anything above about 5 dan.
   const EXAM_CALIB = [
-    { id: "mek", rank: -14, avg: 60, label: "15 คิว" }, { id: "win", rank: -7, avg: 50.5, label: "8 คิว" },
-    { id: "yuto", rank: -4, avg: 30, label: "5 คิว" }, { id: "chris", rank: 1, avg: 18.25, label: "1 ดั้ง" },
-    { id: "tora", rank: 4, avg: 10.3, label: "4 ดั้ง" }, { id: "kan", rank: 5, avg: 4.35, label: "5 ดั้ง" }
+    { id: "mek", rank: -13, avg: 1.39, label: "14 คิว" }, { id: "win", rank: -6, avg: 1.01, label: "7 คิว" },
+    { id: "yuto", rank: -3, avg: 0.43, label: "4 คิว" }, { id: "chris", rank: 2, avg: 0.27, label: "2 ดั้ง" },
+    { id: "tora", rank: 5, avg: 0.13, label: "5 ดั้ง" }, { id: "kan", rank: 6, avg: 0.03, label: "5 ดั้งขึ้นไป" }
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
   function rankName(v) {
@@ -576,7 +576,7 @@
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
-      track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
+      track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
   // the position as spectators on /watch see it, with the moves so far for stepping back through the game
@@ -1019,22 +1019,22 @@
     const gs = ex.grades.filter(Boolean);
     const cnt = { best: 0, good: 0, normal: 0, bad: 0 }; let sum = 0;
     for (const g of gs) { cnt[g.cls]++; sum += Math.min(g.loss, 20); }
-    if (!gs.length) return { graded: 0, cnt, avg: 0, notBest: 0, est: null };
-    const notBest = 100 * (gs.length - cnt.best) / gs.length;
-    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? estimateRank(notBest) : null };
+    if (!gs.length) return { graded: 0, cnt, avg: 0, notBest: 0, score: 0, est: null };
+    const notBest = 100 * (gs.length - cnt.best) / gs.length, score = (cnt.good + 2 * cnt.normal + 3 * cnt.bad) / gs.length;
+    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? estimateRank(score) : null };
   }
   function examReport() {
     if (!exam) return "";
     const R = examResult(), gs = exam.grades.filter(Boolean);
     if (R.graded < 20 || history.length < EXAM_MIN_MOVES) return `<div class="exam"><b>ผลสอบ</b><p class="note">เกมนี้เดินไป ${history.length} ตา ยังน้อยเกินไปที่จะประเมินระดับ (ต้องเดินรวมกันอย่างน้อย ${EXAM_MIN_MOVES} ตา) แนะนำให้เล่นจนจบกระดานและนับแต้ม</p></div>`;
-    const { cnt, avg, notBest, est } = R;
+    const { cnt, avg, notBest, score, est } = R;
     const bar = Object.keys(cnt).map(k => `<i class="g-${k}" style="flex:${cnt[k]}"></i>`).join("");
     const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
-    const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - notBest) < Math.abs(a.avg - notBest) ? b : a) : null;
+    const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - score) < Math.abs(a.avg - score) ? b : a) : null;
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
       <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
-      <p class="note">ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
+      <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
   function moveName(p) { if (p === PASS) return "ผ่าน"; const [x, y] = board.xy(p); return LETTERS[x] + (n - y); }
   function renderStatus() {

@@ -30,8 +30,10 @@ export class Stats extends DurableObject {
     // each cancel bumps this number; open games that see it change stop and apologise
     this.sql.exec("CREATE TABLE IF NOT EXISTS cancels (n INTEGER PRIMARY KEY, at INTEGER)");
     // games that ended before the rank threshold was lowered still get a rank from the share of non-Best moves they stored
+    // average move score (Best 0, Good 1, Normal 2, Bad 3), added 2026-10-29; older rows have none
+    if (!this.sql.exec("PRAGMA table_info(exams)").toArray().some(c => c.name === "score")) this.sql.exec("ALTER TABLE exams ADD COLUMN score REAL");
     for (const r of this.sql.exec("SELECT game, not_best FROM exams WHERE rank IS NULL AND graded >= 20 AND moves >= 100 AND not_best IS NOT NULL").toArray())
-      this.sql.exec("UPDATE exams SET rank = ? WHERE game = ?", Math.round(estimateRank(r.not_best) * 10) / 10, r.game);
+      this.sql.exec("UPDATE exams SET rank = ? WHERE game = ?", Math.round(estimateRankOld(r.not_best) * 10) / 10, r.game);
   }
   // latest position of a game, kept for spectators; old rows are dropped as new ones arrive
   saveState(e, ended) {
@@ -76,8 +78,8 @@ export class Stats extends DurableObject {
       this.sql.exec("UPDATE games SET ended = ?, winner = ?, how = ?, moves = ? WHERE id = ? AND ended IS NULL",
         now, e.winner, e.how, e.moves, e.game);
       const cancelled = this.sql.exec("SELECT how FROM games WHERE id = ?", e.game).toArray()[0]?.how === "cancel";
-      if (e.exam && !cancelled) this.sql.exec("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank);
+      if (e.exam && !cancelled) this.sql.exec("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank, e.exam.score);
     }
   }
   summary() {
@@ -92,7 +94,7 @@ export class Stats extends DurableObject {
     const exams = this.sql.exec(`SELECT COUNT(*) AS tests, COUNT(DISTINCT player) AS players, SUM(rank IS NOT NULL) AS ranked,
         SUM(rank IS NOT NULL AND how = 'score') AS full FROM exams`).one();
     const examRanks = this.sql.exec("SELECT ROUND(rank) AS r, COUNT(*) AS n FROM exams WHERE rank IS NOT NULL GROUP BY r ORDER BY r DESC").toArray();
-    const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank FROM exams ORDER BY ended DESC LIMIT 10").toArray();
+    const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank, score FROM exams ORDER BY ended DESC LIMIT 10").toArray();
     return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent };
   }
 }
@@ -124,24 +126,28 @@ function clean(b) {
     const x = b.exam;
     if (e.char === "hikaru" && x && Number.isInteger(x.graded) && x.graded >= 0 && x.graded < 1000) {
       const num = (v, lo, hi) => typeof v === "number" && isFinite(v) && v >= lo && v <= hi ? v : null;
-      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), rank: null };
+      e.exam = { graded: x.graded, notBest: num(x.notBest, 0, 100), score: num(x.score, 0, 3), rank: null };
       // an older page may leave the rank out; it is the same estimate the game shows
-      if (x.graded >= 20 && e.moves >= 100) e.exam.rank = num(x.rank, -30, 10) ?? (e.exam.notBest === null ? null : Math.round(estimateRank(e.exam.notBest) * 10) / 10);
+      if (x.graded >= 20 && e.moves >= 100) e.exam.rank = num(x.rank, -30, 10) ??
+        (e.exam.score !== null ? Math.round(estimateRank(e.exam.score) * 10) / 10 : e.exam.notBest === null ? null : Math.round(estimateRankOld(e.exam.notBest) * 10) / 10);
     }
   }
   return e;
 }
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
-// same table as EXAM_CALIB in src/nn_main.js: share of non-Best moves each character plays, and its rank
-const EXAM_CALIB = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
-function estimateRank(avg) {
-  if (avg >= EXAM_CALIB[0].avg) return EXAM_CALIB[0].rank;
-  for (let i = 1; i < EXAM_CALIB.length; i++) if (avg >= EXAM_CALIB[i].avg) {
-    const a = EXAM_CALIB[i - 1], b = EXAM_CALIB[i]; return a.rank + (a.avg - avg) / (a.avg - b.avg) * (b.rank - a.rank);
+// same table as EXAM_CALIB in src/nn_main.js: each character's average move score (Best 0, Good 1, Normal 2, Bad 3), and the rank it reads as
+const EXAM_CALIB = [{ rank: -13, avg: 1.39 }, { rank: -6, avg: 1.01 }, { rank: -3, avg: 0.43 }, { rank: 2, avg: 0.27 }, { rank: 5, avg: 0.13 }, { rank: 6, avg: 0.03 }];
+// the table before 2026-10-29, by share of non-Best moves, for results sent without a score
+const EXAM_CALIB_OLD = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
+function rankFrom(T, avg) {
+  if (avg >= T[0].avg) return T[0].rank;
+  for (let i = 1; i < T.length; i++) if (avg >= T[i].avg) {
+    const a = T[i - 1], b = T[i]; return a.rank + (a.avg - avg) / (a.avg - b.avg) * (b.rank - a.rank);
   }
-  return EXAM_CALIB[EXAM_CALIB.length - 1].rank;
+  return T[T.length - 1].rank;
 }
+const estimateRank = v => rankFrom(EXAM_CALIB, v), estimateRankOld = v => rankFrom(EXAM_CALIB_OLD, v);
 const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
 const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 function page(s) {
@@ -187,7 +193,7 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <div class="tiles"><div class="tile"><b>${s.exams.tests || 0}</b><span>สอบจบแล้ว (${s.exams.players || 0} คน)</span></div>
 <div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เกมยาวอย่างน้อย 100 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
 ${s.examRanks.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ระดับที่ได้</th><th>จำนวน</th></tr></thead><tbody>${s.examRanks.map(r => `<tr><th>${rankName(r.r)}</th><td>${r.n}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">ยังไม่มีใครสอบจบ</p>`}
-${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ล่าสุด</th><th>ผล</th><th>ไม่ใช่ Best</th><th>ตาที่ให้คะแนน</th><th>จบด้วย</th></tr></thead><tbody>${s.examRecent.map(r => `<tr><th>${ago(r.ended)}</th><td>${r.rank === null ? "ไม่พอประเมิน" : rankName(r.rank)}</td><td>${r.not_best === null ? "–" : Math.round(r.not_best) + "%"}</td><td>${r.graded}</td><td>${HOW_TH[r.how] || r.how}</td></tr>`).join("")}</tbody></table></div>` : ""}
+${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ล่าสุด</th><th>ผล</th><th>คะแนน</th><th>ไม่ใช่ Best</th><th>ตาที่ให้คะแนน</th><th>จบด้วย</th></tr></thead><tbody>${s.examRecent.map(r => `<tr><th>${ago(r.ended)}</th><td>${r.rank === null ? "ไม่พอประเมิน" : rankName(r.rank)}</td><td>${r.score === null ? "–" : r.score.toFixed(2)}</td><td>${r.not_best === null ? "–" : Math.round(r.not_best) + "%"}</td><td>${r.graded}</td><td>${HOW_TH[r.how] || r.how}</td></tr>`).join("")}</tbody></table></div>` : ""}
 <p class="muted">แนะนำให้ผู้สอบเล่นจนจบกระดานและนับแต้ม ผลจะใกล้เคียงที่สุด</p></section>
 <section><h2>แยกตามตัวละคร</h2><div class="wrap"><table>
 <thead><tr><th style="text-align:left">ตัวละคร</th><th>เกม</th><th>ผู้เล่น</th><th>เล่นจบ</th><th>คนชนะ</th><th>AI ชนะ</th><th>คนชนะ %</th><th>ตาเฉลี่ย</th></tr></thead>
