@@ -301,12 +301,13 @@
   };
   // Placement-test calibration: each character's average move score against Hikaru (Best 0, Good 1, Normal 2, Bad 3,
   // divided by the graded moves; lower is stronger), measured 2026-10-29 against Hikaru's even-score play.
-  // rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ... The site owner asked for every rank two steps easier than the
-  // characters' own levels (Uncle Win, 8 kyu, reads as 6 kyu). The grader cannot separate anything above about 5 dan.
-  const EXAM_CALIB = [
-    { id: "mek", rank: -12, avg: 1.39, label: "13 คิว" }, { id: "win", rank: -5, avg: 1.01, label: "6 คิว" },
-    { id: "yuto", rank: -2, avg: 0.43, label: "3 คิว" }, { id: "chris", rank: 3, avg: 0.27, label: "3 ดั้ง" },
-    { id: "tora", rank: 6, avg: 0.13, label: "5 ดั้งขึ้นไป" }, { id: "kan", rank: 7, avg: 0.03, label: "5 ดั้งขึ้นไป" }
+  const EXAM_CALIB = [{ id: "mek", avg: 1.39 }, { id: "win", avg: 1.01 }, { id: "yuto", avg: 0.43 }, { id: "chris", avg: 0.27 }, { id: "tora", avg: 0.13 }, { id: "kan", avg: 0.03 }];
+  // Rank bands set by the site owner (2026-10-29) on top of those measurements: about two steps easier than the
+  // characters' own levels, narrow steps through 13-7 kyu, 3-1 kyu and 1-2 dan, wider jumps to 3 and 4 dan, and 5 dan
+  // hard to reach. Each entry: a score below "under" reads as "rank" (1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...).
+  const EXAM_BANDS = [
+    [0.12, 5], [0.24, 4], [0.30, 3], [0.33, 2], [0.36, 1], [0.40, 0], [0.44, -1], [0.50, -2], [0.70, -3], [0.88, -4],
+    [1.04, -5], [1.08, -6], [1.12, -7], [1.16, -8], [1.20, -9], [1.24, -10], [1.28, -11], [Infinity, -12]
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
   function rankName(v) {
@@ -314,15 +315,7 @@
     const r = Math.round(v);
     return r >= 1 ? r + " ดั้ง" : (1 - r) + " คิว";
   }
-  function estimateRank(avg) {
-    const pts = EXAM_CALIB.slice().sort((a, b) => b.avg - a.avg); // weakest (most points lost) first
-    if (pts.length < 2) return null;
-    if (avg >= pts[0].avg) return pts[0].rank; // weaker than the weakest reference: shown as that level
-    for (let i = 1; i < pts.length; i++) if (avg >= pts[i].avg) {
-      const a = pts[i - 1], b = pts[i]; return a.rank + (a.avg - avg) / (a.avg - b.avg || 1) * (b.rank - a.rank);
-    }
-    return pts[pts.length - 1].rank;
-  }
+  function estimateRank(score) { return EXAM_BANDS.find(([under]) => score < under)[1]; }
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
@@ -1075,7 +1068,7 @@
     // beating Hikaru adds a rank, two when the player won by 10 points or more on the count or when Hikaru resigned 30+
     // behind (site owner's choice, 2026-10-29)
     const bonus = ex.won ? (ex.margin >= 10 ? 2 : 1) : 0;
-    const top = Math.max(...EXAM_CALIB.map(c => c.rank));
+    const top = EXAM_BANDS[0][1];
     return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus,
       est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(top, estimateRank(score) + bonus) : null };
   }
@@ -1090,7 +1083,7 @@
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
       <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${bonus ? `รวมโบนัสชนะฮิคารุ +${bonus} ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" && !exam.won ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
-      <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
+      <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${rankName(estimateRank(near.avg))})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
   function moveName(p) { if (p === PASS) return "ผ่าน"; const [x, y] = board.xy(p); return LETTERS[x] + (n - y); }
   function renderStatus() {

@@ -203,8 +203,9 @@ function clean(b) {
 }
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
-// same table as EXAM_CALIB in src/nn_main.js: each character's average move score (Best 0, Good 1, Normal 2, Bad 3), and the rank it reads as
-const EXAM_CALIB = [{ rank: -12, avg: 1.39 }, { rank: -5, avg: 1.01 }, { rank: -2, avg: 0.43 }, { rank: 3, avg: 0.27 }, { rank: 6, avg: 0.13 }, { rank: 7, avg: 0.03 }];
+// same bands as EXAM_BANDS in src/nn_main.js: an average move score (Best 0, Good 1, Normal 2, Bad 3) below "under" reads as "rank"
+const EXAM_BANDS = [[0.12, 5], [0.24, 4], [0.30, 3], [0.33, 2], [0.36, 1], [0.40, 0], [0.44, -1], [0.50, -2], [0.70, -3], [0.88, -4],
+  [1.04, -5], [1.08, -6], [1.12, -7], [1.16, -8], [1.20, -9], [1.24, -10], [1.28, -11], [Infinity, -12]];
 // the table before 2026-10-29, by share of non-Best moves, for results sent without a score
 const EXAM_CALIB_OLD = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
 function rankFrom(T, avg) {
@@ -214,7 +215,7 @@ function rankFrom(T, avg) {
   }
   return T[T.length - 1].rank;
 }
-const estimateRank = v => rankFrom(EXAM_CALIB, v), estimateRankOld = v => rankFrom(EXAM_CALIB_OLD, v);
+const estimateRank = v => EXAM_BANDS.find(([under]) => v < under)[1], estimateRankOld = v => rankFrom(EXAM_CALIB_OLD, v);
 const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
 const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 function page(s) {
