@@ -347,7 +347,7 @@
   // measured at startup; on a slow device searches send smaller batches so they stop close to their time limit
   let evalMs = 50, checkEngine = null, engineRetries = 0;
   async function initEngine() {
-    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; } };
+    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
@@ -563,11 +563,15 @@
     render();
   }
   checkCancel(); setInterval(checkCancel, 30000);
-  function reportEnd(humanWon, how) {
+  function reportEnd(humanWon, how, margin) {
     save("game", null);
     save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
+    // the profile page's record of games played in this browser, newest first
+    const id = gameId, hist = load("history", []).filter(h => h.id !== id);
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice() });
+    save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
     if (!exam) return track(ev);
@@ -575,6 +579,7 @@
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -718,7 +723,7 @@
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
     gameId = g.gameId || rid(); gameReported = false;
-    $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
+    $("home").hidden = true; $("menu").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -1057,7 +1062,7 @@
       const winner = diff > 0 ? BLACK : WHITE;
       if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
-      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
@@ -1262,7 +1267,7 @@
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden || !$("anel").hidden) return; // the tutorial and the analysis board have their own keys
+    if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
@@ -1273,7 +1278,8 @@
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
-  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  $("home").hidden = true; // the main menu is the first screen
+  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   Tutorial.onHome = showHome;
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
@@ -1286,9 +1292,80 @@
   Analysis.lastGame = () => load("lastGame", null);
   Analysis.onBack = from => {
     if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
-    else showHome();
+    else if (from === "prof") showProfile();
+    else showMenu();
   };
-  $("btnAnal").onclick = () => { unlockAudio(); blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Analysis.open({ n: 19, moves: [], from: "home" }); };
+  // ---------- main menu and profile ----------
+  // 16x16 pixel icons: one character per pixel, "." is clear
+  const PAL = { k: "#2a1a0b", w: "#f3ead8", s: "#cfc6b4", t: "#3f8fd8", T: "#2b6aa6", y: "#e3b06a", b: "#151515", h: "#5b5b5b", G: "#57c26b", r: "#c8894a", d: "#5a331a", g: "#9c917e" };
+  const pxIcon = rows => `<svg viewBox="0 0 16 16" aria-hidden="true">${rows.map((row, y) => [...row].map((c, x) => PAL[c] ? `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${PAL[c]}"/>` : "").join("")).join("")}</svg>`;
+  const ICONS = {
+    profile: pxIcon(["................", ".....kkkkkk.....", "....kwwwwwwk....", "...kwwwwwwwwk...", "...kwwkwwkwwk...", "...kwwwwwwwwk...", "...kwwwkkwwwk...",
+      "....kwwwwwwk....", ".....kkkkkk.....", "....kkTTTTkk....", "..kkTTtttttTkk..", ".kTtttttyttttTk.", ".kTttttyyytttTk.", ".kTtttttytttttk.", ".kkkkkkkkkkkkkk.", "................"]),
+    play: pxIcon(["................", "...kkkkk........", "..kbbbbbk.......", ".kbhhbbbbk......", ".kbhbbbbbk......", ".kbbbbbbbkkkkk..", ".kbbbbbbkwwwwwk.", "..kbbbbkwwwwwwsk",
+      "...kkkkwwwwwwwsk", "......kwwwwwwssk", "......kwwwwwsssk", "......ksswssssk.", ".......ksssssk..", "........kkkkk...", "................", "................"]),
+    analysis: pxIcon(["kkkkkkkkkkkk....", "krrdrrdrrdrk....", "kddddddddddk....", "krrdrGGrrdrk....", "krrdGGGGrdrk....", "kddddGGddddk....", "krrdrrdrkkkkk...", "krrdrrdkwwwwwk..",
+      "kdddddkwttwwwwk.", "krrdrrkwtwwwwwk.", "kkkkkkkwwwwwwwk.", "......kwwwwwwwk.", ".......kwwwwwkkk", "........kkkkkdkk", "..............kd", "...............k"]),
+    tsume: pxIcon(["kkkkkkkkkkkkkkkk", "krrrdrrrdrrrdrrk", "krrrdrrrdrrrdrrk", "kddddddddddddddk", "krrkkkrrdrrrdrrk", "krkbbbkrdrrrdrrk", "krkbhbkkkkkrdrrk", "kdkbbbkwwwwkdddk",
+      "krrkkkwwwwwwkrrk", "krrrdkwwkkwwkrrk", "krrrdkwwwkwwkrrk", "kddddkwwkwwwkddk", "krrrdrkwwwwkdrrk", "krrrdrrkkkkrdrrk", "krrrdrrrdrrrdrrk", "kkkkkkkkkkkkkkkk"])
+  };
+  const MENU = [
+    { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร หรือเปิดคัมภีร์สอนเล่น" },
+    { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
+    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true }
+  ];
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic">${ICONS[m.id === "tsume" ? "tsume" : m.id]}</span>
+    <span class="mn-lab"><b>${m.t}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span></button>`).join("");
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing"); }
+  function showMenu() { hideScreens(); $("menu").hidden = false; document.body.classList.add("arcade"); window.scrollTo(0, 0); }
+  $("mnList").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || b.disabled) return;
+    unlockAudio(); blip(880);
+    const go = b.dataset.mn;
+    if (go === "play") { showHome(); window.scrollTo(0, 0); }
+    else if (go === "profile") showProfile();
+    else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+  });
+  $("hmBack").onclick = () => { blip(660); showMenu(); };
+  $("pfBack").onclick = () => { blip(660); showMenu(); };
+  const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+  function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
+  function renderProfile() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const charOf = id => CHARS.find(c => c.id === id);
+    const wins = hist.filter(h => h.won).length;
+    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+      <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
+    const ranked = hist.find(x => typeof x.rank === "number");
+    h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
+      : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
+    if (!hist.length) {
+      h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
+      $("pfBody").innerHTML = h; return;
+    }
+    const by = new Map();
+    for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
+    h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+      const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+        <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
+      <button class="pf-clear" id="pfClear">ล้างประวัติทั้งหมด</button><p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+    $("pfBody").innerHTML = h;
+  }
+  $("pfBody").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "pfClear") { if (confirm("ล้างประวัติเกมทั้งหมดในเบราว์เซอร์นี้?")) { save("history", []); renderProfile(); } return; }
+    if (b.dataset.an !== undefined) {
+      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
+    }
+  });
   $("btnAnalyze").onclick = () => {
     if (!ended()) return;
     unlockAudio(); blip(880); cancelAI();

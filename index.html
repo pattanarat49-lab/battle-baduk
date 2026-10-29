@@ -170,10 +170,63 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 #tuPrev { justify-self: start; }
 @media (prefers-reduced-motion: reduce) { .tu-gone, .tu-pulse, #tuNext.go { animation: none; } .tu-gone { opacity: 0; } }
 
+/* ---------- main menu: a ring-bound notebook with one big row per mode ---------- */
+.menu { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0; padding-bottom: 24px; }
+.mn-logo { font-size: clamp(34px, 10vw, 52px); margin: 4px 0 18px; }
+.mn-tab { position: relative; z-index: 1; align-self: stretch; margin: 0 6% -10px; display: flex; align-items: center; gap: 12px;
+  background: var(--wood); padding: 10px 14px 12px; box-shadow: 0 4px 0 var(--wood-dark); clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, 100% 3px, 100% 100%, 0 100%, 0 3px, 6px 3px); }
+.mn-tab::before { content: ""; position: absolute; left: 12%; right: 12%; top: -9px; height: 18px;
+  background: radial-gradient(circle at 50% 50%, #d9e6e3 0 4px, #6f8f8b 4.5px 5.5px, transparent 6px) 0 0 / 14.28% 100% repeat-x; }
+.mn-tab h1 { flex: 1; font-family: var(--f-px); font-weight: 700; font-size: clamp(24px, 7vw, 34px); line-height: 1; letter-spacing: .04em; color: var(--fg);
+  background: var(--surface-2); padding: 8px 12px 10px; text-align: center; box-shadow: inset 0 0 0 3px var(--wood-dark); text-shadow: 2px 2px 0 var(--wood-dark); }
+.mn-tabic { width: 44px; height: 44px; flex: none; background: url(chars/kan_face.jpg) center / cover; box-shadow: 0 0 0 3px var(--wood-dark); image-rendering: pixelated; }
+.mn-book { position: relative; align-self: stretch; background: var(--surface); padding: 30px 16px 22px 46px; box-shadow: inset 0 0 0 4px var(--wood-dark), 0 8px 0 var(--wood-dark);
+  background-image: radial-gradient(circle at 85% 80%, rgba(159, 216, 192, .08) 0 40px, transparent 41px), radial-gradient(circle at 10% 20%, rgba(159, 216, 192, .06) 0 30px, transparent 31px); }
+.mn-book::before { content: ""; position: absolute; left: 6px; top: 22px; bottom: 22px; width: 30px;
+  background: radial-gradient(circle at 60% 50%, transparent 0 6px, #d9e6e3 6.5px 9px, #6f8f8b 9.5px 10.5px, transparent 11px) 0 0 / 30px 56px space; }
+.mn-paper { background: #f3ead8; color: var(--wood-dark); font-family: var(--f-px); font-weight: 700; font-size: 15px; letter-spacing: .06em; text-align: center; padding: 8px 10px;
+  margin: 0 4px 16px; box-shadow: 0 3px 0 rgba(0, 0, 0, .25); background-image: repeating-linear-gradient(180deg, transparent 0 15px, rgba(63, 143, 216, .18) 15px 16px); }
+.mn-list { display: grid; gap: 14px; }
+#menu .mn-item { display: grid; grid-template-columns: 84px minmax(0, 1fr); padding: 0; border: 0; border-radius: 0; min-height: 0; background: var(--wood-dark); text-align: left;
+  box-shadow: 0 5px 0 #3a210f; clip-path: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, 100% 3px, 100% calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 0 calc(100% - 3px), 0 3px, 6px 3px); }
+#menu .mn-item:hover:not(:disabled) .mn-lab { filter: brightness(1.08); }
+#menu .mn-item:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #3a210f; }
+.mn-ic { display: grid; place-items: center; background: #f0c888; margin: 4px 0 4px 4px; box-shadow: inset -3px -3px 0 #c99a52, inset 3px 3px 0 #fbe2b4; }
+.mn-ic svg { width: 54px; height: 54px; shape-rendering: crispEdges; }
+.mn-lab { display: grid; align-content: center; gap: 2px; margin: 4px; padding: 12px 14px; min-height: 76px;
+  background: #b87a40 repeating-conic-gradient(#b87a40 0 25%, #a96e37 0 50%) 0 0 / 16px 16px; box-shadow: inset 0 0 0 3px #8a5427; }
+.mn-lab b { font-family: var(--f-px); font-weight: 700; font-size: clamp(22px, 6.4vw, 30px); line-height: 1; letter-spacing: .03em; color: #fbf1dc; text-shadow: 2px 2px 0 #5a331a; }
+.mn-lab small { font-size: 13px; color: #fbe9cc; text-shadow: 1px 1px 0 #5a331a; }
+#menu .mn-item:disabled { opacity: 1; cursor: default; }
+#menu .mn-item:disabled .mn-ic, #menu .mn-item:disabled .mn-lab { filter: saturate(.35) brightness(.8); }
+.mn-soon { justify-self: start; font-family: var(--f-px); font-size: 11px; letter-spacing: .08em; color: #2a1a0b; background: var(--accent); padding: 2px 6px; margin-top: 4px; }
+.menu .engine-chip { margin: 18px 0 0; text-align: center; }
+.hm-top { align-self: stretch; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+#home .hm-back { justify-self: start; min-height: 36px; padding: 4px 12px; font-size: 14px; }
+
+/* ---------- profile: games played in this browser ---------- */
+.prof { max-width: 860px; margin: 0 auto; padding-bottom: 32px; }
+.pf-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+@media (max-width: 520px) { .pf-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pf-tile { background: var(--surface); box-shadow: inset 0 0 0 2px var(--line); padding: 10px 12px; }
+.pf-tile b { display: block; font-family: var(--f-px); font-weight: 700; font-size: 28px; line-height: 1.1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pf-tile span { font-size: 13px; color: var(--muted); }
+.pf-h { font-family: var(--f-px); font-size: 13px; letter-spacing: .08em; color: var(--accent); margin: 18px 0 8px; }
+.pf-rank { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pf-rank .exam-rank { font-size: 24px; }
+.pf-rows { display: grid; gap: 6px; }
+.pf-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
+.pf-row img { width: 40px; height: 40px; display: block; border: 2px solid var(--wood); }
+.pf-row .t { min-width: 0; } .pf-row .t b { font-weight: 600; } .pf-row .t div { font-size: 13px; color: var(--muted); }
+.pf-wl { font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
+.pf-res { font-weight: 600; padding: 1px 8px; font-size: 13px; }
+.pf-res.w { background: #57c26b; color: #10240f; } .pf-res.l { background: #3b3024; color: #e7d8bd; }
+#prof .pf-an { min-height: 36px; padding: 4px 12px; font-size: 13px; }
+.pf-bar { height: 6px; background: #3b3024; margin-top: 4px; overflow: hidden; } .pf-bar i { display: block; height: 100%; background: #57c26b; }
+.pf-empty { background: var(--surface); padding: 18px; text-align: center; color: var(--muted); }
+#prof .pf-clear { margin-top: 16px; background: none; color: var(--muted); text-decoration: underline; border: 0; }
+
 /* ---------- analysis board: board with candidate moves, Kan explains in a chat beside it (stacked on a phone) ---------- */
-.home .px-sub { font-family: var(--f-px); font-weight: 700; font-size: 17px; letter-spacing: .04em; color: var(--fg); background: var(--surface); border: 2px solid var(--wood);
-  border-radius: 0; padding: 8px 16px; box-shadow: 0 3px 0 var(--wood-dark); margin-top: -6px; }
-.home .px-sub span { font-family: var(--f-body); font-weight: 500; font-size: 14px; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
 .anal { max-width: 1120px; margin: 0 auto; padding-bottom: 96px; }
 .an-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .an-head .px { font-size: 13px; color: var(--accent); letter-spacing: .08em; text-shadow: 2px 2px 0 var(--wood-dark); }
@@ -335,8 +388,26 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 @media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
 </style>
 
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="home" id="home">
-  <div class="logo logo-sm">Baduk Battle</div>
+<section class="menu" id="menu">
+  <div class="logo mn-logo">Baduk Battle</div>
+  <div class="mn-tab"><span class="mn-tabic" aria-hidden="true"></span><h1>MAIN MENU</h1></div>
+  <div class="mn-book">
+    <div class="mn-paper">เลือกโหมดที่อยากเล่น</div>
+    <nav class="mn-list" id="mnList" aria-label="เมนูหลัก"></nav>
+  </div>
+  <p class="engine-chip" id="engineMenu">กำลังโหลดสมอง AI…</p>
+</section>
+
+<section class="prof" id="prof" hidden>
+  <div class="an-head">
+    <div><div class="px">BADUK BATTLE · PROFILE</div><h1>โปรไฟล์ของคุณ</h1></div>
+    <button class="an-back" id="pfBack">← เมนู</button>
+  </div>
+  <div id="pfBody"></div>
+</section>
+
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="home" id="home" hidden>
+  <div class="hm-top"><button class="hm-back" id="hmBack">← เมนู</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>
   <h1 class="px-title">Character Select</h1>
   <div class="carousel" id="chars"></div>
   <div class="cinfo" id="pick" aria-live="polite"></div>
@@ -348,7 +419,6 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
   </div>
   <button id="btnNew" class="px-start">GAME START</button>
-  <button id="btnAnal" class="px-sub">ANALYSIS<span>วิเคราะห์เกมกับ AI</span></button>
   <p class="timectl">30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
   <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
 </section>
@@ -2705,7 +2775,7 @@ const Analysis = (function () {
   // measured at startup; on a slow device searches send smaller batches so they stop close to their time limit
   let evalMs = 50, checkEngine = null, engineRetries = 0;
   async function initEngine() {
-    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; } };
+    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
@@ -2921,11 +2991,15 @@ const Analysis = (function () {
     render();
   }
   checkCancel(); setInterval(checkCancel, 30000);
-  function reportEnd(humanWon, how) {
+  function reportEnd(humanWon, how, margin) {
     save("game", null);
     save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
+    // the profile page's record of games played in this browser, newest first
+    const id = gameId, hist = load("history", []).filter(h => h.id !== id);
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice() });
+    save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
     if (!exam) return track(ev);
@@ -2933,6 +3007,7 @@ const Analysis = (function () {
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -3076,7 +3151,7 @@ const Analysis = (function () {
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
     gameId = g.gameId || rid(); gameReported = false;
-    $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
+    $("home").hidden = true; $("menu").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -3415,7 +3490,7 @@ const Analysis = (function () {
       const winner = diff > 0 ? BLACK : WHITE;
       if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
-      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
@@ -3620,7 +3695,7 @@ const Analysis = (function () {
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden || !$("anel").hidden) return; // the tutorial and the analysis board have their own keys
+    if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
@@ -3631,7 +3706,8 @@ const Analysis = (function () {
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
-  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  $("home").hidden = true; // the main menu is the first screen
+  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   Tutorial.onHome = showHome;
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
@@ -3644,9 +3720,80 @@ const Analysis = (function () {
   Analysis.lastGame = () => load("lastGame", null);
   Analysis.onBack = from => {
     if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
-    else showHome();
+    else if (from === "prof") showProfile();
+    else showMenu();
   };
-  $("btnAnal").onclick = () => { unlockAudio(); blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Analysis.open({ n: 19, moves: [], from: "home" }); };
+  // ---------- main menu and profile ----------
+  // 16x16 pixel icons: one character per pixel, "." is clear
+  const PAL = { k: "#2a1a0b", w: "#f3ead8", s: "#cfc6b4", t: "#3f8fd8", T: "#2b6aa6", y: "#e3b06a", b: "#151515", h: "#5b5b5b", G: "#57c26b", r: "#c8894a", d: "#5a331a", g: "#9c917e" };
+  const pxIcon = rows => `<svg viewBox="0 0 16 16" aria-hidden="true">${rows.map((row, y) => [...row].map((c, x) => PAL[c] ? `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${PAL[c]}"/>` : "").join("")).join("")}</svg>`;
+  const ICONS = {
+    profile: pxIcon(["................", ".....kkkkkk.....", "....kwwwwwwk....", "...kwwwwwwwwk...", "...kwwkwwkwwk...", "...kwwwwwwwwk...", "...kwwwkkwwwk...",
+      "....kwwwwwwk....", ".....kkkkkk.....", "....kkTTTTkk....", "..kkTTtttttTkk..", ".kTtttttyttttTk.", ".kTttttyyytttTk.", ".kTtttttytttttk.", ".kkkkkkkkkkkkkk.", "................"]),
+    play: pxIcon(["................", "...kkkkk........", "..kbbbbbk.......", ".kbhhbbbbk......", ".kbhbbbbbk......", ".kbbbbbbbkkkkk..", ".kbbbbbbkwwwwwk.", "..kbbbbkwwwwwwsk",
+      "...kkkkwwwwwwwsk", "......kwwwwwwssk", "......kwwwwwsssk", "......ksswssssk.", ".......ksssssk..", "........kkkkk...", "................", "................"]),
+    analysis: pxIcon(["kkkkkkkkkkkk....", "krrdrrdrrdrk....", "kddddddddddk....", "krrdrGGrrdrk....", "krrdGGGGrdrk....", "kddddGGddddk....", "krrdrrdrkkkkk...", "krrdrrdkwwwwwk..",
+      "kdddddkwttwwwwk.", "krrdrrkwtwwwwwk.", "kkkkkkkwwwwwwwk.", "......kwwwwwwwk.", ".......kwwwwwkkk", "........kkkkkdkk", "..............kd", "...............k"]),
+    tsume: pxIcon(["kkkkkkkkkkkkkkkk", "krrrdrrrdrrrdrrk", "krrrdrrrdrrrdrrk", "kddddddddddddddk", "krrkkkrrdrrrdrrk", "krkbbbkrdrrrdrrk", "krkbhbkkkkkrdrrk", "kdkbbbkwwwwkdddk",
+      "krrkkkwwwwwwkrrk", "krrrdkwwkkwwkrrk", "krrrdkwwwkwwkrrk", "kddddkwwkwwwkddk", "krrrdrkwwwwkdrrk", "krrrdrrkkkkrdrrk", "krrrdrrrdrrrdrrk", "kkkkkkkkkkkkkkkk"])
+  };
+  const MENU = [
+    { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร หรือเปิดคัมภีร์สอนเล่น" },
+    { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
+    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true }
+  ];
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic">${ICONS[m.id === "tsume" ? "tsume" : m.id]}</span>
+    <span class="mn-lab"><b>${m.t}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span></button>`).join("");
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing"); }
+  function showMenu() { hideScreens(); $("menu").hidden = false; document.body.classList.add("arcade"); window.scrollTo(0, 0); }
+  $("mnList").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || b.disabled) return;
+    unlockAudio(); blip(880);
+    const go = b.dataset.mn;
+    if (go === "play") { showHome(); window.scrollTo(0, 0); }
+    else if (go === "profile") showProfile();
+    else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+  });
+  $("hmBack").onclick = () => { blip(660); showMenu(); };
+  $("pfBack").onclick = () => { blip(660); showMenu(); };
+  const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+  function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
+  function renderProfile() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const charOf = id => CHARS.find(c => c.id === id);
+    const wins = hist.filter(h => h.won).length;
+    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+      <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
+    const ranked = hist.find(x => typeof x.rank === "number");
+    h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
+      : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
+    if (!hist.length) {
+      h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
+      $("pfBody").innerHTML = h; return;
+    }
+    const by = new Map();
+    for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
+    h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+      const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+        <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
+      <button class="pf-clear" id="pfClear">ล้างประวัติทั้งหมด</button><p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+    $("pfBody").innerHTML = h;
+  }
+  $("pfBody").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "pfClear") { if (confirm("ล้างประวัติเกมทั้งหมดในเบราว์เซอร์นี้?")) { save("history", []); renderProfile(); } return; }
+    if (b.dataset.an !== undefined) {
+      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
+    }
+  });
   $("btnAnalyze").onclick = () => {
     if (!ended()) return;
     unlockAudio(); blip(880); cancelAI();
