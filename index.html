@@ -1996,12 +1996,12 @@ const Tutorial = (function () {
   };
   // Placement-test calibration: each character's average move score against Hikaru (Best 0, Good 1, Normal 2, Bad 3,
   // divided by the graded moves; lower is stronger), measured 2026-10-29 against Hikaru's even-score play.
-  // rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ... The site owner asked for every rank one step easier than the
-  // characters' own levels (Uncle Win, 8 kyu, reads as 7 kyu). The grader cannot separate anything above about 5 dan.
+  // rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ... The site owner asked for every rank two steps easier than the
+  // characters' own levels (Uncle Win, 8 kyu, reads as 6 kyu). The grader cannot separate anything above about 5 dan.
   const EXAM_CALIB = [
-    { id: "mek", rank: -13, avg: 1.39, label: "14 คิว" }, { id: "win", rank: -6, avg: 1.01, label: "7 คิว" },
-    { id: "yuto", rank: -3, avg: 0.43, label: "4 คิว" }, { id: "chris", rank: 2, avg: 0.27, label: "2 ดั้ง" },
-    { id: "tora", rank: 5, avg: 0.13, label: "5 ดั้ง" }, { id: "kan", rank: 6, avg: 0.03, label: "5 ดั้งขึ้นไป" }
+    { id: "mek", rank: -12, avg: 1.39, label: "13 คิว" }, { id: "win", rank: -5, avg: 1.01, label: "6 คิว" },
+    { id: "yuto", rank: -2, avg: 0.43, label: "3 คิว" }, { id: "chris", rank: 3, avg: 0.27, label: "3 ดั้ง" },
+    { id: "tora", rank: 6, avg: 0.13, label: "5 ดั้งขึ้นไป" }, { id: "kan", rank: 7, avg: 0.03, label: "5 ดั้งขึ้นไป" }
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
   function rankName(v) {

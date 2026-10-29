@@ -204,7 +204,7 @@ function clean(b) {
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
 // same table as EXAM_CALIB in src/nn_main.js: each character's average move score (Best 0, Good 1, Normal 2, Bad 3), and the rank it reads as
-const EXAM_CALIB = [{ rank: -13, avg: 1.39 }, { rank: -6, avg: 1.01 }, { rank: -3, avg: 0.43 }, { rank: 2, avg: 0.27 }, { rank: 5, avg: 0.13 }, { rank: 6, avg: 0.03 }];
+const EXAM_CALIB = [{ rank: -12, avg: 1.39 }, { rank: -5, avg: 1.01 }, { rank: -2, avg: 0.43 }, { rank: 3, avg: 0.27 }, { rank: 6, avg: 0.13 }, { rank: 7, avg: 0.03 }];
 // the table before 2026-10-29, by share of non-Best moves, for results sent without a score
 const EXAM_CALIB_OLD = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
 function rankFrom(T, avg) {
