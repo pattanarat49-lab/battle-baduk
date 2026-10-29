@@ -29,6 +29,9 @@ export class Stats extends DurableObject {
       graded INTEGER, not_best REAL, rank REAL)`);
     // each cancel bumps this number; open games that see it change stop and apologise
     this.sql.exec("CREATE TABLE IF NOT EXISTS cancels (n INTEGER PRIMARY KEY, at INTEGER)");
+    // indexes keep the per-move cleanup and the live list from reading every row (Cloudflare bills rows read)
+    this.sql.exec("CREATE INDEX IF NOT EXISTS live_updated ON live (updated)");
+    this.sql.exec("CREATE INDEX IF NOT EXISTS games_started ON games (started)");
     // games that ended before the rank threshold was lowered still get a rank from the share of non-Best moves they stored
     // average move score (Best 0, Good 1, Normal 2, Bad 3), added 2026-10-29; older rows have none
     if (!this.sql.exec("PRAGMA table_info(exams)").toArray().some(c => c.name === "score")) this.sql.exec("ALTER TABLE exams ADD COLUMN score REAL");
@@ -42,7 +45,7 @@ export class Stats extends DurableObject {
     this.sql.exec(`INSERT INTO live (game, char, updated, ended, state) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(game) DO UPDATE SET updated = excluded.updated, ended = COALESCE(live.ended, excluded.ended), state = excluded.state`,
       e.game, e.char, now, ended ? now : null, JSON.stringify(e.state));
-    this.sql.exec("DELETE FROM live WHERE updated < ?", now - 864e5);
+    if (e.type === "start") this.sql.exec("DELETE FROM live WHERE updated < ?", now - 864e5);
   }
   liveGames() {
     return this.sql.exec(`SELECT live.game, live.char, updated, live.ended, state, games.how FROM live LEFT JOIN games ON games.id = live.game
@@ -82,7 +85,14 @@ export class Stats extends DurableObject {
         e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank, e.exam.score);
     }
   }
+  // the stats page reads the whole games table, so one answer serves every visitor for a minute
   summary() {
+    if (this.sumCache && Date.now() - this.sumCache.at < 6e4) return this.sumCache.s;
+    const s = this.summaryNow();
+    this.sumCache = { at: Date.now(), s };
+    return s;
+  }
+  summaryNow() {
     const rows = this.sql.exec(`SELECT char, COUNT(*) AS games, COUNT(DISTINCT player) AS players,
         SUM(ended IS NOT NULL AND how != 'cancel') AS finished, SUM(how = 'cancel') AS cancelled, SUM(winner = 'human') AS human_wins, SUM(winner = 'ai') AS ai_wins,
         SUM(how = 'resign') AS resigns, SUM(how = 'timeout') AS timeouts, AVG(moves) AS avg_moves
@@ -164,9 +174,9 @@ function page(s) {
   const ago = t => { const m = Math.round((s.now - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m < 60 ? m + " นาทีที่แล้ว" : m < 1440 ? Math.round(m / 60) + " ชั่วโมงที่แล้ว" : Math.round(m / 1440) + " วันที่แล้ว"; };
   const live = s.live.length ? `<div class="live">${s.live.map(g => `<a class="lg" href="/watch?g=${g.game}"><b>${CHARS[g.char]}</b>
     <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.how === "cancel" ? "ยกเลิก" : g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
-    : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 30 วินาที)</p>`;
+    : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 1 นาที)</p>`;
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="30">
+<meta http-equiv="refresh" content="60">
 <title>Baduk Battle Stats</title>
 <style>
 :root { --bg: #15333a; --surface: #20474f; --fg: #f3ead8; --muted: #b3c8c5; --line: rgba(243,234,216,.14); --accent: #e3b06a; color-scheme: dark; }
