@@ -1,7 +1,7 @@
 // Analysis board ("วิเคราะห์เกม"): step through a finished game or try moves on a free board; ANALYSIS marks the
 // strongest candidate moves (win rate and score lead) and Kan explains in a chat why the standout moves are good.
 // Everything is worked out in the browser from the network's outputs (policy, win rate, score lead, ownership) and the
-// board itself: no server and no language model, so typed questions are matched by keywords.
+// board itself: no server and no language model, so the player asks by tapping ready-made questions.
 const Analysis = (function () {
   const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack
   const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 7.5;
@@ -24,12 +24,6 @@ const Analysis = (function () {
   function boardOf(ms) { const b = new Board(ST.n); for (const m of ms) b.play(m); return b; }
   const oi = (b, p) => { const [x, y] = b.xy(p); return y * 19 + x; };
   function name(p) { if (p === PASS) return "ผ่าน"; const b = ST.b0, [x, y] = b.xy(p); return LETTERS[x] + (ST.n - y); }
-  function parsePoint(t) {
-    const m = /(?:^|[^a-z])([a-hj-t])\s?(\d{1,2})(?!\d)/i.exec(t); if (!m) return null;
-    const x = LETTERS.indexOf(m[1].toUpperCase()), y = ST.n - +m[2];
-    if (x < 0 || x >= ST.n || y < 0 || y >= ST.n) return null;
-    return ST.b0.pt(x, y);
-  }
   function regionOf(x, y) { const n = ST.n, t = v => v < n / 3 ? 0 : v < 2 * n / 3 ? 1 : 2; return REGION[t(y)][t(x)]; }
   const regionAt = p => { const [x, y] = ST.b0.xy(p); return regionOf(x, y); };
   // every chain on the board: head -> { c, stones }
@@ -198,16 +192,18 @@ const Analysis = (function () {
   }
   function chipsFor() {
     const r = ST.res && ST.res.key === keyOf(cur()) ? ST.res : null, list = [];
-    if (!r) list.push(["▶ วิเคราะห์ตานี้", "go"]);
-    else {
-      list.push([`ทำไมต้อง ${name(r.s.top[0].move)}?`, "why"]);
-      if (r.cands.length > 1) list.push([`แล้ว ${name(r.cands[1].move)} ล่ะ?`, "second"]);
-      list.push(["ดูลำดับต่อ", "pv"]);
+    if (!r) list.push(["▶ ควรเดินตรงไหน?", "go"]);
+    else if (r.cands[0].move !== PASS) {
+      list.push([`ทำไมต้อง ${name(r.cands[0].move)}?`, "why"]);
+      for (let i = 1; i < Math.min(3, r.cands.length); i++) if (r.cands[i].move !== PASS) list.push([`แล้ว ${name(r.cands[i].move)} ล่ะ?`, "cand" + i]);
+      list.push(["ลำดับต่อไปเป็นยังไง?", "pv"]);
     }
     const g = gameMove(); if (g !== null) list.push([`ตาที่เดินจริง (${name(g)}) เป็นไง?`, "played"]);
-    list.push(["ใครได้เปรียบ?", "status"]);
+    if (ST.at && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
+    list.push(["ตอนนี้ใครได้เปรียบ?", "status"]);
     if (ST.game && ST.game.moves.length > 10) list.push(["จุดพลาดในเกมนี้", "mistakes"]);
     if (ST.game && !onGameLine()) list.push(["↩ กลับเส้นเกมจริง", "back"]);
+    list.push(["📖 คำศัพท์", "terms"]);
     setChips(list);
   }
   // the move the real game played from the shown position, while the board still follows the game
@@ -219,9 +215,10 @@ const Analysis = (function () {
     const AI = api.ai(); if (!AI) { say("รอสมอง AI โหลดเสร็จก่อนนะครับ"); return; }
     const moves = cur(), key = keyOf(moves), my = tok;
     if (ST.res && ST.res.key === key) { if (explain) await explainBest(); return; }
-    ST.running = true; ST.live = null; render();
-    const s = await queue(() => my !== tok ? null : AI.think(ST.n, moves, KOMI, Object.assign(searchOpts(), {
-      shouldStop: () => my !== tok, onProgress: p => { if (my === tok) { ST.live = p; drawBoard(); renderInfo(); } } })));
+    ST.running = true; ST.live = null; ST.t0 = null; render(); progress();
+    const so = searchOpts();
+    const s = await queue(() => my !== tok ? null : (ST.t0 = performance.now(), ST.so = so, AI.think(ST.n, moves, KOMI, Object.assign(so, {
+      shouldStop: () => my !== tok, onProgress: p => { if (my === tok) { ST.live = p; drawBoard(); renderInfo(); } } }))));
     if (my !== tok || !s) return;
     ST.running = false; ST.live = null;
     // the candidates worth showing: a real share of the reading, or close to the best
@@ -229,7 +226,22 @@ const Analysis = (function () {
     const cands = s.top.filter((c, i) => i < 3 || c.visits >= Math.max(3, maxN * 0.04)).slice(0, 10);
     ST.res = { key, s, cands, at: ST.at }; ST.win = s.winrate; ST.lead = s.searchLead; ST.pla = s.pla;
     render();
-    if (explain) await explainBest();
+    if (explain) { ST.explaining = true; progress(); await explainBest(); if (my === tok) { ST.explaining = false; progress(); } }
+  }
+  // the yellow bar while the AI reads: the larger of time used and visits done, against the search's limits
+  let progT = 0;
+  function progress() {
+    clearTimeout(progT);
+    const on = ST && !$("anel").hidden && (ST.running || ST.explaining);
+    $("anProg").hidden = !on; if (!on) return;
+    let f = 0, txt;
+    if (ST.running) {
+      if (ST.t0 && ST.so) f = Math.max((performance.now() - ST.t0) / ST.so.timeMs, ST.live ? ST.live.visits / ST.so.visits : 0);
+      f = Math.min(0.97, f);
+      txt = ST.t0 ? `AI กำลังวิเคราะห์… ${Math.round(f * 100)}%${ST.live ? " · " + ST.live.visits.toLocaleString() + " รูปแบบ" : ""}` : "รอคิว…";
+      progT = setTimeout(progress, 150);
+    } else { f = 1; txt = "กำลังเรียบเรียงเหตุผล…"; }
+    $("anProgFill").style.width = (f * 100) + "%"; $("anProgTxt").textContent = txt;
   }
   // the reply for the shown position: the best move, the other standouts, and how the real game's move compares
   async function explainBest() {
@@ -263,15 +275,16 @@ const Analysis = (function () {
     const g = gameMove(); if (g !== null && g !== best.move) await explainMove(g, true);
   }
   // how a move compares with the best one in the shown position
-  async function explainMove(m, real) {
+  async function explainMove(m, real, tried) {
     const AI = api.ai(), moves = cur(), my = tok, c = ST.b.toPlay;
     if (!AI) return;
     if (m !== PASS && !ST.b.isLegal(m, c)) { say(`${name(m)} ตอนนี้วางไม่ได้ครับ (มีหมากอยู่แล้ว หรือเป็นจุดห้ามเดิน)`); return; }
     if (!ST.res || ST.res.key !== keyOf(moves)) await analyze(false);
     const r = ST.res; if (my !== tok || !r || r.key !== keyOf(moves)) return;
-    const best = r.cands[0], label = real ? `ในเกมจริง${CN[c]}เดิน <b>${name(m)}</b>` : `ถ้า${CN[c]}เดิน <b>${name(m)}</b>`;
+    const best = r.cands[0], label = real ? `ในเกมจริง${CN[c]}เดิน <b>${name(m)}</b>` : tried ? `ตาที่ลองเดิน <b>${name(m)}</b>` : `ถ้า${CN[c]}เดิน <b>${name(m)}</b>`;
     if (m === best.move) { say(`${label} ตรงกับตาที่ AI แนะนำเลยครับ 👍`); return; }
     const wait = say(`${label} … ขอผมอ่านตานั้นแป๊บนึงนะครับ`);
+    ST.explaining = true; progress();
     // both moves read with the same search, so their score leads compare fairly
     const known = r.cands.find(x => x.move === m && x.visits >= 60);
     let lead, win, bestLead = best.lead;
@@ -308,6 +321,7 @@ const Analysis = (function () {
     }
     wait.querySelector(".an-b").innerHTML = h;
     $("anChat").scrollTop = $("anChat").scrollHeight;
+    ST.explaining = false; progress();
   }
   async function explainWhy() {
     if (!ST.res || ST.res.key !== keyOf(cur())) { await analyze(true); return; }
@@ -317,10 +331,10 @@ const Analysis = (function () {
     say(`<b>ทำไมต้อง ${name(best.move)}</b><ul>${all.slice(0, 6).map(x => `<li${x.neg ? ' class="an-warn"' : ""}>${esc(x.t)}</li>`).join("")}</ul>`);
     await showPv();
   }
-  async function explainSecond() {
+  async function explainCand(i) {
     if (!ST.res || ST.res.key !== keyOf(cur())) await analyze(false);
-    const r = ST.res; if (!r || r.cands.length < 2) return;
-    await explainMove(r.cands[1].move, false);
+    const r = ST.res; if (!r || r.cands.length <= i) return;
+    await explainMove(r.cands[i].move, false);
   }
   async function showPv() {
     const AI = api.ai(), my = tok, moves = cur();
@@ -382,49 +396,24 @@ const Analysis = (function () {
     wait.querySelector(".an-b").innerHTML = `<b>จุดพลาดใหญ่${who ? "ของคุณ (" + CN[who] + ")" : ""}</b> (ประเมินคร่าวๆ แตะเพื่อไปดูตานั้น)<div class="an-list">${top.map(x =>
       `<button class="an-chip" data-goto="${x.k}">ตาที่ ${x.k + 1} · ${CN[x.col]} ${name(ms[x.k])} · เสีย ~${pts(x.loss)}</button>`).join("")}</div>`;
   }
-  const GLOSS = [
-    [/อะตาริ|atari/, "<b>อะตาริ</b> คือหมากที่เหลือลมหายใจเดียว ตาต่อไปอีกฝ่ายกินได้ ต้องรีบหนี (ต่อให้ลมหายใจเพิ่ม) หรือยอมทิ้ง"],
-    [/โค|ko\b/, "<b>โค</b> คือรูปที่ผลัดกันกินหมากเม็ดเดียวได้ไม่รู้จบ กติกาจึงห้ามกินคืนทันที ต้องไปเดินที่อื่นก่อนหนึ่งตา (เรียกว่าหาภัยคุกคามโค)"],
-    [/เซกิ|seki/, "<b>เซกิ</b> คือกลุ่มของทั้งสองฝ่ายที่ใช้ลมหายใจร่วมกัน ใครเข้าไปลงก่อนจะโดนกิน จึงไม่มีใครลง ทั้งคู่รอดไปด้วยกัน"],
-    [/โคมิ|komi/, "<b>โคมิ</b> คือแต้มชดเชยที่ขาวได้ เพราะดำได้เดินก่อน เกมนี้ใช้ 7.5 แต้ม (.5 กันเสมอ)"],
-    [/เทนูกิ|tenuki/, "<b>เทนูกิ</b> คือการไม่ตอบหมากที่อีกฝ่ายเพิ่งลง แล้วไปเล่นจุดอื่นที่ใหญ่กว่า"],
-    [/โจเซกิ|joseki/, "<b>โจเซกิ</b> คือลำดับหมากมาตรฐานในมุมที่ทั้งสองฝ่ายได้เท่าๆ กัน"],
-    [/ชิมาริ|shimari/, "<b>ชิมาริ</b> คือการลงหมากเม็ดที่สองในมุมของตัวเอง เพื่อปิดมุมให้แน่น"],
-    [/คาคาริ|kakari/, "<b>คาคาริ</b> คือการเข้าไปประชิดมุมที่อีกฝ่ายมีหมากเม็ดเดียว ไม่ให้เขาปิดมุมได้ง่ายๆ"],
-    [/3-3|สามสาม/, "<b>3-3</b> คือจุดที่สามจากขอบทั้งสองด้านในมุม ได้พื้นที่มุมแน่นอน มักใช้บุกมุมที่อีกฝ่ายลงไว้ที่ 4-4"],
-    [/สองตา|ตาคืออะไร|\bตา\b.*คือ/, "<b>ตา</b> คือจุดว่างที่ล้อมด้วยหมากของเราทั้งหมด กลุ่มที่มี<b>สองตาแท้</b>ไม่มีวันถูกกิน"],
-    [/ลมหายใจ|liberty/, "<b>ลมหายใจ</b> คือจุดว่างที่ติดกับหมากตรงๆ (บน ล่าง ซ้าย ขวา) ถ้าโดนปิดหมด หมากนั้นถูกกิน"]
+  // a few words a beginner meets in the explanations: [chip label, answer]
+  const TERMS = [
+    ["อะตาริ", "<b>อะตาริ</b> คือหมากที่เหลือลมหายใจเดียว ตาต่อไปอีกฝ่ายกินได้ ต้องรีบหนี (ต่อให้ลมหายใจเพิ่ม) หรือยอมทิ้ง"],
+    ["โค", "<b>โค</b> คือรูปที่ผลัดกันกินหมากเม็ดเดียวได้ไม่รู้จบ กติกาจึงห้ามกินคืนทันที ต้องไปเดินที่อื่นก่อนหนึ่งตา (เรียกว่าหาภัยคุกคามโค)"],
+    ["เซกิ", "<b>เซกิ</b> คือกลุ่มของทั้งสองฝ่ายที่ใช้ลมหายใจร่วมกัน ใครเข้าไปลงก่อนจะโดนกิน จึงไม่มีใครลง ทั้งคู่รอดไปด้วยกัน"],
+    ["โคมิ", "<b>โคมิ</b> คือแต้มชดเชยที่ขาวได้ เพราะดำได้เดินก่อน เกมนี้ใช้ 7.5 แต้ม (.5 กันเสมอ)"],
+    ["เทนูกิ", "<b>เทนูกิ</b> คือการไม่ตอบหมากที่อีกฝ่ายเพิ่งลง แล้วไปเล่นจุดอื่นที่ใหญ่กว่า"],
+    ["โจเซกิ", "<b>โจเซกิ</b> คือลำดับหมากมาตรฐานในมุมที่ทั้งสองฝ่ายได้เท่าๆ กัน"],
+    ["ชิมาริ", "<b>ชิมาริ</b> คือการลงหมากเม็ดที่สองในมุมของตัวเอง เพื่อปิดมุมให้แน่น"],
+    ["คาคาริ", "<b>คาคาริ</b> คือการเข้าไปประชิดมุมที่อีกฝ่ายมีหมากเม็ดเดียว ไม่ให้เขาปิดมุมได้ง่ายๆ"],
+    ["3-3", "<b>3-3</b> คือจุดที่สามจากขอบทั้งสองด้านในมุม ได้พื้นที่มุมแน่นอน มักใช้บุกมุมที่อีกฝ่ายลงไว้ที่ 4-4"],
+    ["ตา", "<b>ตา</b> คือจุดว่างที่ล้อมด้วยหมากของเราทั้งหมด กลุ่มที่มี<b>สองตาแท้</b>ไม่มีวันถูกกิน"],
+    ["ลมหายใจ", "<b>ลมหายใจ</b> คือจุดว่างที่ติดกับหมากตรงๆ (บน ล่าง ซ้าย ขวา) ถ้าโดนปิดหมด หมากนั้นถูกกิน"]
   ];
-  // typed questions: matched by keywords, the analysis itself comes from the network
-  async function ask(text) {
-    const t = text.trim(); if (!t) return;
-    bubble(esc(t), "me");
-    const low = t.toLowerCase(), p = parsePoint(t);
-    const mv = /ตา(?:ที่)?\s*(\d{1,3})/.exec(low);
-    if (/คืออะไร|หมายถึง|แปลว่า|คือไร/.test(low) || GLOSS.some(([re]) => re.test(low) && low.length <= 12)) {
-      const hit = GLOSS.find(([re]) => re.test(low));
-      if (hit) return say(hit[1]);
-    }
-    if (p !== null) return explainMove(p, false);
-    if (mv && !/ลำดับ/.test(low)) {
-      const k = Math.max(1, Math.min(ST.line.length, +mv[1]));
-      if (ST.line.length) { goTo(k - 1); say(`ไปที่ตาที่ ${k} แล้วครับ (ก่อน${CN[ST.b.toPlay]}เดิน)`); return analyze(true); }
-    }
-    if (/พลาด|ผิด|เสียแต้ม|แย่ตรงไหน|สรุป|ทั้งเกม|review/.test(low)) return ST.game ? explainMistakes() : say("จุดพลาดดูได้เมื่อเปิดเกมที่เล่นจบแล้วครับ (กดวิเคราะห์จากหน้าจบเกม)");
-    if (/ลำดับ|ต่อไป|ตามมา|แล้วไง|แล้วยังไง|ต่อจากนี้/.test(low)) return showPv();
-    if (/ทำไม|เพราะ|เหตุผล|อธิบาย|why/.test(low)) return explainWhy();
-    if (/อันดับ\s*2|ตัวเลือกอื่น|ตาอื่น|อย่างอื่น|second/.test(low)) return explainSecond();
-    if (/ควร|ตรงไหน|ที่ไหน|แนะนำ|เดินอะไร|เดินไหน|ตาดี|best|วิเคราะห์/.test(low)) return analyze(true);
-    if (/ใคร|นำ|เปรียบ|ชนะ|แพ้|สถานการณ์|ตอนนี้|พื้นที่|กลุ่ม|ตาย|รอด/.test(low)) return explainStatus();
-    if (/เดินจริง|ที่เดินไป|ตาที่เล่น|ตาเมื่อกี้|ตาเรา/.test(low)) { const g = gameMove(); return g !== null ? explainMove(g, true) : say("ตอนนี้ไม่ได้อยู่บนเส้นเกมจริง หรือเป็นตาสุดท้ายแล้วครับ"); }
-    if (/สวัสดี|หวัดดี|hello|^hi\b/.test(low)) return say("สวัสดีครับ ผมกัน จะช่วยดูหมากให้ กด ANALYSIS หรือพิมพ์ถามได้เลย");
-    if (/ขอบคุณ|ขอบใจ|thank/.test(low)) return say("ยินดีครับ ฝึกต่อไปนะครับ");
-    say(`ข้อนี้ผมยังตอบไม่ได้ครับ ผมตอบได้เฉพาะเรื่องบนกระดาน ลองถามเช่น<br>· "ควรเดินตรงไหน" · "ทำไมต้องเดินตรงนั้น" · "ถ้าเดิน ${name(ST.b0.pt(3, 3))} ล่ะ" · "ใครนำ" · "ลำดับต่อไป" · "ตาที่ 30" · "จุดพลาด" · "โคคืออะไร"`);
-  }
 
   // ---------- board ----------
   function setPos() {
-    tok++; ST.pv = null; ST.running = false; ST.live = null; ST.own = null;
+    tok++; ST.pv = null; ST.running = false; ST.explaining = false; ST.live = null; ST.own = null;
     ST.b = boardOf(cur());
     if (ST.res && ST.res.key !== keyOf(cur())) ST.res = null;
     render();
@@ -483,7 +472,7 @@ const Analysis = (function () {
           <text x="${x}" y="${y - .13}" class="an-w">${pct(cd.winrate)}</text><text x="${x}" y="${y + .2}" class="an-l">${cd.lead >= 0 ? "+" : "−"}${pts(cd.lead)}</text>
           <text x="${x + .36}" y="${y - .4}" class="an-rk">${i + 1}</text></g>`);
       });
-      const gm = gameMove();
+      const gm = ST.at < ST.line.length ? ST.line[ST.at] : null; // the next move of the record or of the line being tried
       if (gm !== null && gm !== PASS) { const [x, y] = xy(gm); s.push(`<circle cx="${x}" cy="${y}" r=".5" fill="none" stroke="#3f8fd8" stroke-width=".07" stroke-dasharray=".16 .1"/>`); }
     }
     if (ST.ghost !== null && b.color[ST.ghost] === 0 && b.isLegal(ST.ghost, b.toPlay)) {
@@ -499,17 +488,18 @@ const Analysis = (function () {
     $("anWrFill").style.width = (wb * 100) + "%";
     $("anWrB").textContent = "ดำ " + pct(wb); $("anWrW").textContent = "ขาว " + pct(1 - wb);
     const lb = lead === null ? 0 : (ST.pla === BLACK ? lead : -lead);
-    const gm = gameMove();
+    const gm = ST.at < ST.line.length ? ST.line[ST.at] : null;
     $("anInfo").innerHTML = `ตา ${ST.at}/${ST.line.length} · ตา${CN[c]} · หมากเชลย ดำ ${b.caps[BLACK]} ขาว ${b.caps[WHITE]}` +
       (lead === null ? "" : ` · ${Math.abs(lb) < 0.5 ? "สูสี" : (lb > 0 ? "ดำ" : "ขาว") + "นำ ~" + pts(lb)}`) +
-      (ST.running ? ` · <b>กำลังอ่าน${ST.live ? " " + ST.live.visits.toLocaleString() + " รูปแบบ" : "…"}</b>` : "") +
-      (gm !== null ? ` · <span class="an-real">วงฟ้า = ตาที่เดินจริง</span>` : "");
+      (gm !== null && gm !== PASS ? ` · <span class="an-real">วงฟ้า = ${gameMove() !== null ? "ตาที่เดินจริง" : "ตาที่ลองเดิน"}</span>` : "");
   }
   function render() {
     drawBoard(); renderInfo(); chipsFor();
     $("anFirst").disabled = $("anPrev").disabled = ST.at === 0;
     $("anNext").disabled = $("anLast").disabled = ST.at >= ST.line.length;
-    const go = $("anGo"); go.classList.toggle("on", !!ST.auto); go.setAttribute("aria-pressed", String(!!ST.auto)); // green while every position is read on its own
+    const go = $("anGo"); go.classList.toggle("on", !!ST.auto); go.setAttribute("aria-pressed", String(!!ST.auto)); // ON: every position is read on its own
+    $("anSw").textContent = ST.auto ? "ON" : "OFF";
+    progress();
   }
 
   // ---------- wiring ----------
@@ -535,16 +525,18 @@ const Analysis = (function () {
       ST.auto = true; render(); analyze(true);
     };
     $("anBack").onclick = () => { close(); api.onBack && api.onBack(ST.from); };
-    $("anAsk").addEventListener("submit", e => { e.preventDefault(); const v = $("anInput").value; $("anInput").value = ""; ask(v); });
     $("anel").addEventListener("click", e => {
       const t = e.target.closest("button"); if (!t) return;
       if (t.dataset.goto !== undefined) { const k = +t.dataset.goto; if (ST.game) { ST.line = ST.game.moves.slice(); } goTo(k); analyze(true); return; }
+      if (t.dataset.term !== undefined) { const [w, a] = TERMS[+t.dataset.term]; bubble(esc(w) + " คืออะไร?", "me"); say(a); return; }
       const act = t.dataset.act; if (!act) return;
-      if (act === "go") { analyze(true); return; }
       const label = t.textContent;
-      if (["why", "second", "pv", "played", "status", "mistakes"].includes(act)) bubble(esc(label), "me");
-      if (act === "why") explainWhy();
-      else if (act === "second") explainSecond();
+      if (act !== "back" && act !== "last" && !act.startsWith("new")) bubble(esc(label), "me");
+      if (act === "go") analyze(true);
+      else if (act === "terms") say(`อยากรู้คำไหนครับ<div class="an-list">${TERMS.map(([w], i) => `<button class="an-chip" data-term="${i}">${esc(w)}</button>`).join("")}</div>`);
+      else if (act === "why") explainWhy();
+      else if (act.startsWith("cand")) explainCand(+act.slice(4));
+      else if (act === "tried") { const m = ST.line[ST.at - 1]; goTo(ST.at - 1); explainMove(m, false, true); }
       else if (act === "pv") showPv();
       else if (act === "played") { const g = gameMove(); if (g !== null) explainMove(g, true); }
       else if (act === "status") explainStatus();
@@ -554,7 +546,7 @@ const Analysis = (function () {
       else if (act === "last") { start(api.lastGame()); }
     });
     document.addEventListener("keydown", e => {
-      if ($("anel").hidden || e.target.closest("input")) return;
+      if ($("anel").hidden) return;
       if (e.key === "ArrowLeft") goTo(ST.at - 1); else if (e.key === "ArrowRight") goTo(ST.at + 1);
     });
   }
@@ -566,8 +558,8 @@ const Analysis = (function () {
     ST.at = g.at === undefined ? ST.line.length : Math.max(0, Math.min(ST.line.length, g.at));
     $("anChat").innerHTML = "";
     $("anBoard").setAttribute("viewBox", `-1.1 -1.1 ${n + 1.2} ${n + 1.2}`);
-    say(ST.game ? `สวัสดีครับ ผม<b>กัน</b> มาดูเกมนี้ด้วยกัน (${n}×${n}, ${ST.line.length} ตา) กด ◀ ▶ เพื่อเลือกตา แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมเหตุผล หรือแตะกระดานเพื่อลองเดินเอง พิมพ์ถามได้เลยครับ`
-      : `สวัสดีครับ ผม<b>กัน</b> นี่คือกระดานวิเคราะห์ ${n}×${n} แตะกระดานวางหมาก (ดำ-ขาวสลับกัน) แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมบอกเหตุผล พิมพ์ถามได้เลยครับ` +
+    say(ST.game ? `สวัสดีครับ ผม<b>กัน</b> มาดูเกมนี้ด้วยกัน (${n}×${n}, ${ST.line.length} ตา) กด ◀ ▶ เพื่อเลือกตา แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมเหตุผล หรือแตะกระดานเพื่อลองเดินเอง แล้วกดปุ่มคำถามด้านล่างได้เลยครับ`
+      : `สวัสดีครับ ผม<b>กัน</b> นี่คือกระดานวิเคราะห์ ${n}×${n} แตะกระดานวางหมาก (ดำ-ขาวสลับกัน) แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมบอกเหตุผล แล้วกดปุ่มคำถามด้านล่างได้เลยครับ` +
         `<div class="an-list"><button class="an-chip" data-act="new19">กระดาน 19×19</button><button class="an-chip" data-act="new13">13×13</button><button class="an-chip" data-act="new9">9×9</button>${api.lastGame && api.lastGame() ? '<button class="an-chip" data-act="last">เปิดเกมล่าสุดที่เล่น</button>' : ""}</div>`);
     tok++; ST.b = null; setPos();
   }

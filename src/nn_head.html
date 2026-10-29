@@ -211,20 +211,20 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .an-tag.best { background: #57c26b; } .an-tag.near { background: #c4d45a; } .an-tag.far { background: #e0a552; }
 .an-chips, .an-list { display: flex; gap: 6px; flex-wrap: wrap; }
 .an-list { margin-top: 8px; }
-#anel .an-chip { font-size: 13px; min-height: 34px; padding: 4px 12px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); }
-.an-ask { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
-.an-ask input { font: inherit; font-size: 16px; min-width: 0; min-height: 42px; padding: 6px 12px; color: var(--fg); background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; }
-.an-ask input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-#anel .an-ask button { padding: 0 16px; font-weight: 600; background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+#anel .an-chip { font-size: 14px; min-height: 38px; padding: 4px 12px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); }
 .an-foot { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: rgba(21, 51, 58, .94); backdrop-filter: blur(6px); border-top: 1px solid var(--line);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
 .an-foot .in { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1fr) minmax(0, 2fr); gap: 6px; }
 #anel .an-foot button { min-height: 46px; padding: 0 4px; border-radius: 0; display: grid; place-items: center; }
 #anel #anGo { font-family: var(--f-px); font-weight: 700; font-size: 16px; white-space: nowrap; background: var(--accent); color: var(--accent-fg); border: 0; box-shadow: 0 3px 0 var(--wood-dark); }
-#anel #anGo.on { background: #57c26b; color: #10240f; }
-#anBoard .an-cand { animation: anIn .25s ease-out both; }
-@keyframes anIn { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { #anBoard .an-cand, .an-wr .bar i { animation: none; transition: none; } }
+#anel #anGo { grid-auto-flow: column; gap: 8px; align-items: center; justify-content: center; }
+.an-sw { font-family: var(--f-px); font-size: 13px; line-height: 1; padding: 4px 7px; background: #3b3024; color: #cbbfa8; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .25); }
+#anGo.on .an-sw { background: #2f9e4a; color: #fff; box-shadow: 0 0 0 2px #10240f; }
+.an-prog { position: relative; width: 100%; max-width: min(100%, 70vh); height: 22px; background: #f6ebc8; border: 2px solid var(--wood-dark); overflow: hidden; }
+.an-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: repeating-linear-gradient(90deg, #f2c94c 0 10px, #e6b733 10px 20px); transition: width .2s linear; }
+.an-prog span { position: relative; display: block; text-align: center; font-size: 12px; font-weight: 600; line-height: 18px; color: #2a1a0b; text-shadow: 0 0 3px rgba(255, 240, 200, .8); }
+@media (max-width: 520px) { #anel #anGo { grid-auto-flow: row; gap: 3px; font-size: 14px; } #anel #anGo .an-sw { font-size: 11px; padding: 2px 6px; } }
+@media (prefers-reduced-motion: reduce) { .an-wr .bar i, .an-prog i { transition: none; } }
 
 /* ---------- game ---------- */
 .logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
@@ -382,13 +382,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   <div class="an-stage">
     <div class="an-boardbox">
       <div class="an-wr"><div class="lbl"><span id="anWrB">ดำ 50.0</span><span>โอกาสชนะ %</span><span id="anWrW">ขาว 50.0</span></div><div class="bar"><i id="anWrFill" style="width:50%"></i></div></div>
+      <div class="an-prog" id="anProg" hidden><i id="anProgFill"></i><span id="anProgTxt"></span></div>
       <svg id="anBoard" viewBox="-1.1 -1.1 20.2 20.2" role="img" aria-label="กระดานวิเคราะห์"></svg>
       <div class="an-info" id="anInfo" aria-live="polite"></div>
     </div>
     <div class="an-side">
       <div class="an-chat" id="anChat" aria-live="polite"></div>
       <div class="an-chips" id="anChips"></div>
-      <form class="an-ask" id="anAsk"><input id="anInput" placeholder="พิมพ์ถาม เช่น ควรเดินตรงไหน, ถ้าเดิน D4 ล่ะ, ใครนำ" autocomplete="off" enterkeyhint="send" aria-label="พิมพ์คำถาม"><button type="submit">ถาม</button></form>
     </div>
   </div>
   <nav class="an-foot"><div class="in">
@@ -397,7 +397,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     <button id="anNext" aria-label="ไปหนึ่งตา"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M3 1h1v7h-1zM4 2h1v5h-1zM5 3h1v3h-1zM6 4h1v1h-1z"/></svg></button>
     <button id="anLast" aria-label="ตาสุดท้าย"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M2 1h1v7h-1zM3 2h1v5h-1zM4 3h1v3h-1zM5 4h1v1h-1zM6 1h2v7h-2z"/></svg></button>
     <button id="anPass">ผ่าน</button>
-    <button id="anGo">ANALYSIS</button>
+    <button id="anGo" aria-pressed="false"><span>ANALYSIS</span><b class="an-sw" id="anSw">OFF</b></button>
   </div></nav>
 </section>
 
