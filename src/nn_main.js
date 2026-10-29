@@ -723,7 +723,7 @@
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
     gameId = g.gameId || rid(); gameReported = false;
-    $("home").hidden = true; $("menu").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
+    $("home").hidden = true; $("menu").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade", "menuing"); document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -1278,10 +1278,12 @@
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
-  $("home").hidden = true; // the main menu is the first screen
-  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
-  function openTutorial() { blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
-  Tutorial.onHome = showHome;
+  $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
+  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
+  // the book returns to wherever it was opened from: the main menu or the character select
+  let tutorFrom = "home";
+  Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
   function startGame() { if (CHARS[settings.char].tutorial) return openTutorial(); blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
@@ -1306,19 +1308,22 @@
       "...kkkkwwwwwwwsk", "......kwwwwwwssk", "......kwwwwwsssk", "......ksswssssk.", ".......ksssssk..", "........kkkkk...", "................", "................"]),
     analysis: pxIcon(["kkkkkkkkkkkk....", "krrdrrdrrdrk....", "kddddddddddk....", "krrdrGGrrdrk....", "krrdGGGGrdrk....", "kddddGGddddk....", "krrdrrdrkkkkk...", "krrdrrdkwwwwwk..",
       "kdddddkwttwwwwk.", "krrdrrkwtwwwwwk.", "kkkkkkkwwwwwwwk.", "......kwwwwwwwk.", ".......kwwwwwkkk", "........kkkkkdkk", "..............kd", "...............k"]),
+    tutorial: pxIcon(["................", ".kkkkkk..kkkkkk.", "kwwwwwwkkwwwwwwk", "kwddddwkkwddddwk", "kwwwwwwkkwwwwwwk", "kwdddwwkkwddddwk", "kwwwwwwkkwwwwwwk", "kwddddwkkwdddwwk",
+      "kwwwwwwkkwwwwwwk", "kwdddwwkkwddddwk", "kwwwwwwkkwwwwwwk", "kssssssksssssssk", "krrrrrrrrrrrrrrk", ".kkkkkkkkkkkkkk.", ".......yy.......", ".......yy......."]),
     tsume: pxIcon(["kkkkkkkkkkkkkkkk", "krrrdrrrdrrrdrrk", "krrrdrrrdrrrdrrk", "kddddddddddddddk", "krrkkkrrdrrrdrrk", "krkbbbkrdrrrdrrk", "krkbhbkkkkkrdrrk", "kdkbbbkwwwwkdddk",
       "krrkkkwwwwwwkrrk", "krrrdkwwkkwwkrrk", "krrrdkwwwkwwkrrk", "kddddkwwkwwwkddk", "krrrdrkwwwwkdrrk", "krrrdrrkkkkrdrrk", "krrrdrrrdrrrdrrk", "kkkkkkkkkkkkkkkk"])
   };
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
-    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง หรือเปิดคัมภีร์สอนเล่น" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร" },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
-    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true }
+    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true },
+    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" }
   ];
-  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic">${ICONS[m.id === "tsume" ? "tsume" : m.id]}</span>
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic">${ICONS[m.id]}</span>
     <span class="mn-lab"><b>${m.t}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span></button>`).join("");
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing"); }
-  function showMenu() { hideScreens(); $("menu").hidden = false; document.body.classList.add("arcade"); window.scrollTo(0, 0); }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function showMenu() { hideScreens(); $("menu").hidden = false; document.body.classList.add("arcade", "menuing"); window.scrollTo(0, 0); }
   $("mnList").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b || b.disabled) return;
     unlockAudio(); blip(880);
@@ -1326,6 +1331,7 @@
     if (go === "play") { showHome(); window.scrollTo(0, 0); }
     else if (go === "profile") showProfile();
     else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+    else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   $("pfBack").onclick = () => { blip(660); showMenu(); };
