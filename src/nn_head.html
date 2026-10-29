@@ -225,7 +225,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
   </div>
   <button id="btnNew" class="px-start">GAME START</button>
-  <p class="timectl">15 นาที + เบียวโยมิ 10 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
+  <p class="timectl">30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
   <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
 </section>
 
@@ -234,13 +234,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     <div class="player" id="pB">
       <div class="avbox"><span id="avB"></span><span class="stone b" id="sB"></span></div>
       <div class="who"><div class="pname" id="nB">คุณ</div><div class="prank" id="rkB"></div><div class="pcap" id="cB">หมากเชลย 0</div></div>
-      <div class="clock"><span class="clk" id="clkB">15:00</span><span class="byo" id="byB">เบียวโยมิ 3×10</span></div>
+      <div class="clock"><span class="clk" id="clkB">30:00</span><span class="byo" id="byB">เบียวโยมิ 3×30</span></div>
     </div>
     <div class="komi">โคมิ<b>7.5</b></div>
     <div class="player" id="pW">
       <div class="avbox"><span id="avW"></span><span class="stone w" id="sW"></span></div>
       <div class="who"><div class="pname" id="nW">AI</div><div class="prank" id="rkW"></div><div class="pcap" id="cW">หมากเชลย 0</div></div>
-      <div class="clock"><span class="clk" id="clkW">15:00</span><span class="byo" id="byW">เบียวโยมิ 3×10</span></div>
+      <div class="clock"><span class="clk" id="clkW">30:00</span><span class="byo" id="byW">เบียวโยมิ 3×30</span></div>
     </div>
   </div>
   <section class="boardcell" aria-label="กระดานหมากล้อม"><canvas id="board" width="800" height="800"></canvas></section>
@@ -276,7 +276,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
         <button id="btnSound">เสียง: เปิด</button>
         <button id="btnFull">เต็มจอ</button>
       </div>
-      <p class="note">กดจุดตัดบนกระดานเพื่อวางหมาก เวลาหลัก 15 นาที หมดแล้วเข้าเบียวโยมิ ต้องเดินภายใน 10 วินาที ถ้าเกินจะเสีย 1 ครั้ง เสียครบ 3 ครั้งแพ้เพราะหมดเวลา เมื่อทั้งสองฝ่ายผ่านติดกัน เกมจะนับแต้มแบบพื้นที่ ตอนนับแต้มแตะกลุ่มหมากเพื่อสลับว่าตายหรือไม่</p>
+      <p class="note">กดจุดตัดบนกระดานเพื่อวางหมาก เวลาหลัก 30 นาที หมดแล้วเข้าเบียวโยมิ ต้องเดินภายใน 30 วินาที ถ้าเกินจะเสีย 1 ครั้ง เสียครบ 3 ครั้งแพ้เพราะหมดเวลา เมื่อทั้งสองฝ่ายผ่านติดกัน เกมจะนับแต้มแบบพื้นที่ ตอนนับแต้มแตะกลุ่มหมากเพื่อสลับว่าตายหรือไม่</p>
     </div>
   </aside>
 </main>
