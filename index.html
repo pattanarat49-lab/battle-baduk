@@ -1831,6 +1831,7 @@ function GoNNAI(E, F, net) {
   }
   checkCancel(); setInterval(checkCancel, 30000);
   function reportEnd(humanWon, how) {
+    save("game", null);
     if (gameReported) return;
     gameReported = true;
     if (exam) exam.how = how;
@@ -1873,6 +1874,7 @@ function GoNNAI(E, F, net) {
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
     speak("hello", { force: true }); hopeless = 0;
     gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
+    saveGame();
     resize(); render(); maybeAI(); startPonder();
   }
   function replay() { board = new Board(n); for (const m of history) board.play(m); }
@@ -1945,7 +1947,38 @@ function GoNNAI(E, F, net) {
     else if (p === PASS) speak(mover === human ? "humanPass" : "aiPass", { pri: 3, gap: 8 });
     else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
     render();
+    saveGame();
     if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); }
+  }
+  // the game in progress survives a page refresh: it is kept in localStorage until it ends or the player leaves it
+  function saveGame() {
+    if (!board || over || scoring) { save("game", null); return; }
+    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: Date.now() });
+  }
+  function resumeGame(g) {
+    const i = CHARS.findIndex(c => c.id === g.char);
+    if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
+    cancelAI();
+    n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
+    board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
+    try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
+    if (board.passes >= 2) return false;
+    exam = CHARS[gameChar].exam ? { grades: Array.isArray(g.grades) ? g.grades : [] } : null; ponder = null;
+    const ch = CHARS[gameChar];
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
+      const me = col === human;
+      $("n" + k).textContent = me ? "คุณ" : ch.name;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+    }
+    clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
+    lastTick = performance.now();
+    saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0;
+    gameId = g.gameId || rid(); gameReported = false;
+    $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
+    resize(); render(); maybeAI(); startPonder();
+    return true;
   }
   function setEval(res) {
     // res values are for the player to move at the searched position
@@ -2444,7 +2477,7 @@ function GoNNAI(E, F, net) {
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
-  function showHome() { cancelAI(); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function startGame() { blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
@@ -2464,6 +2497,11 @@ function GoNNAI(E, F, net) {
   document.addEventListener("fullscreenchange", syncFs); document.addEventListener("webkitfullscreenchange", syncFs);
   $("btnRestart").onclick = () => { settings.char = gameChar; newGame(); };
   $("btnHome").onclick = showHome;
+  // clocks keep their time across a refresh too
+  window.addEventListener("pagehide", saveGame);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });
+  const saved = load("game", null);
+  if (saved && !(Date.now() - (saved.at || 0) < 6 * 36e5 && resumeGame(saved))) save("game", null);
   initEngine();
 })();
 
