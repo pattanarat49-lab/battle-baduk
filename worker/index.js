@@ -2,8 +2,7 @@
 // POST /api/event  {type: "start"|"move"|"end", game, player, char, size, color, winner, how, moves, state}
 // GET  /stats      summary page and games in progress,  GET /api/stats  the same numbers as JSON
 // GET  /watch?g=…  live board of one game,  GET /api/game?g=…  its latest position
-// GET  /api/cancel  the current cancel number (the game polls it),  POST /api/cancel {key}  cancels every game in progress
-// GET  /admin  page with the cancel button; the key is the Worker secret ADMIN_KEY
+// GET  /api/cancel  always {n: 0}, without touching the Durable Object: game pages opened before the cancel button was removed still poll it
 import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
 
@@ -27,8 +26,6 @@ export class Stats extends DurableObject {
     // placement-test results (games against Hikaru); rank: 1 kyu = 0, 15 kyu = -14, 1 dan = 1
     this.sql.exec(`CREATE TABLE IF NOT EXISTS exams (game TEXT PRIMARY KEY, player TEXT, ended INTEGER, how TEXT, moves INTEGER,
       graded INTEGER, not_best REAL, rank REAL)`);
-    // each cancel bumps this number; open games that see it change stop and apologise
-    this.sql.exec("CREATE TABLE IF NOT EXISTS cancels (n INTEGER PRIMARY KEY, at INTEGER)");
     // Cloudflare bills every row a query reads, so nothing here may scan a whole table on a regular request.
     // live has no index on updated on purpose: every move rewrites that column, and an index would double the rows written
     this.sql.exec("DROP INDEX IF EXISTS live_updated");
@@ -97,19 +94,6 @@ export class Stats extends DurableObject {
     if (!r) return null;
     const res = this.sql.exec("SELECT winner, how FROM games WHERE id = ?", g).toArray()[0] || {};
     return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, winner: res.winner || null, how: res.how || null, now: Date.now(), ...JSON.parse(r.state) };
-  }
-  cancelNo() { return this.sql.exec("SELECT COALESCE(MAX(n), 0) AS n FROM cancels").one().n; }
-  // ends every unfinished game as cancelled; results sent later for those games are ignored
-  cancelAll() {
-    const now = Date.now();
-    this.sql.exec("INSERT INTO cancels (at) VALUES (?)", now);
-    // games started in the last 6 hours; older unfinished ones were closed long ago
-    const open = this.sql.exec("SELECT char, COUNT(*) AS n FROM games WHERE started >= ? AND ended IS NULL GROUP BY char", now - 6 * 36e5).toArray();
-    this.sql.exec("UPDATE games SET ended = ?, how = 'cancel' WHERE ended IS NULL AND started >= ?", now, now - 6 * 36e5);
-    for (const o of open) this.bump(o.char, { cancelled: o.n });
-    const n = open.reduce((a, o) => a + o.n, 0);
-    this.sql.exec("UPDATE live SET ended = ? WHERE ended IS NULL AND game IN (SELECT id FROM games WHERE how = 'cancel')", now);
-    return { n: this.cancelNo(), cancelled: n };
   }
   record(e) {
     const now = Date.now();
@@ -234,7 +218,7 @@ function page(s) {
     <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.how === "cancel" ? "ยกเลิก" : g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
     : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 1 นาที)</p>`;
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="60">
+
 <title>Baduk Battle Stats</title>
 <style>
 :root { --bg: #15333a; --surface: #20474f; --fg: #f3ead8; --muted: #b3c8c5; --line: rgba(243,234,216,.14); --accent: #e3b06a; color-scheme: dark; }
@@ -268,7 +252,7 @@ ${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style=
 <tbody>${rows}</tbody></table></div>
 <p class="muted">"เล่นจบ" นับเกมที่มีผลแพ้ชนะ (นับแต้ม ยอมแพ้ หรือหมดเวลา) เกมที่ปิดกลางคันจะนับแค่ในช่อง "เกม"</p></section>
 <section><h2>14 วันล่าสุด</h2>${days}</section>
-</main></body></html>`;
+</main><script>setInterval(() => { if (!document.hidden) location.reload(); }, 60000);</script></body></html>`;
 }
 
 export default {
@@ -293,38 +277,8 @@ export default {
       return st ? Response.json(st, { headers: { ...CORS, "cache-control": "no-store" } }) : new Response("not found", { status: 404, headers: CORS });
     }
     if (url.pathname === "/watch") return html(WATCH);
-    if (url.pathname === "/api/cancel") {
-      if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
-      if (req.method === "GET") return Response.json({ n: await stub().cancelNo() }, { headers: { ...CORS, "cache-control": "no-store" } });
-      if (!env.ADMIN_KEY) return Response.json({ error: "ยังไม่ได้ตั้งรหัส ADMIN_KEY ใน Cloudflare" }, { status: 503 });
-      let key = "";
-      try { key = String((await req.json()).key || ""); } catch (e) {}
-      if (key !== env.ADMIN_KEY) return Response.json({ error: "รหัสไม่ถูกต้อง" }, { status: 403 });
-      return Response.json(await stub().cancelAll());
-    }
-    if (url.pathname === "/admin") return html(ADMIN);
+    if (url.pathname === "/api/cancel") return Response.json({ n: 0 }, { headers: CORS });
     return env.ASSETS.fetch(req);
   }
 };
 
-const ADMIN = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Baduk Battle Admin</title><meta name="robots" content="noindex">
-<style>body{font-family:system-ui,sans-serif;background:#0f3b3a;color:#f3ead2;margin:0;padding:24px 16px}main{max-width:420px;margin:auto}
-h1{font-size:22px}input,button{font:inherit;width:100%;box-sizing:border-box;padding:12px;border-radius:8px;border:0;margin-top:10px}
-button{background:#e2902e;color:#2a1a0b;font-weight:700;cursor:pointer}p{line-height:1.5}#out{margin-top:14px;font-weight:600}</style></head>
-<body><main><h1>ยกเลิกเกมที่กำลังเล่นอยู่</h1>
-<p>ทุกเกมที่ยังไม่จบจะถูกยกเลิก ผู้เล่นจะเห็นข้อความ "ยกเลิก ขออภัยด้วยครับ" บนจอภายในประมาณ 30 วินาที และผลเกมเหล่านั้นจะไม่ถูกนับ</p>
-<input id="key" type="password" placeholder="รหัสผู้ดูแล" autocomplete="current-password">
-<button id="go">ยกเลิกทุกเกมตอนนี้</button><div id="out"></div></main>
-<script>
-document.getElementById("go").onclick = async () => {
-  const out = document.getElementById("out");
-  if (!confirm("ยกเลิกทุกเกมที่กำลังเล่นอยู่?")) return;
-  out.textContent = "กำลังยกเลิก…";
-  try {
-    const r = await fetch("/api/cancel", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key: document.getElementById("key").value }) });
-    const j = await r.json();
-    out.textContent = r.ok ? "ยกเลิกแล้ว " + j.cancelled + " เกม" : j.error;
-  } catch (e) { out.textContent = "ส่งไม่สำเร็จ: " + e.message; }
-};
-</script></body></html>`;

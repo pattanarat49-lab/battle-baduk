@@ -2251,24 +2251,18 @@ const Tutorial = (function () {
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
   }
-  // the site owner can cancel every game in progress from /admin; open games poll the cancel number and stop when it changes
-  const CANCEL_URL = STATS_URL && STATS_URL.replace(/event$/, "cancel");
-  let cancelSeen = null;
-  async function checkCancel() {
-    if (!CANCEL_URL) return;
-    try {
-      const n = (await (await fetch(CANCEL_URL, { cache: "no-store" })).json()).n;
-      if (typeof n !== "number") return;
-      if (cancelSeen !== null && n > cancelSeen && board && !over && !scoring && history.length) cancelGame();
-      cancelSeen = n;
-    } catch (e) {}
+  // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
+  const LIVE_EVERY = 60000;
+  let liveAt = 0, liveTimer = null;
+  function liveUpdate() {
+    if (!STATS_URL || liveTimer) return;
+    const g = gameId;
+    liveTimer = setTimeout(() => {
+      liveTimer = null;
+      if (g !== gameId || !board || over || scoring) return;
+      liveAt = Date.now(); track({ type: "move", state: snapshot() });
+    }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
-  function cancelGame() {
-    cancelAI(); gameReported = true; // the server has already ended this game
-    over = { text: "ยกเลิก ขออภัยด้วยครับ", detail: "ผู้ดูแลยกเลิกเกมนี้ชั่วคราว กด \"เล่นใหม่\" เพื่อเริ่มเกมใหม่ได้เลยครับ" };
-    render();
-  }
-  checkCancel(); setInterval(checkCancel, 30000);
   function reportEnd(humanWon, how) {
     save("game", null);
     if (gameReported) return;
@@ -2313,7 +2307,7 @@ const Tutorial = (function () {
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
     speak("hello", { force: true }); hopeless = 0; examBehind = 0;
-    gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
+    gameId = rid(); gameReported = false; liveAt = Date.now(); track({ type: "start", size: n, color: human, state: snapshot() });
     saveGame();
     resize(); render(); maybeAI(); startPonder();
   }
@@ -2388,7 +2382,7 @@ const Tutorial = (function () {
     const mover = board.toPlay, caps = board.caps[mover];
     clockMoved(mover);
     board.play(p); history.push(p); hint = null; pending = null;
-    track({ type: "move", state: snapshot() });
+    liveUpdate();
     const took = board.caps[mover] - caps;
     if (board.passes >= 2) startScoring();
     else if (p === PASS) speak(mover === human ? "humanPass" : "aiPass", { pri: 3, gap: 8 });
