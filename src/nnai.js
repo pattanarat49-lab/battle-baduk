@@ -291,11 +291,18 @@ function GoNNAI(E, F, net) {
   async function teach(n, moves, komi, opts) {
     const t0 = performance.now();
     let s = await think(n, moves, komi, opts);
-    // a hard move: the player's reply cut Hikaru's lead by 2+ points, or Hikaru is behind after the opening. Read it again with the
-    // rest of opts.hardMs (a fight Hikaru misjudged at normal speed is what lets a player run away with the game)
+    // a hard move: the player's reply cut Hikaru's lead by 2+ points, Hikaru is behind after the opening, or one of its groups
+    // is short of liberties (in atari, or three stones or more on two liberties: a cut or a capture may be coming). Read it again with the rest of opts.hardMs
+    // (a fight Hikaru misjudged at normal speed is what lets a player run away with the game)
     const drop = lastTeach && lastTeach.len === moves.length - 1 ? lastTeach.lead - s.searchLead : 0;
+    const now = new Board(n); for (const m of moves) now.play(m);
+    const me = now.toPlay, short = now.pts.some(p => { if (now.color[p] !== me) return false; const h = now.head[p], l = now.libs(h, 3); return l <= 1 || (l === 2 && now.gsize[h] >= 3); });
+    // fell more than 3 points behind: full strength (every move read with the extra time, no concessions) until Hikaru
+    // leads again (the site owner)
+    const cont = lastTeach && lastTeach.len === moves.length - 1;
+    let full = (cont && lastTeach.full) || s.searchLead < -3;
     const more = (opts.hardMs || 0) - (performance.now() - t0);
-    if (more > 2000 && (drop >= 2 || (moves.length >= 40 && s.searchLead < -2)) && !(opts.shouldStop && opts.shouldStop()))
+    if (more > 2000 && (drop >= 2 || short || full) && !(opts.shouldStop && opts.shouldStop()))
       s = await think(n, moves, komi, Object.assign({}, opts, { timeMs: more, earlyStop: false, visits: (opts.visits || 2500) * 3 }));
     // the player passed in the late game: they consider it finished, so end it and count
     if (moves.length > 100 && moves[moves.length - 1] === PASS) { s.move = PASS; return s; }
@@ -322,20 +329,24 @@ function GoNNAI(E, F, net) {
     // points given back only as far as the player's last move just lost them: against a player who has not made a
     // mistake Hikaru plays its best (the site owner: never go soft on a player who is playing well)
     const gain = lastTeach && lastTeach.len === moves.length - 1 ? pick.leadAfter - lastTeach.lead : 0;
-    const done = () => { lastTeach = { len: moves.length + 1, lead: pick.leadAfter }; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter })); return s; };
-    if (pick.leadAfter < target + 1) return done();
-    const ahead = pick.leadAfter - target;
-    if (ahead > 1 && gain >= 1.5) {
-      // points go back a little at a time (at most 4 a move), never by giving up stones: a concession that leaves any of
+    if (full && pick.leadAfter > 0) full = false;
+    const done = () => { lastTeach = { len: moves.length + 1, lead: pick.leadAfter, full }; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter })); return s; };
+    if (full || pick.leadAfter < target + 1) return done();
+    const ahead = pick.leadAfter - target, ease = opts.weak && pick.leadAfter > 10;
+    // more than 10 points ahead of a player who has shown over many moves that they are weak, Hikaru eases off whether
+    // or not their last move erred; a player not yet known to be weak only gets back what their mistakes gave (the site
+    // owner: a teaching game must not crush a weak player, but never underestimate one who may be strong)
+    if (ahead > 1 && (gain >= 1.5 || ease)) {
+      // points go back a little at a time (at most 4 a move; against a weak player far behind up to 8, a third of the lead over 10), never by giving up stones: a concession that leaves any of
       // Hikaru's groups in atari is not one (the site owner: Hikaru must never let itself be captured)
-      const want = Math.min(4, ahead, gain);
-      const now = new Board(n); for (const m of moves) now.play(m);
-      const me = now.toPlay;
-      const safe = c => {
-        const b = new Board(n); b.copyFrom(now); b.play(c.move);
-        for (const p of b.pts) if (b.color[p] === me && b.libs(b.head[p], 2) < 2) return false;
-        return true;
+      const want = Math.min(ease ? Math.max(4, Math.min(8, (pick.leadAfter - 10) / 3)) : 4, ahead, ease ? Math.max(gain, pick.leadAfter - 10) : gain);
+      // (stones already short of liberties after Hikaru's best move, such as a dead stone left behind, don't block every concession)
+      const inAtari = m => {
+        const b = new Board(n); b.copyFrom(now); b.play(m);
+        let k = 0; for (const p of b.pts) if (b.color[p] === me && b.libs(b.head[p], 2) < 2) k++;
+        return k;
       };
+      const atari0 = inAtari(cands[0].move), safe = c => inAtari(c.move) <= atari0;
       const ok = cands.filter((c, i) => i > 0 && c.leadAfter >= target && cands[0].leadAfter - c.leadAfter <= want + 0.5 && safe(c))
         .sort((a, b) => a.leadAfter - b.leadAfter);
       if (ok.length) {

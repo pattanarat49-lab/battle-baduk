@@ -653,6 +653,13 @@
     const gs = exam.grades.filter(Boolean).slice(-30);
     return gs.length < 5 ? 2 : gs.reduce((t, g) => t + Math.min(g.loss, 10), 0) / gs.length;
   }
+  // the player is known to be weak: 20 graded moves or more and over 1.2 points lost per move lately (about 6 kyu and below
+  // on the test characters; Uncle Win and Mek lose 1.5-4, Yuto and stronger mostly under 1)
+  function examWeak() {
+    if (!exam) return false;
+    const gs = exam.grades.filter(Boolean);
+    return gs.length >= 20 && examGive() > 1.2;
+  }
   // takes what pondering found for the player's last move; the grade itself is computed by runGrade later
   function gradeJob() {
     const pm = history.length - 1, pre = ponder && ponder.at === pm ? ponder.promise : null;
@@ -805,7 +812,7 @@
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
         batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive() }));
+      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
