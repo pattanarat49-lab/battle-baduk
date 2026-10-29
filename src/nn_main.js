@@ -17,6 +17,10 @@
   };
   // Strength comes from how much the network reads ahead; ranks are estimates, not measured against people.
   const CHARS = [
+    // not an opponent: opens the step-by-step lessons for people who have never played
+    { id: "tutorial", en: "TUTORIAL", name: "คัมภีร์สอนเล่น", country: "", rank: "มือใหม่เริ่มที่นี่", style: "balance", tutorial: true, search: {},
+      bio: "ไม่เคยเล่นโกะมาก่อน? เริ่มที่นี่ ลุงวินสอนกติกาทีละขั้นบนกระดาน 9×9 ตั้งแต่วางหมาก การกิน โค ตา ไปจนถึงการนับแต้ม พร้อมแบบฝึกให้ลองแตะเล่นเอง",
+      say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", search: { temperature: 2.0, blunder: 0.3, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
@@ -325,11 +329,12 @@
   const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
-  if (byId >= 0) settings.char = byId; else if (settings.char >= 3 && savedId === null) settings.char++;
-  if (!CHARS[settings.char]) settings.char = 4;
+  // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
+  if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 2 : 1;
+  if (!CHARS[settings.char]) settings.char = 5;
   const KOMI = 7.5;
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
-  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 5, hopeless = 0;
+  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0;
   let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
   let AI = null, gen = 0, engineReady = false;
 
@@ -940,7 +945,8 @@
     cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("resigned", { force: true }); reportEnd(false, "resign"); render();
   };
   // characters from 3 kyu up (index 3 onwards) only play on the full 19x19 board
-  const only19 = i => i >= 3;
+  const FREE_SIZE = ["mek", "win", "yuto"]; // everyone else plays 19x19 only
+  const only19 = i => !FREE_SIZE.includes(CHARS[i].id);
   const boardSize = () => only19(settings.char) ? 19 : settings.size;
   function seg(id, key) {
     const el = $(id);
@@ -1189,12 +1195,14 @@
     const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
     charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
+      <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
-    $("pick").innerHTML = `<div class="cmeta">${c.country} · ${STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
+    $("pick").innerHTML = `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
     $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === i)));
     syncSize();
+    $("home").querySelector(".opts").hidden = !!c.tutorial;
+    $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : "GAME START";
   }
   function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
   charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
@@ -1203,6 +1211,7 @@
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
   document.addEventListener("keydown", e => {
+    if (!$("tutor").hidden) return; // the tutorial has its own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
@@ -1214,7 +1223,10 @@
   syncChars();
   document.body.classList.add("arcade");
   function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
-  function startGame() { blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+  function openTutorial() { blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
+  Tutorial.onHome = showHome;
+  Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
+  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial(); blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };

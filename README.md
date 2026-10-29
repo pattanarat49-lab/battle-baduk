@@ -6,7 +6,8 @@ AI ใช้เครือข่าย KataGo (g170e-b10c128) รันใน�
 - `index.html` หน้าเกม (สร้างจาก `src/` ด้วย `src/build.py`)
 - `b10.json`, `b10.bin` น้ำหนักเครือข่าย (fp16)
 - `tf.min.js` สำรองไว้เผื่อโหลด TensorFlow.js จาก CDN ไม่ได้
-- `chars/` รูปตัวละคร
+- `chars/` รูปตัวละคร (`tutorial.jpg` คือการ์ดคัมภีร์สอนเล่น)
+- `src/tutorial.js` โหมดสอนเล่น 9×9 (คัมภีร์สอนเล่น) การ์ดแรกในหน้าเลือกตัว
 
 ## สถิติ
 `worker/index.js` (ตั้งค่าใน `wrangler.jsonc`) เสิร์ฟไฟล์เกม และเก็บสถิติแบบไม่ระบุตัวตนใน Durable Object
