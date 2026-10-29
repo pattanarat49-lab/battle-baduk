@@ -9,6 +9,9 @@ page=head+'''<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/d
 '''+js+'''
 </script>
 <script>
+'''+open('tutorial.js').read()+'''
+</script>
+<script>
 '''+open('nn_main.js').read()+'''
 </script>
 '''

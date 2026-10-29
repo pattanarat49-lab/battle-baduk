@@ -106,6 +106,70 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 }
 @media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
 
+/* ---------- tutorial: one lesson step at a time; phone stacks speech / task / board, wide puts the board left ---------- */
+.tutor { max-width: 1040px; margin: 0 auto; padding-bottom: 96px; }
+.tu-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tu-head .px { font-size: 13px; color: var(--accent); letter-spacing: .08em; text-shadow: 2px 2px 0 var(--wood-dark); }
+.tu-head h1 { font-size: 24px; }
+#tutor .tu-home { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+.tu-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 14px 0 6px; padding-bottom: 4px; scrollbar-width: none; }
+.tu-tabs::-webkit-scrollbar { display: none; }
+#tutor .tu-tab { flex: none; font-size: 13px; color: var(--muted); background: var(--bg-2); border: 1px solid var(--line); padding: 5px 12px; border-radius: 999px; min-height: 0; }
+.tu-tab b { font-family: var(--f-px); font-weight: 700; margin-right: 6px; color: var(--accent); }
+#tutor .tu-tab[aria-current="true"] { color: var(--accent-fg); background: var(--accent); border-color: var(--accent); }
+.tu-tab[aria-current="true"] b { color: var(--accent-fg); }
+.tu-bar { height: 4px; background: var(--bg-2); border-radius: 2px; overflow: hidden; margin-bottom: 14px; }
+.tu-bar i { display: block; height: 100%; background: var(--accent); transition: width .3s; }
+.tu-stage { display: grid; gap: 14px; }
+@media (min-width: 860px) { .tu-stage { grid-template-columns: minmax(0, 1fr) 400px; align-items: start; } .tu-side { order: 2; } .tu-boardbox { order: 1; } }
+.tu-side { display: grid; gap: 12px; min-width: 0; }
+#tuTalk { display: grid; gap: 10px; }
+.tu-say { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 16px; line-height: 1.6; }
+.tu-say img { width: 56px; height: 56px; border: 3px solid var(--wood); background: var(--surface-2); display: block; }
+.tu-who { font-family: var(--f-px); font-size: 13px; color: var(--accent); letter-spacing: .06em; }
+.tu-bubble { background: var(--surface); border: 1px solid var(--line); padding: 10px 14px 12px; transition: border-color .2s, background .2s; }
+.tu-bubble p { margin: 2px 0 0; }
+.tu-bubble b { color: var(--accent); font-weight: 600; }
+.tu-say.ok .tu-bubble { border-color: var(--ok); background: #1f4d4c; }
+.tu-say.bad .tu-bubble { border-color: var(--warn); }
+.tu-say.mek { grid-template-columns: minmax(0, 1fr) 44px; }
+.tu-say.mek img { width: 44px; height: 44px; border-color: var(--surface-2); order: 2; }
+.tu-say.mek .tu-bubble { background: var(--bg-2); font-size: 15px; }
+.tu-say.mek .tu-who { color: var(--ok); text-align: right; }
+.tu-boardbox { min-width: 0; }
+#tuBoard { display: block; width: 100%; max-width: min(100%, 64vh); margin: 0 auto; aspect-ratio: 1; touch-action: manipulation; cursor: pointer; filter: drop-shadow(0 6px 0 var(--wood-dark)); }
+#tuBoard.locked { cursor: default; }
+.tu-gone { animation: tuGone .6s ease-in forwards; transform-box: fill-box; transform-origin: center; }
+@keyframes tuGone { to { opacity: 0; transform: scale(.4); } }
+.tu-pulse { animation: tuPulse 1.2s ease-in-out infinite; }
+@keyframes tuPulse { 50% { opacity: .35; } }
+.tu-task { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; display: grid; gap: 10px; }
+.tu-lbl { font-family: var(--f-px); font-size: 12px; letter-spacing: .1em; color: var(--accent); }
+.tu-lbl.done { color: var(--ok); }
+.tu-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tu-meta { color: var(--muted); font-size: 14px; }
+#tutor .tu-btn { font-size: 15px; font-weight: 600; min-height: 42px; padding: 0 16px; border: 0; border-radius: 0; background: var(--surface-2); color: var(--fg); }
+#tutor .tu-btn.pri, #tutor .tu-foot .pri { background: var(--accent); color: var(--accent-fg); box-shadow: 0 3px 0 var(--wood-dark); }
+#tutor .tu-btn.link { background: none; color: var(--muted); padding: 0 6px; text-decoration: underline; text-underline-offset: 3px; }
+.tu-score { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.tu-tot { font-family: var(--f-px); font-size: 18px; color: var(--accent); text-align: right; }
+.tu-dot { width: 14px; height: 14px; border-radius: 50%; margin-top: 4px; }
+.tu-dot.b { background: #111; } .tu-dot.w { background: #f3ead8; }
+.tu-recap { margin: 0; padding-left: 22px; display: grid; gap: 4px; font-size: 15px; }
+.tu-recap b { color: var(--accent); font-weight: 600; }
+.tu-foot { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: rgba(21, 51, 58, .94); backdrop-filter: blur(6px); border-top: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.tu-foot .in { max-width: 1040px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.tu-foot .count { font-family: var(--f-px); font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#tutor .tu-foot button { min-height: 48px; padding: 0 16px; border: 0; border-radius: 0; font-weight: 600; font-size: 15px; background: var(--surface-2); }
+#tuNext { justify-self: end; min-width: 120px; }
+#tutor #tuNext:not(.skip) { background: var(--accent); color: var(--accent-fg); box-shadow: 0 3px 0 var(--wood-dark); }
+#tuNext.skip { color: var(--muted); }
+#tuNext.go { animation: tuNudge 1.4s ease-in-out infinite; }
+@keyframes tuNudge { 50% { transform: translateX(4px); } }
+#tuPrev { justify-self: start; }
+@media (prefers-reduced-motion: reduce) { .tu-gone, .tu-pulse, #tuNext.go { animation: none; } .tu-gone { opacity: 0; } }
+
 /* ---------- game ---------- */
 .logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
 .game-title { font-size: 34px; }
@@ -230,6 +294,27 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   <button id="btnNew" class="px-start">GAME START</button>
   <p class="timectl">30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
   <p class="engine-chip" id="engineHome">กำลังโหลดสมอง AI…</p>
+</section>
+
+<section class="tutor" id="tutor" hidden>
+  <div class="tu-head">
+    <div><div class="px">BADUK BATTLE · TUTORIAL</div><h1>คัมภีร์สอนเล่น</h1></div>
+    <button class="tu-home" id="tuHome">← เลือกตัว</button>
+  </div>
+  <div class="tu-tabs" id="tuTabs" aria-label="บทเรียน"></div>
+  <div class="tu-bar"><i id="tuBar"></i></div>
+  <div class="tu-stage">
+    <div class="tu-side">
+      <div id="tuTalk" aria-live="polite"></div>
+      <div class="tu-task" id="tuTask" hidden></div>
+    </div>
+    <div class="tu-boardbox"><svg id="tuBoard" viewBox="-0.62 -0.62 9.24 9.24" role="img" aria-label="กระดาน 9×9"></svg></div>
+  </div>
+  <nav class="tu-foot"><div class="in">
+    <button id="tuPrev">← ย้อน</button>
+    <span class="count" id="tuCount">1 / 1</span>
+    <button id="tuNext">ต่อไป →</button>
+  </div></nav>
 </section>
 
 <main class="app" id="game" hidden>
