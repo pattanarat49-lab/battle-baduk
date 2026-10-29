@@ -574,7 +574,7 @@
     save("game", null);
     if (gameReported) return;
     gameReported = true;
-    if (exam) exam.how = how;
+    if (exam) { exam.how = how; exam.won = humanWon; }
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
     if (!exam) return track(ev);
     // the last move's grade may still be computing; the event keeps this game's id in case a new game starts meanwhile
@@ -730,7 +730,7 @@
   // signature openings: Weiqi takes tengen (or attaches to it), Tora takes 3-3 in every empty corner
   function openingMove() {
     const ch = CHARS[gameChar];
-    if (!ch.opening) return null;
+    if (!ch.opening || history.length >= 80) return null; // an opening book only for the opening, never in the endgame
     for (const p of board.pts) if (board.color[p] === ai && board.libs(board.head[p], 2) === 1) return null; // a group in atari comes first
     const ok = p => board.color[p] === EMPTY && board.isLegal(p, ai);
     if (ch.opening === "tengen") {
@@ -825,10 +825,17 @@
       flash("สมอง AI ทำงานผิดพลาด กรุณารีเฟรชหน้าเว็บ"); render(); return;
     }
     if (my !== gen) return;
-    if (res.move === PASS && exam) {
-      const m = await openBorderMove();
+    if (history.length >= 100) {
+      const { move: open, ev } = await openBorderMove();
       if (my !== gen) return;
-      if (m !== null) res = Object.assign({}, res, { move: m });
+      let m = res.move;
+      if (m === PASS && exam && open !== null) m = open;
+      else if (open === null && m !== PASS) {
+        // every area is sealed: answer a pass with a pass, and never fill in a settled area (its own or the opponent's)
+        const [x, y] = board.xy(m);
+        if (history[history.length - 1] === PASS || Math.abs(ev.own[y * 19 + x]) > 0.75) m = PASS;
+      }
+      if (m !== res.move) res = Object.assign({}, res, { move: m });
     }
     await minThink();
     if (my !== gen) return;
@@ -861,9 +868,10 @@
     }
     scoring.dead = dead; scoring.loading = false; render();
   }
-  // Hikaru (placement test) never passes while a border is still open, even right after the player passes: an empty point next to stones that neither side clearly owns yet
-  // (a gap in a wall, a neutral point) is played first, so the game ends with every area sealed and the count is clear.
-  // Points inside a settled area and self-ataris (such as a shared liberty in seki) are left alone.
+  // An open border is an empty point next to stones that neither side clearly owns yet (a gap in a wall, a neutral point),
+  // leaving out self-ataris such as a shared liberty in seki. Hikaru (placement test) plays one instead of passing, even
+  // right after the player passes, so the game ends with every area sealed; with none left the game is closed for every character.
+  // Returns the open border the network likes best (null when closed) and the evaluation used.
   async function openBorderMove() {
     const ev = await AI.evaluate(n, history.slice(), KOMI), me = board.toPlay;
     let best = null, bp = -1;
@@ -875,7 +883,7 @@
       if (libertiesOf(b, p) < 2) continue;
       if (ev.policy[i] > bp) { best = p; bp = ev.policy[i]; }
     }
-    return best;
+    return { move: best, ev };
   }
   function libertiesOf(b, p) {
     const c = b.color[p], seen = new Set([p]), libs = new Set(), st = [p];
@@ -1039,6 +1047,7 @@
       const r = areaCount(scoring.dead); scoring.terr = r.terr;
       const diff = r.b - (r.w + KOMI);
       const winner = diff > 0 ? BLACK : WHITE;
+      if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
       if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
@@ -1056,18 +1065,22 @@
     for (const g of gs) { cnt[g.cls]++; sum += Math.min(g.loss, 20); }
     if (!gs.length) return { graded: 0, cnt, avg: 0, notBest: 0, score: 0, est: null };
     const notBest = 100 * (gs.length - cnt.best) / gs.length, score = (cnt.good + 2 * cnt.normal + 3 * cnt.bad) / gs.length;
-    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? estimateRank(score) : null };
+    // beating Hikaru adds a rank, two when the count gives the player 10 points or more (site owner's choice, 2026-10-29)
+    const bonus = ex.won ? (ex.how === "score" && ex.margin >= 10 ? 2 : 1) : 0;
+    const top = Math.max(...EXAM_CALIB.map(c => c.rank));
+    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus,
+      est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(top, estimateRank(score) + bonus) : null };
   }
   function examReport() {
     if (!exam) return "";
     const R = examResult(), gs = exam.grades.filter(Boolean);
     if (R.graded < 20 || history.length < EXAM_MIN_MOVES) return `<div class="exam"><b>ผลสอบ</b><p class="note">เกมนี้เดินไป ${history.length} ตา ยังน้อยเกินไปที่จะประเมินระดับ (ต้องเดินรวมกันอย่างน้อย ${EXAM_MIN_MOVES} ตา) แนะนำให้เล่นจนจบกระดานและนับแต้ม</p></div>`;
-    const { cnt, avg, notBest, score, est } = R;
+    const { cnt, avg, notBest, score, bonus, est } = R;
     const bar = Object.keys(cnt).map(k => `<i class="g-${k}" style="flex:${cnt[k]}"></i>`).join("");
     const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
     const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - score) < Math.abs(a.avg - score) ? b : a) : null;
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
-      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
+      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${bonus ? `รวมโบนัสชนะฮิคารุ +${bonus} ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
       <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
