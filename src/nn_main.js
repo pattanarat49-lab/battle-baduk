@@ -1227,7 +1227,9 @@
 
   const syncSize = seg("segSize", "size"); seg("segColor", "human");
   // home screen: arcade-style character select, one featured card with its neighbours either side
-  const charsEl = $("chars"), L8 = CHARS.length;
+  // the opponents only: the tutorial book and the placement test have their own rows on the main menu
+  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam);
+  const charsEl = $("chars"), L8 = PICK.length;
   const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
     if (!actx || !soundOn) return;
@@ -1246,9 +1248,10 @@
     const b = e.target.closest("button"); if (!b || b.disabled) return;
     unlockAudio(); tune(BUTTON_TUNES[b.id] || (b.id === "btnSound" ? [] : [[700, 0]]));
   }, true);
-  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  $("faces").innerHTML = PICK.map(i => `<button data-i="${i}" aria-label="${CHARS[i].name}"><img src="chars/${CHARS[i].id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
   function syncChars(anim) {
-    const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
+    if (!PICK.includes(settings.char)) settings.char = PICK[0];
+    const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
     charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
       <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
@@ -1260,19 +1263,20 @@
     $("home").querySelector(".opts").hidden = !!c.tutorial;
     $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : "GAME START";
   }
-  function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
-  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
+  function choose(i) { unlockAudio(); settings.char = i; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
+  const step = d => choose(PICK[(PICK.indexOf(settings.char) + d + L8) % L8]);
+  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) step(+b.dataset.go); });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
-  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
+  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); });
   document.addEventListener("keydown", e => {
     if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
     }
-    if (e.key === "ArrowLeft") choose(settings.char - 1); else if (e.key === "ArrowRight") choose(settings.char + 1);
+    if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
@@ -1310,15 +1314,18 @@
       "kdddddkwttwwwwk.", "krrdrrkwtwwwwwk.", "kkkkkkkwwwwwwwk.", "......kwwwwwwwk.", ".......kwwwwwkkk", "........kkkkkdkk", "..............kd", "...............k"]),
     tutorial: pxIcon(["................", ".kkkkkk..kkkkkk.", "kwwwwwwkkwwwwwwk", "kwddddwkkwddddwk", "kwwwwwwkkwwwwwwk", "kwdddwwkkwddddwk", "kwwwwwwkkwwwwwwk", "kwddddwkkwdddwwk",
       "kwwwwwwkkwwwwwwk", "kwdddwwkkwddddwk", "kwwwwwwkkwwwwwwk", "kssssssksssssssk", "krrrrrrrrrrrrrrk", ".kkkkkkkkkkkkkk.", ".......yy.......", ".......yy......."]),
+    exam: pxIcon(["....kkkkkkkk....", "...kyyyyyyyyk...", "...kyywwwwyyk...", "..kyyywyywyyyk..", "..kyyyyywyyyyk..", "..kyyyywyyyyyk..", "..kyyywwwwyyyk..", "...kyyyyyyyyk...",
+      "....kyyyyyyk....", ".....kkyykk.....", ".......kk.......", "......kyyk......", ".....kyyyyk.....", "....kkkkkkkk....", "....krrrrrrk....", "....kkkkkkkk...."]),
     tsume: pxIcon(["kkkkkkkkkkkkkkkk", "krrrdrrrdrrrdrrk", "krrrdrrrdrrrdrrk", "kddddddddddddddk", "krrkkkrrdrrrdrrk", "krkbbbkrdrrrdrrk", "krkbhbkkkkkrdrrk", "kdkbbbkwwwwkdddk",
       "krrkkkwwwwwwkrrk", "krrrdkwwkkwwkrrk", "krrrdkwwwkwwkrrk", "kddddkwwkwwwkddk", "krrrdrkwwwwkdrrk", "krrrdrrkkkkrdrrk", "krrrdrrrdrrrdrrk", "kkkkkkkkkkkkkkkk"])
   };
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
-    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 9 ตัวละคร" },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true },
-    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" }
+    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
+    { id: "exam", t: "RANK TEST", s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
   ];
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic">${ICONS[m.id]}</span>
     <span class="mn-lab"><b>${m.t}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span></button>`).join("");
@@ -1331,6 +1338,7 @@
     if (go === "play") { showHome(); window.scrollTo(0, 0); }
     else if (go === "profile") showProfile();
     else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+    else if (go === "exam") { hideScreens(); settings.char = CHARS.findIndex(c => c.exam); startGame(); } // 19x19, the colour last picked on the character select
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
