@@ -295,13 +295,14 @@
       giveUp: "ผมยอมแพ้ จบการสอบ ดูผลด้านล่างได้เลย"
     }
   };
-  // Placement-test calibration: share of moves that were not "Best" for each character in full games against
-  // Hikaru's even-score play (1-3 games each, 2026-10-29). rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...
-  // The grader cannot separate anything above about 5 dan.
+  // Placement-test calibration: share of moves that were not "Best" for each character against Hikaru.
+  // rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ... Chosen by the site owner from real players' results
+  // (2026-10-29): each point is midway between the 2026-10-28 table and the one measured against Hikaru's
+  // even-score play on 2026-10-29. The grader cannot separate anything above about 5 dan.
   const EXAM_CALIB = [
-    { id: "mek", rank: -14, avg: 60, label: "15 คิว" }, { id: "win", rank: -7, avg: 44, label: "8 คิว" },
-    { id: "yuto", rank: -4, avg: 21, label: "5 คิว" }, { id: "chris", rank: 1, avg: 15, label: "1 ดั้ง" },
-    { id: "tora", rank: 4, avg: 7.6, label: "4 ดั้ง" }, { id: "kan", rank: 5, avg: 3.7, label: "5 ดั้ง" }
+    { id: "mek", rank: -14, avg: 60, label: "15 คิว" }, { id: "win", rank: -7, avg: 50.5, label: "8 คิว" },
+    { id: "yuto", rank: -4, avg: 30, label: "5 คิว" }, { id: "chris", rank: 1, avg: 18.25, label: "1 ดั้ง" },
+    { id: "tora", rank: 4, avg: 10.3, label: "4 ดั้ง" }, { id: "kan", rank: 5, avg: 4.35, label: "5 ดั้ง" }
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
   function rankName(v) {

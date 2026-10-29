@@ -132,7 +132,7 @@ function clean(b) {
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
 // same table as EXAM_CALIB in src/nn_main.js: share of non-Best moves each character plays, and its rank
-const EXAM_CALIB = [{ rank: -14, avg: 60 }, { rank: -7, avg: 44 }, { rank: -4, avg: 21 }, { rank: 1, avg: 15 }, { rank: 4, avg: 7.6 }, { rank: 5, avg: 3.7 }];
+const EXAM_CALIB = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
 function estimateRank(avg) {
   if (avg >= EXAM_CALIB[0].avg) return EXAM_CALIB[0].rank;
   for (let i = 1; i < EXAM_CALIB.length; i++) if (avg >= EXAM_CALIB[i].avg) {
