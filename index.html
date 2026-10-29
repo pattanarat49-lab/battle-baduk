@@ -1803,8 +1803,13 @@ const Analysis = (function () {
   const REGION = [["มุมซ้ายบน", "ด้านบน", "มุมขวาบน"], ["ด้านซ้าย", "กลางกระดาน", "ด้านขวา"], ["มุมซ้ายล่าง", "ด้านล่าง", "มุมขวาล่าง"]];
   // the main search: many visits so the second and third choices are read properly too
   // (a slow device, a phone without a usable GPU, gets more time so the reading isn't too shallow)
-  const SEARCH = { visits: 2000, timeMs: 7000, batch: 8, top: 12 };
-  const searchOpts = () => Object.assign({}, SEARCH, { timeMs: (api.evalMs && api.evalMs() > 60) ? 14000 : SEARCH.timeMs });
+  // a GPU evaluates 16 positions in about the time of 8, so it gets bigger batches; "read deeper" doubles the time, and the
+  // evaluations already cached make that a continuation rather than a fresh start
+  const SEARCH = { visits: 20000, timeMs: 20000, batch: 8, top: 12 };
+  const searchOpts = (deep = 1) => {
+    const ms = api.evalMs ? api.evalMs() : 50;
+    return Object.assign({}, SEARCH, { timeMs: (ms > 60 ? 30000 : SEARCH.timeMs) * deep, batch: ms < 40 ? 16 : 8 });
+  };
   let E, Board, PASS, BLACK, WHITE;
   let ST = null, tok = 0, chain = Promise.resolve();
   // one network job at a time; a job for a position the board has left is dropped when its turn comes
@@ -1989,13 +1994,13 @@ const Analysis = (function () {
       list.push([`ทำไมต้อง ${name(r.cands[0].move)}?`, "why"]);
       for (let i = 1; i < Math.min(3, r.cands.length); i++) if (r.cands[i].move !== PASS) list.push([`แล้ว ${name(r.cands[i].move)} ล่ะ?`, "cand" + i]);
       list.push(["ลำดับต่อไปเป็นยังไง?", "pv"]);
+      list.push(["🔍 อ่านต่อให้ลึกขึ้น", "deep"]);
     }
     const g = gameMove(); if (g !== null) list.push([`ตาที่เดินจริง (${name(g)}) เป็นไง?`, "played"]);
     if (ST.at && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
     list.push(["ตอนนี้ใครได้เปรียบ?", "status"]);
     if (ST.game && ST.game.moves.length > 10) list.push(["จุดพลาดในเกมนี้", "mistakes"]);
     if (ST.game && !onGameLine()) list.push(["↩ กลับเส้นเกมจริง", "back"]);
-    list.push(["📖 คำศัพท์", "terms"]);
     setChips(list);
   }
   // the move the real game played from the shown position, while the board still follows the game
@@ -2008,7 +2013,7 @@ const Analysis = (function () {
     const moves = cur(), key = keyOf(moves), my = tok;
     if (ST.res && ST.res.key === key) { if (explain) await explainBest(); return; }
     ST.running = true; ST.live = null; ST.t0 = null; render(); progress();
-    const so = searchOpts();
+    const so = searchOpts(ST.deep || 1);
     const s = await queue(() => my !== tok ? null : (ST.t0 = performance.now(), ST.so = so, AI.think(ST.n, moves, KOMI, Object.assign(so, {
       shouldStop: () => my !== tok, onProgress: p => { if (my === tok) { ST.live = p; drawBoard(); renderInfo(); } } }))));
     if (my !== tok || !s) return;
@@ -2082,7 +2087,7 @@ const Analysis = (function () {
     let lead, win, bestLead = best.lead;
     if (known) { lead = known.lead; win = known.winrate; }
     else {
-      const cv = { visits: 400, timeMs: 3000, batch: 8, shouldStop: () => my !== tok };
+      const cv = { visits: 3000, timeMs: 5000, batch: searchOpts().batch, shouldStop: () => my !== tok };
       const a = await queue(() => my !== tok ? null : AI.think(ST.n, moves.concat([best.move]), KOMI, cv));
       const b = await queue(() => my !== tok ? null : AI.think(ST.n, moves.concat([m]), KOMI, cv));
       if (!a || !b || my !== tok) return;
@@ -2188,24 +2193,10 @@ const Analysis = (function () {
     wait.querySelector(".an-b").innerHTML = `<b>จุดพลาดใหญ่${who ? "ของคุณ (" + CN[who] + ")" : ""}</b> (ประเมินคร่าวๆ แตะเพื่อไปดูตานั้น)<div class="an-list">${top.map(x =>
       `<button class="an-chip" data-goto="${x.k}">ตาที่ ${x.k + 1} · ${CN[x.col]} ${name(ms[x.k])} · เสีย ~${pts(x.loss)}</button>`).join("")}</div>`;
   }
-  // a few words a beginner meets in the explanations: [chip label, answer]
-  const TERMS = [
-    ["อะตาริ", "<b>อะตาริ</b> คือหมากที่เหลือลมหายใจเดียว ตาต่อไปอีกฝ่ายกินได้ ต้องรีบหนี (ต่อให้ลมหายใจเพิ่ม) หรือยอมทิ้ง"],
-    ["โค", "<b>โค</b> คือรูปที่ผลัดกันกินหมากเม็ดเดียวได้ไม่รู้จบ กติกาจึงห้ามกินคืนทันที ต้องไปเดินที่อื่นก่อนหนึ่งตา (เรียกว่าหาภัยคุกคามโค)"],
-    ["เซกิ", "<b>เซกิ</b> คือกลุ่มของทั้งสองฝ่ายที่ใช้ลมหายใจร่วมกัน ใครเข้าไปลงก่อนจะโดนกิน จึงไม่มีใครลง ทั้งคู่รอดไปด้วยกัน"],
-    ["โคมิ", "<b>โคมิ</b> คือแต้มชดเชยที่ขาวได้ เพราะดำได้เดินก่อน เกมนี้ใช้ 7.5 แต้ม (.5 กันเสมอ)"],
-    ["เทนูกิ", "<b>เทนูกิ</b> คือการไม่ตอบหมากที่อีกฝ่ายเพิ่งลง แล้วไปเล่นจุดอื่นที่ใหญ่กว่า"],
-    ["โจเซกิ", "<b>โจเซกิ</b> คือลำดับหมากมาตรฐานในมุมที่ทั้งสองฝ่ายได้เท่าๆ กัน"],
-    ["ชิมาริ", "<b>ชิมาริ</b> คือการลงหมากเม็ดที่สองในมุมของตัวเอง เพื่อปิดมุมให้แน่น"],
-    ["คาคาริ", "<b>คาคาริ</b> คือการเข้าไปประชิดมุมที่อีกฝ่ายมีหมากเม็ดเดียว ไม่ให้เขาปิดมุมได้ง่ายๆ"],
-    ["3-3", "<b>3-3</b> คือจุดที่สามจากขอบทั้งสองด้านในมุม ได้พื้นที่มุมแน่นอน มักใช้บุกมุมที่อีกฝ่ายลงไว้ที่ 4-4"],
-    ["ตา", "<b>ตา</b> คือจุดว่างที่ล้อมด้วยหมากของเราทั้งหมด กลุ่มที่มี<b>สองตาแท้</b>ไม่มีวันถูกกิน"],
-    ["ลมหายใจ", "<b>ลมหายใจ</b> คือจุดว่างที่ติดกับหมากตรงๆ (บน ล่าง ซ้าย ขวา) ถ้าโดนปิดหมด หมากนั้นถูกกิน"]
-  ];
 
   // ---------- board ----------
   function setPos() {
-    tok++; ST.pv = null; ST.running = false; ST.explaining = false; ST.live = null; ST.own = null;
+    tok++; ST.pv = null; ST.deep = 1; ST.running = false; ST.explaining = false; ST.live = null; ST.own = null;
     ST.b = boardOf(cur());
     if (ST.res && ST.res.key !== keyOf(cur())) ST.res = null;
     render();
@@ -2320,13 +2311,12 @@ const Analysis = (function () {
     $("anel").addEventListener("click", e => {
       const t = e.target.closest("button"); if (!t) return;
       if (t.dataset.goto !== undefined) { const k = +t.dataset.goto; if (ST.game) { ST.line = ST.game.moves.slice(); } goTo(k); analyze(true); return; }
-      if (t.dataset.term !== undefined) { const [w, a] = TERMS[+t.dataset.term]; bubble(esc(w) + " คืออะไร?", "me"); say(a); return; }
       const act = t.dataset.act; if (!act) return;
       const label = t.textContent;
       if (act !== "back" && act !== "last" && !act.startsWith("new")) bubble(esc(label), "me");
       if (act === "go") analyze(true);
-      else if (act === "terms") say(`อยากรู้คำไหนครับ<div class="an-list">${TERMS.map(([w], i) => `<button class="an-chip" data-term="${i}">${esc(w)}</button>`).join("")}</div>`);
       else if (act === "why") explainWhy();
+      else if (act === "deep") { ST.deep = (ST.deep || 1) * 2; ST.res = null; analyze(true); }
       else if (act.startsWith("cand")) explainCand(+act.slice(4));
       else if (act === "tried") { const m = ST.line[ST.at - 1]; goTo(ST.at - 1); explainMove(m, false, true); }
       else if (act === "pv") showPv();
