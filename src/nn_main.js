@@ -1249,10 +1249,18 @@
     unlockAudio(); tune(BUTTON_TUNES[b.id] || (b.id === "btnSound" ? [] : [[700, 0]]));
   }, true);
   $("faces").innerHTML = PICK.map(i => `<button data-i="${i}" aria-label="${CHARS[i].name}"><img src="chars/${CHARS[i].id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  // examMode: the same screen opened from RANK TEST on the main menu, showing Hikaru's card alone
+  let examMode = false;
+  const EXAM_I = CHARS.findIndex(c => c.exam);
   function syncChars(anim) {
-    if (!PICK.includes(settings.char)) settings.char = PICK[0];
+    if (examMode) settings.char = EXAM_I;
+    else if (!PICK.includes(settings.char)) settings.char = PICK[0];
     const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
-    charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
+    $("home").querySelector(".px-title").textContent = examMode ? "Rank Test" : "Character Select";
+    $("faces").hidden = examMode;
+    charsEl.classList.toggle("solo", examMode);
+    $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
+    charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
       <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
@@ -1264,7 +1272,7 @@
     $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : "GAME START";
   }
   function choose(i) { unlockAudio(); settings.char = i; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
-  const step = d => choose(PICK[(PICK.indexOf(settings.char) + d + L8) % L8]);
+  const step = d => examMode || choose(PICK[(PICK.indexOf(settings.char) + d + L8) % L8]);
   charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) step(+b.dataset.go); });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;
@@ -1283,7 +1291,7 @@
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
-  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function showHome(exam) { examMode = exam === true; cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
@@ -1338,7 +1346,7 @@
     if (go === "play") { showHome(); window.scrollTo(0, 0); }
     else if (go === "profile") showProfile();
     else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
-    else if (go === "exam") { hideScreens(); settings.char = CHARS.findIndex(c => c.exam); startGame(); } // 19x19, the colour last picked on the character select
+    else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
