@@ -303,10 +303,10 @@
   // divided by the graded moves; lower is stronger), measured 2026-10-29 against Hikaru's even-score play.
   const EXAM_CALIB = [{ id: "mek", avg: 1.39 }, { id: "win", avg: 1.01 }, { id: "yuto", avg: 0.43 }, { id: "chris", avg: 0.27 }, { id: "tora", avg: 0.13 }, { id: "kan", avg: 0.03 }];
   // Rank bands set by the site owner (2026-10-29) on top of those measurements: about two steps easier than the
-  // characters' own levels, narrow steps through 13-7 kyu, 3-1 kyu and 1-2 dan, wider jumps to 3 and 4 dan, and 5 dan
-  // hard to reach. Each entry: a score below "under" reads as "rank" (1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...).
+  // characters' own levels, narrow steps through 13-7 kyu and 3-2 kyu, clear gaps between 1 kyu and
+  // 1 dan and between 2 and 3 dan, wider jumps to 3 and 4 dan, and 5 dan hard to reach. Each entry: a score below "under" reads as "rank" (1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...).
   const EXAM_BANDS = [
-    [0.12, 5], [0.24, 4], [0.30, 3], [0.33, 2], [0.36, 1], [0.40, 0], [0.44, -1], [0.50, -2], [0.70, -3], [0.88, -4],
+    [0.10, 5], [0.18, 4], [0.24, 3], [0.30, 2], [0.33, 1], [0.40, 0], [0.44, -1], [0.50, -2], [0.70, -3], [0.88, -4],
     [1.04, -5], [1.08, -6], [1.12, -7], [1.16, -8], [1.20, -9], [1.24, -10], [1.28, -11], [Infinity, -12]
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
