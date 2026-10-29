@@ -805,7 +805,7 @@
     let res;
     try {
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-        batch: evalMs > 300 ? 2 : 8, earlyStop: true, shouldStop: () => my !== gen,
+        batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
       }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), give: examGive() }));
       engineRetries = 0;

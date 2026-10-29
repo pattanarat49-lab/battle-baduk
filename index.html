@@ -1214,7 +1214,8 @@ function GoNNAI(E, F, net) {
     // the player passed in the late game: they consider it finished, so end it and count
     if (moves.length > 100 && moves[moves.length - 1] === PASS) { s.move = PASS; return s; }
     if (s.move === PASS || s.top.length < 2) return s;
-    const base = new Board(n), target = opts.target || 0.5;
+    // Hikaru keeps a small cushion (3 points) instead of steering to an exact tie, so one good player move doesn't put it behind
+    const base = new Board(n), target = opts.target || 3;
     const natural = c => {
       // opening: only standard joseki-level moves; later any move the network gives at least 0.5%
       if (c.move === PASS || c.prior < (moves.length < 40 ? 0.08 : 0.005)) return false;
@@ -1233,6 +1234,18 @@ function GoNNAI(E, F, net) {
     // lead, conceding at most 5 points a move. A move giving away more than 10 points must be one the network
     // itself likes (2%+), such as a solid move elsewhere instead of a kill, never an odd-looking blunder.
     let pick = cands[0];
+    // close or behind: no concessions, and among the moves the search rates about as well, take the one worth the most
+    // points (the biggest point on the board), so a lead the player has built is cut back quickly
+    if (pick.leadAfter < target + 1) {
+      const top = s.top.filter(t => t.move !== PASS && t.visits >= s.top[0].visits * 0.25 && t.winrate >= s.top[0].winrate - 0.03);
+      if (top.length > 1) {
+        const evt = await evalMany(n, top.map(t => moves.concat([t.move])), komi);
+        let bi = 0; evt.forEach((e, i) => { if (-e.lead > -evt[bi].lead) bi = i; });
+        s.move = top[bi].move;
+      }
+      s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
+      return s;
+    }
     const ahead = pick.leadAfter - target, random = (opts.give || 0) > 6;
     if (ahead > 1) {
       const want = random ? Math.min(5, ahead, Math.max(opts.give, ahead / 8)) : Math.min(ahead, Math.max(2, ahead * 0.6));
@@ -2070,7 +2083,7 @@ function GoNNAI(E, F, net) {
     let res;
     try {
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-        batch: evalMs > 300 ? 2 : 8, earlyStop: true, shouldStop: () => my !== gen,
+        batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
       }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), give: examGive() }));
       engineRetries = 0;
