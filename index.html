@@ -1205,27 +1205,29 @@ function GoNNAI(E, F, net) {
     if (s.move === PASS || s.top.length < 2) return s;
     const base = new Board(n), target = opts.target || 0.5;
     const natural = c => {
-      // opening: only standard joseki-level moves; later any move the network rates at 2% or more
-      if (c.move === PASS || c.prior < (moves.length < 40 ? 0.08 : 0.02)) return false;
+      // opening: only standard joseki-level moves; later any move the network gives at least 0.5%
+      if (c.move === PASS || c.prior < (moves.length < 40 ? 0.08 : 0.005)) return false;
       const [x, y] = base.xy(c.move), i = y * 19 + x;
       return !(onEdge(n, i) && c.prior < EDGE_NEED) && !(s.own[i] > 0.8 && c.prior < 0.1);
     };
-    // candidates: the searched best plus every move the network gives at least 1% (up to 12)
+    // candidates: the searched best plus the network's 24 favourite moves that pass the filter above
     const ev0 = await evaluate(n, moves, komi), cands = [s.top[0]];
-    const order = []; for (let i = 0; i < AREA; i++) if (ev0.policy[i] >= 0.01) order.push(i);
+    const order = []; for (let i = 0; i < AREA; i++) if (ev0.policy[i] >= 0.005) order.push(i);
     order.sort((a, b) => ev0.policy[b] - ev0.policy[a]);
-    for (const i of order.slice(0, 12)) { const c = { move: slotToPoint(base, i), prior: ev0.policy[i] }; if (c.move !== cands[0].move && natural(c)) cands.push(c); }
+    for (const i of order.slice(0, 24)) { const c = { move: slotToPoint(base, i), prior: ev0.policy[i] }; if (c.move !== cands[0].move && natural(c)) cands.push(c); }
     const evs = await evalMany(n, cands.map(c => moves.concat([c.move])), komi);
     cands.forEach((c, i) => { c.leadAfter = -evs[i].lead; });
-    // ahead: give back about as many points per move as the player has been losing (opts.give), a little more when far
-    // ahead, but never more than 5 points in one move, so every move Hikaru plays would still grade Normal or better
+    // ahead: steer the score back towards even with natural moves, so the player keeps a real game to be measured in.
+    // Only against a player losing more than 6 points a move (opts.give, close to random play) does Hikaru keep a
+    // lead, conceding at most 5 points a move. A move giving away more than 10 points must be one the network
+    // itself likes (2%+), such as a solid move elsewhere instead of a kill, never an odd-looking blunder.
     let pick = cands[0];
-    const ahead = pick.leadAfter - target;
+    const ahead = pick.leadAfter - target, random = (opts.give || 0) > 6;
     if (ahead > 1) {
-      const want = Math.min(5, ahead, Math.max(opts.give || 2, ahead / 8));
+      const want = random ? Math.min(5, ahead, Math.max(opts.give, ahead / 8)) : Math.min(ahead, Math.max(2, ahead * 0.6));
       for (const c of cands) {
         const loss = cands[0].leadAfter - c.leadAfter;
-        if (c.leadAfter >= target && loss <= want + 0.5 && loss > cands[0].leadAfter - pick.leadAfter) pick = c;
+        if (c.leadAfter >= target && loss <= want + 0.5 && (loss <= 10 || c.prior >= 0.02) && loss > cands[0].leadAfter - pick.leadAfter) pick = c;
       }
     }
     s.move = pick.move; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
