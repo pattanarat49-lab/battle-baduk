@@ -289,7 +289,14 @@ function GoNNAI(E, F, net) {
   // Hikaru's lead right after its previous move, to tell how many points the player's reply gave away
   let lastTeach = null;
   async function teach(n, moves, komi, opts) {
-    const s = await think(n, moves, komi, opts);
+    const t0 = performance.now();
+    let s = await think(n, moves, komi, opts);
+    // a hard move: the player's reply cut Hikaru's lead by 2+ points, or Hikaru is behind after the opening. Read it again with the
+    // rest of opts.hardMs (a fight Hikaru misjudged at normal speed is what lets a player run away with the game)
+    const drop = lastTeach && lastTeach.len === moves.length - 1 ? lastTeach.lead - s.searchLead : 0;
+    const more = (opts.hardMs || 0) - (performance.now() - t0);
+    if (more > 2000 && (drop >= 2 || (moves.length >= 40 && s.searchLead < -2)) && !(opts.shouldStop && opts.shouldStop()))
+      s = await think(n, moves, komi, Object.assign({}, opts, { timeMs: more, earlyStop: false, visits: (opts.visits || 2500) * 3 }));
     // the player passed in the late game: they consider it finished, so end it and count
     if (moves.length > 100 && moves[moves.length - 1] === PASS) { s.move = PASS; return s; }
     if (s.move === PASS || s.top.length < 2) return s;
