@@ -4,6 +4,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@900&family=Pixelify+Sans:wght@700&family=Noto+Serif+Thai:wght@500;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
+/* Pixelify Sans digits with a redrawn 5 (the stock one reads as 8 or S); OFL, renamed per licence. */
+@font-face { font-family: "PxDigits"; font-weight: 100 900; font-display: block; unicode-range: U+0030-0039;
+  src: url(data:font/woff2;base64,d09GMgABAAAAAAM8AA4AAAAAB2AAAALkAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGyAcKgZgP1NUQVQqADQRCAqFMIQkATYCJAMeCxgABCAFg1oHIBvFBSguBuymY2qqYqKij22HNJ9Nh9KUfy745x17vS/JpyRlUD1VBENGCwAWUFVW7UxWyCFZAv9pbtvQRCb+infTRIZ854+Zt4DwvP+3+/ZnqQaaWB55ap0ginhXtzbrqAmwgF7BsN3ZxSyKfrrwLtJQvqf/5Wqrzv819d86nlcRTHxiF6ukKowISqDhwDacJg28MAAH1DwIt4ZICH3aiDA9ZawVPfo8uygCXqVq2kfmBQw5wH8AQMCrU8+g5UbnkqaGMYWodTXO9JDAvsTMwPGyjH4tfhFdgX90fHf406TPuvzvA+ytABBAb/UAtSyRNIFCApXMtapqHAAzg+9HAgMsKGQJFHJqgeMI9BmgacxDAERDDoAAoBjkgyfADwBwAAxDRMyWY5l2UWsqK2O6sNDFBbiTzEjlJJdmJeIMeRuURSjP0s36GQmPT1AgNIBkVR2GgCcCdG8eIRHBibMkEVUVtzLIY5xK2SyiCWOABB/fgIMI5ZeQs4wuRgifGbMBgYJdj7PsROa1nTrod+Rx3uPsmymaKbege+jV8MMXT/OhTQbamvYVPVyo3a9WEK27BNWeVzRZQbLYavpHdYj5wjlP+tHHL0suJkah1bL0VW88QR5tKM1n+aCmj/TGSZoJ/xYcC4zghsHBmCLh7MvR0A/fovdi9hmdxufdGAAB4dIj5+Eir/9X19oPgJc1RQDv0+s2wm4y28xNJMkAED65y3yEYsAMXGJ27cblNY9d7jLgMEifIhBUsgBEDnkHdagzQDdUZJKrW2akPZZZ5XohR3wHEswwnITSbB0p1xLETPbKGV97mFiilQHDKpAWTVo0qzWdpZDJoKEEQGuRaZhIDpozsTdFWKwbolSwYhmy1lvXFhK5tUZNWAXsn0vc0jKx0MoKoCmFxsqXvIAm6cYVzFbPncUCsjndopAp8KTCrodYhDRr0KQDozdvI2QgsREtbQPr8rH7jZVJ7h5e1Ht6O0Tf/2sBAAAA) format("woff2"); }
 /* One deliberate theme in both modes: the deep teal of the character portraits with go-board wood as the accent. */
 :root {
   --bg: #15333a; --bg-2: #1b424a; --surface: #20474f; --surface-2: #285660; --fg: #f3ead8; --muted: #b3c8c5;
@@ -13,7 +16,7 @@
   --f-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --f-logo: "Londrina Solid", "Impact", var(--f-display);
-  --f-px: "Pixelify Sans", "Courier New", monospace;
+  --f-px: "PxDigits", "Pixelify Sans", "Courier New", monospace;
   color-scheme: dark;
 }
 html, body { min-height: 100%; }
