@@ -1554,10 +1554,11 @@ function GoNNAI(E, F, net) {
   // Placement-test calibration: share of moves that were not "Best" for each character in teaching games
   // against Hikaru (24 distinct arena games, 2026-10-28). rank scale: 1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...
   // Chris and Weiqi measured alike, so they share one point; the grader cannot separate anything above about 5 dan.
+  // measured 2026-10-29 with Hikaru's even-score play: share of non-Best moves each character played against him
   const EXAM_CALIB = [
-    { id: "mek", rank: -14, avg: 60, label: "15 คิว" }, { id: "win", rank: -7, avg: 57, label: "8 คิว" },
-    { id: "yuto", rank: -4, avg: 39, label: "5 คิว" }, { id: "chris", rank: 2, avg: 21.5, label: "1–3 ดั้ง" },
-    { id: "tora", rank: 4, avg: 13, label: "4 ดั้ง" }, { id: "kan", rank: 5, avg: 5, label: "5 ดั้ง" }
+    { id: "mek", rank: -14, avg: 60, label: "15 คิว" }, { id: "win", rank: -7, avg: 44, label: "8 คิว" },
+    { id: "yuto", rank: -4, avg: 21, label: "5 คิว" }, { id: "chris", rank: 1, avg: 15, label: "1 ดั้ง" },
+    { id: "tora", rank: 4, avg: 7.6, label: "4 ดั้ง" }, { id: "kan", rank: 5, avg: 3.7, label: "5 ดั้ง" }
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
   function rankName(v) {
@@ -2023,7 +2024,7 @@ function GoNNAI(E, F, net) {
     reactTo(res);
     // resign once the player's winning chance has been 99% or more for 5 AI moves in a row
     hopeless = res.winrate <= 0.01 ? hopeless + 1 : 0;
-    if (hopeless >= 5) {
+    if (hopeless >= 5 && !exam) { // the examiner plays on so the player is graded to the end
       over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("giveUp", { force: true }); reportEnd(true, "resign"); render(); return;
     }
     playMove(res.move);
