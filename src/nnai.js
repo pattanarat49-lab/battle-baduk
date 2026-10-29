@@ -286,6 +286,8 @@ function GoNNAI(E, F, net) {
 
   // Teaching game: read as usual; when clearly ahead, give back points with the smallest natural concession,
   // a move strong players would consider (never a first-line or own-territory filler), so the game stays close.
+  // Hikaru's lead right after its previous move, to tell how many points the player's reply gave away
+  let lastTeach = null;
   async function teach(n, moves, komi, opts) {
     const s = await think(n, moves, komi, opts);
     // the player passed in the late game: they consider it finished, so end it and count
@@ -306,28 +308,29 @@ function GoNNAI(E, F, net) {
     for (const i of order.slice(0, 24)) { const c = { move: slotToPoint(base, i), prior: ev0.policy[i] }; if (c.move !== cands[0].move && natural(c)) cands.push(c); }
     const evs = await evalMany(n, cands.map(c => moves.concat([c.move])), komi);
     cands.forEach((c, i) => { c.leadAfter = -evs[i].lead; });
-    // ahead: steer the score back towards even with natural moves, so the player keeps a real game to be measured in.
-    // Only against a player losing more than 6 points a move (opts.give, close to random play) does Hikaru keep a
-    // lead, conceding at most 5 points a move. A move giving away more than 10 points must be one the network
-    // itself likes (2%+), such as a solid move elsewhere instead of a kill, never an odd-looking blunder.
+    // ahead: steer the score back towards even with natural moves, so the player keeps a real game to be measured in
     let pick = cands[0];
-    // close or behind: no concessions, and among the moves the search rates about as well, take the one worth the most
-    // points (the biggest point on the board), so a lead the player has built is cut back quickly
-    if (pick.leadAfter < target + 1) {
-      const top = s.top.filter(t => t.move !== PASS && t.visits >= s.top[0].visits * 0.25 && t.winrate >= s.top[0].winrate - 0.03);
-      if (top.length > 1) {
-        const evt = await evalMany(n, top.map(t => moves.concat([t.move])), komi);
-        let bi = 0; evt.forEach((e, i) => { if (-e.lead > -evt[bi].lead) bi = i; });
-        s.move = top[bi].move;
-      }
-      s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
-      return s;
-    }
-    const ahead = pick.leadAfter - target, random = (opts.give || 0) > 6;
-    if (ahead > 1) {
-      const want = random ? Math.min(5, ahead, Math.max(opts.give, ahead / 8)) : Math.min(ahead, Math.max(2, ahead * 0.6));
-      const ok = cands.filter((c, i) => i > 0 && c.leadAfter >= target && cands[0].leadAfter - c.leadAfter <= want + 0.5 &&
-        (cands[0].leadAfter - c.leadAfter <= 10 || c.prior >= 0.02)).sort((a, b) => a.leadAfter - b.leadAfter);
+    // close or behind: no concessions, play the move the search read best (a one-look pick for points can walk into a cut
+    // or a capture)
+    // points given back only as far as the player's last move just lost them: against a player who has not made a
+    // mistake Hikaru plays its best (the site owner: never go soft on a player who is playing well)
+    const gain = lastTeach && lastTeach.len === moves.length - 1 ? pick.leadAfter - lastTeach.lead : 0;
+    const done = () => { lastTeach = { len: moves.length + 1, lead: pick.leadAfter }; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter })); return s; };
+    if (pick.leadAfter < target + 1) return done();
+    const ahead = pick.leadAfter - target;
+    if (ahead > 1 && gain >= 1.5) {
+      // points go back a little at a time (at most 4 a move), never by giving up stones: a concession that leaves any of
+      // Hikaru's groups in atari is not one (the site owner: Hikaru must never let itself be captured)
+      const want = Math.min(4, ahead, gain);
+      const now = new Board(n); for (const m of moves) now.play(m);
+      const me = now.toPlay;
+      const safe = c => {
+        const b = new Board(n); b.copyFrom(now); b.play(c.move);
+        for (const p of b.pts) if (b.color[p] === me && b.libs(b.head[p], 2) < 2) return false;
+        return true;
+      };
+      const ok = cands.filter((c, i) => i > 0 && c.leadAfter >= target && cands[0].leadAfter - c.leadAfter <= want + 0.5 && safe(c))
+        .sort((a, b) => a.leadAfter - b.leadAfter);
       if (ok.length) {
         // the network's first look can miss a tactic (a group left in atari, a cut): check the player's likeliest replies
         // to each concession and keep it only if it still costs about what was meant, otherwise try a smaller one
@@ -346,8 +349,8 @@ function GoNNAI(E, F, net) {
         }
       }
     }
-    s.move = pick.move; s.teach = cands.map(c => ({ move: c.move, lead: c.leadAfter }));
-    return s;
+    s.move = pick.move;
+    return done();
   }
   // Grade a move: points it gives up against the best move found by a search of the position before it.
   // Grade a move by the points it gives up: the positions after the best move and after the played move

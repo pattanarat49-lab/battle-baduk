@@ -334,7 +334,7 @@
   if (!CHARS[settings.char]) settings.char = 5;
   const KOMI = 7.5;
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
-  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0;
+  let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0, examBehind = 0;
   let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
   let AI = null, gen = 0, engineReady = false;
 
@@ -613,7 +613,7 @@
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
-    speak("hello", { force: true }); hopeless = 0;
+    speak("hello", { force: true }); hopeless = 0; examBehind = 0;
     gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
     saveGame();
     resize(); render(); maybeAI(); startPonder();
@@ -715,7 +715,7 @@
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
-    saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0;
+    saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
     gameId = g.gameId || rid(); gameReported = false;
     $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
@@ -847,6 +847,13 @@
     hopeless = res.winrate <= 0.01 ? hopeless + 1 : 0;
     if (hopeless >= 5 && !exam) { // the examiner plays on so the player is graded to the end
       over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("giveUp", { force: true }); reportEnd(true, "resign"); render(); return;
+    }
+    // the examiner resigns once the player leads by more than 30 points after move 100, twice in a row, and grades them
+    const behind = ai === BLACK ? -leadBlack : leadBlack;
+    examBehind = exam && history.length >= 100 && behind > 30 ? examBehind + 1 : 0;
+    if (examBehind >= 2) {
+      exam.margin = Math.round(behind);
+      over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: `คุณนำอยู่ราว ${Math.round(behind)} แต้ม` }; speak("giveUp", { force: true }); reportEnd(true, "resign"); render(); return;
     }
     playMove(res.move);
   }
@@ -1065,8 +1072,9 @@
     for (const g of gs) { cnt[g.cls]++; sum += Math.min(g.loss, 20); }
     if (!gs.length) return { graded: 0, cnt, avg: 0, notBest: 0, score: 0, est: null };
     const notBest = 100 * (gs.length - cnt.best) / gs.length, score = (cnt.good + 2 * cnt.normal + 3 * cnt.bad) / gs.length;
-    // beating Hikaru adds a rank, two when the count gives the player 10 points or more (site owner's choice, 2026-10-29)
-    const bonus = ex.won ? (ex.how === "score" && ex.margin >= 10 ? 2 : 1) : 0;
+    // beating Hikaru adds a rank, two when the player won by 10 points or more on the count or when Hikaru resigned 30+
+    // behind (site owner's choice, 2026-10-29)
+    const bonus = ex.won ? (ex.margin >= 10 ? 2 : 1) : 0;
     const top = Math.max(...EXAM_CALIB.map(c => c.rank));
     return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus,
       est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(top, estimateRank(score) + bonus) : null };
@@ -1080,7 +1088,7 @@
     const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
     const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - score) < Math.abs(a.avg - score) ? b : a) : null;
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
-      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${bonus ? `รวมโบนัสชนะฮิคารุ +${bonus} ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
+      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${bonus ? `รวมโบนัสชนะฮิคารุ +${bonus} ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" && !exam.won ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
       <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${near.label})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
