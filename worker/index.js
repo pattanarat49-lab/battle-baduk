@@ -104,7 +104,9 @@ function cleanState(s) {
   const clock = c => Array.isArray(c) && c.length === 3 ? [int(c[0], 0, 3600), int(c[1], 0, 9), int(c[2], 0, 60)] : null;
   return { size: s.size, board: s.board, last: int(s.last, -1, 360), moveNo: int(s.moveNo, 0, 2000), toPlay: s.toPlay === 2 ? 2 : 1, human: s.human === 2 ? 2 : 1,
     caps: Array.isArray(s.caps) ? [int(s.caps[0], 0, 400), int(s.caps[1], 0, 400)] : [0, 0],
-    clocks: Array.isArray(s.clocks) && s.clocks.length === 2 ? [clock(s.clocks[0]), clock(s.clocks[1])] : null, winB: int(s.winB, 0, 100) };
+    clocks: Array.isArray(s.clocks) && s.clocks.length === 2 ? [clock(s.clocks[0]), clock(s.clocks[1])] : null, winB: int(s.winB, 0, 100),
+    leadB: typeof s.leadB === "number" && Math.abs(s.leadB) <= 400 ? Math.round(s.leadB * 10) / 10 : null,
+    moves: Array.isArray(s.moves) && s.moves.length <= 1000 && s.moves.every(m => Number.isInteger(m) && m >= -1 && m < s.size * s.size) ? s.moves : null };
 }
 
 function clean(b) {

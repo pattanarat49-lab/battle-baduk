@@ -1844,7 +1844,7 @@ function GoNNAI(E, F, net) {
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
-  // the position as spectators on /watch see it
+  // the position as spectators on /watch see it, with the moves so far for stepping back through the game
   function snapshot() {
     let b = "";
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const c = board.color[board.pt(x, y)]; b += c === BLACK ? "b" : c === WHITE ? "w" : "."; }
@@ -1852,7 +1852,8 @@ function GoNNAI(E, F, net) {
     const lastIdx = last === PASS ? -1 : (([x, y]) => y * n + x)(board.xy(last));
     const ck = c => [Math.round(c.main), c.per, Math.round(c.byo)];
     return { size: n, board: b, last: lastIdx, moveNo: history.length, toPlay: board.toPlay, human,
-      caps: [board.caps[BLACK], board.caps[WHITE]], clocks: clocks ? [ck(clocks[BLACK]), ck(clocks[WHITE])] : null, winB: Math.round(winBlack * 100) };
+      caps: [board.caps[BLACK], board.caps[WHITE]], clocks: clocks ? [ck(clocks[BLACK]), ck(clocks[WHITE])] : null, winB: Math.round(winBlack * 100),
+      leadB: Math.round(leadBlack * 10) / 10, moves: history.map(m => m === PASS ? -1 : (([x, y]) => y * n + x)(board.xy(m))) };
   }
 
   // ---------- game flow ----------
