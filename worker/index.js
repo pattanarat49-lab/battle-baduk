@@ -29,15 +29,55 @@ export class Stats extends DurableObject {
       graded INTEGER, not_best REAL, rank REAL)`);
     // each cancel bumps this number; open games that see it change stop and apologise
     this.sql.exec("CREATE TABLE IF NOT EXISTS cancels (n INTEGER PRIMARY KEY, at INTEGER)");
-    // indexes keep the per-move cleanup and the live list from reading every row (Cloudflare bills rows read)
-    this.sql.exec("CREATE INDEX IF NOT EXISTS live_updated ON live (updated)");
+    // Cloudflare bills every row a query reads, so nothing here may scan a whole table on a regular request.
+    // live has no index on updated on purpose: every move rewrites that column, and an index would double the rows written
+    this.sql.exec("DROP INDEX IF EXISTS live_updated");
     this.sql.exec("CREATE INDEX IF NOT EXISTS games_started ON games (started)");
+    this.sql.exec("CREATE INDEX IF NOT EXISTS exams_ended ON exams (ended)");
+    // running totals for the stats page, kept up to date as games start and end; char '' is the all-characters total
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS tally (char TEXT PRIMARY KEY, games INTEGER, players INTEGER, finished INTEGER, cancelled INTEGER,
+      human_wins INTEGER, ai_wins INTEGER, resigns INTEGER, timeouts INTEGER, moves_sum INTEGER, moves_n INTEGER)`);
+    this.sql.exec("CREATE TABLE IF NOT EXISTS tally_players (player TEXT, char TEXT, PRIMARY KEY (player, char))");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS daily (day TEXT PRIMARY KEY, games INTEGER, players INTEGER)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS daily_players (player TEXT, day TEXT, PRIMARY KEY (player, day))");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS exam_tally (id INTEGER PRIMARY KEY, tests INTEGER, players INTEGER, ranked INTEGER, full INTEGER)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS exam_players (player TEXT PRIMARY KEY)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS exam_ranks (r REAL PRIMARY KEY, n INTEGER)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v INTEGER)");
+    if ((this.sql.exec("SELECT v FROM meta WHERE k = 'tally'").toArray()[0]?.v || 0) < 1) ctx.storage.transactionSync(() => this.rebuildTally());
+  }
+  // one-off upgrade of older data: fills in exam fields added later, then counts every stored game into the running totals
+  rebuildTally() {
     // games that ended before the rank threshold was lowered still get a rank from the share of non-Best moves they stored
     // average move score (Best 0, Good 1, Normal 2, Bad 3), added 2026-10-29; older rows have none
     if (!this.sql.exec("PRAGMA table_info(exams)").toArray().some(c => c.name === "score")) this.sql.exec("ALTER TABLE exams ADD COLUMN score REAL");
     for (const r of this.sql.exec("SELECT game, not_best FROM exams WHERE rank IS NULL AND graded >= 20 AND moves >= 100 AND not_best IS NOT NULL").toArray())
       this.sql.exec("UPDATE exams SET rank = ? WHERE game = ?", Math.round(estimateRankOld(r.not_best) * 10) / 10, r.game);
+    for (const t of ["tally", "tally_players", "daily", "daily_players", "exam_tally", "exam_players", "exam_ranks"]) this.sql.exec(`DELETE FROM ${t}`);
+    const sums = `COUNT(*), COUNT(DISTINCT player), COALESCE(SUM(ended IS NOT NULL AND how != 'cancel'), 0), COALESCE(SUM(how = 'cancel'), 0),
+      COALESCE(SUM(winner = 'human'), 0), COALESCE(SUM(winner = 'ai'), 0), COALESCE(SUM(how = 'resign'), 0), COALESCE(SUM(how = 'timeout'), 0),
+      COALESCE(SUM(moves), 0), COUNT(moves) FROM games`;
+    this.sql.exec(`INSERT INTO tally SELECT char, ${sums} GROUP BY char`);
+    this.sql.exec(`INSERT INTO tally SELECT '', ${sums}`);
+    this.sql.exec("INSERT OR IGNORE INTO tally_players SELECT DISTINCT player, char FROM games");
+    this.sql.exec("INSERT OR IGNORE INTO tally_players SELECT DISTINCT player, '' FROM games");
+    this.sql.exec(`INSERT INTO daily SELECT ${DAY_SQL} AS day, COUNT(*), COUNT(DISTINCT player) FROM games GROUP BY day`);
+    this.sql.exec(`INSERT OR IGNORE INTO daily_players SELECT DISTINCT player, ${DAY_SQL} FROM games`);
+    this.sql.exec(`INSERT INTO exam_tally SELECT 1, COUNT(*), COUNT(DISTINCT player), COALESCE(SUM(rank IS NOT NULL), 0), COALESCE(SUM(rank IS NOT NULL AND how = 'score'), 0) FROM exams`);
+    this.sql.exec("INSERT OR IGNORE INTO exam_players SELECT DISTINCT player FROM exams");
+    this.sql.exec("INSERT INTO exam_ranks SELECT ROUND(rank) AS r, COUNT(*) FROM exams WHERE rank IS NOT NULL GROUP BY r");
+    this.sql.exec("INSERT INTO meta (k, v) VALUES ('tally', 1) ON CONFLICT(k) DO UPDATE SET v = 1");
   }
+  // adds to a character's totals and to the all-characters row
+  bump(char, cols) {
+    const set = Object.keys(cols).map(c => `${c} = ${c} + ?`).join(", "), vals = Object.values(cols);
+    for (const c of [char, ""]) {
+      this.sql.exec("INSERT OR IGNORE INTO tally VALUES (?, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)", c);
+      this.sql.exec(`UPDATE tally SET ${set} WHERE char = ?`, ...vals, c);
+    }
+  }
+  // true when this is the first time the row goes in
+  firstTime(sql, ...args) { return this.sql.exec(sql, ...args).rowsWritten > 0; }
   // latest position of a game, kept for spectators; old rows are dropped as new ones arrive
   saveState(e, ended) {
     if (!e.state) return;
@@ -64,7 +104,10 @@ export class Stats extends DurableObject {
     const now = Date.now();
     this.sql.exec("INSERT INTO cancels (at) VALUES (?)", now);
     // games started in the last 6 hours; older unfinished ones were closed long ago
-    const n = this.sql.exec("UPDATE games SET ended = ?, how = 'cancel' WHERE ended IS NULL AND started >= ?", now, now - 6 * 36e5).rowsWritten;
+    const open = this.sql.exec("SELECT char, COUNT(*) AS n FROM games WHERE started >= ? AND ended IS NULL GROUP BY char", now - 6 * 36e5).toArray();
+    this.sql.exec("UPDATE games SET ended = ?, how = 'cancel' WHERE ended IS NULL AND started >= ?", now, now - 6 * 36e5);
+    for (const o of open) this.bump(o.char, { cancelled: o.n });
+    const n = open.reduce((a, o) => a + o.n, 0);
     this.sql.exec("UPDATE live SET ended = ? WHERE ended IS NULL AND game IN (SELECT id FROM games WHERE how = 'cancel')", now);
     return { n: this.cancelNo(), cancelled: n };
   }
@@ -73,19 +116,35 @@ export class Stats extends DurableObject {
     if (e.type === "move") { this.saveState(e, false); return; }
     if (e.type === "start") {
       this.saveState(e, false);
-      this.sql.exec("INSERT OR IGNORE INTO games (id, player, char, size, color, started) VALUES (?, ?, ?, ?, ?, ?)",
-        e.game, e.player, e.char, e.size, e.color, now);
+      if (!this.firstTime("INSERT OR IGNORE INTO games (id, player, char, size, color, started) VALUES (?, ?, ?, ?, ?, ?)",
+        e.game, e.player, e.char, e.size, e.color, now)) return;
+      this.bump(e.char, { games: 1 });
+      for (const c of [e.char, ""])
+        if (this.firstTime("INSERT OR IGNORE INTO tally_players VALUES (?, ?)", e.player, c)) this.sql.exec("UPDATE tally SET players = players + 1 WHERE char = ?", c);
+      const day = thaiDay(now);
+      this.sql.exec("INSERT INTO daily VALUES (?, 1, 0) ON CONFLICT(day) DO UPDATE SET games = games + 1", day);
+      if (this.firstTime("INSERT OR IGNORE INTO daily_players VALUES (?, ?)", e.player, day)) this.sql.exec("UPDATE daily SET players = players + 1 WHERE day = ?", day);
     } else {
       this.saveState(e, true);
       // only the first result of a game counts
-      this.sql.exec("UPDATE games SET ended = ?, winner = ?, how = ?, moves = ? WHERE id = ? AND ended IS NULL",
-        now, e.winner, e.how, e.moves, e.game);
-      const cancelled = this.sql.exec("SELECT how FROM games WHERE id = ?", e.game).toArray()[0]?.how === "cancel";
-      if (e.exam && !cancelled) this.sql.exec("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank, e.exam.score);
+      const g = this.sql.exec("SELECT char, ended, how FROM games WHERE id = ?", e.game).toArray()[0];
+      if (g && g.ended === null) {
+        this.sql.exec("UPDATE games SET ended = ?, winner = ?, how = ?, moves = ? WHERE id = ?", now, e.winner, e.how, e.moves, e.game);
+        this.bump(g.char, { finished: 1, human_wins: +(e.winner === "human"), ai_wins: +(e.winner === "ai"), resigns: +(e.how === "resign"),
+          timeouts: +(e.how === "timeout"), moves_sum: e.moves ?? 0, moves_n: +(e.moves !== null) });
+      }
+      const cancelled = g?.how === "cancel";
+      if (e.exam && !cancelled && this.firstTime("INSERT OR IGNORE INTO exams (game, player, ended, how, moves, graded, not_best, rank, score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        e.game, e.player, now, e.how, e.moves, e.exam.graded, e.exam.notBest, e.exam.rank, e.exam.score)) {
+        const ranked = e.exam.rank !== null;
+        this.sql.exec("INSERT OR IGNORE INTO exam_tally VALUES (1, 0, 0, 0, 0)");
+        this.sql.exec("UPDATE exam_tally SET tests = tests + 1, ranked = ranked + ?, full = full + ? WHERE id = 1", +ranked, +(ranked && e.how === "score"));
+        if (this.firstTime("INSERT OR IGNORE INTO exam_players VALUES (?)", e.player)) this.sql.exec("UPDATE exam_tally SET players = players + 1 WHERE id = 1");
+        if (ranked) this.sql.exec("INSERT INTO exam_ranks VALUES (ROUND(?), 1) ON CONFLICT(r) DO UPDATE SET n = n + 1", e.exam.rank);
+      }
     }
   }
-  // the stats page reads the whole games table, so one answer serves every visitor for a minute
+  // one answer serves every visitor for a minute
   summary() {
     if (this.sumCache && Date.now() - this.sumCache.at < 6e4) return this.sumCache.s;
     const s = this.summaryNow();
@@ -93,21 +152,19 @@ export class Stats extends DurableObject {
     return s;
   }
   summaryNow() {
-    const rows = this.sql.exec(`SELECT char, COUNT(*) AS games, COUNT(DISTINCT player) AS players,
-        SUM(ended IS NOT NULL AND how != 'cancel') AS finished, SUM(how = 'cancel') AS cancelled, SUM(winner = 'human') AS human_wins, SUM(winner = 'ai') AS ai_wins,
-        SUM(how = 'resign') AS resigns, SUM(how = 'timeout') AS timeouts, AVG(moves) AS avg_moves
-      FROM games GROUP BY char`).toArray();
-    const total = this.sql.exec("SELECT COUNT(*) AS games, COUNT(DISTINCT player) AS players FROM games").one();
-    const since = Date.now() - 14 * 864e5;
-    const days = this.sql.exec(`SELECT date(started / 1000, 'unixepoch', '+7 hours') AS day, COUNT(*) AS games, COUNT(DISTINCT player) AS players
-      FROM games WHERE started >= ? GROUP BY day ORDER BY day`, since).toArray();
-    const exams = this.sql.exec(`SELECT COUNT(*) AS tests, COUNT(DISTINCT player) AS players, SUM(rank IS NOT NULL) AS ranked,
-        SUM(rank IS NOT NULL AND how = 'score') AS full FROM exams`).one();
-    const examRanks = this.sql.exec("SELECT ROUND(rank) AS r, COUNT(*) AS n FROM exams WHERE rank IS NOT NULL GROUP BY r ORDER BY r DESC").toArray();
+    const all = this.sql.exec("SELECT * FROM tally").toArray().map(r => ({ ...r, avg_moves: r.moves_n ? r.moves_sum / r.moves_n : null }));
+    const rows = all.filter(r => r.char !== ""), total = all.find(r => r.char === "") || { games: 0, players: 0 };
+    const days = this.sql.exec("SELECT day, games, players FROM daily WHERE day >= ? ORDER BY day", thaiDay(Date.now() - 14 * 864e5)).toArray();
+    const exams = this.sql.exec("SELECT tests, players, ranked, full FROM exam_tally").toArray()[0] || { tests: 0, players: 0, ranked: 0, full: 0 };
+    const examRanks = this.sql.exec("SELECT r, n FROM exam_ranks ORDER BY r DESC").toArray();
     const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank, score FROM exams ORDER BY ended DESC LIMIT 10").toArray();
     return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent };
   }
 }
+
+// the stats page counts days in Thai time
+const thaiDay = t => new Date(t + 7 * 36e5).toISOString().slice(0, 10);
+const DAY_SQL = "date(started / 1000, 'unixepoch', '+7 hours')";
 
 // only well-formed positions are stored and shown to spectators
 function cleanState(s) {
