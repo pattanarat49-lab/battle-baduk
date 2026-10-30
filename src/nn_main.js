@@ -37,6 +37,10 @@
     { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
+    { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
+      early: { visits: 12, local: 3, temperature: 0.1, pda: 0, scoreWeight: 0 },
+      bio: "นักหมากล้อมทีมมหาวิทยาลัย เปิดเกมเรียบร้อยตามแบบ แต่พอพ้นช่วงเปิดเกมจะบุกสุดๆ ชอบตัด ชอบสู้ ไล่ฆ่ากันทั้งกระดาน",
+      say: { hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ", ahead: "สู้แบบนี้แหละที่ผมชอบ", behind: "ยังไม่จบ ตัดกลับเลย!", win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้", lose: "เก่งมาก ขอสู้อีกตาได้ไหม" } },
     { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 30 },
       bio: "ดาวรุ่งอายุน้อยจากจีน เปิดเทนเง็นทุกกระดาน บุกหนักทุกตา ไล่ฆ่าทุกกลุ่มที่เห็น",
       say: { hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่", ahead: "กลุ่มนั้นตายแล้ว", behind: "ยังไม่จบ! เดี๋ยวบุกกลับ", win: "บอกแล้วว่าไม่มีใครหนีพ้น", lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่" } },
@@ -153,6 +157,30 @@
       resigned: "ยอมแล้วเหรอ? เพิ่งจะสนุกเอง|ฮ่าๆ หนีไปซะแล้ว",
       timeoutWin: "เวลาหมดซะแล้ว มุกตลกร้ายจริงๆ|นาฬิกาก็เป็นตัวตลกได้นะ",
       giveUp: "โอเค โชว์นี้ล่มแล้ว ผมยอม|ยอมก็ได้ แต่ผมจะกลับมาพร้อมมุกใหม่"
+    },
+    jay: {
+      hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ|สวัสดีครับ วันนี้ขอสู้เต็มที่นะ|ซ้อมกับทีมมหา'ลัยมาทั้งอาทิตย์ มาลองกัน",
+      goodMove: "โห ตานี้แรงดี|ตัดได้ดีครับ ผมชอบ|เอาจริงแล้วสินะ",
+      badMove: "ตรงนั้นบางไปนะ ผมตัดแน่|ขอบคุณครับ ผมจะบุกตรงนี้เลย|ตานี้เปิดช่องให้ผมสู้แล้ว",
+      caught: "โดนไป {n} เม็ด เดี๋ยวเอาคืน|เจ็บ! แต่ศึกยังไม่จบ|โอเค เสียไปนิด ไปสู้ต่อที่อื่น",
+      capture: "จับตาย {n} เม็ด!|ศึกนี้ผมชนะ|บอกแล้วว่าผมตัดแน่",
+      ahead: "สู้แบบนี้แหละที่ผมชอบ|ศึกใหญ่ทีไร ผมได้เปรียบทุกที|เดินหน้าบุกต่อ",
+      behind: "ยังไม่จบ ตัดกลับเลย!|ต้องหาศึกใหม่แล้ว|ยิ่งตามยิ่งต้องสู้",
+      comeback: "กลับมาแล้ว! ศึกพลิกแล้ว|เห็นไหม สู้ไม่ถอยก็พลิกได้",
+      humanPass: "ผ่านเหรอ? ผมยังอยากสู้อยู่เลย|จบแล้วเหรอครับ",
+      aiPass: "ศึกจบแล้ว ผ่านครับ|ไม่มีที่ให้สู้แล้ว ผ่าน",
+      ko: "โค! มาแย่งกันเลย|ผมมีเหตุขู่เยอะนะ",
+      hint: "ดูคำใบ้ได้ แต่ศึกต้องสู้เองนะ|คำใบ้บอกให้หนีหรือให้สู้ล่ะ",
+      slow: "อ่านศึกอยู่เหรอครับ ค่อยๆ คิด|ตรงนั้นซับซ้อนจริง ผมรอได้",
+      byoyomi: "นับวินาทีแล้วนะครับ|เวลาน้อยแล้ว ระวังโดนตัด",
+      lastPeriod: "ครั้งสุดท้ายแล้ว อย่าพลาด|ตาเดียวพลาด กลุ่มอาจตายนะ",
+      aiByo: "เวลาน้อยก็ต้องสู้เร็ว|ไม่ต้องคิดนาน ตัดเลย",
+      mid: "เปิดเกมเสร็จแล้ว ได้เวลาสู้!|ตรงนี้ตัดได้นะ ระวังไว้|กลุ่มนั้นยังไม่มีตานะครับ",
+      win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้|ขอบคุณครับ ศึกดีมาก|ชนะแล้ว! ไปเล่าให้ทีมฟังดีกว่า",
+      lose: "เก่งมาก ขอสู้อีกตาได้ไหม|ผมบุกแรงเกินไปหน่อย เกมดีครับ|ยอมรับครับ คุณรับศึกได้ดีมาก",
+      resigned: "ยอมแล้วเหรอ? ศึกยังไม่จบเลย|ไว้มาสู้กันใหม่นะครับ",
+      timeoutWin: "หมดเวลาซะแล้ว น่าเสียดายศึก|เวลาหมดครับ ไว้สู้กันใหม่",
+      giveUp: "ผมสู้ไม่ไหวแล้ว ยอมครับ|ยอมครับ ศึกนี้คุณชนะ"
     },
     chris: {
       hello: "Good game ahead. เชิญเลยครับ|Shall we? ชาเย็นพร้อมแล้ว|ขอให้เป็นเกมที่มีเหตุผลนะครับ",
@@ -549,24 +577,18 @@
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
   }
-  // the site owner can cancel every game in progress from /admin; open games poll the cancel number and stop when it changes
-  const CANCEL_URL = STATS_URL && STATS_URL.replace(/event$/, "cancel");
-  let cancelSeen = null;
-  async function checkCancel() {
-    if (!CANCEL_URL) return;
-    try {
-      const n = (await (await fetch(CANCEL_URL, { cache: "no-store" })).json()).n;
-      if (typeof n !== "number") return;
-      if (cancelSeen !== null && n > cancelSeen && board && !over && !scoring && history.length) cancelGame();
-      cancelSeen = n;
-    } catch (e) {}
+  // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
+  const LIVE_EVERY = 60000;
+  let liveAt = 0, liveTimer = null;
+  function liveUpdate() {
+    if (!STATS_URL || liveTimer) return;
+    const g = gameId;
+    liveTimer = setTimeout(() => {
+      liveTimer = null;
+      if (g !== gameId || !board || over || scoring) return;
+      liveAt = Date.now(); track({ type: "move", state: snapshot() });
+    }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
-  function cancelGame() {
-    cancelAI(); gameReported = true; // the server has already ended this game
-    over = { text: "ยกเลิก ขออภัยด้วยครับ", detail: "ผู้ดูแลยกเลิกเกมนี้ชั่วคราว กด \"เล่นใหม่\" เพื่อเริ่มเกมใหม่ได้เลยครับ" };
-    render();
-  }
-  checkCancel(); setInterval(checkCancel, 30000);
   function reportEnd(humanWon, how, margin) {
     save("game", null);
     save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
@@ -626,7 +648,7 @@
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
     speak("hello", { force: true }); hopeless = 0; examBehind = 0;
-    gameId = rid(); gameReported = false; track({ type: "start", size: n, color: human, state: snapshot() });
+    gameId = rid(); gameReported = false; liveAt = Date.now(); track({ type: "start", size: n, color: human, state: snapshot() });
     saveGame();
     resize(); render(); maybeAI(); startPonder();
   }
@@ -701,7 +723,7 @@
     const mover = board.toPlay, caps = board.caps[mover];
     clockMoved(mover);
     board.play(p); history.push(p); hint = null; pending = null;
-    track({ type: "move", state: snapshot() });
+    liveUpdate();
     const took = board.caps[mover] - caps;
     if (board.passes >= 2) startScoring();
     else if (p === PASS) speak(mover === human ? "humanPass" : "aiPass", { pri: 3, gap: 8 });
@@ -839,7 +861,7 @@
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
         batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
+      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,

@@ -147,6 +147,7 @@ function GoNNAI(E, F, net) {
     s.elapsed = Date.now() - t0;
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
+    if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -187,6 +188,41 @@ function GoNNAI(E, F, net) {
     const [eb, el] = await evalMany(n, [moves.concat([s.move]), moves.concat([localMove])], komi, pdaFor);
     const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
     if (mine(el) >= mine(eb) - margin) { s.move = localMove; s.winrate = mine(el); }
+  }
+
+  // Fighting style: among the searched moves that cost at most `margin` win rate against the best, play the one that
+  // presses the opponent hardest: touching their stones, cutting two of their groups apart, leaving one short of liberties
+  function fightScore(base, p) {
+    const me = base.toPlay, op = me === E.BLACK ? E.WHITE : E.BLACK;
+    if (!base.isLegal(p, me)) return -1;
+    const near = new Set();
+    for (const d of base.dirs) { const q = p + d; if (base.color[q] === op) near.add(base.head[q]); }
+    if (!near.size) return 0;
+    const b = new Board(base.n); b.copyFrom(base); b.play(p);
+    let score = 1 + (near.size >= 2 ? 2 : 0), mine = b.libs(b.head[p], 3);
+    if (mine < 2) return 0; // a move that walks into atari is not a fight, it is a gift
+    for (const h of near) {
+      if (b.color[h] !== op) { score += 4; continue; } // captured
+      const l = b.libs(b.head[h], 3);
+      score += l === 1 ? 3 : l === 2 ? 2 : 0;
+    }
+    return score;
+  }
+  async function preferFight(n, moves, komi, base, root, s, margin, pdaFor) {
+    if (s.move === PASS || moves.length < 2) return;
+    const best = s.top[0], cands = [];
+    for (const c of s.top) {
+      if (c.move === PASS || c.visits < Math.max(2, best.visits * 0.1)) continue;
+      const f = fightScore(base, c.move);
+      if (f > 0) cands.push({ move: c.move, f });
+    }
+    const f0 = fightScore(base, s.move);
+    cands.sort((a, b) => b.f - a.f);
+    const pick = cands[0];
+    if (!pick || pick.move === s.move || pick.f <= f0) return;
+    const [eb, ef] = await evalMany(n, [moves.concat([s.move]), moves.concat([pick.move])], komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss);
+    if (mine(ef) >= mine(eb) - margin) { s.move = pick.move; s.winrate = mine(ef); }
   }
 
   // first-line points (the edge of the board) are only played when the network sees them as needed

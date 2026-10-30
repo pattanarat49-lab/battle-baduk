@@ -1,4 +1,5 @@
-// Spectator page for one game: polls /api/game every 2 seconds and redraws the board.
+// Spectator page for one game: polls /api/game every 20 seconds while the tab is visible and redraws the board.
+// The game sends its position at most once a minute, so polling faster would only spend the free daily quota.
 export const WATCH = `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Baduk Battle Live</title>
 <style>
@@ -31,7 +32,7 @@ canvas { width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cq
     <a href="/stats">← กลับไปหน้าสถิติ</a></div>
 </main>
 <script>
-const NAMES = { mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์", chris: "คริส", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", hikaru: "ฮิคารุ" };
+const NAMES = { mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์", chris: "คริส", jay: "เจ", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", hikaru: "ฮิคารุ" };
 const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 const g = new URLSearchParams(location.search).get("g");
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
@@ -127,17 +128,22 @@ document.getElementById("rvPrev").onclick = () => viewTo(cur() - 1);
 document.getElementById("rvNext").onclick = () => viewTo(cur() + 1);
 document.getElementById("rvLast").onclick = () => viewTo(Infinity);
 addEventListener("keydown", e => { if (!st || !st.moves) return; if (e.key === "ArrowLeft") viewTo(cur() - 1); else if (e.key === "ArrowRight") viewTo(cur() + 1); });
+// a hidden tab stops polling and picks up again as soon as it is shown; a finished game stops for good
+let timer = null, done = false;
 async function poll() {
+  clearTimeout(timer); timer = null;
+  if (done || document.hidden) return;
   try {
     const r = await fetch("/api/game?g=" + encodeURIComponent(g || ""), { cache: "no-store" });
-    if (r.status === 404) { document.getElementById("status").textContent = "ไม่พบเกมนี้ หรือเกมจบไปนานแล้ว"; return; }
+    if (r.status === 404) { document.getElementById("status").textContent = "ไม่พบเกมนี้ หรือเกมจบไปนานแล้ว"; done = true; return; }
     const next = await r.json(); gotAt = Date.now();
     const changed = !st || next.board !== st.board || next.size !== st.size;
     st = next; if (changed && viewAt === null) draw(); renderInfo(); renderPanels();
-    if (st.ended) return;
+    if (st.ended) { done = true; return; }
   } catch (e) {}
-  setTimeout(poll, 2000);
+  if (!document.hidden) timer = setTimeout(poll, 20000);
 }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !timer) poll(); });
 setInterval(renderPanels, 500);
 addEventListener("resize", draw);
 poll();
