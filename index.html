@@ -1918,14 +1918,13 @@ const Analysis = (function () {
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const CN = [null, "ดำ", "ขาว"];
   const REGION = [["มุมซ้ายบน", "ด้านบน", "มุมขวาบน"], ["ด้านซ้าย", "กลางกระดาน", "ด้านขวา"], ["มุมซ้ายล่าง", "ด้านล่าง", "มุมขวาล่าง"]];
-  // the main search: many visits so the second and third choices are read properly too
-  // (a slow device, a phone without a usable GPU, gets more time so the reading isn't too shallow)
+  // the main search: about 10 s on every device, so the first answer comes quickly
   // a GPU evaluates 16 positions in about the time of 8, so it gets bigger batches; "read deeper" doubles the time, and the
   // evaluations already cached make that a continuation rather than a fresh start
-  const SEARCH = { visits: 20000, timeMs: 20000, batch: 8, top: 12 };
+  const SEARCH = { visits: 20000, timeMs: 10000, batch: 8, top: 12 };
   const searchOpts = (deep = 1) => {
     const ms = api.evalMs ? api.evalMs() : 50;
-    return Object.assign({}, SEARCH, { timeMs: (ms > 60 ? 30000 : SEARCH.timeMs) * deep, batch: ms < 40 ? 16 : 8 });
+    return Object.assign({}, SEARCH, { timeMs: SEARCH.timeMs * deep, batch: ms < 40 ? 16 : 8 });
   };
   let E, Board, PASS, BLACK, WHITE;
   let ST = null, tok = 0, chain = Promise.resolve();
