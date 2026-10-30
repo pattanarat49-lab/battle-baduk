@@ -481,9 +481,10 @@
 
   // ---------- clocks: 30 min main time, then byo-yomi 30 s x 3, in every mode ----------
   const PERIODS = 3, MAIN_S = 1800, BYO_S = 30;
+  let gameAway = false, awayAt = 0; // the player left an unfinished game with the back button; it waits in the profile page
   let clocks = null, lastTick = 0, humanSince = 0, slowTold = false;
   const freshClock = () => ({ main: MAIN_S, byo: BYO_S, per: PERIODS });
-  const clockLive = () => board && engineReady && !over && !scoring;
+  const clockLive = () => board && engineReady && !over && !scoring && !gameAway; // clocks stop while the player is away from the game
   function tick() {
     const now = performance.now(), dt = (now - lastTick) / 1000; lastTick = now;
     if (!clocks || !clockLive()) return;
@@ -610,7 +611,7 @@
   // ---------- game flow ----------
   function cancelAI() { gen++; thinking = false; think = null; }
   function newGame() {
-    cancelAI();
+    cancelAI(); gameAway = false;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
@@ -709,10 +710,18 @@
     saveGame();
     if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); }
   }
+  // leaving the game screen: an unfinished game is kept (clocks stopped) and can be continued from the profile page
+  function leaveGame() {
+    cancelAI();
+    if (board && !over && !scoring && history.length && $("game").hidden === false) { gameAway = true; awayAt = Date.now(); saveGame(); }
+    else if (!gameAway) save("game", null);
+  }
   // the game in progress survives a page refresh: it is kept in localStorage until it ends or the player leaves it
+  const KEEP_MS = 6 * 36e5; // an unfinished game is kept in the browser for 6 hours
   function saveGame() {
-    if (!board || over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: Date.now() });
+    if (!board) return;
+    if (over || scoring) { save("game", null); return; }
+    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
@@ -734,8 +743,8 @@
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
-    gameId = g.gameId || rid(); gameReported = false;
-    $("home").hidden = true; $("menu").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade", "menuing"); document.body.classList.add("playing");
+    gameId = g.gameId || rid(); gameReported = false; gameAway = false; examMode = !!CHARS[gameChar].exam;
+    hideScreens(); $("game").hidden = false; document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -1308,13 +1317,14 @@
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
-  function showHome(exam) { examMode = exam === true; cancelAI(); save("game", null); $("game").hidden = true; $("endAsk").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
-  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial(); blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
+    if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
@@ -1347,6 +1357,8 @@
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    const sub = $("mnList").querySelector('[data-mn="profile"] small');
+    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
@@ -1365,12 +1377,16 @@
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
-  $("gBack").onclick = () => {
-    if (board && !ended() && history.length && !confirm("ออกจากเกมนี้? เกมที่เล่นอยู่จะไม่ถูกบันทึก")) return;
-    blip(660); showHome(examMode);
-  };
+  $("gBack").onclick = () => { blip(660); showHome(examMode); };
   $("pfBack").onclick = () => { blip(660); showMenu(); };
   const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+  // the unfinished game left with the back button, while it is still kept
+  function pausedGame() {
+    const g = load("game", null);
+    if (!g || !g.away || !CHARS.some(c => c.id === g.char) || !Array.isArray(g.history)) return null;
+    if (Date.now() - (g.at || 0) >= KEEP_MS) { save("game", null); return null; }
+    return g;
+  }
   function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
   function renderProfile() {
     const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
@@ -1379,6 +1395,15 @@
     let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     const ranked = hist.find(x => typeof x.rank === "number");
+    const g = pausedGame();
+    if (g) {
+      const c = CHARS.find(c => c.id === g.char), mine = g.clocks && g.clocks[g.human === WHITE ? WHITE : BLACK];
+      const left = mine ? (mine.main > 0 ? `เหลือเวลา ${Math.floor(mine.main / 60)}:${String(Math.floor(mine.main % 60)).padStart(2, "0")}` : `เบียวโยมิ ${mine.per} ครั้ง`) : "";
+      const keep = Math.max(1, Math.round((g.at + KEEP_MS - Date.now()) / 6e4));
+      h += `<div class="pf-h">เกมที่เล่นค้างไว้</div><div class="pf-rows"><div class="pf-row pf-paused"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b>${c.exam ? ' <span class="note" style="display:inline">RANK TEST</span>' : ""}
+        <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
+        <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button><button class="pf-an" id="pfDrop">ทิ้ง</button></div></div></div>`;
+    }
     h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
     if (!hist.length) {
@@ -1401,6 +1426,8 @@
   }
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
+    if (b.id === "pfDrop") { if (confirm("ทิ้งเกมที่เล่นค้างไว้?")) { save("game", null); gameAway = false; renderProfile(); } return; }
     if (b.id === "pfClear") { if (confirm("ล้างประวัติเกมทั้งหมดในเบราว์เซอร์นี้?")) { save("history", []); renderProfile(); } return; }
     if (b.dataset.an !== undefined) {
       const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
@@ -1436,6 +1463,6 @@
   window.addEventListener("pagehide", saveGame);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });
   const saved = load("game", null);
-  if (saved && !(Date.now() - (saved.at || 0) < 6 * 36e5 && resumeGame(saved))) save("game", null);
+  if (saved && !(Date.now() - (saved.at || 0) < KEEP_MS && (saved.away || resumeGame(saved)))) save("game", null);
   initEngine();
 })();
