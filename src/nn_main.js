@@ -1491,6 +1491,8 @@
   window.addEventListener("pagehide", saveGame);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });
   const saved = load("game", null);
-  if (saved && !(Date.now() - (saved.at || 0) < KEEP_MS && (saved.away || resumeGame(saved)))) save("game", null);
+  // the link always opens on the main menu: a game that was open when the page closed waits in Profile to be continued
+  if (saved && Date.now() - (saved.at || 0) < KEEP_MS) { if (!saved.away) save("game", Object.assign(saved, { away: true })); }
+  else if (saved) save("game", null);
   initEngine();
 })();
