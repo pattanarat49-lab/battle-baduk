@@ -109,7 +109,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 
 /* ---------- tutorial: one lesson step at a time; phone stacks speech / task / board, wide puts the board left ---------- */
 .tutor { max-width: 1040px; margin: 0 auto; padding-bottom: 96px; }
-.tu-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tu-head { display: flex; align-items: center; justify-content: flex-start; gap: 14px; }
 .tu-head .px { font-size: 13px; color: var(--accent); letter-spacing: .08em; text-shadow: 2px 2px 0 var(--wood-dark); }
 .tu-head h1 { font-size: 24px; }
 #tutor .tu-home { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
@@ -274,7 +274,7 @@ body.menuing { padding: 0; background: #0e272d; }
 
 /* ---------- analysis board: board with candidate moves, Kan explains in a chat beside it (stacked on a phone) ---------- */
 .anal { max-width: 1120px; margin: 0 auto; padding-bottom: 96px; }
-.an-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.an-head { display: flex; align-items: center; justify-content: flex-start; gap: 14px; margin-bottom: 12px; }
 .an-head .px { font-size: 13px; color: var(--accent); letter-spacing: .08em; text-shadow: 2px 2px 0 var(--wood-dark); }
 .an-head h1 { font-size: 24px; }
 #anel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
@@ -333,14 +333,18 @@ body.menuing { padding: 0; background: #0e272d; }
 body.playing { overflow: hidden; padding: 0; }
 .app { position: fixed; inset: 0; display: grid; gap: 10px; overflow: hidden;
   padding: max(8px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
-  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "pbar" "board" "panel"; }
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "gtop" "pbar" "board" "panel"; }
+/* every screen has its way back at the top left */
+.gtop { grid-area: gtop; display: flex; align-items: center; gap: 12px; }
+#gBack { min-height: 34px; padding: 4px 12px; font-size: 14px; }
+.gtop span { font-family: var(--f-px); font-weight: 700; font-size: 14px; letter-spacing: .08em; color: var(--accent); }
 .app > .pbar { grid-area: pbar; }
 .boardcell { grid-area: board; min-height: 0; min-width: 0; container-type: size; display: grid; place-items: center; }
 canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cqh) - 12px); border-radius: 8px; touch-action: manipulation;
   box-shadow: 0 0 0 6px var(--wood-dark), 0 18px 34px -20px rgba(0,0,0,.9); cursor: pointer; }
 .app > .panel { grid-area: panel; min-height: 0; overflow-y: auto; }
 @media (min-aspect-ratio: 9/8) {
-  .app { grid-template-columns: minmax(0, 1fr) clamp(280px, 34vw, 400px); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "board pbar" "board panel"; gap: 12px 16px; }
+  .app { grid-template-columns: minmax(0, 1fr) clamp(280px, 34vw, 400px); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "gtop gtop" "board pbar" "board panel"; gap: 10px 16px; }
 }
 .ghead { display: none; }
 @media (min-aspect-ratio: 9/8) and (min-height: 620px) { .ghead { display: block; } }
@@ -474,14 +478,14 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 
 <section class="prof" id="prof" hidden>
   <div class="an-head">
+    <button class="an-back" id="pfBack">← กลับ</button>
     <div><div class="px">BADUK BATTLE · PROFILE</div><h1>โปรไฟล์ของคุณ</h1></div>
-    <button class="an-back" id="pfBack">← เมนู</button>
   </div>
   <div id="pfBody"></div>
 </section>
 
 <section class="home" id="home" hidden>
-  <div class="hm-top"><button class="hm-back" id="hmBack">← เมนู</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>
+  <div class="hm-top"><button class="hm-back" id="hmBack">← กลับ</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>
   <h1 class="px-title">Character Select</h1>
   <div class="carousel" id="chars"></div>
   <div class="cinfo" id="pick" aria-live="polite"></div>
@@ -499,8 +503,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 
 <section class="tutor" id="tutor" hidden>
   <div class="tu-head">
+    <button class="tu-home" id="tuHome">← กลับ</button>
     <div><div class="px">BADUK BATTLE · TUTORIAL</div><h1>คัมภีร์สอนเล่น</h1></div>
-    <button class="tu-home" id="tuHome">← เลือกตัว</button>
   </div>
   <div class="tu-tabs" id="tuTabs" aria-label="บทเรียน"></div>
   <div class="tu-bar"><i id="tuBar"></i></div>
@@ -520,8 +524,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 
 <section class="anal" id="anel" hidden>
   <div class="an-head">
-    <div><div class="px">BADUK BATTLE · ANALYSIS</div><h1>วิเคราะห์เกม</h1></div>
     <button class="an-back" id="anBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · ANALYSIS</div><h1>วิเคราะห์เกม</h1></div>
   </div>
   <div class="an-stage">
     <div class="an-boardbox">
@@ -550,6 +554,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   <div class="actions two"><button id="endAskNo">ไว้ก่อน</button><button id="endAskGo" class="primary">วิเคราะห์เลย</button></div>
 </div>
 <main class="app" id="game" hidden>
+  <div class="gtop"><button class="hm-back" id="gBack">← กลับ</button><span id="gMode"></span></div>
   <div class="pbar">
     <div class="player" id="pB">
       <div class="avbox"><span id="avB"></span><span class="stone b" id="sB"></span></div>

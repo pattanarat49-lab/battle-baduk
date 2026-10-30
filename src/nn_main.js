@@ -1043,6 +1043,7 @@
     $("btnHint").hidden = !!exam; $("playActions").classList.toggle("two", !!exam);
     $("btnHome").hidden = !!exam && !on; $("btnHome").parentElement.classList.toggle("three", $("btnHome").hidden);
     if (!on) $("endAsk").hidden = true;
+    $("gMode").textContent = exam ? "RANK TEST" : "PLAY WITH AI";
     if (!on) return;
     const k = reviewAt === null ? history.length : reviewAt;
     const g = exam && k ? exam.grades[k - 1] : null;
@@ -1363,6 +1364,11 @@
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
+  // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
+  $("gBack").onclick = () => {
+    if (board && !ended() && history.length && !confirm("ออกจากเกมนี้? เกมที่เล่นอยู่จะไม่ถูกบันทึก")) return;
+    blip(660); showHome(examMode);
+  };
   $("pfBack").onclick = () => { blip(660); showMenu(); };
   const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
   function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
