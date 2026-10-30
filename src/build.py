@@ -13,6 +13,7 @@ page=head+'''<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/d
 </script>
 <script>
 '''+open('analysis.js').read()+'''
+'''+open('tsumego.js').read()+'''
 </script>
 <script>
 '''+open('nn_main.js').read()+'''

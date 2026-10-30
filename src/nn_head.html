@@ -250,6 +250,37 @@ body.menuing { padding: 0; background: #0e272d; }
 .hm-top { align-self: stretch; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
 #home .hm-back { justify-self: start; min-height: 36px; padding: 4px 12px; font-size: 14px; }
 
+/* ---------- tsumego: categories, levels, and one problem at a time ---------- */
+.tsume { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
+#tsel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+.ts-cats { display: flex; gap: 8px; flex-wrap: wrap; }
+#tsel .ts-cat { min-height: 42px; padding: 4px 16px; font-size: 15px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); color: var(--fg); box-shadow: none; }
+#tsel .ts-cat[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+.ts-catinfo { margin: 10px 0 14px; color: var(--muted); font-size: 14px; }
+.ts-levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+#tsel .ts-lvl { position: relative; overflow: hidden; display: grid; gap: 2px; justify-items: start; text-align: left; padding: 12px 14px 16px; min-height: 0; border-radius: 8px;
+  background: #ede9d7; color: #14262b; border: 0; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); }
+#tsel .ts-lvl b { font-family: var(--f-px); font-size: 20px; letter-spacing: .04em; }
+#tsel .ts-lvl span { font-size: 13px; color: #33454a; }
+#tsel .ts-lvl i { position: absolute; left: 0; bottom: 0; height: 6px; background: #57c26b; }
+#tsel .ts-lvl.full { background: #d9ecd2; }
+.ts-dim { color: var(--muted); font-size: 13px; margin: 6px 0 0; display: block; }
+.ts-credit { margin-top: 18px; }
+.ts-play { display: grid; gap: 14px; }
+@media (min-aspect-ratio: 5/4) { .ts-play { grid-template-columns: minmax(0, 1fr) minmax(240px, 40%); align-items: start; } }
+@media (min-width: 900px) { .ts-play { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
+.ts-boardbox { display: grid; gap: 8px; justify-items: center; min-width: 0; }
+.ts-bar { width: 100%; max-width: min(100%, 76vh); display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); }
+.ts-turn::before { content: ""; display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -3px; margin-right: 6px; }
+.ts-turn.b::before { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); } .ts-turn.w::before { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.ts-turn.b::after { content: "ดำเดินก่อน"; color: var(--fg); } .ts-turn.w::after { content: "ขาวเดินก่อน"; color: var(--fg); }
+#tsBoard { width: 100%; max-width: min(100%, 76vh); max-height: 76vh; height: auto; display: block; touch-action: manipulation; cursor: pointer; box-shadow: 0 0 0 6px var(--wood-dark); }
+.ts-side { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.ts-say { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; font-size: 15px; line-height: 1.6; min-height: 72px; }
+.ts-say b { font-weight: 700; } .ts-ok { color: #57c26b; } .ts-ng { color: #f08a6c; }
+.ts-btns, .ts-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+#tsel .ts-btns button, #tsel .ts-nav button { min-height: 44px; font-size: 15px; }
+
 /* ---------- profile: games played in this browser ---------- */
 .prof { max-width: 860px; margin: 0 auto; padding-bottom: 32px; }
 .pf-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
@@ -521,6 +552,34 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     <span class="count" id="tuCount">1 / 1</span>
     <button id="tuNext">ต่อไป →</button>
   </div></nav>
+</section>
+
+<section class="tsume" id="tsel" hidden>
+  <div class="an-head">
+    <button class="an-back" id="tsBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · TSUMEGO</div><h1 id="tsTitle">โจทย์ฝึกอ่านหมาก</h1></div>
+  </div>
+  <div id="tsPick">
+    <div class="ts-cats" id="tsCats" role="group" aria-label="หมวดโจทย์"></div>
+    <p class="ts-catinfo" id="tsCatInfo"></p>
+    <div class="ts-levels" id="tsLevels"></div>
+    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego และจัดระดับโดยประมาณด้วย KataGo · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
+  </div>
+  <div class="ts-play" id="tsPlay" hidden>
+    <div class="ts-boardbox">
+      <div class="ts-bar"><span class="ts-turn b" id="tsTurn"></span><span id="tsNo"></span></div>
+      <svg id="tsBoard" viewBox="0 0 10 10" role="img" aria-label="กระดานโจทย์"></svg>
+    </div>
+    <div class="ts-side">
+      <div class="ts-say" id="tsSay" aria-live="polite"></div>
+      <div class="ts-btns">
+        <button id="tsRetry" class="primary" hidden>ลองใหม่</button>
+        <button id="tsAns">ดูเฉลย</button>
+      </div>
+      <div class="ts-nav"><button id="tsPrev">← ข้อก่อน</button><button id="tsNext">ข้อต่อไป →</button></div>
+      <p class="ts-dim" id="tsSrc"></p>
+    </div>
+  </div>
 </section>
 
 <section class="anal" id="anel" hidden>

@@ -1337,12 +1337,16 @@
     else if (from === "prof") showProfile();
     else showMenu();
   };
+  Tsumego.E = E;
+  Tsumego.ai = () => engineReady ? AI : null;
+  Tsumego.sound = () => { unlockAudio(); clack(); };
+  Tsumego.onBack = () => showMenu();
   // ---------- main menu and profile ----------
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
     { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 9 ตัวละคร" },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
-    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก", soon: true },
+    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 10 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
     { id: "exam", t: "RANK TEST", s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
   ];
@@ -1361,7 +1365,7 @@
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
@@ -1374,6 +1378,7 @@
     else if (go === "profile") showProfile();
     else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
+    else if (go === "tsume") { hideScreens(); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
