@@ -46,17 +46,46 @@ const Tsumego = (() => {
   // ---------- one problem ----------
   const c2 = s => [s.charCodeAt(0) - 97, s.charCodeAt(1) - 97];
   const pairs = s => s.match(/../g) || [];
+  // stones that fill the rest of the board (a "tsumego frame"): a solid wall of the attacking side around the problem area,
+  // then the attacker's and the defender's living masses with eyes, so the network reads only the problem and doesn't
+  // look for big points elsewhere. The defender is the side whose stones sit nearer the edges.
+  function frameOf(q, crop) {
+    const edge = s => { const [x, y] = c2(s); return Math.min(x, y, 18 - x, 18 - y); };
+    const mean = ss => ss.length ? ss.reduce((a, s) => a + edge(s), 0) / ss.length : 9;
+    const atk = mean(pairs(q.b)) > mean(pairs(q.w)) ? "B" : "W";
+    const x0 = Math.max(0, crop.x0 - 1), x1 = Math.min(18, crop.x1 + 1), y0 = Math.max(0, crop.y0 - 1), y1 = Math.min(18, crop.y1 + 1);
+    const out = [];
+    for (let y = 0; y < 19; y++) for (let x = 0; x < 19; x++) {
+      const d = Math.max(x0 - x, x - x1, y0 - y, y - y1, 0); if (d > 0) out.push({ x, y, d });
+    }
+    out.sort((a, b) => a.d - b.d);
+    const half = out.length / 2, f = { B: [], W: [] };
+    out.forEach((o, k) => {
+      const mine = o.d === 1 || k < half ? atk : atk === "B" ? "W" : "B";
+      if (o.d > 1 && o.x % 3 === 1 && o.y % 3 === 1) return; // eyes
+      f[mine].push(String.fromCharCode(97 + o.x, 97 + o.y));
+    });
+    return f;
+  }
   // the setup stones as a move list the network understands: stones alternate, passes fill in, and the side to move comes last
-  function setupMoves(b, q) {
-    const { PASS } = api.E, B = pairs(q.b).map(s => b.pt(...c2(s))), W = pairs(q.w).map(s => b.pt(...c2(s)));
-    const enc = lead => {
-      const m = lead ? [PASS] : []; let i = 0, j = 0;
-      while (i < B.length || j < W.length) { if (m.length % 2 === 0) m.push(i < B.length ? B[i++] : PASS); else m.push(j < W.length ? W[j++] : PASS); }
-      if ((m.length % 2 === 0 ? "B" : "W") !== q.t) m.push(PASS);
-      return m;
+  function setupMoves(q, crop) {
+    const { Board, PASS } = api.E, b0 = new Board(19);
+    const build = (bs, ws) => {
+      const B = bs.map(s => b0.pt(...c2(s))), W = ws.map(s => b0.pt(...c2(s)));
+      const enc = lead => {
+        const m = lead ? [PASS] : []; let i = 0, j = 0;
+        while (i < B.length || j < W.length) { if (m.length % 2 === 0) m.push(i < B.length ? B[i++] : PASS); else m.push(j < W.length ? W[j++] : PASS); }
+        if ((m.length % 2 === 0 ? "B" : "W") !== q.t) m.push(PASS);
+        return m;
+      };
+      const ok = m => !m.some((x, k) => x === PASS && m[k - 1] === PASS);
+      const m = enc(false); return ok(m) ? m : enc(true);
     };
-    const ok = m => !m.some((x, k) => x === PASS && m[k - 1] === PASS);
-    const m = enc(false); return ok(m) ? m : enc(true);
+    // every stone must go down legally and nothing may be captured, or the frame is left out
+    const valid = m => { const b = new Board(19); for (const p of m) { if (p !== PASS && !b.isLegal(p, b.toPlay)) return false; b.play(p); }
+      return m.filter(p => p !== PASS).every(p => b.color[p] !== 0); };
+    const f = frameOf(q, crop), m = build(pairs(q.b).concat(f.B), pairs(q.w).concat(f.W));
+    return valid(m) ? m : build(pairs(q.b), pairs(q.w));
   }
   // the part of the board the problem lives in, out to the edge when it is close
   function cropOf(q) {
@@ -77,10 +106,9 @@ const Tsumego = (() => {
     setProblem();
   }
   function setProblem() {
-    const { Board } = api.E, q = ST.list[ST.i];
+    const q = ST.list[ST.i];
     ST.q = q; ST.crop = cropOf(q); ST.wrong = 0; ST.show = false;
-    const b = new Board(19);
-    ST.base = setupMoves(b, q); reset();
+    ST.base = setupMoves(q, ST.crop); reset();
     const cat = CATS.find(c => c.id === ST.cat);
     $("tsTitle").textContent = `${cat.t} · ${LEVELS[ST.lvl]}`;
     $("tsNo").textContent = `ข้อ ${ST.i + 1} / ${ST.list.length}`;
@@ -93,50 +121,90 @@ const Tsumego = (() => {
   }
   const hintOf = cat => ({ life: "หาจุดที่ทำให้รอด หรือทำให้อีกฝ่ายตาย", capture: "หาตาที่จับกินหมากได้", connect: "หาตาที่ต่อหรือตัดได้สำเร็จ",
     tesuji: "หาท่าไม้ตายที่ได้ผลที่สุด", endgame: "หาตาปิดเขตที่ได้แต้มมากที่สุด" })[cat];
-  function reset() {
-    const { Board } = api.E, b = new Board(19);
+  // the answer line (q.m: the player's move, the opponent's reply, ... as point names), the other moves the network
+  // rates as just as good at each of the player's turns (q.x), and the komi that makes the framed position even (q.k)
+  const lineOf = q => pairs(q.m || q.a[0]);
+  function reset(step = 0) {
+    const { Board } = api.E, b = new Board(19), line = lineOf(ST.q);
     for (const m of ST.base) b.play(m);
-    ST.b = b; ST.moves = ST.base.slice(); ST.mine = []; ST.done = 0; ST.mark = null; ST.busy++;
+    ST.moves = ST.base.slice();
+    for (let k = 0; k < step; k++) { const p = b.pt(...c2(line[k])); b.play(p); ST.moves.push(p); }
+    ST.b = b; ST.step = step; ST.done = 0; ST.failed = 0; ST.wait = 0; ST.mark = null; ST.nums = null; ST.busy++;
+    ST.last = step ? b.pt(...c2(line[step - 1])) : null;
     $("tsRetry").hidden = true; draw();
   }
   function say(html) { $("tsSay").innerHTML = html; }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  function put(p) { ST.b.play(p); ST.moves.push(p); ST.last = p; if (api.sound) api.sound(); }
 
   async function tap(p) {
-    if (ST.done || !ST.b || ST.mine.length) return;
+    if (ST.done || ST.failed || ST.wait || !ST.b) return;
     const b = ST.b; if (!b.isLegal(p, b.toPlay)) return;
-    const [x, y] = b.xy(p), name = String.fromCharCode(97 + x, 97 + y);
-    b.play(p); ST.moves.push(p); ST.mine.push(p); if (api.sound) api.sound();
-    const prog = load(), id = idOf(ST.q);
-    if (ST.q.a.includes(name)) {
-      ST.done = 1; ST.mark = { p, ok: true };
-      if (prog[id] !== 1) { prog[id] = ST.wrong || ST.show ? 2 : 1; store(prog); }
-      say(`<b class="ts-ok">ถูกต้อง!</b> ${ST.wrong ? "พลาดไปก่อนแต่หาเจอจนได้" : "เก่งมาก ตอบถูกตั้งแต่ครั้งแรก"}` + (ST.i < ST.list.length - 1 ? ` กด "ข้อต่อไป" ได้เลย` : " ทำครบระดับนี้แล้ว"));
-      draw(); return;
+    const [x, y] = b.xy(p), name = String.fromCharCode(97 + x, 97 + y), q = ST.q, line = lineOf(q), k = ST.step;
+    const alts = pairs((k === 0 ? q.a.join("") : "") + ((q.x && q.x[k / 2]) || ""));
+    put(p); ST.mark = { p, ok: true };
+    const my = ++ST.busy;
+    if (name === line[k]) {
+      ST.step++;
+      if (ST.step >= line.length) { // the line ends on our move: the opponent still answers, from the network
+        ST.wait = 1; draw(); await wait(300);
+        const r = await replyTo(); if (my !== ST.busy) return;
+        if (r !== null) put(r);
+        return solved(r !== null);
+      }
+      ST.wait = 1; say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบ…`); draw();
+      await wait(450); if (my !== ST.busy) return;
+      put(b.pt(...c2(line[ST.step]))); ST.step++; ST.wait = 0; ST.mark = null;
+      if (ST.step >= line.length) return solved(true);
+      say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบแล้ว ${q.t === "B" ? "ดำ" : "ขาว"}เดินต่อ หาตาต่อไปให้เจอ`); draw();
+      return;
     }
-    ST.wrong++; ST.mark = { p, ok: false }; draw();
+    if (alts.includes(name)) {
+      ST.wait = 1; draw();
+      const r = await replyTo(); if (my !== ST.busy) return;
+      if (r !== null) put(r);
+      return solved(false, true);
+    }
+    ST.wrong++; ST.mark = { p, ok: false }; ST.wait = 1; draw();
     say(`<b class="ts-ng">ยังไม่ใช่</b> ดูว่าอีกฝ่ายจะตอบยังไง…`);
-    const my = ++ST.busy, reply = await replyTo();
+    const reply = await replyTo();
     if (my !== ST.busy) return;
-    if (reply !== null) { ST.b.play(reply); ST.moves.push(reply); if (api.sound) api.sound(); ST.mark.reply = reply; draw(); }
+    if (reply !== null) { put(reply); ST.mark.reply = reply; }
+    ST.wait = 0; ST.failed = 1; draw();
     say(`<b class="ts-ng">ยังไม่ใช่</b> ${reply !== null ? "อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ " : ""}กด "ลองใหม่" แล้วหาจุดอื่นดูนะ` + (ST.wrong >= 3 ? ` หรือกด "ดูเฉลย"` : ""));
     $("tsRetry").hidden = false;
   }
-  // the opponent's answer: the network's favourite point inside the problem area
+  function solved(theyGaveUp, other) {
+    const prog = load(), id = idOf(ST.q);
+    ST.done = 1; ST.wait = 0;
+    if (!ST.show && prog[id] !== 1) { prog[id] = ST.wrong ? 2 : 1; store(prog); }
+    const why = other ? "ตานี้ก็ได้ผลเหมือนกับเฉลย" : theyGaveUp ? "อีกฝ่ายหมดทางสู้แล้ว" : ST.wrong ? "พลาดไปก่อนแต่หาเจอจนได้" : "เก่งมาก ตอบถูกตั้งแต่ครั้งแรก";
+    say(`<b class="ts-ok">ถูกต้อง!</b> ${why}` + (ST.i < ST.list.length - 1 ? ` กด "ข้อต่อไป" ได้เลย` : " ทำครบระดับนี้แล้ว"));
+    $("tsRetry").hidden = false; draw();
+  }
+  // the opponent's answer off the line: the network's favourite point inside the problem area
   async function replyTo() {
     const ai = api.ai && api.ai(); if (!ai) return null;
     try {
-      const ev = await ai.evaluate(19, ST.moves, 7.5), { x0, x1, y0, y1 } = ST.crop;
+      const ev = await ai.evaluate(19, ST.moves, ST.q.k === undefined ? 7.5 : ST.q.k), { x0, x1, y0, y1 } = ST.crop;
       let best = null, bp = 0;
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const i = y * 19 + x; if (ev.legal[i] && ev.policy[i] > bp) { bp = ev.policy[i]; best = ST.b.pt(x, y); } }
       return best;
     } catch (e) { return null; }
   }
-  function showAnswer() {
+  // the answer is played out move by move with numbers
+  async function showAnswer() {
     ST.show = true; const prog = load(), id = idOf(ST.q);
     if (!prog[id]) { prog[id] = 3; store(prog); }
-    if (ST.mine.length && !ST.done) reset();
-    say(`เฉลย: จุดสีเขียวคือตาที่ถูก${ST.q.a.length > 1 ? " (ถูกได้มากกว่าหนึ่งจุด)" : ""} ลองวางเองดูเพื่อจำรูปนะ`);
-    draw();
+    reset(); const my = ST.busy, line = lineOf(ST.q);
+    ST.wait = 1; ST.nums = new Map();
+    say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่`);
+    for (let k = 0; k < line.length; k++) {
+      await wait(k ? 700 : 300); if (my !== ST.busy) return;
+      const p = ST.b.pt(...c2(line[k])); put(p); ST.nums.set(p, k + 1); draw();
+    }
+    ST.wait = 0; ST.failed = 1; $("tsRetry").hidden = false;
+    say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่${ST.q.a.length > 1 ? " (ตาแรกมีจุดอื่นที่ถูกด้วย)" : ""} กด "ลองใหม่" เพื่อลองเล่นเองนะ`);
   }
 
   // ---------- board ----------
@@ -158,14 +226,19 @@ const Tsumego = (() => {
       const [x, y] = b.xy(p); if (x < x0 || x > x1 || y < y0 || y > y1) continue;
       s.push(`<circle cx="${x}" cy="${y}" r=".47" fill="url(#${c === BLACK ? "tsGb" : "tsGw"})" stroke="${c === BLACK ? "#000" : "#9c917e"}" stroke-width=".02"/>`);
     }
-    if (ST.mark) {
+    if (ST.nums) for (const [p, k] of ST.nums) {
+      if (!b.color[p]) continue;
+      const [x, y] = b.xy(p); s.push(`<text x="${x}" y="${y + .04}" class="ts-num" fill="${b.color[p] === BLACK ? "#f3ead8" : "#1a1208"}">${k}</text>`);
+    } else if (ST.last != null && b.color[ST.last] && !(ST.mark && ST.mark.p === ST.last)) {
+      const [x, y] = b.xy(ST.last); s.push(`<circle cx="${x}" cy="${y}" r=".16" fill="none" stroke="${b.color[ST.last] === BLACK ? "#f3ead8" : "#2a1a0b"}" stroke-width=".06"/>`);
+    }
+    if (ST.mark && !ST.nums) {
       const [x, y] = b.xy(ST.mark.p);
       s.push(ST.mark.ok ? `<circle cx="${x}" cy="${y}" r=".24" fill="none" stroke="#57c26b" stroke-width=".1"/>`
         : `<path d="M${x - .2} ${y - .2}L${x + .2} ${y + .2}M${x + .2} ${y - .2}L${x - .2} ${y + .2}" stroke="#e0533d" stroke-width=".1"/>`);
       if (ST.mark.reply) { const [rx, ry] = b.xy(ST.mark.reply); s.push(`<circle cx="${rx}" cy="${ry}" r=".18" fill="none" stroke="#e0533d" stroke-width=".07"/>`); }
     }
-    if (ST.show && !ST.done) for (const a of ST.q.a) { const [x, y] = c2(a); s.push(`<circle cx="${x}" cy="${y}" r=".42" fill="#57c26b" opacity=".85"/>`); }
-    if (ST.ghost != null && !ST.done && !ST.mine.length && b.color[ST.ghost] === 0) {
+    if (ST.ghost != null && !ST.done && !ST.failed && !ST.wait && b.color[ST.ghost] === 0) {
       const [x, y] = b.xy(ST.ghost); s.push(`<circle cx="${x}" cy="${y}" r=".45" fill="url(#${b.toPlay === BLACK ? "tsGb" : "tsGw"})" opacity=".45"/>`);
     }
     $("tsBoard").innerHTML = s.join("");
@@ -185,13 +258,16 @@ const Tsumego = (() => {
     svg.addEventListener("pointerleave", () => { if (!ST.b) return; ST.ghost = null; draw(); });
     $("tsCats").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (!b) return; ST.cat = b.dataset.cat; showPick(); });
     $("tsLevels").addEventListener("click", e => { const b = e.target.closest("[data-l]"); if (!b) return; openLevel(+b.dataset.l); });
-    $("tsRetry").onclick = () => { reset(); say(`ลองอีกครั้ง <b>${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b>`); };
+    // after a wrong move: back to just before it; after the answer or a solved problem: from the start
+    $("tsRetry").onclick = () => { const k = ST.failed && !ST.nums ? ST.step : 0; reset(k); say(k ? `ลองอีกครั้ง หาตาต่อไปของ${ST.q.t === "B" ? "ดำ" : "ขาว"}` : `ลองอีกครั้ง <b>${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b>`); };
     $("tsAns").onclick = showAnswer;
     $("tsPrev").onclick = () => { if (ST.i > 0) { ST.i--; setProblem(); } };
     $("tsNext").onclick = () => { if (ST.i < ST.list.length - 1) { ST.i++; setProblem(); } };
     $("tsBack").onclick = () => { if (ST.lvl !== null) showPick(); else { $("tsel").hidden = true; if (api.onBack) api.onBack(); } };
   }
 
+  api._setup = q => setupMoves(q, cropOf(q)); // for the script that works out the answer lines (src/tools)
+  api._crop = cropOf;
   api.open = async () => {
     if (!wired) wire();
     $("tsel").hidden = false; $("tsPick").hidden = false; $("tsPlay").hidden = true;
