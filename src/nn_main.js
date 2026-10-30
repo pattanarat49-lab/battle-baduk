@@ -961,9 +961,12 @@
       let m = res.move;
       if (m === PASS && exam && open !== null) m = open;
       else if (open === null && m !== PASS) {
-        // every area is sealed: answer a pass with a pass, and never fill in a settled area (its own or the opponent's)
-        const [x, y] = board.xy(m);
-        if (history[history.length - 1] === PASS || Math.abs(ev.own[y * 19 + x]) > 0.75) m = PASS;
+        // every area is sealed: answer a pass with a pass, and never fill in a settled area (its own or the opponent's).
+        // A move next to the opponent's last stone is an answer to it (an invasion of a settled area), not filling, and is
+        // played: passing there let invaders live and turned won games into resignations
+        const [x, y] = board.xy(m), last = history[history.length - 1];
+        const answers = last !== PASS && (([lx, ly]) => Math.abs(lx - x) <= 2 && Math.abs(ly - y) <= 2)(board.xy(last));
+        if (last === PASS || (Math.abs(ev.own[y * 19 + x]) > 0.75 && !answers)) m = PASS;
       }
       if (m !== res.move) res = Object.assign({}, res, { move: m });
     }
