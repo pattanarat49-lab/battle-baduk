@@ -1430,7 +1430,7 @@
       const keep = Math.max(1, Math.round((g.at + KEEP_MS - Date.now()) / 6e4));
       h += `<div class="pf-h">เกมที่เล่นค้างไว้</div><div class="pf-rows"><div class="pf-row pf-paused"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b>${c.exam ? ' <span class="note" style="display:inline">RANK TEST</span>' : ""}
         <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
-        <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button><button class="pf-an" id="pfDrop">ทิ้ง</button></div></div></div>`;
+        <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
     }
     h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
@@ -1449,14 +1449,12 @@
       return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
         <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
         <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
-      <button class="pf-clear" id="pfClear">ล้างประวัติทั้งหมด</button><p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
   }
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
-    if (b.id === "pfDrop") { if (confirm("ทิ้งเกมที่เล่นค้างไว้?")) { save("game", null); gameAway = false; renderProfile(); } return; }
-    if (b.id === "pfClear") { if (confirm("ล้างประวัติเกมทั้งหมดในเบราว์เซอร์นี้?")) { save("history", []); renderProfile(); } return; }
     if (b.dataset.an !== undefined) {
       const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
       unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
