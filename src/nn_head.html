@@ -253,17 +253,17 @@ body.menuing { padding: 0; background: #0e272d; }
 /* ---------- tsumego: categories, levels, and one problem at a time ---------- */
 .tsume { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
 #tsel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
-.ts-cats { display: flex; gap: 8px; flex-wrap: wrap; }
-#tsel .ts-cat { min-height: 42px; padding: 4px 16px; font-size: 15px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); color: var(--fg); box-shadow: none; }
-#tsel .ts-cat[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
-.ts-catinfo { margin: 10px 0 14px; color: var(--muted); font-size: 14px; }
-.ts-levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-#tsel .ts-lvl { position: relative; overflow: hidden; display: grid; gap: 2px; justify-items: start; text-align: left; padding: 12px 14px 16px; min-height: 0; border-radius: 8px;
-  background: #ede9d7; color: #14262b; border: 0; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); }
-#tsel .ts-lvl b { font-family: var(--f-px); font-size: 20px; letter-spacing: .04em; }
-#tsel .ts-lvl span { font-size: 13px; color: #33454a; }
-#tsel .ts-lvl i { position: absolute; left: 0; bottom: 0; height: 6px; background: #57c26b; }
-#tsel .ts-lvl.full { background: #d9ecd2; }
+.ts-pick { display: grid; gap: 16px; max-width: 640px; }
+.ts-ladder { background: #ede9d7; color: #14262b; border-radius: 10px; padding: 18px 18px 20px; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); display: grid; gap: 8px; }
+.ts-lab { font-size: 14px; color: #33454a; }
+.ts-now { font-family: var(--f-px); font-size: clamp(34px, 9vw, 52px); line-height: 1; letter-spacing: .04em; }
+.ts-steps { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; margin-top: 8px; }
+.ts-steps i { height: 14px; background: #d4cbb4; border-radius: 2px; }
+.ts-steps i.been { background: #9fc98f; } .ts-steps i.now { background: var(--accent); box-shadow: 0 0 0 2px #14262b; }
+.ts-ends { display: flex; justify-content: space-between; font-size: 12px; color: #33454a; }
+.ts-ladder .ts-dim { color: #33454a; }
+#tsel #tsGo { margin-top: 6px; min-height: 48px; font-size: 17px; }
+.ts-rules { margin: 0; padding-left: 20px; color: var(--fg); font-size: 14px; line-height: 1.7; }
 .ts-dim { color: var(--muted); font-size: 13px; margin: 6px 0 0; display: block; }
 .ts-credit { margin-top: 18px; }
 .ts-play { display: grid; gap: 14px; }
@@ -560,11 +560,22 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     <button class="an-back" id="tsBack">← กลับ</button>
     <div><div class="px">BADUK BATTLE · TSUMEGO</div><h1 id="tsTitle">โจทย์ฝึกอ่านหมาก</h1></div>
   </div>
-  <div id="tsPick">
-    <div class="ts-cats" id="tsCats" role="group" aria-label="หมวดโจทย์"></div>
-    <p class="ts-catinfo" id="tsCatInfo"></p>
-    <div class="ts-levels" id="tsLevels"></div>
-    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego และจัดระดับโดยประมาณด้วย KataGo · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
+  <div id="tsPick" class="ts-pick">
+    <div class="ts-ladder">
+      <span class="ts-lab">ระดับของคุณตอนนี้</span>
+      <b class="ts-now" id="tsNow">10 คิว</b>
+      <div class="ts-steps" id="tsSteps" aria-hidden="true"></div>
+      <div class="ts-ends"><span>10 คิว</span><span>4 ดั้ง</span></div>
+      <p class="ts-dim" id="tsStats"></p>
+      <button id="tsGo" class="primary">เริ่มที่ 10 คิว</button>
+    </div>
+    <ul class="ts-rules">
+      <li>โจทย์จะสุ่มมาให้ทีละข้อ คละหมวด ทั้งเป็น-ตาย จับกิน ต่อ-ตัด ทีเด็ด และเอนเกม</li>
+      <li>แต่ละข้อต้องเดินถูก 3 ตา โดย AI ตอบโต้ทุกตา</li>
+      <li>ตอบถูก ขึ้นหนึ่งระดับ ตอบผิด กลับไปเริ่ม 10 คิวใหม่</li>
+      <li>โจทย์ไม่ซ้ำจนกว่าจะหมดระดับนั้น</li>
+    </ul>
+    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego เฉลยต่อเนื่องและระดับคิดโดย KataGo จึงเป็นค่าประมาณ · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
   </div>
   <div class="ts-play" id="tsPlay" hidden>
     <div class="ts-boardbox">
@@ -573,11 +584,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     </div>
     <div class="ts-side">
       <div class="ts-say" id="tsSay" aria-live="polite"></div>
-      <div class="ts-btns">
-        <button id="tsRetry" class="primary" hidden>ลองใหม่</button>
-        <button id="tsAns">ดูเฉลย</button>
-      </div>
-      <div class="ts-nav"><button id="tsPrev">← ข้อก่อน</button><button id="tsNext">ข้อต่อไป →</button></div>
+      <div class="ts-btns"><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
       <p class="ts-dim" id="tsSrc"></p>
     </div>
   </div>

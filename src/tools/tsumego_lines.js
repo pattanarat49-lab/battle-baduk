@@ -37,13 +37,11 @@ const [, , inFile, shard, shards, outFile, visits] = process.argv;
         // a move belongs to the fight when it is within two lines of a move already in the line
         const near = s => line.some(l => Math.max(Math.abs(l.charCodeAt(0) - s.charCodeAt(0)), Math.abs(l.charCodeAt(1) - s.charCodeAt(1))) <= 3);
         const wr = [];
-        for (let k = 0; k < 4; k++) {
+        for (let k = 0; k < 2; k++) { // five moves: the book answer, then reply and answer twice
           const opp = await ai.think(19, moves, komi, opts), r = name(opp.move);
           wr.push(Math.round(opp.top[0].winrate * 100));
           if (!inside(r) || !near(r)) break;
           line.push(r); moves = moves.concat([opp.move]);
-          // the opponent has given up locally: its reply stands, and the problem is solved
-          if (opp.top[0].winrate < 0.1) break;
           const me = await ai.think(19, moves, komi, opts), m = name(me.move);
           if (!inside(m) || !near(m)) break;
           const t0 = me.top[0];

@@ -253,17 +253,17 @@ body.menuing { padding: 0; background: #0e272d; }
 /* ---------- tsumego: categories, levels, and one problem at a time ---------- */
 .tsume { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
 #tsel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
-.ts-cats { display: flex; gap: 8px; flex-wrap: wrap; }
-#tsel .ts-cat { min-height: 42px; padding: 4px 16px; font-size: 15px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); color: var(--fg); box-shadow: none; }
-#tsel .ts-cat[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
-.ts-catinfo { margin: 10px 0 14px; color: var(--muted); font-size: 14px; }
-.ts-levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-#tsel .ts-lvl { position: relative; overflow: hidden; display: grid; gap: 2px; justify-items: start; text-align: left; padding: 12px 14px 16px; min-height: 0; border-radius: 8px;
-  background: #ede9d7; color: #14262b; border: 0; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); }
-#tsel .ts-lvl b { font-family: var(--f-px); font-size: 20px; letter-spacing: .04em; }
-#tsel .ts-lvl span { font-size: 13px; color: #33454a; }
-#tsel .ts-lvl i { position: absolute; left: 0; bottom: 0; height: 6px; background: #57c26b; }
-#tsel .ts-lvl.full { background: #d9ecd2; }
+.ts-pick { display: grid; gap: 16px; max-width: 640px; }
+.ts-ladder { background: #ede9d7; color: #14262b; border-radius: 10px; padding: 18px 18px 20px; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); display: grid; gap: 8px; }
+.ts-lab { font-size: 14px; color: #33454a; }
+.ts-now { font-family: var(--f-px); font-size: clamp(34px, 9vw, 52px); line-height: 1; letter-spacing: .04em; }
+.ts-steps { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; margin-top: 8px; }
+.ts-steps i { height: 14px; background: #d4cbb4; border-radius: 2px; }
+.ts-steps i.been { background: #9fc98f; } .ts-steps i.now { background: var(--accent); box-shadow: 0 0 0 2px #14262b; }
+.ts-ends { display: flex; justify-content: space-between; font-size: 12px; color: #33454a; }
+.ts-ladder .ts-dim { color: #33454a; }
+#tsel #tsGo { margin-top: 6px; min-height: 48px; font-size: 17px; }
+.ts-rules { margin: 0; padding-left: 20px; color: var(--fg); font-size: 14px; line-height: 1.7; }
 .ts-dim { color: var(--muted); font-size: 13px; margin: 6px 0 0; display: block; }
 .ts-credit { margin-top: 18px; }
 .ts-play { display: grid; gap: 14px; }
@@ -560,11 +560,22 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     <button class="an-back" id="tsBack">← กลับ</button>
     <div><div class="px">BADUK BATTLE · TSUMEGO</div><h1 id="tsTitle">โจทย์ฝึกอ่านหมาก</h1></div>
   </div>
-  <div id="tsPick">
-    <div class="ts-cats" id="tsCats" role="group" aria-label="หมวดโจทย์"></div>
-    <p class="ts-catinfo" id="tsCatInfo"></p>
-    <div class="ts-levels" id="tsLevels"></div>
-    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego และจัดระดับโดยประมาณด้วย KataGo · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
+  <div id="tsPick" class="ts-pick">
+    <div class="ts-ladder">
+      <span class="ts-lab">ระดับของคุณตอนนี้</span>
+      <b class="ts-now" id="tsNow">10 คิว</b>
+      <div class="ts-steps" id="tsSteps" aria-hidden="true"></div>
+      <div class="ts-ends"><span>10 คิว</span><span>4 ดั้ง</span></div>
+      <p class="ts-dim" id="tsStats"></p>
+      <button id="tsGo" class="primary">เริ่มที่ 10 คิว</button>
+    </div>
+    <ul class="ts-rules">
+      <li>โจทย์จะสุ่มมาให้ทีละข้อ คละหมวด ทั้งเป็น-ตาย จับกิน ต่อ-ตัด ทีเด็ด และเอนเกม</li>
+      <li>แต่ละข้อต้องเดินถูก 3 ตา โดย AI ตอบโต้ทุกตา</li>
+      <li>ตอบถูก ขึ้นหนึ่งระดับ ตอบผิด กลับไปเริ่ม 10 คิวใหม่</li>
+      <li>โจทย์ไม่ซ้ำจนกว่าจะหมดระดับนั้น</li>
+    </ul>
+    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego เฉลยต่อเนื่องและระดับคิดโดย KataGo จึงเป็นค่าประมาณ · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
   </div>
   <div class="ts-play" id="tsPlay" hidden>
     <div class="ts-boardbox">
@@ -573,11 +584,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     </div>
     <div class="ts-side">
       <div class="ts-say" id="tsSay" aria-live="polite"></div>
-      <div class="ts-btns">
-        <button id="tsRetry" class="primary" hidden>ลองใหม่</button>
-        <button id="tsAns">ดูเฉลย</button>
-      </div>
-      <div class="ts-nav"><button id="tsPrev">← ข้อก่อน</button><button id="tsNext">ข้อต่อไป →</button></div>
+      <div class="ts-btns"><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
       <p class="ts-dim" id="tsSrc"></p>
     </div>
   </div>
@@ -2573,27 +2580,23 @@ const Analysis = (function () {
   return api;
 })();
 
-// Tsumego: problems by category and level (10 kyu to 4 dan), answered by the first move.
-// The problems come from tsumego.json (positions and book answers); a wrong move gets the opponent's reply from the
-// network's policy inside the problem's corner, so the player sees why it fails.
+// Tsumego: a level ladder from 10 kyu to 4 dan. Each problem is a five-move answer line (the player's three moves and the
+// opponent's two replies, worked out ahead by KataGo, see src/tools); solving one moves the player up a level, a wrong
+// move gets one reply from the opponent and sends the player back to 10 kyu. Problems never repeat until a level runs out.
 const Tsumego = (() => {
   "use strict";
   const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.sound(), api.onBack()
   const $ = id => document.getElementById(id);
-  const CATS = [
-    { id: "life", t: "เป็น-ตาย", s: "ทำให้กลุ่มรอด หรือฆ่ากลุ่มฝ่ายตรงข้าม" },
-    { id: "capture", t: "จับกิน", s: "ไล่จับ ตาข่าย ตีกลับ แข่งกินลมหายใจ" },
-    { id: "connect", t: "ต่อ-ตัด", s: "เชื่อมกลุ่มตัวเอง ตัดกลุ่มคู่ต่อสู้ หนีออก" },
-    { id: "tesuji", t: "ทีเด็ด", s: "ท่าไม้ตาย (tesuji) ที่ดูไม่ออกในแวบแรก" },
-    { id: "endgame", t: "เอนเกม", s: "ปิดเขตให้ได้แต้มมากที่สุดช่วงท้ายเกม" }
-  ];
+  const CATS = { life: "เป็น-ตาย", capture: "จับกิน", connect: "ต่อ-ตัด", tesuji: "ทีเด็ด", endgame: "เอนเกม" };
   const LEVELS = ["10 คิว", "9 คิว", "8 คิว", "7 คิว", "6 คิว", "5 คิว", "4 คิว", "3 คิว", "2 คิว", "1 คิว", "1 ดั้ง", "2 ดั้ง", "3 ดั้ง", "4 ดั้ง"];
-  const KEY = "gonn.tsume"; // { problem id: 1 solved first try, 2 solved, 3 answer seen }
-  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+  const TOP = LEVELS.length - 1;
+  const KEY = "gonn.tsume2"; // { lvl: current level, best: highest level reached, solved: count, seen: [problem ids] }
+  const fresh0 = () => ({ lvl: 0, best: 0, solved: 0, seen: [] });
+  const load = () => { try { return Object.assign(fresh0(), JSON.parse(localStorage.getItem(KEY))); } catch (e) { return fresh0(); } };
   const store = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
 
   let DATA = null, loading = null, wired = false;
-  const ST = { cat: "life", lvl: null, list: [], i: 0, b: null, base: null, moves: [], mine: [], wrong: 0, done: 0, show: false, mark: null, busy: 0 };
+  const ST = { b: null, base: null, moves: [], done: 0, failed: 0, wait: 0, mark: null, busy: 0, playing: false };
 
   function fetchData() {
     if (!loading) loading = fetch("tsumego.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => (DATA = d))
@@ -2601,21 +2604,23 @@ const Tsumego = (() => {
     return loading;
   }
   const idOf = q => DATA.src[q.s] + "#" + q.n;
-  const ofLevel = (cat, l) => DATA.p.filter(q => q.c === cat && q.l === l);
 
-  // ---------- picker: categories and levels ----------
-  function showPick() {
-    ST.lvl = null; $("tsPick").hidden = false; $("tsPlay").hidden = true; $("tsTitle").textContent = "โจทย์ฝึกอ่านหมาก";
-    const prog = load();
-    $("tsCats").innerHTML = CATS.map(c => `<button class="ts-cat" data-cat="${c.id}" aria-pressed="${c.id === ST.cat}">${c.t}</button>`).join("");
-    const cat = CATS.find(c => c.id === ST.cat);
-    $("tsCatInfo").textContent = cat.s;
-    $("tsLevels").innerHTML = LEVELS.map((name, l) => {
-      const qs = ofLevel(ST.cat, l); if (!qs.length) return "";
-      const ok = qs.filter(q => prog[idOf(q)] === 1 || prog[idOf(q)] === 2).length;
-      return `<button class="ts-lvl${ok === qs.length ? " full" : ""}" data-l="${l}"><b>${name}</b><span>${ok} / ${qs.length}</span><i style="width:${ok / qs.length * 100}%"></i></button>`;
-    }).join("");
+  // ---------- the ladder screen ----------
+  function showLadder() {
+    ST.playing = false; ST.busy++; $("tsPick").hidden = false; $("tsPlay").hidden = true; $("tsTitle").textContent = "โจทย์ฝึกอ่านหมาก";
+    const g = load();
+    $("tsNow").textContent = LEVELS[g.lvl];
+    $("tsStats").textContent = `สูงสุดที่เคยถึง ${LEVELS[g.best]} · ทำถูกแล้ว ${g.solved} ข้อ`;
+    $("tsSteps").innerHTML = LEVELS.map((n, l) => `<i class="${l === g.lvl ? "now" : l <= g.best ? "been" : ""}" title="${n}"></i>`).join("");
+    $("tsGo").textContent = g.lvl ? `เล่นต่อที่ ${LEVELS[g.lvl]}` : "เริ่มที่ 10 คิว";
     window.scrollTo(0, 0);
+  }
+  // a problem at this level not seen yet; when the level has run out, its problems start over
+  function nextProblem(l) {
+    const g = load(), seen = new Set(g.seen), all = DATA.p.filter(q => q.l === l);
+    let fresh = all.filter(q => !seen.has(idOf(q)));
+    if (!fresh.length) { const ids = new Set(all.map(idOf)); g.seen = g.seen.filter(id => !ids.has(id)); store(g); fresh = all; }
+    return fresh[Math.floor(Math.random() * fresh.length)];
   }
 
   // ---------- one problem ----------
@@ -2673,25 +2678,19 @@ const Tsumego = (() => {
     while (y1 - y0 < 6) { if (y0 > 0) y0--; if (y1 - y0 < 6 && y1 < 18) y1++; }
     return { x0, x1, y0, y1 };
   }
-  function openLevel(l) {
-    ST.lvl = l; ST.list = ofLevel(ST.cat, l);
-    const prog = load(), first = ST.list.findIndex(q => !prog[idOf(q)]);
-    ST.i = first < 0 ? 0 : first;
+  function play() {
+    const g = load(), q = nextProblem(g.lvl);
+    if (!q) return;
+    g.seen.push(idOf(q)); store(g);
+    ST.playing = true; ST.q = q; ST.crop = cropOf(q); ST.show = false;
     $("tsPick").hidden = true; $("tsPlay").hidden = false;
-    setProblem();
-  }
-  function setProblem() {
-    const q = ST.list[ST.i];
-    ST.q = q; ST.crop = cropOf(q); ST.wrong = 0; ST.show = false;
     ST.base = setupMoves(q, ST.crop); reset();
-    const cat = CATS.find(c => c.id === ST.cat);
-    $("tsTitle").textContent = `${cat.t} · ${LEVELS[ST.lvl]}`;
-    $("tsNo").textContent = `ข้อ ${ST.i + 1} / ${ST.list.length}`;
-    $("tsPrev").disabled = ST.i === 0; $("tsNext").disabled = ST.i === ST.list.length - 1;
-    const prog = load()[idOf(q)];
-    say(`<b>${q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b> ${hintOf(ST.cat)}` + (prog === 1 || prog === 2 ? `<span class="ts-dim">ข้อนี้คุณเคยทำได้แล้ว</span>` : ""));
+    $("tsTitle").textContent = `ระดับ ${LEVELS[g.lvl]}`;
+    $("tsNo").textContent = `หมวด ${CATS[q.c]}`;
+    say(`<b>${q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b> ${hintOf(q.c)} ต้องเดินถูกทั้ง 3 ตา (อีกฝ่ายตอบ 2 ตา)`);
     const src = DATA.src[q.s]; // Lee Changho's volumes are named by chapter only
     $("tsSrc").textContent = `จาก ${/^\d/.test(src) ? "Lee Changho Tesuji · " + src : src} ข้อ ${q.n}`;
+    $("tsAns").hidden = true; $("tsNext").hidden = true;
     window.scrollTo(0, 0);
   }
   const hintOf = cat => ({ life: "หาจุดที่ทำให้รอด หรือทำให้อีกฝ่ายตาย", capture: "หาตาที่จับกินหมากได้", connect: "หาตาที่ต่อหรือตัดได้สำเร็จ",
@@ -2699,14 +2698,12 @@ const Tsumego = (() => {
   // the answer line (q.m: the player's move, the opponent's reply, ... as point names), the other moves the network
   // rates as just as good at each of the player's turns (q.x), and the komi that makes the framed position even (q.k)
   const lineOf = q => pairs(q.m || q.a[0]);
-  function reset(step = 0) {
-    const { Board } = api.E, b = new Board(19), line = lineOf(ST.q);
+  function reset() {
+    const { Board } = api.E, b = new Board(19);
     for (const m of ST.base) b.play(m);
     ST.moves = ST.base.slice();
-    for (let k = 0; k < step; k++) { const p = b.pt(...c2(line[k])); b.play(p); ST.moves.push(p); }
-    ST.b = b; ST.step = step; ST.done = 0; ST.failed = 0; ST.wait = 0; ST.mark = null; ST.nums = null; ST.busy++;
-    ST.last = step ? b.pt(...c2(line[step - 1])) : null;
-    $("tsRetry").hidden = true; draw();
+    ST.b = b; ST.step = 0; ST.done = 0; ST.failed = 0; ST.wait = 0; ST.mark = null; ST.nums = null; ST.last = null; ST.busy++;
+    draw();
   }
   function say(html) { $("tsSay").innerHTML = html; }
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -2721,41 +2718,32 @@ const Tsumego = (() => {
     const my = ++ST.busy;
     if (name === line[k]) {
       ST.step++;
-      if (ST.step >= line.length) { // the line ends on our move: the opponent still answers, from the network
-        ST.wait = 1; draw(); await wait(300);
-        const r = await replyTo(); if (my !== ST.busy) return;
-        if (r !== null) put(r);
-        return solved(r !== null);
-      }
+      if (ST.step >= line.length) return end(true);
       ST.wait = 1; say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบ…`); draw();
       await wait(450); if (my !== ST.busy) return;
       put(b.pt(...c2(line[ST.step]))); ST.step++; ST.wait = 0; ST.mark = null;
-      if (ST.step >= line.length) return solved(true);
-      say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบแล้ว ${q.t === "B" ? "ดำ" : "ขาว"}เดินต่อ หาตาต่อไปให้เจอ`); draw();
+      say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบแล้ว ${q.t === "B" ? "ดำ" : "ขาว"}เดินต่อ (เหลืออีก ${(line.length - ST.step + 1) / 2} ตา)`); draw();
       return;
     }
-    if (alts.includes(name)) {
-      ST.wait = 1; draw();
-      const r = await replyTo(); if (my !== ST.busy) return;
-      if (r !== null) put(r);
-      return solved(false, true);
-    }
-    ST.wrong++; ST.mark = { p, ok: false }; ST.wait = 1; draw();
-    say(`<b class="ts-ng">ยังไม่ใช่</b> ดูว่าอีกฝ่ายจะตอบยังไง…`);
-    const reply = await replyTo();
-    if (my !== ST.busy) return;
-    if (reply !== null) { put(reply); ST.mark.reply = reply; }
-    ST.wait = 0; ST.failed = 1; draw();
-    say(`<b class="ts-ng">ยังไม่ใช่</b> ${reply !== null ? "อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ " : ""}กด "ลองใหม่" แล้วหาจุดอื่นดูนะ` + (ST.wrong >= 3 ? ` หรือกด "ดูเฉลย"` : ""));
-    $("tsRetry").hidden = false;
+    // another move the network rates as good as the line's counts as solved, after one reply
+    const ok = alts.includes(name);
+    if (!ok) { ST.mark = { p, ok: false }; say(`<b class="ts-ng">ยังไม่ใช่</b> ดูว่าอีกฝ่ายจะตอบยังไง…`); }
+    ST.wait = 1; draw();
+    const r = await replyTo(); if (my !== ST.busy) return;
+    if (r !== null) { put(r); if (!ok) ST.mark.reply = r; }
+    end(ok, ok);
   }
-  function solved(theyGaveUp, other) {
-    const prog = load(), id = idOf(ST.q);
-    ST.done = 1; ST.wait = 0;
-    if (!ST.show && prog[id] !== 1) { prog[id] = ST.wrong ? 2 : 1; store(prog); }
-    const why = other ? "ตานี้ก็ได้ผลเหมือนกับเฉลย" : theyGaveUp ? "อีกฝ่ายหมดทางสู้แล้ว" : ST.wrong ? "พลาดไปก่อนแต่หาเจอจนได้" : "เก่งมาก ตอบถูกตั้งแต่ครั้งแรก";
-    say(`<b class="ts-ok">ถูกต้อง!</b> ${why}` + (ST.i < ST.list.length - 1 ? ` กด "ข้อต่อไป" ได้เลย` : " ทำครบระดับนี้แล้ว"));
-    $("tsRetry").hidden = false; draw();
+  // the end of a problem: up a level, or back to 10 kyu
+  function end(won, other) {
+    const g = load(), was = g.lvl;
+    ST.done = won ? 1 : 0; ST.failed = won ? 0 : 1; ST.wait = 0;
+    if (won) { g.solved++; g.lvl = Math.min(TOP, g.lvl + 1); g.best = Math.max(g.best, g.lvl); }
+    else g.lvl = 0;
+    store(g);
+    if (won) say(`<b class="ts-ok">ถูกต้อง!</b> ${other ? "ตานี้ก็ได้ผลเหมือนกับเฉลย " : ""}` + (was === TOP ? "ระดับ 4 ดั้งแล้ว สุดยอดมาก ลองข้อต่อไปที่ 4 ดั้งอีกนะ" : `ขึ้นเป็น <b>${LEVELS[g.lvl]}</b>`));
+    else say(`<b class="ts-ng">ผิด</b> อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ ${was ? "ต้องกลับไปเริ่มที่ <b>10 คิว</b> ใหม่" : "ลองข้อต่อไปที่ 10 คิวนะ"} กด "ดูเฉลย" เพื่อดูวิธีที่ถูกได้`);
+    $("tsNext").textContent = `ข้อต่อไป (${LEVELS[g.lvl]}) →`; $("tsNext").hidden = false; $("tsAns").hidden = false;
+    draw();
   }
   // the opponent's answer off the line: the network's favourite point inside the problem area
   async function replyTo() {
@@ -2769,17 +2757,16 @@ const Tsumego = (() => {
   }
   // the answer is played out move by move with numbers
   async function showAnswer() {
-    ST.show = true; const prog = load(), id = idOf(ST.q);
-    if (!prog[id]) { prog[id] = 3; store(prog); }
-    reset(); const my = ST.busy, line = lineOf(ST.q);
+    ST.show = true;
+    reset(); const my = ST.busy, line = lineOf(ST.q); ST.failed = 1; $("tsAns").hidden = true;
     ST.wait = 1; ST.nums = new Map();
     say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่`);
     for (let k = 0; k < line.length; k++) {
       await wait(k ? 700 : 300); if (my !== ST.busy) return;
       const p = ST.b.pt(...c2(line[k])); put(p); ST.nums.set(p, k + 1); draw();
     }
-    ST.wait = 0; ST.failed = 1; $("tsRetry").hidden = false;
-    say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่${ST.q.a.length > 1 ? " (ตาแรกมีจุดอื่นที่ถูกด้วย)" : ""} กด "ลองใหม่" เพื่อลองเล่นเองนะ`);
+    ST.wait = 0; $("tsAns").hidden = false;
+    say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่${ST.q.a.length > 1 ? " (ตาแรกมีจุดอื่นที่ถูกด้วย)" : ""} กด "ข้อต่อไป" เมื่อพร้อม`);
   }
 
   // ---------- board ----------
@@ -2831,24 +2818,20 @@ const Tsumego = (() => {
     svg.addEventListener("click", e => { const p = ptAt(e); if (p !== null) { ST.ghost = null; tap(p); } });
     svg.addEventListener("pointermove", e => { if (e.pointerType !== "mouse" || !ST.b) return; const p = ptAt(e); if (p !== ST.ghost) { ST.ghost = p; draw(); } });
     svg.addEventListener("pointerleave", () => { if (!ST.b) return; ST.ghost = null; draw(); });
-    $("tsCats").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (!b) return; ST.cat = b.dataset.cat; showPick(); });
-    $("tsLevels").addEventListener("click", e => { const b = e.target.closest("[data-l]"); if (!b) return; openLevel(+b.dataset.l); });
-    // after a wrong move: back to just before it; after the answer or a solved problem: from the start
-    $("tsRetry").onclick = () => { const k = ST.failed && !ST.nums ? ST.step : 0; reset(k); say(k ? `ลองอีกครั้ง หาตาต่อไปของ${ST.q.t === "B" ? "ดำ" : "ขาว"}` : `ลองอีกครั้ง <b>${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b>`); };
+    $("tsGo").onclick = play;
     $("tsAns").onclick = showAnswer;
-    $("tsPrev").onclick = () => { if (ST.i > 0) { ST.i--; setProblem(); } };
-    $("tsNext").onclick = () => { if (ST.i < ST.list.length - 1) { ST.i++; setProblem(); } };
-    $("tsBack").onclick = () => { if (ST.lvl !== null) showPick(); else { $("tsel").hidden = true; if (api.onBack) api.onBack(); } };
+    $("tsNext").onclick = play;
+    // leaving in the middle of a problem keeps the level (the problem counts as seen)
+    $("tsBack").onclick = () => { if (ST.playing) showLadder(); else { $("tsel").hidden = true; if (api.onBack) api.onBack(); } };
   }
 
   api._setup = q => setupMoves(q, cropOf(q)); // for the script that works out the answer lines (src/tools)
   api._crop = cropOf;
   api.open = async () => {
     if (!wired) wire();
-    $("tsel").hidden = false; $("tsPick").hidden = false; $("tsPlay").hidden = true;
-    $("tsLevels").innerHTML = `<p class="ts-dim">กำลังโหลดโจทย์…</p>`; $("tsCats").innerHTML = "";
-    try { await fetchData(); showPick(); }
-    catch (e) { $("tsLevels").innerHTML = `<p class="ts-dim">โหลดโจทย์ไม่สำเร็จ ลองเปิดใหม่อีกครั้ง</p>`; }
+    $("tsel").hidden = false; $("tsPick").hidden = false; $("tsPlay").hidden = true; $("tsGo").disabled = true; $("tsGo").textContent = "กำลังโหลดโจทย์…";
+    try { await fetchData(); $("tsGo").disabled = false; showLadder(); }
+    catch (e) { $("tsGo").textContent = "โหลดโจทย์ไม่สำเร็จ ลองเปิดใหม่อีกครั้ง"; }
   };
   return api;
 })();
