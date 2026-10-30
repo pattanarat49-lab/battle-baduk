@@ -177,7 +177,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 body.menuing { padding: 0; background: #0e272d; }
 .menu { --u: min(1vw, 1vh); --mn-bg: #0e272d; --mn-bar: #112b33; --mn-line: #24434b; --mn-card: #ede9d7; --mn-ink: #14262b; --mn-sub: #33454a; --mn-cream: #f3ead8;
   box-sizing: border-box; min-height: 100vh; min-height: 100dvh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--mn-bg); color: var(--mn-cream); }
-/* falling sakura petals behind everything on the menu, and the card pictures breathing a little */
+/* falling sakura petals behind the menu cards */
 .menu { position: relative; overflow: hidden; }
 .mn-bar { position: relative; z-index: 3; } .mn-main { position: relative; z-index: 1; }
 .mn-petals { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -193,14 +193,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-petals i:nth-child(odd) { width: 4px; height: 4px; box-shadow: 4px 0 0 #f7c4d3, 0 4px 0 #e98aa6; }
 @keyframes mnFall { to { top: 105%; transform: rotate(320deg); } }
 @keyframes mnSway { from { margin-left: -18px; } to { margin-left: 18px; } }
-.mn-ic img { transform-origin: 50% 80%; animation: mnBreathe 4s ease-in-out infinite; transition: transform .2s; }
-#menu .mn-item:nth-child(2) .mn-ic img { animation-delay: -1s; } #menu .mn-item:nth-child(3) .mn-ic img { animation-delay: -2s; }
-#menu .mn-item:nth-child(4) .mn-ic img { animation-delay: -3s; } #menu .mn-item:nth-child(5) .mn-ic img { animation-delay: -1.5s; } #menu .mn-item:nth-child(6) .mn-ic img { animation-delay: -2.5s; }
-@keyframes mnBreathe { 50% { transform: translateY(-3%) scale(1.03); } }
-#menu .mn-item:hover:not(:disabled) .mn-ic img { animation: mnHop .5s ease-out; }
-@keyframes mnHop { 40% { transform: translateY(-8%) rotate(-3deg) scale(1.06); } 100% { transform: none; } }
-#menu .mn-item:disabled .mn-ic img { animation: none; }
-@media (prefers-reduced-motion: reduce) { .mn-petals { display: none; } .mn-ic img, #menu .mn-item:hover:not(:disabled) .mn-ic img { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mn-petals { display: none; } }
 .mn-bar { display: flex; align-items: center; gap: clamp(10px, calc(var(--u) * 2), 22px); background: var(--mn-bar); border-bottom: 2px solid var(--mn-line);
   padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
 .mn-mark { flex: none; width: clamp(40px, calc(var(--u) * 7.5), 70px); height: auto; display: block; }
