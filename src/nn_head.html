@@ -296,6 +296,8 @@ body.menuing { padding: 0; background: #0e272d; }
 .ts-num { font: 700 .5px var(--f-body); text-anchor: middle; dominant-baseline: middle; }
 .ts-say { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; font-size: 15px; line-height: 1.6; min-height: 72px; }
 .ts-say b { font-weight: 700; } .ts-ok { color: #57c26b; } .ts-ng { color: #f08a6c; }
+.ts-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#tsel .ts-choices button { min-height: 52px; font-family: var(--f-px); font-size: 22px; background: var(--accent); color: var(--accent-fg); border: 0; }
 .ts-btns, .ts-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
 #tsel .ts-btns button, #tsel .ts-nav button { min-height: 44px; font-size: 15px; }
 
@@ -601,6 +603,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
     </div>
     <div class="ts-side">
       <div class="ts-say" id="tsSay" aria-live="polite"></div>
+      <div class="ts-choices" id="tsChoices" hidden></div>
       <div class="ts-btns"><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
       <p class="ts-dim" id="tsSrc"></p>
     </div>

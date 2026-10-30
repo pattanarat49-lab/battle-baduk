@@ -102,10 +102,12 @@ const Tsumego = (() => {
     g.seen.push(idOf(q)); store(g);
     ST.playing = true; ST.q = q; ST.crop = cropOf(q); ST.show = false;
     $("tsPick").hidden = true; $("tsPlay").hidden = false;
-    ST.base = setupMoves(q, ST.crop); reset();
+    // a problem over most of the board is a choice of three marked points (A, B, C) at each of the player's turns
+    ST.choice = ST.crop.x1 - ST.crop.x0 >= 12 && ST.crop.y1 - ST.crop.y0 >= 12;
+    ST.base = setupMoves(q, ST.crop); reset(); offer();
     $("tsTitle").textContent = `ระดับ ${LEVELS[g.lvl]}`;
     $("tsNo").textContent = `หมวด ${CATS[q.c]}`;
-    say(`<b>${q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b> ${hintOf(q.c)} ต้องเดินถูกทั้ง 3 ตา (อีกฝ่ายตอบ 2 ตา)`);
+    say(`<b>${q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b> ${hintOf(q.c)} ต้องเดินถูกทั้ง 3 ตา (อีกฝ่ายตอบ 2 ตา)${ST.choice ? " โจทย์ทั้งกระดาน เลือกจุด A, B หรือ C" : ""}`);
     const src = DATA.src[q.s]; // Lee Changho's volumes are named by chapter only
     $("tsSrc").textContent = `จาก ${/^\d/.test(src) ? "Lee Changho Tesuji · " + src : src} ข้อ ${q.n}`;
     $("tsAns").hidden = true; $("tsNext").hidden = true;
@@ -120,7 +122,7 @@ const Tsumego = (() => {
     const { Board } = api.E, b = new Board(19);
     for (const m of ST.base) b.play(m);
     ST.moves = ST.base.slice();
-    ST.b = b; ST.step = 0; ST.done = 0; ST.failed = 0; ST.wait = 0; ST.mark = null; ST.nums = null; ST.last = null; ST.busy++;
+    ST.b = b; ST.step = 0; ST.done = 0; ST.failed = 0; ST.wait = 0; ST.mark = null; ST.nums = null; ST.last = null; ST.opts = null; ST.busy++; $("tsChoices").hidden = true;
     draw();
   }
   function say(html) { $("tsSay").innerHTML = html; }
@@ -129,6 +131,8 @@ const Tsumego = (() => {
 
   async function tap(p) {
     if (ST.done || ST.failed || ST.wait || !ST.b) return;
+    if (ST.choice && !(ST.opts && ST.opts.includes(p))) return;
+    ST.opts = null; $("tsChoices").hidden = true;
     const b = ST.b; if (!b.isLegal(p, b.toPlay)) return;
     const [x, y] = b.xy(p), name = String.fromCharCode(97 + x, 97 + y), q = ST.q, line = lineOf(q), k = ST.step;
     const alts = pairs((k === 0 ? q.a.join("") : "") + ((q.x && q.x[k / 2]) || ""));
@@ -140,7 +144,7 @@ const Tsumego = (() => {
       ST.wait = 1; say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบ…`); draw();
       await wait(450); if (my !== ST.busy) return;
       put(b.pt(...c2(line[ST.step]))); ST.step++; ST.wait = 0; ST.mark = null;
-      say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบแล้ว ${q.t === "B" ? "ดำ" : "ขาว"}เดินต่อ (เหลืออีก ${(line.length - ST.step + 1) / 2} ตา)`); draw();
+      say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบแล้ว ${q.t === "B" ? "ดำ" : "ขาว"}เดินต่อ (เหลืออีก ${(line.length - ST.step + 1) / 2} ตา)${ST.choice ? " เลือก A, B หรือ C" : ""}`); draw(); offer();
       return;
     }
     // another move the network rates as good as the line's counts as solved, after one reply
@@ -150,6 +154,26 @@ const Tsumego = (() => {
     const r = await replyTo(); if (my !== ST.busy) return;
     if (r !== null) { put(r); if (!ok) ST.mark.reply = r; }
     end(ok, ok);
+  }
+  // the three choices: the line's move and the two points the network likes best that aren't as good, in random order
+  async function offer() {
+    if (!ST.choice) return;
+    const my = ST.busy, b = ST.b, q = ST.q, k = ST.step, right = b.pt(...c2(lineOf(q)[k]));
+    const good = new Set(pairs((k === 0 ? q.a.join("") : "") + ((q.x && q.x[k / 2]) || "")).map(s => b.pt(...c2(s))));
+    const { x0, x1, y0, y1 } = ST.crop, cand = [];
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const p = b.pt(x, y); if (p !== right && !good.has(p) && b.isLegal(p, b.toPlay)) cand.push({ p, x, y, v: 0 }); }
+    const ai = api.ai && api.ai();
+    if (ai) { try { const ev = await ai.evaluate(19, ST.moves, q.k === undefined ? 7.5 : q.k); for (const c of cand) c.v = ev.policy[c.y * 19 + c.x]; } catch (e) {} }
+    if (my !== ST.busy) return;
+    // without the network: points near the answer
+    const [rx, ry] = b.xy(right);
+    if (!cand.some(c => c.v > 0)) for (const c of cand) c.v = Math.random() / (1 + Math.abs(c.x - rx) + Math.abs(c.y - ry));
+    cand.sort((a, b2) => b2.v - a.v);
+    const opts = [right, ...cand.slice(0, 2).map(c => c.p)];
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+    ST.opts = opts;
+    $("tsChoices").innerHTML = opts.map((p, i) => `<button data-o="${i}">${"ABC"[i]}</button>`).join("");
+    $("tsChoices").hidden = false; draw();
   }
   // the end of a problem: up a level, or back to 10 kyu
   function end(won, other) {
@@ -221,6 +245,8 @@ const Tsumego = (() => {
     if (ST.ghost != null && !ST.done && !ST.failed && !ST.wait && b.color[ST.ghost] === 0) {
       const [x, y] = b.xy(ST.ghost); s.push(`<circle cx="${x}" cy="${y}" r=".45" fill="url(#${b.toPlay === BLACK ? "tsGb" : "tsGw"})" opacity=".45"/>`);
     }
+    if (ST.opts) ST.opts.forEach((p, i) => { const [x, y] = b.xy(p);
+      s.push(`<circle cx="${x}" cy="${y}" r=".42" fill="#e3b06a" stroke="#2a1a0b" stroke-width=".05"/><text x="${x}" y="${y + .04}" class="ts-num" fill="#2a1a0b">${"ABC"[i]}</text>`); });
     $("tsBoard").innerHTML = s.join("");
     $("tsTurn").className = "ts-turn " + (ST.q.t === "B" ? "b" : "w");
   }
@@ -237,6 +263,7 @@ const Tsumego = (() => {
     svg.addEventListener("pointermove", e => { if (e.pointerType !== "mouse" || !ST.b) return; const p = ptAt(e); if (p !== ST.ghost) { ST.ghost = p; draw(); } });
     svg.addEventListener("pointerleave", () => { if (!ST.b) return; ST.ghost = null; draw(); });
     $("tsGo").onclick = play;
+    $("tsChoices").addEventListener("click", e => { const b = e.target.closest("[data-o]"); if (b && ST.opts) tap(ST.opts[+b.dataset.o]); });
     $("tsAns").onclick = showAnswer;
     $("tsNext").onclick = play;
     // leaving in the middle of a problem keeps the level (the problem counts as seen)
@@ -245,6 +272,7 @@ const Tsumego = (() => {
 
   api._setup = q => setupMoves(q, cropOf(q)); // for the script that works out the answer lines (src/tools)
   api._crop = cropOf;
+  api._opts = () => (ST.opts || []).map(p => String.fromCharCode(...ST.b.xy(p).map(v => 97 + v))); // for tests
   api.open = async () => {
     if (!wired) wire();
     $("tsel").hidden = false; $("tsPick").hidden = false; $("tsPlay").hidden = true; $("tsGo").disabled = true; $("tsGo").textContent = "กำลังโหลดโจทย์…";
