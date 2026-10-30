@@ -594,6 +594,7 @@
     save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
+    if (!exam) showResult(humanWon);
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
@@ -611,6 +612,29 @@
     });
   }
   // once the result is up (and, in the rank test, the rank is graded), offer to take the game to the analysis board
+  // ---------- VICTORY / DEFEAT banner after a game against a character: chunky pixel letters, white with a black outline ----------
+  const BIG = {
+    A: "..###..|.#####.|##...##|##...##|#######|##...##|##...##", C: ".######|#######|##.....|##.....|##.....|#######|.######",
+    D: "######.|#######|##...##|##...##|##...##|#######|######.", E: "#######|#######|##.....|######.|##.....|#######|#######",
+    F: "#######|#######|##.....|######.|##.....|##.....|##.....", I: "######|######|..##..|..##..|..##..|######|######",
+    O: ".#####.|#######|##...##|##...##|##...##|#######|.#####.", R: "######.|#######|##...##|######.|##.##..|##..##.|##...##",
+    T: "#######|#######|..###..|..###..|..###..|..###..|..###..", V: "##...##|##...##|##...##|##...##|.##.##.|.#####.|..###..",
+    Y: "##...##|##...##|.##.##.|..###..|..###..|..###..|..###.."
+  };
+  function bigWord(word) {
+    const cells = new Set(); let x0 = 2;
+    for (const ch of word) { const rows = BIG[ch].split("|"); rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === "#") cells.add((x0 + x) + "," + (y + 2)); })); x0 += rows[0].length + 1; }
+    const W = x0 + 1, H = 11, ink = new Set();
+    for (const k of cells) { const [x, y] = k.split(",").map(Number); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) + Math.abs(dy) <= 3) ink.add((x + dx) + "," + (y + dy)); }
+    const rect = (set, fill) => [...set].map(k => { const [x, y] = k.split(","); return `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${fill}"/>`; }).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" role="img" aria-label="${word}">${rect(ink, "#000")}${rect(cells, "#fff")}</svg>`;
+  }
+  function showResult(won) {
+    const el = $("vd");
+    el.innerHTML = bigWord(won ? "VICTORY" : "DEFEAT") + `<small>แตะหน้าจอเพื่อดูกระดาน</small>`;
+    el.className = "vd " + (won ? "win" : "lose"); el.hidden = false;
+  }
+  $("vd").addEventListener("pointerdown", e => { e.preventDefault(); $("vd").hidden = true; });
   function askAnalyze(wait) {
     const id = gameId;
     Promise.resolve(wait).then(() => setTimeout(() => {
@@ -633,7 +657,7 @@
   // ---------- game flow ----------
   function cancelAI() { gen++; thinking = false; think = null; }
   function newGame() {
-    cancelAI(); gameAway = false;
+    cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
@@ -1339,7 +1363,7 @@
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
-  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("vd").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
@@ -1387,7 +1411,7 @@
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };

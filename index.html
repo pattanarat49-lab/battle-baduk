@@ -467,6 +467,14 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .actions.four { grid-template-columns: repeat(4, 1fr); }
 .actions.four.three { grid-template-columns: repeat(3, 1fr); } .actions.two { grid-template-columns: repeat(2, 1fr); }
 /* after a game: a card at the bottom asking whether to take the game to the analysis board (the result stays visible above it) */
+.vd { position: fixed; inset: 0; z-index: 40; display: grid; place-content: center; justify-items: center; gap: 18px; background: rgba(6, 14, 16, .72); cursor: pointer; animation: resIn .35s steps(4) both; }
+.vd svg { width: min(88vw, 760px); height: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); animation: resPop .45s steps(5) both; }
+.vd.win svg rect[fill="#fff"] { fill: #fff6d8; }
+.vd small { font-family: var(--f-px); font-size: 14px; letter-spacing: .08em; color: #e9e2c8; opacity: .85; animation: resBlink 1.2s steps(2) .6s infinite; }
+@keyframes resIn { from { opacity: 0; } }
+@keyframes resPop { from { transform: scale(1.6); opacity: 0; } }
+@keyframes resBlink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .vd, .vd svg, .vd small { animation: none; } }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
 .end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
@@ -637,6 +645,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div></nav>
 </section>
 
+<div class="vd" id="vd" hidden></div>
 <div class="end-ask" id="endAsk" role="dialog" aria-labelledby="endAskT" hidden>
   <p id="endAskT"><b>ANALYSIS</b>จบเกมแล้ว เอาเกมนี้ไปวิเคราะห์กับ AI เลยไหม?</p>
   <div class="actions two"><button id="endAskNo">ไว้ก่อน</button><button id="endAskGo" class="primary">วิเคราะห์เลย</button></div>
@@ -3518,6 +3527,7 @@ const Tsumego = (() => {
     save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
+    if (!exam) showResult(humanWon);
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
@@ -3535,6 +3545,29 @@ const Tsumego = (() => {
     });
   }
   // once the result is up (and, in the rank test, the rank is graded), offer to take the game to the analysis board
+  // ---------- VICTORY / DEFEAT banner after a game against a character: chunky pixel letters, white with a black outline ----------
+  const BIG = {
+    A: "..###..|.#####.|##...##|##...##|#######|##...##|##...##", C: ".######|#######|##.....|##.....|##.....|#######|.######",
+    D: "######.|#######|##...##|##...##|##...##|#######|######.", E: "#######|#######|##.....|######.|##.....|#######|#######",
+    F: "#######|#######|##.....|######.|##.....|##.....|##.....", I: "######|######|..##..|..##..|..##..|######|######",
+    O: ".#####.|#######|##...##|##...##|##...##|#######|.#####.", R: "######.|#######|##...##|######.|##.##..|##..##.|##...##",
+    T: "#######|#######|..###..|..###..|..###..|..###..|..###..", V: "##...##|##...##|##...##|##...##|.##.##.|.#####.|..###..",
+    Y: "##...##|##...##|.##.##.|..###..|..###..|..###..|..###.."
+  };
+  function bigWord(word) {
+    const cells = new Set(); let x0 = 2;
+    for (const ch of word) { const rows = BIG[ch].split("|"); rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === "#") cells.add((x0 + x) + "," + (y + 2)); })); x0 += rows[0].length + 1; }
+    const W = x0 + 1, H = 11, ink = new Set();
+    for (const k of cells) { const [x, y] = k.split(",").map(Number); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) + Math.abs(dy) <= 3) ink.add((x + dx) + "," + (y + dy)); }
+    const rect = (set, fill) => [...set].map(k => { const [x, y] = k.split(","); return `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${fill}"/>`; }).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" role="img" aria-label="${word}">${rect(ink, "#000")}${rect(cells, "#fff")}</svg>`;
+  }
+  function showResult(won) {
+    const el = $("vd");
+    el.innerHTML = bigWord(won ? "VICTORY" : "DEFEAT") + `<small>แตะหน้าจอเพื่อดูกระดาน</small>`;
+    el.className = "vd " + (won ? "win" : "lose"); el.hidden = false;
+  }
+  $("vd").addEventListener("pointerdown", e => { e.preventDefault(); $("vd").hidden = true; });
   function askAnalyze(wait) {
     const id = gameId;
     Promise.resolve(wait).then(() => setTimeout(() => {
@@ -3557,7 +3590,7 @@ const Tsumego = (() => {
   // ---------- game flow ----------
   function cancelAI() { gen++; thinking = false; think = null; }
   function newGame() {
-    cancelAI(); gameAway = false;
+    cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
@@ -4263,7 +4296,7 @@ const Tsumego = (() => {
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
-  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("vd").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
@@ -4311,7 +4344,7 @@ const Tsumego = (() => {
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
