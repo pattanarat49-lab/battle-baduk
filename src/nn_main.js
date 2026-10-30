@@ -607,7 +607,7 @@
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -1399,10 +1399,16 @@
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
-  // the player card on wide screens: latest exam rank, wins, and the time spent on the clocks
+  // the best rank from all of the player's exams with Hikaru (kept apart from the history, which holds only 100 games)
+  function bestRank(hist) {
+    let b = load("bestRank", null);
+    for (const h of hist) if (typeof h.rank === "number" && (!b || h.rank > b.rank)) b = { rank: h.rank, at: h.at };
+    return b;
+  }
+  // the player card on wide screens: best exam rank, wins, and the time spent on the clocks
   function renderMenuStats() {
     const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
-    const ranked = hist.find(x => typeof x.rank === "number"), wins = hist.filter(h => h.won).length;
+    const ranked = bestRank(hist), wins = hist.filter(h => h.won).length;
     const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
     $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
@@ -1446,7 +1452,7 @@
     const wins = hist.filter(h => h.won).length;
     let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
-    const ranked = hist.find(x => typeof x.rank === "number");
+    const ranked = bestRank(hist);
     const g = pausedGame();
     if (g) {
       const c = CHARS.find(c => c.id === g.char), mine = g.clocks && g.clocks[g.human === WHITE ? WHITE : BLACK];
@@ -1456,7 +1462,7 @@
         <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
         <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
     }
-    h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
+    h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
     if (!hist.length) {
       h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
