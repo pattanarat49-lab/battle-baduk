@@ -409,6 +409,15 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 @keyframes pulse { 50% { --px-face: #6fdca6; } }
 .actions button.danger { --px-face: #e2902e; --px-hi: #f8bc6a; --px-lo: #a05a14; }
 .actions.four { grid-template-columns: repeat(4, 1fr); }
+.actions.four.three { grid-template-columns: repeat(3, 1fr); } .actions.two { grid-template-columns: repeat(2, 1fr); }
+/* after a game: a card at the bottom asking whether to take the game to the analysis board (the result stays visible above it) */
+.end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
+  background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
+.end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
+.end-ask p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 2px; }
+.end-ask .actions { padding: 0; }
+@keyframes endAskIn { from { opacity: 0; transform: translate(-50%, 16px); } }
+@media (prefers-reduced-motion: reduce) { .end-ask { animation: none; } }
 .actions.review { grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; align-items: center; }
 .actions.review span { text-align: center; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; }
 .actions[hidden] { display: none; }
@@ -536,6 +545,10 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div></nav>
 </section>
 
+<div class="end-ask" id="endAsk" role="dialog" aria-labelledby="endAskT" hidden>
+  <p id="endAskT"><b>ANALYSIS</b>จบเกมแล้ว เอาเกมนี้ไปวิเคราะห์กับ AI เลยไหม?</p>
+  <div class="actions two"><button id="endAskNo">ไว้ก่อน</button><button id="endAskGo" class="primary">วิเคราะห์เลย</button></div>
+</div>
 <main class="app" id="game" hidden>
   <div class="pbar">
     <div class="player" id="pB">

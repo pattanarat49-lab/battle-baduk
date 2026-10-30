@@ -576,6 +576,7 @@
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
+    askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
     if (!exam) return track(ev);
     // the last move's grade may still be computing; the event keeps this game's id in case a new game starts meanwhile
@@ -585,6 +586,14 @@
       if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
+  }
+  // once the result is up (and, in the rank test, the rank is graded), offer to take the game to the analysis board
+  function askAnalyze(wait) {
+    const id = gameId;
+    Promise.resolve(wait).then(() => setTimeout(() => {
+      if (id !== gameId || !ended() || $("game").hidden) return;
+      $("endAsk").hidden = false; $("endAskGo").focus();
+    }, 1200));
   }
   // the position as spectators on /watch see it, with the moves so far for stepping back through the game
   function snapshot() {
@@ -1030,6 +1039,10 @@
   function renderReview() {
     const on = !!board && ended();
     $("review").hidden = !on; $("playActions").hidden = on; $("btnAnalyze").hidden = !on;
+    // the rank test has no hints, and no leaving for another character until the game is over
+    $("btnHint").hidden = !!exam; $("playActions").classList.toggle("two", !!exam);
+    $("btnHome").hidden = !!exam && !on; $("btnHome").parentElement.classList.toggle("three", $("btnHome").hidden);
+    if (!on) $("endAsk").hidden = true;
     if (!on) return;
     const k = reviewAt === null ? history.length : reviewAt;
     const g = exam && k ? exam.grades[k - 1] : null;
@@ -1294,7 +1307,7 @@
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
-  function showHome(exam) { examMode = exam === true; cancelAI(); save("game", null); $("game").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function showHome(exam) { examMode = exam === true; cancelAI(); save("game", null); $("game").hidden = true; $("endAsk").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
   function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
@@ -1334,7 +1347,7 @@
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
@@ -1388,10 +1401,12 @@
       unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
     }
   });
+  $("endAskNo").onclick = () => { blip(660); $("endAsk").hidden = true; };
+  $("endAskGo").onclick = () => { $("endAsk").hidden = true; $("btnAnalyze").click(); };
   $("btnAnalyze").onclick = () => {
     if (!ended()) return;
     unlockAudio(); blip(880); cancelAI();
-    $("game").hidden = true; document.body.classList.remove("playing");
+    $("game").hidden = true; $("endAsk").hidden = true; document.body.classList.remove("playing");
     Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
   };
   const syncSound = () => { $("btnSound").textContent = $("mnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
