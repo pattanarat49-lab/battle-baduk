@@ -1,4 +1,4 @@
-// Tsumego: a level ladder from 10 kyu to 4 dan. Each problem is a five-move answer line (the player's three moves and the
+// Tsumego: a level ladder from 6 kyu to 4 dan. Each problem is a five-move answer line (the player's three moves and the
 // opponent's two replies, worked out ahead by KataGo, see src/tools); solving one moves the player up a level, a wrong
 // move gets one reply from the opponent and sends the player down one level. Problems never repeat until a level runs out.
 const Tsumego = (() => {
@@ -6,9 +6,9 @@ const Tsumego = (() => {
   const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.sound(), api.onBack()
   const $ = id => document.getElementById(id);
   const CATS = { life: "เป็น-ตาย", capture: "จับกิน", connect: "ต่อ-ตัด", tesuji: "ทีเด็ด", endgame: "เอนเกม" };
-  const LEVELS = ["10 คิว", "9 คิว", "8 คิว", "7 คิว", "6 คิว", "5 คิว", "4 คิว", "3 คิว", "2 คิว", "1 คิว", "1 ดั้ง", "2 ดั้ง", "3 ดั้ง", "4 ดั้ง"];
+  const LEVELS = ["6 คิว", "5 คิว", "4 คิว", "3 คิว", "2 คิว", "1 คิว", "1 ดั้ง", "2 ดั้ง", "3 ดั้ง", "4 ดั้ง"];
   const TOP = LEVELS.length - 1;
-  const KEY = "gonn.tsume2"; // { lvl: current level, best: highest level reached, solved: count, seen: [problem ids] }
+  const KEY = "gonn.tsume3"; // { lvl: current level, best: highest level reached, solved: count, seen: [problem ids] }
   const fresh0 = () => ({ lvl: 0, best: 0, solved: 0, seen: [] });
   const load = () => { try { return Object.assign(fresh0(), JSON.parse(localStorage.getItem(KEY))); } catch (e) { return fresh0(); } };
   const store = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
@@ -30,7 +30,7 @@ const Tsumego = (() => {
     $("tsNow").textContent = LEVELS[g.lvl];
     $("tsStats").textContent = `สูงสุดที่เคยถึง ${LEVELS[g.best]} · ทำถูกแล้ว ${g.solved} ข้อ`;
     $("tsSteps").innerHTML = LEVELS.map((n, l) => `<i class="${l === g.lvl ? "now" : l <= g.best ? "been" : ""}" title="${n}"></i>`).join("");
-    $("tsGo").textContent = g.lvl ? `เล่นต่อที่ ${LEVELS[g.lvl]}` : "เริ่มที่ 10 คิว";
+    $("tsGo").textContent = g.lvl ? `เล่นต่อที่ ${LEVELS[g.lvl]}` : "เริ่มที่ 6 คิว";
     window.scrollTo(0, 0);
   }
   // a problem at this level not seen yet; when the level has run out, its problems start over
@@ -183,7 +183,7 @@ const Tsumego = (() => {
     else g.lvl = Math.max(0, g.lvl - 1);
     store(g);
     if (won) say(`<b class="ts-ok">ถูกต้อง!</b> ${other ? "ตานี้ก็ได้ผลเหมือนกับเฉลย " : ""}` + (was === TOP ? "ระดับ 4 ดั้งแล้ว สุดยอดมาก ลองข้อต่อไปที่ 4 ดั้งอีกนะ" : `ขึ้นเป็น <b>${LEVELS[g.lvl]}</b>`));
-    else say(`<b class="ts-ng">ผิด</b> อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ ${was ? `ลงไปเป็น <b>${LEVELS[g.lvl]}</b>` : "ลองข้อต่อไปที่ 10 คิวนะ"} กด "ดูเฉลย" เพื่อดูวิธีที่ถูกได้`);
+    else say(`<b class="ts-ng">ผิด</b> อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ ${was ? `ลงไปเป็น <b>${LEVELS[g.lvl]}</b>` : "ลองข้อต่อไปที่ 6 คิวนะ"} กด "ดูเฉลย" เพื่อดูวิธีที่ถูกได้`);
     $("tsNext").textContent = `ข้อต่อไป (${LEVELS[g.lvl]}) →`; $("tsNext").hidden = false; $("tsAns").hidden = false;
     draw();
   }

@@ -19,18 +19,16 @@ for cf, rf in zip(sys.argv[2::2], sys.argv[3::2]):
         q = dict(q, s=src.index(name), m=r['line'][:10], k=r['komi'])
         if x: q['x'] = x
         keep.append(q)
-# Levels were too hard from 7 kyu up (user, 2026-10-30): a ladder level now takes problems from about 0.7 of its old
-# level, ordered inside an old level by the network's prior for the book answer (easier first).
+# Levels were too hard (user, 2026-10-30: even the easiest felt like 6 kyu): the ladder is now 6 kyu (0) to 4 dan (9),
+# and every kept problem is spread over it evenly, ordered by its source level and inside that by the network's prior
+# for the book answer (easier first).
+LEVELS = 10
 pool, prior = json.load(open(PRIOR[0])), json.load(open(PRIOR[1]))
 pr = {}
 for r in prior: q = pool[r['i']]; pr[(q['src'], q['no'])] = r['prior']
-by = collections.defaultdict(list)
-for q in keep: by[q['l']].append(q)
-for l, qs in by.items():
-    qs.sort(key=lambda q: -pr.get((src[q['s']], q['n']), 0))
-    for k, q in enumerate(qs): q['l'] = round((l - 0.5 + (k + 0.5) / len(qs)) / 0.7)
-keep = [q for q in keep if q['l'] <= 13]
+keep.sort(key=lambda q: (q['l'], -pr.get((src[q['s']], q['n']), 0)))
+for k, q in enumerate(keep): q['l'] = k * LEVELS // len(keep)
 json.dump({'src': src, 'p': keep}, open(out, 'w'), ensure_ascii=False, separators=(',', ':'))
 t = collections.Counter(q['l'] for q in keep)
-print(n, 'worked out,', len(keep), 'kept; per level', [t[l] for l in range(14)])
+print(n, 'worked out,', len(keep), 'kept; per level', [t[l] for l in range(LEVELS)])
 print('per category', collections.Counter(q['c'] for q in keep))
