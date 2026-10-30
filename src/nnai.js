@@ -140,13 +140,14 @@ function GoNNAI(E, F, net) {
         let v = l.value, ld = l.lead;
         for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; p.L += ld; v = -v; ld = -ld; }
       }
-      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
+      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv, opts.top)); }
       if (opts.earlyStop && root.N > 64 && settledEarly(root, maxVisits, timeMs, t0)) break;
     }
-    const s = summary(root, base, rootEv);
+    const s = summary(root, base, rootEv, opts.top);
     s.elapsed = Date.now() - t0;
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
+    if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -189,6 +190,41 @@ function GoNNAI(E, F, net) {
     if (mine(el) >= mine(eb) - margin) { s.move = localMove; s.winrate = mine(el); }
   }
 
+  // Fighting style: among the searched moves that cost at most `margin` win rate against the best, play the one that
+  // presses the opponent hardest: touching their stones, cutting two of their groups apart, leaving one short of liberties
+  function fightScore(base, p) {
+    const me = base.toPlay, op = me === E.BLACK ? E.WHITE : E.BLACK;
+    if (!base.isLegal(p, me)) return -1;
+    const near = new Set();
+    for (const d of base.dirs) { const q = p + d; if (base.color[q] === op) near.add(base.head[q]); }
+    if (!near.size) return 0;
+    const b = new Board(base.n); b.copyFrom(base); b.play(p);
+    let score = 1 + (near.size >= 2 ? 2 : 0), mine = b.libs(b.head[p], 3);
+    if (mine < 2) return 0; // a move that walks into atari is not a fight, it is a gift
+    for (const h of near) {
+      if (b.color[h] !== op) { score += 4; continue; } // captured
+      const l = b.libs(b.head[h], 3);
+      score += l === 1 ? 3 : l === 2 ? 2 : 0;
+    }
+    return score;
+  }
+  async function preferFight(n, moves, komi, base, root, s, margin, pdaFor) {
+    if (s.move === PASS || moves.length < 2) return;
+    const best = s.top[0], cands = [];
+    for (const c of s.top) {
+      if (c.move === PASS || c.visits < Math.max(2, best.visits * 0.1)) continue;
+      const f = fightScore(base, c.move);
+      if (f > 0) cands.push({ move: c.move, f });
+    }
+    const f0 = fightScore(base, s.move);
+    cands.sort((a, b) => b.f - a.f);
+    const pick = cands[0];
+    if (!pick || pick.move === s.move || pick.f <= f0) return;
+    const [eb, ef] = await evalMany(n, [moves.concat([s.move]), moves.concat([pick.move])], komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss);
+    if (mine(ef) >= mine(eb) - margin) { s.move = pick.move; s.winrate = mine(ef); }
+  }
+
   // first-line points (the edge of the board) are only played when the network sees them as needed
   const EDGE_NEED = 0.15;
   const onEdge = (n, i) => { const x = i % 19, y = (i / 19) | 0; return i < AREA && (x === 0 || y === 0 || x === n - 1 || y === n - 1); };
@@ -209,15 +245,16 @@ function GoNNAI(E, F, net) {
     if (mine(eo) >= mine(eb) - 0.03) { s.move = other; s.winrate = mine(eo); }
   }
 
-  function summary(root, base, rootEv) {
+  // topN: how many of the searched moves to report (5 unless asked); each with its average score lead for the player to move
+  function summary(root, base, rootEv, topN) {
     const list = [];
-    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i] }); }
+    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i], lead: -k.L / k.N }); }
     list.sort((a, b) => b.N - a.N);
-    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi] }); }
+    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi], lead: rootEv.lead }); }
     const best = list[0];
     return {
       move: slotToPoint(base, best.slot), winrate: Math.max(0, Math.min(1, (best.q + 1) / 2)), visits: root.N - 1, lead: rootEv.lead,
-      top: list.slice(0, 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior })),
+      top: list.slice(0, topN || 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior, lead: c.lead })),
       own: rootEv.own, pla: rootEv.pla, rootWin: rootEv.win, searchLead: root.L / root.N
     };
   }

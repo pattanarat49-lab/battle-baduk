@@ -37,6 +37,10 @@
     { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
+    { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
+      early: { visits: 12, local: 3, temperature: 0.1, pda: 0, scoreWeight: 0 },
+      bio: "นักหมากล้อมทีมมหาวิทยาลัย เปิดเกมเรียบร้อยตามแบบ แต่พอพ้นช่วงเปิดเกมจะบุกสุดๆ ชอบตัด ชอบสู้ ไล่ฆ่ากันทั้งกระดาน",
+      say: { hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ", ahead: "สู้แบบนี้แหละที่ผมชอบ", behind: "ยังไม่จบ ตัดกลับเลย!", win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้", lose: "เก่งมาก ขอสู้อีกตาได้ไหม" } },
     { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 30 },
       bio: "ดาวรุ่งอายุน้อยจากจีน เปิดเทนเง็นทุกกระดาน บุกหนักทุกตา ไล่ฆ่าทุกกลุ่มที่เห็น",
       say: { hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่", ahead: "กลุ่มนั้นตายแล้ว", behind: "ยังไม่จบ! เดี๋ยวบุกกลับ", win: "บอกแล้วว่าไม่มีใครหนีพ้น", lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่" } },
@@ -153,6 +157,30 @@
       resigned: "ยอมแล้วเหรอ? เพิ่งจะสนุกเอง|ฮ่าๆ หนีไปซะแล้ว",
       timeoutWin: "เวลาหมดซะแล้ว มุกตลกร้ายจริงๆ|นาฬิกาก็เป็นตัวตลกได้นะ",
       giveUp: "โอเค โชว์นี้ล่มแล้ว ผมยอม|ยอมก็ได้ แต่ผมจะกลับมาพร้อมมุกใหม่"
+    },
+    jay: {
+      hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ|สวัสดีครับ วันนี้ขอสู้เต็มที่นะ|ซ้อมกับทีมมหา'ลัยมาทั้งอาทิตย์ มาลองกัน",
+      goodMove: "โห ตานี้แรงดี|ตัดได้ดีครับ ผมชอบ|เอาจริงแล้วสินะ",
+      badMove: "ตรงนั้นบางไปนะ ผมตัดแน่|ขอบคุณครับ ผมจะบุกตรงนี้เลย|ตานี้เปิดช่องให้ผมสู้แล้ว",
+      caught: "โดนไป {n} เม็ด เดี๋ยวเอาคืน|เจ็บ! แต่ศึกยังไม่จบ|โอเค เสียไปนิด ไปสู้ต่อที่อื่น",
+      capture: "จับตาย {n} เม็ด!|ศึกนี้ผมชนะ|บอกแล้วว่าผมตัดแน่",
+      ahead: "สู้แบบนี้แหละที่ผมชอบ|ศึกใหญ่ทีไร ผมได้เปรียบทุกที|เดินหน้าบุกต่อ",
+      behind: "ยังไม่จบ ตัดกลับเลย!|ต้องหาศึกใหม่แล้ว|ยิ่งตามยิ่งต้องสู้",
+      comeback: "กลับมาแล้ว! ศึกพลิกแล้ว|เห็นไหม สู้ไม่ถอยก็พลิกได้",
+      humanPass: "ผ่านเหรอ? ผมยังอยากสู้อยู่เลย|จบแล้วเหรอครับ",
+      aiPass: "ศึกจบแล้ว ผ่านครับ|ไม่มีที่ให้สู้แล้ว ผ่าน",
+      ko: "โค! มาแย่งกันเลย|ผมมีเหตุขู่เยอะนะ",
+      hint: "ดูคำใบ้ได้ แต่ศึกต้องสู้เองนะ|คำใบ้บอกให้หนีหรือให้สู้ล่ะ",
+      slow: "อ่านศึกอยู่เหรอครับ ค่อยๆ คิด|ตรงนั้นซับซ้อนจริง ผมรอได้",
+      byoyomi: "นับวินาทีแล้วนะครับ|เวลาน้อยแล้ว ระวังโดนตัด",
+      lastPeriod: "ครั้งสุดท้ายแล้ว อย่าพลาด|ตาเดียวพลาด กลุ่มอาจตายนะ",
+      aiByo: "เวลาน้อยก็ต้องสู้เร็ว|ไม่ต้องคิดนาน ตัดเลย",
+      mid: "เปิดเกมเสร็จแล้ว ได้เวลาสู้!|ตรงนี้ตัดได้นะ ระวังไว้|กลุ่มนั้นยังไม่มีตานะครับ",
+      win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้|ขอบคุณครับ ศึกดีมาก|ชนะแล้ว! ไปเล่าให้ทีมฟังดีกว่า",
+      lose: "เก่งมาก ขอสู้อีกตาได้ไหม|ผมบุกแรงเกินไปหน่อย เกมดีครับ|ยอมรับครับ คุณรับศึกได้ดีมาก",
+      resigned: "ยอมแล้วเหรอ? ศึกยังไม่จบเลย|ไว้มาสู้กันใหม่นะครับ",
+      timeoutWin: "หมดเวลาซะแล้ว น่าเสียดายศึก|เวลาหมดครับ ไว้สู้กันใหม่",
+      giveUp: "ผมสู้ไม่ไหวแล้ว ยอมครับ|ยอมครับ ศึกนี้คุณชนะ"
     },
     chris: {
       hello: "Good game ahead. เชิญเลยครับ|Shall we? ชาเย็นพร้อมแล้ว|ขอให้เป็นเกมที่มีเหตุผลนะครับ",
@@ -347,7 +375,7 @@
   // measured at startup; on a slow device searches send smaller batches so they stop close to their time limit
   let evalMs = 50, checkEngine = null, engineRetries = 0;
   async function initEngine() {
-    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; } };
+    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
@@ -481,9 +509,10 @@
 
   // ---------- clocks: 30 min main time, then byo-yomi 30 s x 3, in every mode ----------
   const PERIODS = 3, MAIN_S = 1800, BYO_S = 30;
+  let gameAway = false, awayAt = 0; // the player left an unfinished game with the back button; it waits in the profile page
   let clocks = null, lastTick = 0, humanSince = 0, slowTold = false;
   const freshClock = () => ({ main: MAIN_S, byo: BYO_S, per: PERIODS });
-  const clockLive = () => board && engineReady && !over && !scoring;
+  const clockLive = () => board && engineReady && !over && !scoring && !gameAway; // clocks stop while the player is away from the game
   function tick() {
     const now = performance.now(), dt = (now - lastTick) / 1000; lastTick = now;
     if (!clocks || !clockLive()) return;
@@ -500,6 +529,9 @@
     if (board.toPlay === human && !slowTold && now - humanSince > 90000) { slowTold = true; speak("slow", { gap: 20 }); }
     renderClocks();
   }
+  // seconds both players spent on their clocks this game, for the play time on the main menu
+  const clockSecs = () => clocks ? Math.round([BLACK, WHITE].reduce((a, k) => { const c = clocks[k];
+    return a + MAIN_S - c.main + (c.main > 0 ? 0 : (PERIODS - c.per) * BYO_S + BYO_S - c.byo); }, 0)) : 0;
   // after a move the mover's byo-yomi period starts fresh
   function clockMoved(color) { if (clocks && clocks[color].main <= 0) clocks[color].byo = BYO_S; }
   function timeout(color) {
@@ -557,19 +589,58 @@
       liveAt = Date.now(); track({ type: "move", state: snapshot() });
     }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
-  function reportEnd(humanWon, how) {
+  function reportEnd(humanWon, how, margin) {
     save("game", null);
+    save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
+    if (!exam) showResult(humanWon);
+    // the profile page's record of games played in this browser, newest first
+    const id = gameId, hist = load("history", []).filter(h => h.id !== id);
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
+    askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
     if (!exam) return track(ev);
     // the last move's grade may still be computing; the event keeps this game's id in case a new game starts meanwhile
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
+  }
+  // once the result is up (and, in the rank test, the rank is graded), offer to take the game to the analysis board
+  // ---------- VICTORY / DEFEAT banner after a game against a character: chunky pixel letters, white with a black outline ----------
+  const BIG = {
+    A: "..###..|.#####.|##...##|##...##|#######|##...##|##...##", C: ".######|#######|##.....|##.....|##.....|#######|.######",
+    D: "######.|#######|##...##|##...##|##...##|#######|######.", E: "#######|#######|##.....|######.|##.....|#######|#######",
+    F: "#######|#######|##.....|######.|##.....|##.....|##.....", I: "######|######|..##..|..##..|..##..|######|######",
+    O: ".#####.|#######|##...##|##...##|##...##|#######|.#####.", R: "######.|#######|##...##|######.|##.##..|##..##.|##...##",
+    T: "#######|#######|..###..|..###..|..###..|..###..|..###..", V: "##...##|##...##|##...##|##...##|.##.##.|.#####.|..###..",
+    Y: "##...##|##...##|.##.##.|..###..|..###..|..###..|..###.."
+  };
+  function bigWord(word) {
+    const cells = new Set(); let x0 = 2;
+    for (const ch of word) { const rows = BIG[ch].split("|"); rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === "#") cells.add((x0 + x) + "," + (y + 2)); })); x0 += rows[0].length + 1; }
+    const W = x0 + 1, H = 11, ink = new Set();
+    for (const k of cells) { const [x, y] = k.split(",").map(Number); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) + Math.abs(dy) <= 3) ink.add((x + dx) + "," + (y + dy)); }
+    const rect = (set, fill) => [...set].map(k => { const [x, y] = k.split(","); return `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${fill}"/>`; }).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" role="img" aria-label="${word}">${rect(ink, "#000")}${rect(cells, "#fff")}</svg>`;
+  }
+  function showResult(won) {
+    const el = $("vd");
+    el.innerHTML = bigWord(won ? "VICTORY" : "DEFEAT") + `<small>แตะหน้าจอเพื่อดูกระดาน</small>`;
+    el.className = "vd " + (won ? "win" : "lose"); el.hidden = false;
+  }
+  $("vd").addEventListener("pointerdown", e => { e.preventDefault(); $("vd").hidden = true; });
+  function askAnalyze(wait) {
+    const id = gameId;
+    Promise.resolve(wait).then(() => setTimeout(() => {
+      if (id !== gameId || !ended() || $("game").hidden) return;
+      $("endAsk").hidden = false; $("endAskGo").focus();
+    }, 1200));
   }
   // the position as spectators on /watch see it, with the moves so far for stepping back through the game
   function snapshot() {
@@ -586,7 +657,7 @@
   // ---------- game flow ----------
   function cancelAI() { gen++; thinking = false; think = null; }
   function newGame() {
-    cancelAI();
+    cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
@@ -685,10 +756,18 @@
     saveGame();
     if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); }
   }
+  // leaving the game screen: an unfinished game is kept (clocks stopped) and can be continued from the profile page
+  function leaveGame() {
+    cancelAI();
+    if (board && !over && !scoring && history.length && $("game").hidden === false) { gameAway = true; awayAt = Date.now(); saveGame(); }
+    else if (!gameAway) save("game", null);
+  }
   // the game in progress survives a page refresh: it is kept in localStorage until it ends or the player leaves it
+  const KEEP_MS = 6 * 36e5; // an unfinished game is kept in the browser for 6 hours
   function saveGame() {
-    if (!board || over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: Date.now() });
+    if (!board) return;
+    if (over || scoring) { save("game", null); return; }
+    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
@@ -710,8 +789,8 @@
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
-    gameId = g.gameId || rid(); gameReported = false;
-    $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
+    gameId = g.gameId || rid(); gameReported = false; gameAway = false; examMode = !!CHARS[gameChar].exam;
+    hideScreens(); $("game").hidden = false; document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -806,7 +885,7 @@
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
         batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
+      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
@@ -1014,7 +1093,12 @@
   }
   function renderReview() {
     const on = !!board && ended();
-    $("review").hidden = !on; $("playActions").hidden = on;
+    $("review").hidden = !on; $("playActions").hidden = on; $("btnAnalyze").hidden = !on;
+    // the rank test has no hints, and no leaving for another character until the game is over
+    $("btnHint").hidden = !!exam; $("playActions").classList.toggle("two", !!exam);
+    $("btnHome").hidden = !!exam && !on; $("btnHome").parentElement.classList.toggle("three", $("btnHome").hidden);
+    if (!on) $("endAsk").hidden = true;
+    $("gMode").textContent = exam ? "RANK TEST" : "PLAY WITH AI";
     if (!on) return;
     const k = reviewAt === null ? history.length : reviewAt;
     const g = exam && k ? exam.grades[k - 1] : null;
@@ -1050,7 +1134,7 @@
       const winner = diff > 0 ? BLACK : WHITE;
       if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
-      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
@@ -1215,7 +1299,9 @@
 
   const syncSize = seg("segSize", "size"); seg("segColor", "human");
   // home screen: arcade-style character select, one featured card with its neighbours either side
-  const charsEl = $("chars"), L8 = CHARS.length;
+  // the opponents only: the tutorial book and the placement test have their own rows on the main menu
+  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam);
+  const charsEl = $("chars"), L8 = PICK.length;
   const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
     if (!actx || !soundOn) return;
@@ -1234,10 +1320,19 @@
     const b = e.target.closest("button"); if (!b || b.disabled) return;
     unlockAudio(); tune(BUTTON_TUNES[b.id] || (b.id === "btnSound" ? [] : [[700, 0]]));
   }, true);
-  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  $("faces").innerHTML = PICK.map(i => `<button data-i="${i}" aria-label="${CHARS[i].name}"><img src="chars/${CHARS[i].id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  // examMode: the same screen opened from RANK TEST on the main menu, showing Hikaru's card alone
+  let examMode = false;
+  const EXAM_I = CHARS.findIndex(c => c.exam);
   function syncChars(anim) {
-    const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
-    charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
+    if (examMode) settings.char = EXAM_I;
+    else if (!PICK.includes(settings.char)) settings.char = PICK[0];
+    const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
+    $("home").querySelector(".px-title").textContent = examMode ? "Rank Test" : "Character Select";
+    $("faces").hidden = examMode;
+    charsEl.classList.toggle("solo", examMode);
+    $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
+    charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
       <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
@@ -1248,31 +1343,156 @@
     $("home").querySelector(".opts").hidden = !!c.tutorial;
     $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : "GAME START";
   }
-  function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
-  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
+  function choose(i) { unlockAudio(); settings.char = i; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
+  const step = d => examMode || choose(PICK[(PICK.indexOf(settings.char) + d + L8) % L8]);
+  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) step(+b.dataset.go); });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
-  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
+  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden) return; // the tutorial has its own keys
+    if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
     }
-    if (e.key === "ArrowLeft") choose(settings.char - 1); else if (e.key === "ArrowRight") choose(settings.char + 1);
+    if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
-  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
-  function openTutorial() { blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
-  Tutorial.onHome = showHome;
+  $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
+  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("vd").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
+  // the book returns to wherever it was opened from: the main menu or the character select
+  let tutorFrom = "home";
+  Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
-  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial(); blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
+    if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
-  const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
+  // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
+  Analysis.E = E;
+  Analysis.sound = Tutorial.sound = () => { unlockAudio(); clack(); };
+  Analysis.ai = () => engineReady ? AI : null;
+  Analysis.evalMs = () => evalMs;
+  Analysis.lastGame = () => load("lastGame", null);
+  Analysis.onBack = from => {
+    if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
+    else if (from === "prof") showProfile();
+    else showMenu();
+  };
+  Tsumego.E = E;
+  Tsumego.ai = () => engineReady ? AI : null;
+  Tsumego.sound = () => { unlockAudio(); clack(); };
+  Tsumego.onBack = () => showMenu();
+  // ---------- main menu and profile ----------
+  const MENU = [
+    { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร" },
+    { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
+    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
+    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
+    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
+  ];
+  const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
+    <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+  // the player card on wide screens: latest exam rank, wins, and the time spent on the clocks
+  function renderMenuStats() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const ranked = hist.find(x => typeof x.rank === "number"), wins = hist.filter(h => h.won).length;
+    const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
+    $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
+    $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
+    $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
+    $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    const sub = $("mnList").querySelector('[data-mn="profile"] small');
+    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
+  }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
+  renderMenuStats();
+  $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
+  $("mnSound").onclick = () => $("btnSound").click();
+  $("menu").addEventListener("click", e => {
+    const b = e.target.closest("button[data-mn]"); if (!b || b.disabled) return;
+    unlockAudio(); blip(880);
+    const go = b.dataset.mn;
+    if (go === "play") { showHome(); window.scrollTo(0, 0); }
+    else if (go === "profile") showProfile();
+    else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+    else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
+    else if (go === "tsume") { hideScreens(); Tsumego.open(); }
+    else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+  });
+  $("hmBack").onclick = () => { blip(660); showMenu(); };
+  // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
+  $("gBack").onclick = () => { blip(660); showHome(examMode); };
+  $("pfBack").onclick = () => { blip(660); showMenu(); };
+  const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+  // the unfinished game left with the back button, while it is still kept
+  function pausedGame() {
+    const g = load("game", null);
+    if (!g || !g.away || !CHARS.some(c => c.id === g.char) || !Array.isArray(g.history)) return null;
+    if (Date.now() - (g.at || 0) >= KEEP_MS) { save("game", null); return null; }
+    return g;
+  }
+  function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
+  function renderProfile() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const charOf = id => CHARS.find(c => c.id === id);
+    const wins = hist.filter(h => h.won).length;
+    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+      <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
+    const ranked = hist.find(x => typeof x.rank === "number");
+    const g = pausedGame();
+    if (g) {
+      const c = CHARS.find(c => c.id === g.char), mine = g.clocks && g.clocks[g.human === WHITE ? WHITE : BLACK];
+      const left = mine ? (mine.main > 0 ? `เหลือเวลา ${Math.floor(mine.main / 60)}:${String(Math.floor(mine.main % 60)).padStart(2, "0")}` : `เบียวโยมิ ${mine.per} ครั้ง`) : "";
+      const keep = Math.max(1, Math.round((g.at + KEEP_MS - Date.now()) / 6e4));
+      h += `<div class="pf-h">เกมที่เล่นค้างไว้</div><div class="pf-rows"><div class="pf-row pf-paused"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b>${c.exam ? ' <span class="note" style="display:inline">RANK TEST</span>' : ""}
+        <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
+        <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
+    }
+    h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
+      : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
+    if (!hist.length) {
+      h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
+      $("pfBody").innerHTML = h; return;
+    }
+    const by = new Map();
+    for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
+    h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+      const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+        <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
+      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+    $("pfBody").innerHTML = h;
+  }
+  $("pfBody").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
+    if (b.dataset.an !== undefined) {
+      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
+    }
+  });
+  $("endAskNo").onclick = () => { blip(660); $("endAsk").hidden = true; };
+  $("endAskGo").onclick = () => { $("endAsk").hidden = true; $("btnAnalyze").click(); };
+  $("btnAnalyze").onclick = () => {
+    if (!ended()) return;
+    unlockAudio(); blip(880); cancelAI();
+    $("game").hidden = true; $("endAsk").hidden = true; document.body.classList.remove("playing");
+    Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
+  };
+  const syncSound = () => { $("btnSound").textContent = $("mnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };
   syncSound();
   // true fullscreen where the browser allows it (Android, desktop); the layout already fits the screen either way
@@ -1293,6 +1513,8 @@
   window.addEventListener("pagehide", saveGame);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });
   const saved = load("game", null);
-  if (saved && !(Date.now() - (saved.at || 0) < 6 * 36e5 && resumeGame(saved))) save("game", null);
+  // the link always opens on the main menu: a game that was open when the page closed waits in Profile to be continued
+  if (saved && Date.now() - (saved.at || 0) < KEEP_MS) { if (!saved.away) save("game", Object.assign(saved, { away: true })); }
+  else if (saved) save("game", null);
   initEngine();
 })();

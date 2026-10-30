@@ -8,7 +8,7 @@ import { WATCH } from "./watch.js";
 
 const CHARS = {
   mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
-  chris: "คริส",
+  chris: "คริส", jay: "เจ",
   weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", hikaru: "ฮิคารุ"
 };
 const HOWS = new Set(["score", "resign", "timeout"]);

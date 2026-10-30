@@ -118,7 +118,7 @@ const Tutorial = (function () {
   ];
 
   const $ = id => document.getElementById(id);
-  const api = { onHome: null, onPlay: null };
+  const api = { onHome: null, onPlay: null, sound: null }; // sound(): the stone click, set by the game
   const ST = { idx: 0, b: null, marks: {}, found: new Set(), done: false, tries: 0, lock: false, seq: 0, last: -1, gone: [], miss: -1, ghost: -1, mood: "", say: null, timers: [] };
   const later = (fn, ms) => ST.timers.push(setTimeout(fn, ms));
   const remember = n => { try { localStorage.setItem("gonn.tutStep", String(n)); } catch (e) {} };
@@ -213,7 +213,7 @@ const Tutorial = (function () {
 
   function win(msg) { ST.done = true; ST.mood = "ok"; ST.say = msg; ST.marks.hint = []; render(); }
   function fail(msg, at) { ST.tries++; ST.mood = "bad"; ST.say = msg; ST.miss = at === undefined ? -1 : at; render(); ST.miss = -1; }
-  function placed(r, i, c) { ST.last = i; ST.gone = r.cap.map(s => [s, 3 - c]); }
+  function placed(r, i, c) { ST.last = i; ST.gone = r.cap.map(s => [s, 3 - c]); if (api.sound) api.sound(); }
 
   function tap(i) {
     if (!canTap()) return;

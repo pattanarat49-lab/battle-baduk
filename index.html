@@ -52,6 +52,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .px-title { font-family: var(--f-px); font-weight: 700; font-size: clamp(30px, 8.5vw, 58px); line-height: 1; color: var(--gold); margin: 0;
   text-shadow: 3px 3px 0 var(--gold-dim); }
 .carousel { position: relative; width: 100%; display: grid; grid-template-columns: 1fr auto minmax(0, 340px) auto 1fr; align-items: center; gap: 12px; margin-top: 8px; touch-action: pan-y; }
+.carousel.solo { grid-template-columns: minmax(0, 340px); justify-content: center; }
 .ghost { padding: 0; border: 0; background: none; min-height: 0; opacity: .4; overflow: hidden; border-radius: 10px; }
 .ghost:hover:not(:disabled) { opacity: .6; }
 .ghost img { display: block; width: 100%; max-width: 170px; height: auto; border-radius: 10px; }
@@ -101,14 +102,14 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 @media (max-width: 560px) {
   .carousel { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
   .ghost { display: none; }
-  .faces { gap: 3px; flex-wrap: nowrap; }
+  .faces { gap: 3px; flex-wrap: wrap; }
   .faces button img { width: 26px; height: 26px; }
 }
 @media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
 
 /* ---------- tutorial: one lesson step at a time; phone stacks speech / task / board, wide puts the board left ---------- */
 .tutor { max-width: 1040px; margin: 0 auto; padding-bottom: 96px; }
-.tu-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tu-head { display: flex; align-items: center; justify-content: flex-start; gap: 14px; }
 .tu-head .px { font-size: 13px; color: var(--accent); letter-spacing: .08em; text-shadow: 2px 2px 0 var(--wood-dark); }
 .tu-head h1 { font-size: 24px; }
 #tutor .tu-home { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
@@ -170,6 +171,212 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 #tuPrev { justify-self: start; }
 @media (prefers-reduced-motion: reduce) { .tu-gone, .tu-pulse, #tuNext.go { animation: none; } .tu-gone { opacity: 0; } }
 
+/* ---------- main menu: a top bar, a player card on the left (wide screens) and six mode cards ---------- */
+/* The menu fills the screen in any orientation: the cards share the height left under the title, one column when the
+   screen is taller than wide, two by three when it is wider. Sizes follow the smaller screen side. */
+body.menuing { padding: 0; background: #0e272d; }
+.menu { --u: min(1vw, 1vh); --mn-bg: #0e272d; --mn-bar: #112b33; --mn-line: #24434b; --mn-card: #ede9d7; --mn-ink: #14262b; --mn-sub: #33454a; --mn-cream: #f3ead8;
+  box-sizing: border-box; min-height: 100vh; min-height: 100dvh; height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--mn-bg); color: var(--mn-cream); }
+/* falling sakura petals behind the menu cards */
+.menu { position: relative; overflow: hidden; }
+.mn-bar { position: relative; z-index: 3; } .mn-main { position: relative; z-index: 1; }
+.mn-petals { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.mn-petals i { position: absolute; top: -20px; left: var(--x); width: 6px; height: 6px; background: #f2a7bd; opacity: .85;
+  box-shadow: 6px 0 0 #f7c4d3, 0 6px 0 #e98aa6; animation: mnFall var(--d) linear var(--w) infinite, mnSway 3.2s ease-in-out var(--w) infinite alternate; }
+.mn-petals i:nth-child(1) { --x: 6%; --d: 13s; --w: -2s; } .mn-petals i:nth-child(2) { --x: 14%; --d: 17s; --w: -9s; }
+.mn-petals i:nth-child(3) { --x: 23%; --d: 15s; --w: -5s; } .mn-petals i:nth-child(4) { --x: 31%; --d: 19s; --w: -13s; }
+.mn-petals i:nth-child(5) { --x: 40%; --d: 14s; --w: -1s; } .mn-petals i:nth-child(6) { --x: 48%; --d: 18s; --w: -11s; }
+.mn-petals i:nth-child(7) { --x: 57%; --d: 16s; --w: -7s; } .mn-petals i:nth-child(8) { --x: 64%; --d: 20s; --w: -15s; }
+.mn-petals i:nth-child(9) { --x: 72%; --d: 14s; --w: -4s; } .mn-petals i:nth-child(10) { --x: 79%; --d: 17s; --w: -12s; }
+.mn-petals i:nth-child(11) { --x: 86%; --d: 15s; --w: -8s; } .mn-petals i:nth-child(12) { --x: 93%; --d: 19s; --w: -3s; }
+.mn-petals i:nth-child(13) { --x: 52%; --d: 22s; --w: -17s; } .mn-petals i:nth-child(14) { --x: 2%; --d: 21s; --w: -6s; }
+.mn-petals i:nth-child(odd) { width: 4px; height: 4px; box-shadow: 4px 0 0 #f7c4d3, 0 4px 0 #e98aa6; }
+@keyframes mnFall { to { top: 105%; transform: rotate(320deg); } }
+@keyframes mnSway { from { margin-left: -18px; } to { margin-left: 18px; } }
+@media (prefers-reduced-motion: reduce) { .mn-petals { display: none; } }
+.mn-bar { display: flex; align-items: center; gap: clamp(10px, calc(var(--u) * 2), 22px); background: var(--mn-bar); border-bottom: 2px solid var(--mn-line);
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+.mn-mark { flex: none; width: clamp(40px, calc(var(--u) * 7.5), 70px); height: auto; display: block; }
+.mn-name { margin: 0; font-family: var(--f-px); font-weight: 700; font-size: clamp(22px, calc(var(--u) * 5), 44px); letter-spacing: .08em; line-height: 1; color: var(--mn-cream); white-space: nowrap; }
+.mn-nav { display: none; flex: 1; justify-content: center; gap: clamp(18px, 3.4vw, 56px); }
+.mn-nav button, .mn-tool { background: none; border: 0; box-shadow: none; padding: 6px 2px; min-height: 0; color: #b9c4c0; font-family: var(--f-px); font-weight: 700; font-size: clamp(13px, 1.25vw, 18px); letter-spacing: .08em; border-radius: 0; }
+.mn-nav button:hover, .mn-tool:hover { color: var(--mn-cream); background: none; }
+.mn-nav button[aria-current] { color: var(--mn-cream); box-shadow: inset 0 -3px 0 var(--mn-cream); }
+.mn-tools { margin-left: auto; display: flex; gap: clamp(8px, 2vw, 26px); position: relative; }
+.mn-tool { display: grid; place-items: center; width: clamp(36px, calc(var(--u) * 6), 48px); height: clamp(36px, calc(var(--u) * 6), 48px); padding: 0; }
+.mn-tool svg { width: 70%; height: 70%; shape-rendering: crispEdges; fill: var(--mn-cream); }
+.mn-set { position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; background: var(--mn-bar); border: 2px solid var(--mn-line); padding: 10px; display: grid; gap: 8px; min-width: 170px; }
+.mn-set button { min-height: 40px; font-size: 14px; }
+.mn-main { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(16px, 2.6vw, 36px); width: 100%; max-width: 1500px; margin: 0 auto; box-sizing: border-box;
+  padding: clamp(12px, calc(var(--u) * 3), 40px) max(16px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.mn-side { display: none; }
+.mn-body { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: clamp(10px, calc(var(--u) * 2.4), 30px); }
+.mn-title { display: flex; align-items: center; justify-content: center; gap: clamp(10px, 1.6vw, 22px); margin: 0; font-family: var(--f-px); font-weight: 700;
+  font-size: clamp(22px, calc(var(--u) * 5.2), 48px); letter-spacing: .14em; line-height: 1; color: var(--mn-cream); }
+.mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
+.mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
+.mn-title i { font-style: normal; } .mn-title .w { display: none; }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(6, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+#menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
+  border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
+#menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
+#menu .mn-item:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0, 0, 0, .28); }
+.mn-ic { height: 100%; display: grid; place-items: center; padding: 5cqh 2cqw 5cqh 3cqw; box-sizing: border-box; min-height: 0; }
+.mn-ic img { max-width: 100%; max-height: 86cqh; width: auto; height: auto; display: block; filter: drop-shadow(0 0 0 transparent); }
+.mn-div { width: 2px; height: 66%; background: #d4cbb4; }
+.mn-lab { display: grid; align-content: center; gap: min(4cqh, 8px); padding: 0 3cqw 0 min(5cqw, 34px); min-width: 0; overflow: hidden; }
+.mn-lab b { font-family: var(--f-px); font-weight: 700; font-size: clamp(15px, min(18cqh, 5.4cqw), 34px); line-height: 1; letter-spacing: .08em; white-space: nowrap; color: var(--mn-ink); }
+.mn-lab small { font-size: clamp(11px, min(12cqh, 3.4cqw), 21px); line-height: 1.4; color: var(--mn-sub); }
+.mn-go { padding-right: min(5cqw, 32px); }
+.mn-go svg { width: clamp(16px, min(16cqh, 4.6cqw), 30px); height: auto; display: block; fill: var(--mn-ink); shape-rendering: crispEdges; }
+#menu .mn-item:disabled { opacity: 1; cursor: default; background: #afafa3; }
+#menu .mn-item:disabled .mn-div { background: #c6c4b6; }
+.mn-rec { font-style: normal; font-size: .55em; letter-spacing: .06em; color: #b5482f; vertical-align: .15em; }
+.mn-soon { justify-self: start; font-family: var(--f-px); font-weight: 700; font-size: clamp(10px, min(9cqh, 2.6cqw), 15px); letter-spacing: .1em; color: #33454a; background: #cdccc0; padding: .35em .9em; border-radius: 3px; margin-top: min(2cqh, 4px); }
+.mn-foot { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0; font-size: 12px; color: #aab5b2; text-align: center; }
+.mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
+/* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
+@media (min-aspect-ratio: 5/4) {
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+  #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
+  .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
+  .mn-title .n { display: none; } .mn-title .w { display: inline; }
+}
+@media (min-aspect-ratio: 5/4) and (min-width: 1000px) { .mn-nav { display: flex; } .mn-tools { margin-left: 0; } }
+@media (min-aspect-ratio: 5/4) and (min-width: 960px) and (min-height: 600px) {
+  .mn-main { grid-template-columns: minmax(220px, 23%) minmax(0, 1fr); }
+  .mn-side { display: flex; flex-direction: column; min-height: 0; border: 2px solid #234a55; border-radius: 6px; background: #0b2126; padding: clamp(14px, 1.6vw, 26px); box-sizing: border-box; }
+}
+.mn-who { display: flex; align-items: center; gap: 16px; padding-bottom: clamp(12px, 2vh, 24px); border-bottom: 2px solid var(--mn-line); }
+.mn-who img { width: clamp(56px, 5.2vw, 80px); height: auto; display: block; }
+.mn-who b { display: block; font-family: var(--f-px); font-size: clamp(15px, 1.3vw, 19px); letter-spacing: .08em; }
+.mn-who span { color: #aab5b2; font-size: 14px; }
+.mn-stats { display: grid; gap: clamp(10px, 3.6vh, 40px); padding: clamp(14px, 3vh, 30px) 4px; border-bottom: 2px solid var(--mn-line); }
+.mn-stat { display: grid; grid-template-columns: clamp(30px, 2.6vw, 40px) 1fr; gap: 0 18px; align-items: center; }
+.mn-stat svg { grid-row: span 2; width: 100%; height: auto; fill: var(--mn-cream); shape-rendering: crispEdges; }
+.mn-stat small { font-family: var(--f-px); font-size: clamp(11px, .95vw, 14px); letter-spacing: .1em; color: #aab5b2; }
+.mn-stat b { font-family: var(--f-px); font-size: clamp(14px, 1.2vw, 18px); color: var(--mn-cream); line-height: 1.2; }
+.mn-art { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; padding-top: 12px; }
+.mn-art img { width: 82%; max-height: calc(100% - 50px); object-fit: contain; min-height: 0; }
+.mn-art p { margin: 0; display: flex; align-items: center; gap: 12px; text-align: center; font-family: var(--f-px); font-size: clamp(10px, .85vw, 13px); letter-spacing: .12em; line-height: 1.5; color: #c9d0cd; }
+.mn-art p::before, .mn-art p::after { content: ""; width: clamp(18px, 2.2vw, 34px); height: 2px; background: var(--mn-line); flex: none; }
+/* short screens (phones on their side): a slimmer bar and no footer */
+@media (max-height: 520px) { .mn-foot { display: none; } .mn-bar { padding-top: max(6px, env(safe-area-inset-top, 0px)); padding-bottom: 6px; } .mn-mark { width: 34px; } .mn-name { font-size: 20px; } .mn-title { font-size: 18px; } .mn-main { padding-top: 10px; } }
+@media (max-width: 380px) { .mn-lab small { display: none; } }
+@media (max-width: 600px) { .mn-foot::before, .mn-foot::after { flex-basis: 24px; } .mn-foot { font-size: 11px; } }
+@media (max-width: 420px) { .mn-name { font-size: 19px; letter-spacing: .05em; } }
+.hm-top { align-self: stretch; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+#home .hm-back { justify-self: start; min-height: 36px; padding: 4px 12px; font-size: 14px; }
+
+/* ---------- tsumego: categories, levels, and one problem at a time ---------- */
+.tsume { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
+#tsel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+.ts-pick { display: grid; gap: 16px; max-width: 640px; }
+.ts-ladder { background: #ede9d7; color: #14262b; border-radius: 10px; padding: 18px 18px 20px; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); display: grid; gap: 8px; }
+.ts-lab { font-size: 14px; color: #33454a; }
+.ts-now { font-family: var(--f-px); font-size: clamp(34px, 9vw, 52px); line-height: 1; letter-spacing: .04em; }
+.ts-steps { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; margin-top: 8px; }
+.ts-steps i { height: 14px; background: #d4cbb4; border-radius: 2px; }
+.ts-steps i.been { background: #9fc98f; } .ts-steps i.now { background: var(--accent); box-shadow: 0 0 0 2px #14262b; }
+.ts-ends { display: flex; justify-content: space-between; font-size: 12px; color: #33454a; }
+.ts-ladder .ts-dim { color: #33454a; }
+#tsel #tsGo { margin-top: 6px; min-height: 48px; font-size: 17px; }
+.ts-rules { margin: 0; padding-left: 20px; color: var(--fg); font-size: 14px; line-height: 1.7; }
+.ts-dim { color: var(--muted); font-size: 13px; margin: 6px 0 0; display: block; }
+.ts-credit { margin-top: 18px; }
+.ts-play { display: grid; gap: 14px; }
+@media (min-aspect-ratio: 5/4) { .ts-play { grid-template-columns: minmax(0, 1fr) minmax(240px, 40%); align-items: start; } }
+@media (min-width: 900px) { .ts-play { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
+.ts-boardbox { display: grid; gap: 8px; justify-items: center; min-width: 0; }
+.ts-bar { width: 100%; max-width: min(100%, 76vh); display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); }
+.ts-turn::before { content: ""; display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -3px; margin-right: 6px; }
+.ts-turn.b::before { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); } .ts-turn.w::before { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.ts-turn.b::after { content: "ดำเดินก่อน"; color: var(--fg); } .ts-turn.w::after { content: "ขาวเดินก่อน"; color: var(--fg); }
+#tsBoard { width: 100%; max-width: min(100%, 76vh); max-height: 76vh; height: auto; display: block; touch-action: manipulation; cursor: pointer; box-shadow: 0 0 0 6px var(--wood-dark); }
+.ts-side { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.ts-num { font: 700 .5px var(--f-body); text-anchor: middle; dominant-baseline: middle; }
+.ts-say { background: var(--surface); border: 1px solid var(--line); padding: 12px 14px; font-size: 15px; line-height: 1.6; min-height: 72px; }
+.ts-say b { font-weight: 700; } .ts-ok { color: #57c26b; } .ts-ng { color: #f08a6c; }
+.ts-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#tsel .ts-choices button { min-height: 52px; font-family: var(--f-px); font-size: 22px; background: var(--accent); color: var(--accent-fg); border: 0; }
+.ts-btns, .ts-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+#tsel .ts-btns button, #tsel .ts-nav button { min-height: 44px; font-size: 15px; }
+
+/* ---------- profile: games played in this browser ---------- */
+.prof { max-width: 860px; margin: 0 auto; padding-bottom: 32px; }
+.pf-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+@media (max-width: 520px) { .pf-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pf-tile { background: var(--surface); box-shadow: inset 0 0 0 2px var(--line); padding: 10px 12px; }
+.pf-tile b { display: block; font-family: var(--f-px); font-weight: 700; font-size: 28px; line-height: 1.1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pf-tile span { font-size: 13px; color: var(--muted); }
+.pf-h { font-family: var(--f-px); font-size: 13px; letter-spacing: .08em; color: var(--accent); margin: 18px 0 8px; }
+.pf-rank { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pf-rank .exam-rank { font-size: 24px; }
+.pf-rows { display: grid; gap: 6px; }
+.pf-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
+.pf-row img { width: 40px; height: 40px; display: block; border: 2px solid var(--wood); }
+.pf-row .t { min-width: 0; } .pf-row .t b { font-weight: 600; } .pf-row .t div { font-size: 13px; color: var(--muted); }
+.pf-wl { font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
+.pf-res { font-weight: 600; padding: 1px 8px; font-size: 13px; }
+.pf-res.w { background: #57c26b; color: #10240f; } .pf-res.l { background: #3b3024; color: #e7d8bd; }
+#prof .pf-an { min-height: 36px; padding: 4px 12px; font-size: 13px; }
+.pf-btns { display: flex; gap: 6px; } .pf-paused { border: 1px solid var(--accent); }
+.pf-bar { height: 6px; background: #3b3024; margin-top: 4px; overflow: hidden; } .pf-bar i { display: block; height: 100%; background: #57c26b; }
+.pf-empty { background: var(--surface); padding: 18px; text-align: center; color: var(--muted); }
+
+/* ---------- analysis board: board with candidate moves, Kan explains in a chat beside it (stacked on a phone) ---------- */
+.anal { max-width: 1120px; margin: 0 auto; padding-bottom: 96px; }
+.an-head { display: flex; align-items: center; justify-content: flex-start; gap: 14px; margin-bottom: 12px; }
+.an-head .px { font-size: 13px; color: var(--accent); letter-spacing: .08em; text-shadow: 2px 2px 0 var(--wood-dark); }
+.an-head h1 { font-size: 24px; }
+#anel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+.an-stage { display: grid; gap: 14px; }
+@media (min-width: 900px) { .an-stage { grid-template-columns: minmax(0, 1fr) 400px; align-items: start; } }
+.an-boardbox { min-width: 0; display: grid; gap: 8px; justify-items: center; }
+.an-wr { width: 100%; max-width: min(100%, 70vh); display: grid; gap: 3px; }
+.an-wr .lbl { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.an-wr .bar { height: 12px; background: #f3ead8; border: 1px solid var(--line); overflow: hidden; }
+.an-wr .bar i { display: block; height: 100%; background: #111; transition: width .4s; }
+#anBoard { display: block; width: 100%; max-width: min(100%, 70vh); aspect-ratio: 1; touch-action: manipulation; cursor: pointer; filter: drop-shadow(0 6px 0 var(--wood-dark)); }
+#anBoard text { font-family: var(--f-mono); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+#anBoard .an-co { font-size: .36px; fill: rgba(42, 29, 12, .8); }
+#anBoard .an-w { font-size: .28px; font-weight: 600; fill: #1a1208; }
+#anBoard .an-l { font-size: .24px; fill: #1a1208; }
+#anBoard .an-rk { font-size: .24px; font-weight: 600; fill: #fff; paint-order: stroke; stroke: #2a1a0b; stroke-width: .06px; }
+#anBoard .an-pvn { font-size: .4px; font-weight: 600; }
+.an-info { font-size: 13px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.an-info b { color: var(--accent); font-weight: 600; } .an-real { color: #7ab8ee; }
+.an-side { display: grid; gap: 10px; min-width: 0; }
+.an-chat { display: grid; gap: 10px; align-content: start; max-height: 56vh; min-height: 160px; overflow-y: auto; padding: 2px 4px 2px 0; overscroll-behavior: contain; }
+@media (min-width: 900px) { .an-chat { max-height: calc(100vh - 290px); } }
+.an-msg { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 15px; line-height: 1.6; }
+.an-msg img { width: 44px; height: 44px; border: 3px solid var(--wood); background: var(--surface-2); display: block; }
+.an-who { font-family: var(--f-px); font-size: 12px; color: var(--accent); letter-spacing: .06em; }
+.an-b { background: var(--surface); border: 1px solid var(--line); padding: 8px 12px 10px; }
+.an-b p { margin: 6px 0 0; } .an-b ul { margin: 4px 0 0; padding-left: 20px; }
+.an-msg.me { grid-template-columns: minmax(0, 1fr); justify-items: end; }
+.an-msg.me .an-b { background: var(--bg-2); border-color: rgba(227, 176, 106, .4); max-width: 85%; }
+.an-dim { color: var(--muted); font-size: 13px; }
+.an-warn { color: var(--warn); }
+.an-tag { font-weight: 600; padding: 0 6px; color: #1a1208; }
+.an-tag.best { background: #57c26b; } .an-tag.near { background: #c4d45a; } .an-tag.far { background: #e0a552; }
+.an-chips, .an-list { display: flex; gap: 6px; flex-wrap: wrap; }
+.an-list { margin-top: 8px; }
+#anel .an-chip { font-size: 14px; min-height: 38px; padding: 4px 12px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); }
+.an-foot { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: rgba(21, 51, 58, .94); backdrop-filter: blur(6px); border-top: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.an-foot .in { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1fr) minmax(0, 2fr); gap: 6px; }
+#anel .an-foot button { min-height: 46px; padding: 0 4px; border-radius: 0; display: grid; place-items: center; }
+#anel #anGo { font-family: var(--f-px); font-weight: 700; font-size: 16px; white-space: nowrap; background: var(--accent); color: var(--accent-fg); border: 0; box-shadow: 0 3px 0 var(--wood-dark); }
+#anel #anGo { grid-auto-flow: column; gap: 8px; align-items: center; justify-content: center; }
+.an-sw { font-family: var(--f-px); font-size: 13px; line-height: 1; padding: 4px 7px; background: #3b3024; color: #cbbfa8; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .25); }
+#anGo.on .an-sw { background: #2f9e4a; color: #fff; box-shadow: 0 0 0 2px #10240f; }
+.an-prog { position: relative; width: 100%; max-width: min(100%, 70vh); height: 22px; background: #f6ebc8; border: 2px solid var(--wood-dark); overflow: hidden; }
+.an-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: repeating-linear-gradient(90deg, #f2c94c 0 10px, #e6b733 10px 20px); transition: width .2s linear; }
+.an-prog span { position: relative; display: block; text-align: center; font-size: 12px; font-weight: 600; line-height: 18px; color: #2a1a0b; text-shadow: 0 0 3px rgba(255, 240, 200, .8); }
+@media (max-width: 520px) { #anel #anGo { grid-auto-flow: row; gap: 3px; font-size: 14px; } #anel #anGo .an-sw { font-size: 11px; padding: 2px 6px; } }
+@media (prefers-reduced-motion: reduce) { .an-wr .bar i, .an-prog i { transition: none; } }
+
 /* ---------- game ---------- */
 .logo { font-family: var(--f-logo); font-weight: 900; text-transform: uppercase; letter-spacing: .02em; line-height: .95; color: var(--fg); text-shadow: 0 3px 0 var(--wood-dark); }
 .game-title { font-size: 34px; }
@@ -178,14 +385,18 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 body.playing { overflow: hidden; padding: 0; }
 .app { position: fixed; inset: 0; display: grid; gap: 10px; overflow: hidden;
   padding: max(8px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
-  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "pbar" "board" "panel"; }
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "gtop" "pbar" "board" "panel"; }
+/* every screen has its way back at the top left */
+.gtop { grid-area: gtop; display: flex; align-items: center; gap: 12px; }
+#gBack { min-height: 34px; padding: 4px 12px; font-size: 14px; }
+.gtop span { font-family: var(--f-px); font-weight: 700; font-size: 14px; letter-spacing: .08em; color: var(--accent); }
 .app > .pbar { grid-area: pbar; }
 .boardcell { grid-area: board; min-height: 0; min-width: 0; container-type: size; display: grid; place-items: center; }
 canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cqh) - 12px); border-radius: 8px; touch-action: manipulation;
   box-shadow: 0 0 0 6px var(--wood-dark), 0 18px 34px -20px rgba(0,0,0,.9); cursor: pointer; }
 .app > .panel { grid-area: panel; min-height: 0; overflow-y: auto; }
 @media (min-aspect-ratio: 9/8) {
-  .app { grid-template-columns: minmax(0, 1fr) clamp(280px, 34vw, 400px); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "board pbar" "board panel"; gap: 12px 16px; }
+  .app { grid-template-columns: minmax(0, 1fr) clamp(280px, 34vw, 400px); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "gtop gtop" "board pbar" "board panel"; gap: 10px 16px; }
 }
 .ghead { display: none; }
 @media (min-aspect-ratio: 9/8) and (min-height: 620px) { .ghead { display: block; } }
@@ -254,6 +465,23 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 @keyframes pulse { 50% { --px-face: #6fdca6; } }
 .actions button.danger { --px-face: #e2902e; --px-hi: #f8bc6a; --px-lo: #a05a14; }
 .actions.four { grid-template-columns: repeat(4, 1fr); }
+.actions.four.three { grid-template-columns: repeat(3, 1fr); } .actions.two { grid-template-columns: repeat(2, 1fr); }
+/* after a game: a card at the bottom asking whether to take the game to the analysis board (the result stays visible above it) */
+.vd { position: fixed; inset: 0; z-index: 40; display: grid; place-content: center; justify-items: center; gap: 18px; background: rgba(6, 14, 16, .72); cursor: pointer; animation: resIn .35s steps(4) both; }
+.vd svg { width: min(88vw, 760px); height: auto; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); animation: resPop .45s steps(5) both; }
+.vd.win svg rect[fill="#fff"] { fill: #fff6d8; }
+.vd small { font-family: var(--f-px); font-size: 14px; letter-spacing: .08em; color: #e9e2c8; opacity: .85; animation: resBlink 1.2s steps(2) .6s infinite; }
+@keyframes resIn { from { opacity: 0; } }
+@keyframes resPop { from { transform: scale(1.6); opacity: 0; } }
+@keyframes resBlink { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .vd, .vd svg, .vd small { animation: none; } }
+.end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
+  background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
+.end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
+.end-ask p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 2px; }
+.end-ask .actions { padding: 0; }
+@keyframes endAskIn { from { opacity: 0; transform: translate(-50%, 16px); } }
+@media (prefers-reduced-motion: reduce) { .end-ask { animation: none; } }
 .actions.review { grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; align-items: center; }
 .actions.review span { text-align: center; font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; line-height: 1.25; }
 .actions[hidden] { display: none; }
@@ -279,8 +507,45 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 @media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
 </style>
 
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="home" id="home">
-  <div class="logo logo-sm">Baduk Battle</div>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="menu" id="menu">
+  <div class="mn-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <header class="mn-bar">
+    <h1 class="mn-name">BADUK BATTLE</h1>
+    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="tutorial">TUTORIAL</button></nav>
+    <div class="mn-tools">
+      <button class="mn-tool" data-mn="profile" aria-label="โปรไฟล์"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 0h4v1h1v4h-1v1h-4v-1h-1v-4h1zM1 7h8v1h1v2h-10v-2h1z"/></svg></button>
+      <button class="mn-tool" id="mnGear" aria-label="ตั้งค่า" aria-expanded="false"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v1h1v-1h1v1h1v1h-1v1h1v1h1v2h-1v1h-1v1h1v1h-1v1h-1v-1h-1v1h-2v-1h-1v1h-1v-1h-1v-1h1v-1h-1v-1h-1v-2h1v-1h1v-1h-1v-1h1v-1h1v1h1zM4 4v2h2v-2z"/></svg></button>
+      <div class="mn-set" id="mnSet" hidden><button id="mnSound">เสียง: เปิด</button></div>
+    </div>
+  </header>
+  <div class="mn-main">
+    <aside class="mn-side" aria-label="ผู้เล่น">
+      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b>GUEST</b><span id="mnWhoSub">-</span></div></div>
+      <div class="mn-stats">
+        <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 0h6v1h2v3h-1v1h-2v1h-1v2h2v2h-6v-2h2v-2h-1v-1h-2v-1h-1v-3h2zM1 2v1h1v-1zM8 2v1h1v-1z"/></svg><small>RANK</small><b id="mnRank">-</b></div>
+        <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v3h4v1h-1v1h-1v1h1v4h-1v-1h-2v-1h-2v1h-2v1h-1v-4h1v-1h-1v-1h-1v-1h4z"/></svg><small>WIN</small><b id="mnWin">-</b></div>
+        <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 0h4v1h1v1h1v1h1v4h-1v1h-1v1h-1v1h-4v-1h-1v-1h-1v-1h-1v-4h1v-1h1v-1h1zM3 1v1h-1v1h-1v4h1v1h1v1h4v-1h1v-1h1v-4h-1v-1h-1v-1zM4 2h1v3h2v1h-3z"/></svg><small>PLAY TIME</small><b id="mnTime">-</b></div>
+      </div>
+      <div class="mn-art"><img src="menu/board.png" alt="" width="223" height="136"><p>SMALL MOVES<br>MAKE BIG CHANGES</p></div>
+    </aside>
+    <div class="mn-body">
+      <h2 class="mn-title"><span><i class="n">MAIN MENU</i><i class="w">SELECT MODE</i></span></h2>
+      <nav class="mn-list" id="mnList" aria-label="เมนูหลัก"></nav>
+      <p class="mn-foot" id="engineMenu">กำลังโหลดสมอง AI…</p>
+    </div>
+  </div>
+</section>
+
+<section class="prof" id="prof" hidden>
+  <div class="an-head">
+    <button class="an-back" id="pfBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · PROFILE</div><h1>โปรไฟล์ของคุณ</h1></div>
+  </div>
+  <div id="pfBody"></div>
+</section>
+
+<section class="home" id="home" hidden>
+  <div class="hm-top"><button class="hm-back" id="hmBack">← กลับ</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>
   <h1 class="px-title">Character Select</h1>
   <div class="carousel" id="chars"></div>
   <div class="cinfo" id="pick" aria-live="polite"></div>
@@ -298,8 +563,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 
 <section class="tutor" id="tutor" hidden>
   <div class="tu-head">
+    <button class="tu-home" id="tuHome">← กลับ</button>
     <div><div class="px">BADUK BATTLE · TUTORIAL</div><h1>คัมภีร์สอนเล่น</h1></div>
-    <button class="tu-home" id="tuHome">← เลือกตัว</button>
   </div>
   <div class="tu-tabs" id="tuTabs" aria-label="บทเรียน"></div>
   <div class="tu-bar"><i id="tuBar"></i></div>
@@ -317,7 +582,76 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div></nav>
 </section>
 
+<section class="tsume" id="tsel" hidden>
+  <div class="an-head">
+    <button class="an-back" id="tsBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · TSUMEGO</div><h1 id="tsTitle">โจทย์ฝึกอ่านหมาก</h1></div>
+  </div>
+  <div id="tsPick" class="ts-pick">
+    <div class="ts-ladder">
+      <span class="ts-lab">ระดับของคุณตอนนี้</span>
+      <b class="ts-now" id="tsNow">6 คิว</b>
+      <div class="ts-steps" id="tsSteps" aria-hidden="true"></div>
+      <div class="ts-ends"><span>6 คิว</span><span>4 ดั้ง</span></div>
+      <p class="ts-dim" id="tsStats"></p>
+      <button id="tsGo" class="primary">เริ่มที่ 6 คิว</button>
+    </div>
+    <ul class="ts-rules">
+      <li>โจทย์จะสุ่มมาให้ทีละข้อ คละหมวด ทั้งเป็น-ตาย จับกิน ต่อ-ตัด ทีเด็ด และเอนเกม</li>
+      <li>แต่ละข้อต้องเดินถูก 3 ตา โดย AI ตอบโต้ทุกตา</li>
+      <li>ตอบถูก ขึ้นหนึ่งระดับ ตอบผิด ลงหนึ่งระดับ</li>
+      <li>โจทย์ไม่ซ้ำจนกว่าจะหมดระดับนั้น</li>
+    </ul>
+    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego เฉลยต่อเนื่องและระดับคิดโดย KataGo จึงเป็นค่าประมาณ · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
+  </div>
+  <div class="ts-play" id="tsPlay" hidden>
+    <div class="ts-boardbox">
+      <div class="ts-bar"><span class="ts-turn b" id="tsTurn"></span><span id="tsNo"></span></div>
+      <svg id="tsBoard" viewBox="0 0 10 10" role="img" aria-label="กระดานโจทย์"></svg>
+    </div>
+    <div class="ts-side">
+      <div class="ts-say" id="tsSay" aria-live="polite"></div>
+      <div class="ts-choices" id="tsChoices" hidden></div>
+      <div class="ts-btns"><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
+      <p class="ts-dim" id="tsSrc"></p>
+    </div>
+  </div>
+</section>
+
+<section class="anal" id="anel" hidden>
+  <div class="an-head">
+    <button class="an-back" id="anBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · ANALYSIS</div><h1>วิเคราะห์เกม</h1></div>
+  </div>
+  <div class="an-stage">
+    <div class="an-boardbox">
+      <div class="an-wr"><div class="lbl"><span id="anWrB">ดำ 50.0</span><span>โอกาสชนะ %</span><span id="anWrW">ขาว 50.0</span></div><div class="bar"><i id="anWrFill" style="width:50%"></i></div></div>
+      <div class="an-prog" id="anProg" hidden><i id="anProgFill"></i><span id="anProgTxt"></span></div>
+      <svg id="anBoard" viewBox="-1.1 -1.1 20.2 20.2" role="img" aria-label="กระดานวิเคราะห์"></svg>
+      <div class="an-info" id="anInfo" aria-live="polite"></div>
+    </div>
+    <div class="an-side">
+      <div class="an-chat" id="anChat" aria-live="polite"></div>
+      <div class="an-chips" id="anChips"></div>
+    </div>
+  </div>
+  <nav class="an-foot"><div class="in">
+    <button id="anFirst" aria-label="ตาแรก"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true" style="transform:scaleX(-1)"><path d="M2 1h1v7h-1zM3 2h1v5h-1zM4 3h1v3h-1zM5 4h1v1h-1zM6 1h2v7h-2z"/></svg></button>
+    <button id="anPrev" aria-label="ย้อนหนึ่งตา"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true" style="transform:scaleX(-1)"><path d="M3 1h1v7h-1zM4 2h1v5h-1zM5 3h1v3h-1zM6 4h1v1h-1z"/></svg></button>
+    <button id="anNext" aria-label="ไปหนึ่งตา"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M3 1h1v7h-1zM4 2h1v5h-1zM5 3h1v3h-1zM6 4h1v1h-1z"/></svg></button>
+    <button id="anLast" aria-label="ตาสุดท้าย"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M2 1h1v7h-1zM3 2h1v5h-1zM4 3h1v3h-1zM5 4h1v1h-1zM6 1h2v7h-2z"/></svg></button>
+    <button id="anPass">ผ่าน</button>
+    <button id="anGo" aria-pressed="false"><span>ANALYSIS</span><b class="an-sw" id="anSw">OFF</b></button>
+  </div></nav>
+</section>
+
+<div class="vd" id="vd" hidden></div>
+<div class="end-ask" id="endAsk" role="dialog" aria-labelledby="endAskT" hidden>
+  <p id="endAskT"><b>ANALYSIS</b>จบเกมแล้ว เอาเกมนี้ไปวิเคราะห์กับ AI เลยไหม?</p>
+  <div class="actions two"><button id="endAskNo">ไว้ก่อน</button><button id="endAskGo" class="primary">วิเคราะห์เลย</button></div>
+</div>
 <main class="app" id="game" hidden>
+  <div class="gtop"><button class="hm-back" id="gBack">← กลับ</button><span id="gMode"></span></div>
   <div class="pbar">
     <div class="player" id="pB">
       <div class="avbox"><span id="avB"></span><span class="stone b" id="sB"></span></div>
@@ -352,6 +686,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <button id="rvNext" aria-label="ไปหนึ่งตา"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M3 1h1v7h-1zM4 2h1v5h-1zM5 3h1v3h-1zM6 4h1v1h-1z"/></svg></button>
       <button id="rvLast" aria-label="ตาสุดท้าย"><svg viewBox="0 0 9 9" width="22" height="22" aria-hidden="true"><path d="M2 1h1v7h-1zM3 2h1v5h-1zM4 3h1v3h-1zM5 4h1v1h-1zM6 1h2v7h-2z"/></svg></button>
     </div>
+    <button id="btnAnalyze" class="primary" hidden>วิเคราะห์เกมนี้กับ AI (ANALYSIS)</button>
     <div class="actions" id="playActions">
       <button id="btnPass">ผ่าน</button>
       <button id="btnHint">แนะนำ</button>
@@ -1148,13 +1483,14 @@ function GoNNAI(E, F, net) {
         let v = l.value, ld = l.lead;
         for (let d = l.path.length - 1; d >= 0; d--) { const p = l.path[d]; p.vl--; p.N++; p.W += v; p.L += ld; v = -v; ld = -ld; }
       }
-      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv)); }
+      if (opts.onProgress && Date.now() - lastReport > 250) { lastReport = Date.now(); opts.onProgress(summary(root, base, rootEv, opts.top)); }
       if (opts.earlyStop && root.N > 64 && settledEarly(root, maxVisits, timeMs, t0)) break;
     }
-    const s = summary(root, base, rootEv);
+    const s = summary(root, base, rootEv, opts.top);
     s.elapsed = Date.now() - t0;
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
+    if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -1197,6 +1533,41 @@ function GoNNAI(E, F, net) {
     if (mine(el) >= mine(eb) - margin) { s.move = localMove; s.winrate = mine(el); }
   }
 
+  // Fighting style: among the searched moves that cost at most `margin` win rate against the best, play the one that
+  // presses the opponent hardest: touching their stones, cutting two of their groups apart, leaving one short of liberties
+  function fightScore(base, p) {
+    const me = base.toPlay, op = me === E.BLACK ? E.WHITE : E.BLACK;
+    if (!base.isLegal(p, me)) return -1;
+    const near = new Set();
+    for (const d of base.dirs) { const q = p + d; if (base.color[q] === op) near.add(base.head[q]); }
+    if (!near.size) return 0;
+    const b = new Board(base.n); b.copyFrom(base); b.play(p);
+    let score = 1 + (near.size >= 2 ? 2 : 0), mine = b.libs(b.head[p], 3);
+    if (mine < 2) return 0; // a move that walks into atari is not a fight, it is a gift
+    for (const h of near) {
+      if (b.color[h] !== op) { score += 4; continue; } // captured
+      const l = b.libs(b.head[h], 3);
+      score += l === 1 ? 3 : l === 2 ? 2 : 0;
+    }
+    return score;
+  }
+  async function preferFight(n, moves, komi, base, root, s, margin, pdaFor) {
+    if (s.move === PASS || moves.length < 2) return;
+    const best = s.top[0], cands = [];
+    for (const c of s.top) {
+      if (c.move === PASS || c.visits < Math.max(2, best.visits * 0.1)) continue;
+      const f = fightScore(base, c.move);
+      if (f > 0) cands.push({ move: c.move, f });
+    }
+    const f0 = fightScore(base, s.move);
+    cands.sort((a, b) => b.f - a.f);
+    const pick = cands[0];
+    if (!pick || pick.move === s.move || pick.f <= f0) return;
+    const [eb, ef] = await evalMany(n, [moves.concat([s.move]), moves.concat([pick.move])], komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss);
+    if (mine(ef) >= mine(eb) - margin) { s.move = pick.move; s.winrate = mine(ef); }
+  }
+
   // first-line points (the edge of the board) are only played when the network sees them as needed
   const EDGE_NEED = 0.15;
   const onEdge = (n, i) => { const x = i % 19, y = (i / 19) | 0; return i < AREA && (x === 0 || y === 0 || x === n - 1 || y === n - 1); };
@@ -1217,15 +1588,16 @@ function GoNNAI(E, F, net) {
     if (mine(eo) >= mine(eb) - 0.03) { s.move = other; s.winrate = mine(eo); }
   }
 
-  function summary(root, base, rootEv) {
+  // topN: how many of the searched moves to report (5 unless asked); each with its average score lead for the player to move
+  function summary(root, base, rootEv, topN) {
     const list = [];
-    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i] }); }
+    for (let i = 0; i < root.kids.length; i++) { const k = root.kids[i]; if (k && k.N > 0) list.push({ slot: root.slots[i], N: k.N, q: -k.W / k.N, prior: root.priors[i], lead: -k.L / k.N }); }
     list.sort((a, b) => b.N - a.N);
-    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi] }); }
+    if (!list.length) { let bi = 0; for (let i = 1; i < root.priors.length; i++) if (root.priors[i] > root.priors[bi]) bi = i; list.push({ slot: root.slots[bi], N: 0, q: rootEv.win - rootEv.loss, prior: root.priors[bi], lead: rootEv.lead }); }
     const best = list[0];
     return {
       move: slotToPoint(base, best.slot), winrate: Math.max(0, Math.min(1, (best.q + 1) / 2)), visits: root.N - 1, lead: rootEv.lead,
-      top: list.slice(0, 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior })),
+      top: list.slice(0, topN || 5).map(c => ({ move: slotToPoint(base, c.slot), visits: c.N, winrate: Math.max(0, Math.min(1, (c.q + 1) / 2)), prior: c.prior, lead: c.lead })),
       own: rootEv.own, pla: rootEv.pla, rootWin: rootEv.win, searchLead: root.L / root.N
     };
   }
@@ -1517,7 +1889,7 @@ const Tutorial = (function () {
   ];
 
   const $ = id => document.getElementById(id);
-  const api = { onHome: null, onPlay: null };
+  const api = { onHome: null, onPlay: null, sound: null }; // sound(): the stone click, set by the game
   const ST = { idx: 0, b: null, marks: {}, found: new Set(), done: false, tries: 0, lock: false, seq: 0, last: -1, gone: [], miss: -1, ghost: -1, mood: "", say: null, timers: [] };
   const later = (fn, ms) => ST.timers.push(setTimeout(fn, ms));
   const remember = n => { try { localStorage.setItem("gonn.tutStep", String(n)); } catch (e) {} };
@@ -1612,7 +1984,7 @@ const Tutorial = (function () {
 
   function win(msg) { ST.done = true; ST.mood = "ok"; ST.say = msg; ST.marks.hint = []; render(); }
   function fail(msg, at) { ST.tries++; ST.mood = "bad"; ST.say = msg; ST.miss = at === undefined ? -1 : at; render(); ST.miss = -1; }
-  function placed(r, i, c) { ST.last = i; ST.gone = r.cap.map(s => [s, 3 - c]); }
+  function placed(r, i, c) { ST.last = i; ST.gone = r.cap.map(s => [s, 3 - c]); if (api.sound) api.sound(); }
 
   function tap(i) {
     if (!canTap()) return;
@@ -1704,6 +2076,861 @@ const Tutorial = (function () {
 
 </script>
 <script>
+// Analysis board ("วิเคราะห์เกม"): step through a finished game or try moves on a free board; ANALYSIS marks the
+// strongest candidate moves (win rate and score lead) and Kan explains in a chat why the standout moves are good.
+// Everything is worked out in the browser from the network's outputs (policy, win rate, score lead, ownership) and the
+// board itself: no server and no language model, so the player asks by tapping ready-made questions.
+const Analysis = (function () {
+  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack, api.sound() (the stone click)
+  const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 7.5;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const CN = [null, "ดำ", "ขาว"];
+  const REGION = [["มุมซ้ายบน", "ด้านบน", "มุมขวาบน"], ["ด้านซ้าย", "กลางกระดาน", "ด้านขวา"], ["มุมซ้ายล่าง", "ด้านล่าง", "มุมขวาล่าง"]];
+  // the main search: about 10 s on every device, so the first answer comes quickly
+  // a GPU evaluates 16 positions in about the time of 8, so it gets bigger batches; "read deeper" doubles the time, and the
+  // evaluations already cached make that a continuation rather than a fresh start
+  const SEARCH = { visits: 20000, timeMs: 10000, batch: 8, top: 12 };
+  const searchOpts = (deep = 1) => {
+    const ms = api.evalMs ? api.evalMs() : 50;
+    return Object.assign({}, SEARCH, { timeMs: SEARCH.timeMs * deep, batch: ms < 40 ? 16 : 8 });
+  };
+  let E, Board, PASS, BLACK, WHITE;
+  let ST = null, tok = 0, chain = Promise.resolve();
+  // one network job at a time; a job for a position the board has left is dropped when its turn comes
+  function queue(fn) { const p = chain.then(fn); chain = p.catch(e => console.warn("analysis", e)); return p; }
+
+  // ---------- board helpers ----------
+  const cur = () => ST.line.slice(0, ST.at);
+  const keyOf = ms => ST.n + ":" + ms.join(",");
+  function boardOf(ms) { const b = new Board(ST.n); for (const m of ms) b.play(m); return b; }
+  const oi = (b, p) => { const [x, y] = b.xy(p); return y * 19 + x; };
+  function name(p) { if (p === PASS) return "ผ่าน"; const b = ST.b0, [x, y] = b.xy(p); return LETTERS[x] + (ST.n - y); }
+  function regionOf(x, y) { const n = ST.n, t = v => v < n / 3 ? 0 : v < 2 * n / 3 ? 1 : 2; return REGION[t(y)][t(x)]; }
+  const regionAt = p => { const [x, y] = ST.b0.xy(p); return regionOf(x, y); };
+  // every chain on the board: head -> { c, stones }
+  function chains(b) {
+    const m = new Map();
+    for (const p of b.pts) { const c = b.color[p]; if (c !== BLACK && c !== WHITE) continue; const h = b.head[p]; if (!m.has(h)) m.set(h, { c, stones: [] }); m.get(h).stones.push(p); }
+    return m;
+  }
+  function centre(stones) { let sx = 0, sy = 0; for (const p of stones) { const [x, y] = ST.b0.xy(p); sx += x; sy += y; } return regionOf(Math.round(sx / stones.length), Math.round(sy / stones.length)); }
+  const avgOwn = (b, own, stones, sign) => stones.reduce((s, p) => s + sign * own[oi(b, p)], 0) / stones.length;
+  const pct = w => (Math.round(w * 1000) / 10).toFixed(1);
+  const pts = v => (Math.round(Math.abs(v) * 10) / 10).toFixed(1);
+  const leadText = (c, lead) => Math.abs(lead) < 0.5 ? "สูสีกันมาก" : `${CN[c]}${lead > 0 ? "นำ" : "ตาม"} ~${pts(lead)} แต้ม`;
+  function gradeOf(loss) {
+    if (loss <= 0.5) return { cls: "best", t: "ยอดเยี่ยม เทียบเท่าตาที่ AI เลือก" };
+    if (loss <= 2) return { cls: "good", t: `ดี เสียไปนิดเดียว (~${pts(loss)} แต้ม)` };
+    if (loss <= 5) return { cls: "normal", t: `พอใช้ เสียไป ~${pts(loss)} แต้ม` };
+    return { cls: "bad", t: `พลาด เสียไป ~${pts(loss)} แต้ม` };
+  }
+
+  // ---------- why a move is good ----------
+  // moves: the position; m: the move by the player to move. evB: network view of the position (player to move = mover),
+  // evA: after m (player to move = opponent), evP / evPm: after a pass, and after the opponent then takes m themselves.
+  // Returns reasons strongest first: { w, t, neg }.
+  function reasons(moves, m, evB, evA, evP, evPm) {
+    const out = [], add = (w, t, neg) => out.push({ w, t, neg: !!neg });
+    if (m === PASS) { add(1, "ไม่มีจุดไหนที่ให้แต้มเพิ่มแล้ว ผ่านได้เลย"); return out; }
+    const B = boardOf(moves), c = B.toPlay, o = 3 - c, n = ST.n;
+    if (!B.isLegal(m, c)) return [{ w: 0, t: "จุดนี้วางไม่ได้", neg: true }];
+    const A = new Board(n); A.copyFrom(B); A.play(m);
+    const cn = CN[c], on = CN[o];
+    const nb = col => { const hs = new Set(); for (const d of B.dirs) { const q = m + d; if (B.color[q] === col) hs.add(B.head[q]); } return [...hs]; };
+    const myB = nb(c), opB = nb(o);
+    // tactics
+    const capt = A.caps[c] - B.caps[c];
+    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโค อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`);
+    const hm = A.head[m], myLibs = A.libs(hm, 4);
+    const saved = myB.filter(h => B.libs(h, 2) === 1).reduce((s, h) => s + B.gsize[h], 0);
+    if (saved && myLibs >= 2) add(9 + saved, `พาหมาก${cn} ${saved} เม็ดที่โดนขู่กิน (อะตาริ) หนีออกมา${myLibs === 2 ? " แต่ยังเหลือลมหายใจแค่ 2 ต้องระวังต่อ" : ""}`);
+    else if (myB.some(h => B.libs(h, 3) === 2) && myLibs >= 3) add(4, `เพิ่มลมหายใจให้กลุ่ม${cn}ที่เหลือลมหายใจแค่ 2`);
+    const opA = new Set(); for (const d of A.dirs) { const q = m + d; if (A.color[q] === o) opA.add(A.head[q]); }
+    for (const h of opA) {
+      const l = A.libs(h, 3), s = A.gsize[h];
+      if (l === 1) add(6 + s, `ขู่กิน (อะตาริ) หมาก${on} ${s} เม็ด ${on}ต้องรีบหนีหรือยอมเสีย`);
+      else if (l === 2 && s >= 3 && B.libs(B.head[h], 3) >= 3) add(4, `บีบกลุ่ม${on} ${s} เม็ดให้เหลือลมหายใจแค่ 2`);
+    }
+    if (myB.length >= 2) add(5, `เชื่อมหมาก${cn} ${myB.length} กลุ่มเข้าเป็นกลุ่มเดียว ไม่ให้${on}ตัดขาด`);
+    if (opB.length >= 2) add(5, `ตัดหมาก${on}ให้แยกเป็น ${opB.length} กลุ่ม ต้องดูแลหลายทาง`);
+    if (myLibs === 1 && !capt) add(8, `หมากที่ลงเหลือลมหายใจเดียว ${on}กินได้ทันที`, true);
+    // groups: ownership of their stones before and after, from the mover's side (-1 = the opponent's, +1 = ours)
+    const before = evB.own, after = evA.own; // evA is from the opponent's side, so its signs flip
+    for (const [h, g] of chains(A)) {
+      if (g.c !== c || g.stones.length < 2) continue;
+      const old = g.stones.filter(p => p !== m && B.color[p] === c);
+      if (!old.length) continue;
+      const ob = avgOwn(B, before, old, 1), oa = avgOwn(A, after, g.stones, -1), s = g.stones.length;
+      if (ob < -0.4 && oa > 0.3) add(9 + s / 2, `ช่วยกลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่เกือบตายให้รอด`);
+      else if (ob < 0.15 && oa > 0.55) add(6 + s / 3, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่ยังไม่แข็งแรง ปลอดภัยขึ้นมาก`);
+      else if (ob > 0.3 && oa < -0.3) add(7 + s / 2, `กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}จะตกอยู่ในอันตราย`, true);
+      else if (oa - ob >= 0.35) add(4 + s / 4, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}แข็งแรงขึ้น`);
+    }
+    for (const [h, g] of chains(B)) {
+      if (g.c !== o) continue;
+      const left = g.stones.filter(p => A.color[p] === o); if (!left.length) continue; // captured: said above
+      const lb = avgOwn(B, before, left, -1), la = avgOwn(A, after, left, 1), s = left.length; // the opponent's view of its own stones
+      if (lb > 0.2 && la < -0.45) add(9 + s / 2, `ทำให้กลุ่ม${on} ${s} เม็ดที่${centre(left)}แทบไม่มีทางรอด`);
+      else if (lb > 0.5 && la < 0.15 && s >= 2) add(6 + s / 3, `โจมตีกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนแอ ต้องเหนื่อยหาทางรอด`);
+      else if (lb - la >= 0.35 && s >= 2) add(4 + s / 4, `กดดันกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนลง`);
+    }
+    // what happens if we don't: the opponent takes this point instead (evPm is from our side again)
+    if (evPm) {
+      const P = new Board(n); P.copyFrom(B); P.play(PASS); P.play(m);
+      const lost = P.caps[o] - B.caps[o];
+      if (lost > 0) add(8 + lost, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ หมาก${cn} ${lost} เม็ดจะโดนกิน`);
+      for (const [h, g] of chains(B)) {
+        const left = g.stones.filter(p => P.color[p] === g.c); if (left.length < 2) continue;
+        const sg = g.c === c ? 1 : -1, lb = avgOwn(B, before, left, sg), lp = avgOwn(P, evPm.own, left, sg), s = left.length;
+        if (g.c === c && lb > -0.1 && lp < -0.45) add(8 + s / 2, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${cn} ${s} เม็ดที่${centre(left)}จะเสี่ยงตาย`);
+        else if (g.c === o && lb < 0.1 && lp > 0.45) add(6 + s / 3, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${on} ${s} เม็ดที่${centre(left)}ที่กำลังอ่อนแอจะรอดไปได้`);
+      }
+    }
+    // territory: empty points that turn ours (build) or stop being theirs (reduce), per region
+    const build = {}, reduce = {};
+    for (const p of A.pts) {
+      if (A.color[p] !== 0 || p === m) continue;
+      const i = oi(A, p), ob = before[i], oa = -after[i], d = oa - ob;
+      if (d <= 0.1) continue;
+      const r = regionAt(p);
+      if (ob < -0.3) reduce[r] = (reduce[r] || 0) + d; else if (oa > 0.3) build[r] = (build[r] || 0) + d;
+    }
+    const top = o2 => Object.entries(o2).sort((a, b) => b[1] - a[1])[0];
+    const tb = top(build), tr = top(reduce);
+    if (tb && tb[1] >= 2) add(3 + Math.min(4, tb[1] / 3), `สร้างพื้นที่${cn}ที่${tb[0]}เพิ่มราว ${Math.round(tb[1])} แต้ม`);
+    if (tr && tr[1] >= 2) add(3 + Math.min(4, tr[1] / 3), `ลดพื้นที่${on}ที่${tr[0]}ไปราว ${Math.round(tr[1])} แต้ม`);
+    // the opening: corners first, then the sides
+    const [x, y] = A.xy(m), dx = Math.min(x, n - 1 - x), dy = Math.min(y, n - 1 - y), z = n >= 19 ? 6 : n >= 13 ? 5 : 4;
+    let stones = 0; for (const p of B.pts) if (B.color[p] === BLACK || B.color[p] === WHITE) stones++;
+    if (stones < n * n * 0.12) {
+      if (dx < z && dy < z) {
+        let mine = 0, theirs = 0;
+        for (const p of B.pts) { const [px, py] = B.xy(p); if ((x < n / 2 ? px < z : px >= n - z) && (y < n / 2 ? py < z : py >= n - z)) { if (B.color[p] === c) mine++; else if (B.color[p] === o) theirs++; } }
+        const where = regionOf(x, y);
+        if (!mine && !theirs) add(6, `จับจอง${where}ที่ยังว่าง มุมล้อมพื้นที่ได้ง่ายที่สุดเพราะมีขอบกระดานช่วยกั้นสองด้าน`);
+        else if (!mine && theirs && dx === 2 && dy === 2) add(6, `บุก 3-3 เข้าไปแย่งพื้นที่${where}ของ${on}`);
+        else if (!mine && theirs === 1) add(5, `ประชิดมุม (คาคาริ) ไม่ปล่อยให้${on}ยึด${where}ไว้ง่ายๆ`);
+        else if (mine && !theirs) add(5, `ปิดมุม (ชิมาริ) ทำให้${where}เป็นของ${cn}แน่นขึ้น`);
+      } else if (Math.min(dx, dy) >= 2 && Math.min(dx, dy) <= 3) {
+        let near = false; for (const p of B.pts) { if (B.color[p] !== BLACK && B.color[p] !== WHITE) continue; const [px, py] = B.xy(p); if (Math.max(Math.abs(px - x), Math.abs(py - y)) <= 2) near = true; }
+        if (!near) add(4, `จุดใหญ่ที่${regionOf(x, y)} ขยายตามขอบที่ยังว่างอยู่`);
+      }
+    }
+    // the last move: answer it, or play elsewhere because something else is bigger
+    const last = moves[moves.length - 1];
+    if (last !== undefined && last !== PASS) {
+      const [lx, ly] = B.xy(last), dist = Math.max(Math.abs(lx - x), Math.abs(ly - y));
+      if (dist <= 2) add(2.5, `ตอบโต้หมาก${on}ที่เพิ่งลง ${name(last)}`);
+      else if (dist >= 6 && moves.length > 12) add(3, `ยังไม่ต้องตอบ ${name(last)} ตอนนี้มีจุดที่ใหญ่กว่า (เทนูกิ)`);
+    }
+    // a point both sides want. swing: our lead if we take the point against our lead if the opponent takes it; any move is
+    // worth about two tempos that way (a lot in the opening, little in the endgame), so only the part above that is "big"
+    if (evP && evPm) {
+      const i = oi(B, m), want = evP.policy[i];
+      let topI = 0; for (let k = 1; k < 361; k++) if (evP.policy[k] > evP.policy[topI]) topI = k;
+      const swing = -evA.lead - evPm.lead, tempo = Math.max(0, evB.lead + evP.lead), extra = swing - 2 * tempo;
+      if (want >= 0.2 || topI === i) add(5.5, `ถ้า${cn}ไม่เล่นตรงนี้ ${on}ก็อยากเล่นจุดนี้เหมือนกัน (จุดสำคัญของทั้งสองฝ่าย)${extra >= 3 ? ` ได้-เสียต่างกันราว ${Math.round(swing)} แต้ม` : ""}`);
+      else if (extra >= 4) add(4 + Math.min(4, extra / 4), `ตานี้รีบกว่าตาทั่วไป ถ้าปล่อยให้${on}ได้เล่นตรงนี้แทน จะต่างกันราว ${Math.round(swing)} แต้ม`);
+    }
+    out.sort((a, b) => b.w - a.w);
+    if (!out.some(r => !r.neg)) out.push({ w: 1, t: "ไม่ได้กินหรือตัดอะไรชัดๆ แต่ AI อ่านแล้วว่าทำให้รูปหมากแข็งแรงและคุ้มที่สุด", fb: true });
+    return out;
+  }
+  // the network's evaluations a reasons() call needs, for several moves of one position at once
+  async function evalsFor(AI, moves, list) {
+    const n = ST.n, B = boardOf(moves);
+    const [evB, evP, ...evAs] = await AI.evalMany(n, [moves, moves.concat([PASS]), ...list.map(m => moves.concat([m]))], KOMI);
+    const okAfterPass = list.map(m => { if (m === PASS) return false; const b = new Board(n); b.copyFrom(B); b.play(PASS); return b.isLegal(m, b.toPlay); });
+    const pm = list.filter((m, i) => okAfterPass[i]);
+    const evPms = pm.length ? await AI.evalMany(n, pm.map(m => moves.concat([PASS, m])), KOMI) : [];
+    let k = 0;
+    return list.map((m, i) => ({ evB, evA: evAs[i], evP, evPm: okAfterPass[i] ? evPms[k++] : null }));
+  }
+  // the likeliest continuation after a move, the network's first choice at each turn
+  async function followUp(AI, moves, len) {
+    const seq = [], ms = moves.slice();
+    for (let k = 0; k < len; k++) {
+      const ev = await AI.evaluate(ST.n, ms, KOMI);
+      let bi = 0; for (let i = 1; i < 361; i++) if (ev.policy[i] > ev.policy[bi]) bi = i;
+      if (ev.policy[361] > ev.policy[bi]) break;
+      const p = ST.b0.pt(bi % 19, (bi / 19) | 0); seq.push(p); ms.push(p);
+    }
+    return seq;
+  }
+
+  // ---------- chat ----------
+  function bubble(html, who) {
+    const el = document.createElement("div");
+    el.className = "an-msg " + (who === "me" ? "me" : "kan");
+    el.innerHTML = who === "me" ? `<div class="an-b">${html}</div>`
+      : `<img src="chars/kan_face.jpg" alt="" width="160" height="160"><div><div class="an-who">KAN · กัน</div><div class="an-b">${html}</div></div>`;
+    $("anChat").appendChild(el); $("anChat").scrollTop = $("anChat").scrollHeight;
+    return el;
+  }
+  const say = html => bubble(html, "kan");
+  function setChips(list) {
+    $("anChips").innerHTML = list.map(([t, act]) => `<button class="an-chip" data-act="${esc(act)}">${esc(t)}</button>`).join("");
+  }
+  function chipsFor() {
+    const r = ST.res && ST.res.key === keyOf(cur()) ? ST.res : null, list = [];
+    if (!r) list.push(["▶ ควรเดินตรงไหน?", "go"]);
+    else if (r.cands[0].move !== PASS) {
+      list.push([`ทำไมต้อง ${name(r.cands[0].move)}?`, "why"]);
+      for (let i = 1; i < Math.min(3, r.cands.length); i++) if (r.cands[i].move !== PASS) list.push([`แล้ว ${name(r.cands[i].move)} ล่ะ?`, "cand" + i]);
+      list.push(["ลำดับต่อไปเป็นยังไง?", "pv"]);
+      list.push(["🔍 อ่านต่อให้ลึกขึ้น", "deep"]);
+    }
+    const g = gameMove(); if (g !== null) list.push([`ตาที่เดินจริง (${name(g)}) เป็นไง?`, "played"]);
+    if (ST.at && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
+    list.push(["ตอนนี้ใครได้เปรียบ?", "status"]);
+    if (ST.game && ST.game.moves.length > 10) list.push(["จุดพลาดในเกมนี้", "mistakes"]);
+    if (ST.game && !onGameLine()) list.push(["↩ กลับเส้นเกมจริง", "back"]);
+    setChips(list);
+  }
+  // the move the real game played from the shown position, while the board still follows the game
+  function gameMove() { if (!ST.game || !onGameLine()) return null; const m = ST.game.moves[ST.at]; return m === undefined ? null : m; }
+  function onGameLine() { const g = ST.game.moves; for (let i = 0; i < ST.at; i++) if (ST.line[i] !== g[i]) return false; return true; }
+
+  // ---------- analysis ----------
+  async function analyze(explain) {
+    const AI = api.ai(); if (!AI) { say("รอสมอง AI โหลดเสร็จก่อนนะครับ"); return; }
+    const moves = cur(), key = keyOf(moves), my = tok;
+    if (ST.res && ST.res.key === key) { if (explain) await explainBest(); return; }
+    ST.running = true; ST.live = null; ST.t0 = null; render(); progress();
+    const so = searchOpts(ST.deep || 1);
+    const s = await queue(() => my !== tok ? null : (ST.t0 = performance.now(), ST.so = so, AI.think(ST.n, moves, KOMI, Object.assign(so, {
+      shouldStop: () => my !== tok, onProgress: p => { if (my === tok) { ST.live = p; drawBoard(); renderInfo(); } } }))));
+    if (my !== tok || !s) return;
+    ST.running = false; ST.live = null;
+    // the candidates worth showing: a real share of the reading, or close to the best
+    const maxN = s.top[0].visits;
+    const cands = s.top.filter((c, i) => i < 3 || c.visits >= Math.max(3, maxN * 0.04)).slice(0, 10);
+    ST.res = { key, s, cands, at: ST.at }; ST.win = s.winrate; ST.lead = s.searchLead; ST.pla = s.pla;
+    render();
+    if (explain) { ST.explaining = true; progress(); await explainBest(); if (my === tok) { ST.explaining = false; progress(); } }
+  }
+  // the yellow bar while the AI reads: the larger of time used and visits done, against the search's limits
+  let progT = 0;
+  function progress() {
+    clearTimeout(progT);
+    const on = ST && !$("anel").hidden && (ST.running || ST.explaining);
+    $("anProg").hidden = !on; if (!on) return;
+    let f = 0, txt;
+    if (ST.running) {
+      if (ST.t0 && ST.so) f = Math.max((performance.now() - ST.t0) / ST.so.timeMs, ST.live ? ST.live.visits / ST.so.visits : 0);
+      f = Math.min(0.97, f);
+      txt = ST.t0 ? `AI กำลังวิเคราะห์… ${Math.round(f * 100)}%${ST.live ? " · " + ST.live.visits.toLocaleString() + " รูปแบบ" : ""}` : "รอคิว…";
+      progT = setTimeout(progress, 150);
+    } else { f = 1; txt = "กำลังเรียบเรียงเหตุผล…"; }
+    $("anProgFill").style.width = (f * 100) + "%"; $("anProgTxt").textContent = txt;
+  }
+  // the reply for the shown position: the best move, the other standouts, and how the real game's move compares
+  async function explainBest() {
+    const AI = api.ai(), r = ST.res, moves = cur(), my = tok;
+    if (!AI || !r || r.key !== keyOf(moves)) return;
+    const c = ST.b.toPlay, s = r.s, best = r.cands[0], list = r.cands.slice(0, 4).map(x => x.move);
+    const evs = await queue(() => my !== tok ? null : evalsFor(AI, moves, list));
+    if (!evs || my !== tok) return;
+    const why = list.map((m, i) => reasons(moves, m, evs[i].evB, evs[i].evA, evs[i].evP, evs[i].evPm));
+    r.why = why;
+    const pos = why[0].filter(x => !x.neg).slice(0, 3);
+    let h = `<b>ตาที่ ${ST.at + 1} · ${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
+    h += `<span class="an-dim">อ่านไป ${s.visits.toLocaleString()} รูปแบบ ตัวเลือกที่น่าสนใจ ${r.cands.length} จุด วงบนกระดาน (ตัวเลขบน = % ชนะ, ล่าง = แต้มนำ)</span>`;
+    if (best.move === PASS) { say(h + `<p>★ ตอนนี้แนะนำให้<b>ผ่าน</b> ไม่มีจุดไหนได้แต้มเพิ่มแล้ว</p>`); chipsFor(); return; }
+    h += `<p><span class="an-tag best">★ ตาแนะนำ ${name(best.move)}</span> ชนะ ${pct(best.winrate)}% · ${pos.map(x => esc(x.t)).join(" · ")}</p>`;
+    // other standouts: close to the best, or the move that looks natural but reads worse
+    const others = [];
+    for (let i = 1; i < list.length && others.length < 2; i++) {
+      const cd = r.cands[i], loss = best.lead - cd.lead, w = why[i].filter(x => !x.neg);
+      if (cd.move === PASS) continue;
+      // a reason the best move's summary didn't already give, or say it is the same idea
+      const own = w.find(x => !pos.some(y => y.t === x.t) && !x.fb);
+      if (loss <= 1.5) others.push(`<p><span class="an-tag near">◆ ${name(cd.move)}</span> ก็ดีใกล้เคียง (${loss < 0.1 ? "พอๆ กัน" : `ด้อยกว่าแค่ ${pts(loss)} แต้ม`}) · ${own ? esc(own.t) : `แนวคิดเดียวกับ ${name(best.move)}`}</p>`);
+      else if (i === 1 || cd.prior > best.prior) others.push(`<p><span class="an-tag far">○ ${name(cd.move)}</span> ${cd.prior > best.prior ? "ดูน่าเดินกว่าเมื่อมองแวบแรก" : "เป็นตัวเลือกรองลงมา"}: ${esc(w[0].t)} แต่อ่านลึกแล้วเสียกว่า ~${pts(loss)} แต้ม</p>`);
+    }
+    h += others.join("");
+    const gap = r.cands.length > 1 ? Math.min(...r.cands.slice(1).filter(x => x.move !== PASS).map(x => best.lead - x.lead)) : 0;
+    if (gap >= 3) h += `<p class="an-warn">ตานี้มีทางที่ถูกอยู่ทางเดียว ตาอื่นเสียตั้งแต่ ${pts(gap)} แต้มขึ้นไป</p>`;
+    say(h);
+    chipsFor();
+    const g = gameMove(); if (g !== null && g !== best.move) await explainMove(g, true);
+  }
+  // how a move compares with the best one in the shown position
+  async function explainMove(m, real, tried) {
+    const AI = api.ai(), moves = cur(), my = tok, c = ST.b.toPlay;
+    if (!AI) return;
+    if (m !== PASS && !ST.b.isLegal(m, c)) { say(`${name(m)} ตอนนี้วางไม่ได้ครับ (มีหมากอยู่แล้ว หรือเป็นจุดห้ามเดิน)`); return; }
+    if (!ST.res || ST.res.key !== keyOf(moves)) await analyze(false);
+    const r = ST.res; if (my !== tok || !r || r.key !== keyOf(moves)) return;
+    const best = r.cands[0], label = real ? `ในเกมจริง${CN[c]}เดิน <b>${name(m)}</b>` : tried ? `ตาที่ลองเดิน <b>${name(m)}</b>` : `ถ้า${CN[c]}เดิน <b>${name(m)}</b>`;
+    if (m === best.move) { say(`${label} ตรงกับตาที่ AI แนะนำเลยครับ 👍`); return; }
+    const wait = say(`${label} … ขอผมอ่านตานั้นแป๊บนึงนะครับ`);
+    ST.explaining = true; progress();
+    // both moves read with the same search, so their score leads compare fairly
+    const known = r.cands.find(x => x.move === m && x.visits >= 60);
+    let lead, win, bestLead = best.lead;
+    if (known) { lead = known.lead; win = known.winrate; }
+    else {
+      const cv = { visits: 3000, timeMs: 5000, batch: searchOpts().batch, shouldStop: () => my !== tok };
+      const a = await queue(() => my !== tok ? null : AI.think(ST.n, moves.concat([best.move]), KOMI, cv));
+      const b = await queue(() => my !== tok ? null : AI.think(ST.n, moves.concat([m]), KOMI, cv));
+      if (!a || !b || my !== tok) return;
+      lead = -b.searchLead; win = 1 - b.winrate; bestLead = -a.searchLead;
+    }
+    const loss = Math.max(0, bestLead - lead), gr = gradeOf(loss);
+    const [ev] = await queue(() => my !== tok ? null : evalsFor(AI, moves, [m])) || [];
+    if (!ev || my !== tok) return;
+    const mine = reasons(moves, m, ev.evB, ev.evA, ev.evP, ev.evPm);
+    let h = `${label} · <span class="g-t g-${gr.cls}">${gr.t}</span> (ชนะ ${pct(win)}%)`;
+    const good = mine.filter(x => !x.neg && !x.fb).slice(0, 2), bad = mine.filter(x => x.neg);
+    if (good.length) h += `<br>ข้อดี: ${good.map(x => esc(x.t)).join(" · ")}`;
+    else if (loss > 2) h += `<br>ตานี้ไม่ได้กิน ตัด หรือสร้างพื้นที่อะไรเพิ่มขึ้นชัดๆ`;
+    if (bad.length) h += `<br><span class="an-warn">ข้อเสีย: ${bad.map(x => esc(x.t)).join(" · ")}</span>`;
+    if (loss > 2) {
+      // what the opponent does about it: their likeliest reply, and why it hurts
+      const after = moves.concat([m]);
+      let bi = 0; for (let i = 1; i < 361; i++) if (ev.evA.policy[i] > ev.evA.policy[bi]) bi = i;
+      const reply = ST.b0.pt(bi % 19, (bi / 19) | 0);
+      if (ev.evA.policy[361] < ev.evA.policy[bi]) {
+        const [re] = await queue(() => my !== tok ? null : evalsFor(AI, after, [reply])) || [];
+        if (!re || my !== tok) return;
+        const rr = reasons(after, reply, re.evB, re.evA, re.evP, re.evPm).filter(x => !x.neg);
+        h += `<br>จากนั้น${CN[3 - c]}น่าจะตอบที่ <b>${name(reply)}</b>: ${esc(rr[0].t)}`;
+      }
+      const bw = r.why ? r.why[0].filter(x => !x.neg) : [];
+      h += `<br>ตา ${name(best.move)} ดีกว่า: ${bw.length ? esc(bw[0].t) : "อ่านแล้วได้แต้มมากกว่า"}`;
+    }
+    wait.querySelector(".an-b").innerHTML = h;
+    $("anChat").scrollTop = $("anChat").scrollHeight;
+    ST.explaining = false; progress();
+  }
+  async function explainWhy() {
+    if (!ST.res || ST.res.key !== keyOf(cur())) { await analyze(true); return; }
+    if (!ST.res.why) await explainBest();
+    const r = ST.res, best = r.cands[0]; if (!r.why || best.move === PASS) return;
+    const all = r.why[0];
+    say(`<b>ทำไมต้อง ${name(best.move)}</b><ul>${all.slice(0, 6).map(x => `<li${x.neg ? ' class="an-warn"' : ""}>${esc(x.t)}</li>`).join("")}</ul>`);
+    await showPv();
+  }
+  async function explainCand(i) {
+    if (!ST.res || ST.res.key !== keyOf(cur())) await analyze(false);
+    const r = ST.res; if (!r || r.cands.length <= i) return;
+    await explainMove(r.cands[i].move, false);
+  }
+  async function showPv() {
+    const AI = api.ai(), my = tok, moves = cur();
+    if (!AI) return;
+    if (!ST.res || ST.res.key !== keyOf(moves)) await analyze(false);
+    const r = ST.res; if (!r || my !== tok || r.cands[0].move === PASS) return;
+    const seq = [r.cands[0].move].concat(await queue(() => my !== tok ? [] : followUp(AI, moves.concat([r.cands[0].move]), 5)));
+    if (my !== tok) return;
+    ST.pv = seq; drawBoard();
+    const c = ST.b.toPlay;
+    say(`ลำดับที่น่าจะตามมา (เลขบนกระดาน): ${seq.map((p, i) => `${CN[i % 2 ? 3 - c : c]} ${name(p)}`).join(" → ")}<br><span class="an-dim">แตะกระดานหรือเปลี่ยนตาเพื่อซ่อน</span>`);
+  }
+  async function explainStatus() {
+    const AI = api.ai(), my = tok, moves = cur(); if (!AI) return;
+    const ev = await queue(() => my !== tok ? null : AI.evaluate(ST.n, moves, KOMI));
+    if (!ev || my !== tok) return;
+    const b = ST.b, c = b.toPlay, o = 3 - c;
+    const r = ST.res && ST.res.key === keyOf(moves) ? ST.res.s : null;
+    const win = r ? r.winrate : ev.win / (ev.win + ev.loss), lead = r ? r.searchLead : ev.lead;
+    const wb = c === BLACK ? win : 1 - win, lb = c === BLACK ? lead : -lead;
+    let h = `<b>สถานการณ์ตอนนี้</b> ${Math.abs(lb) < 0.5 ? "สูสีกันมาก" : `${lb > 0 ? "ดำ" : "ขาว"}นำ ~${pts(lb)} แต้ม`} (โอกาสชนะ ดำ ${pct(wb)}% · ขาว ${pct(1 - wb)}%)`;
+    const weak = [], dead = [];
+    for (const [hd, g] of chains(b)) {
+      if (g.stones.length < 3) continue;
+      const life = avgOwn(b, ev.own, g.stones, g.c === c ? 1 : -1);
+      if (life < -0.55) dead.push(`กลุ่ม${CN[g.c]} ${g.stones.length} เม็ดที่${centre(g.stones)}`);
+      else if (life < 0.35) weak.push(`กลุ่ม${CN[g.c]} ${g.stones.length} เม็ดที่${centre(g.stones)}`);
+    }
+    if (dead.length) h += `<br>น่าจะตายแล้ว: ${dead.slice(0, 3).join(", ")}`;
+    if (weak.length) h += `<br>ยังไม่แน่นอน ต้องดูแล: ${weak.slice(0, 3).join(", ")}`;
+    const area = {};
+    for (const p of b.pts) { const v = ev.own[oi(b, p)] * (c === BLACK ? 1 : -1), rg = regionAt(p); area[rg] = (area[rg] || 0) + v; }
+    const big = Object.entries(area).filter(([, v]) => Math.abs(v) >= 6).sort((a, b2) => Math.abs(b2[1]) - Math.abs(a[1])).slice(0, 4);
+    if (big.length) h += `<br>พื้นที่หลัก: ${big.map(([rg, v]) => `${rg}เป็นของ${v > 0 ? "ดำ" : "ขาว"}`).join(", ")}`;
+    h += `<br><span class="an-dim">สี่เหลี่ยมบนกระดานคือพื้นที่ที่ AI คิดว่าเป็นของแต่ละฝ่าย</span>`;
+    ST.own = { key: keyOf(moves), own: ev.own, pla: c }; drawBoard();
+    say(h);
+  }
+  // the player's biggest losses over the whole game, from the network's first look at every position
+  async function explainMistakes() {
+    const AI = api.ai(), g = ST.game; if (!AI || !g) return;
+    const ms = g.moves, wait = say("กำลังไล่ดูทั้งเกม… 0%"), lb = [];
+    for (let k = 0; k <= ms.length; k += 8) {
+      const list = []; for (let j = k; j <= Math.min(ms.length, k + 7); j++) list.push(ms.slice(0, j));
+      const evs = await queue(() => AI.evalMany(ST.n, list, KOMI));
+      evs.forEach((ev, i) => { const j = k + i; lb[j] = (j % 2 === 0 ? 1 : -1) * ev.lead; });
+      wait.querySelector(".an-b").textContent = `กำลังไล่ดูทั้งเกม… ${Math.round(Math.min(1, (k + 8) / (ms.length + 1)) * 100)}%`;
+    }
+    const who = g.human || 0, list = [];
+    for (let k = 0; k < ms.length; k++) {
+      const col = k % 2 === 0 ? BLACK : WHITE; if (who && col !== who) continue;
+      if (ms[k] === PASS) continue;
+      const loss = col === BLACK ? lb[k] - lb[k + 1] : lb[k + 1] - lb[k];
+      if (loss >= 2) list.push({ k, loss, col });
+    }
+    list.sort((a, b) => b.loss - a.loss);
+    const top = list.slice(0, 5).sort((a, b) => a.k - b.k);
+    if (!top.length) { wait.querySelector(".an-b").innerHTML = `ทั้งเกมไม่มีตาไหนที่${who ? "คุณ" : ""}เสียเกิน 2 แต้มเลยครับ เล่นได้แน่นมาก`; return; }
+    wait.querySelector(".an-b").innerHTML = `<b>จุดพลาดใหญ่${who ? "ของคุณ (" + CN[who] + ")" : ""}</b> (ประเมินคร่าวๆ แตะเพื่อไปดูตานั้น)<div class="an-list">${top.map(x =>
+      `<button class="an-chip" data-goto="${x.k}">ตาที่ ${x.k + 1} · ${CN[x.col]} ${name(ms[x.k])} · เสีย ~${pts(x.loss)}</button>`).join("")}</div>`;
+  }
+
+  // ---------- board ----------
+  function setPos() {
+    tok++; ST.pv = null; ST.deep = 1; ST.running = false; ST.explaining = false; ST.live = null; ST.own = null;
+    ST.b = boardOf(cur());
+    if (ST.res && ST.res.key !== keyOf(cur())) ST.res = null;
+    render();
+    const AI = api.ai(), my = tok, moves = cur();
+    if (ST.auto) { analyze(true); return; }
+    if (!AI) return;
+    // a quick first look for the win-rate bar
+    queue(() => my !== tok ? null : AI.evaluate(ST.n, moves, KOMI)).then(ev => {
+      if (!ev || my !== tok || ST.res) return;
+      ST.win = ev.win / (ev.win + ev.loss); ST.lead = ev.lead; ST.pla = ev.pla; renderInfo();
+    });
+  }
+  function goTo(k) {
+    k = Math.max(0, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return;
+    if (k === ST.at + 1 && ST.line[ST.at] !== PASS && api.sound) api.sound(); // one step forward places a stone
+    ST.at = k; setPos();
+  }
+  function play(p) {
+    const b = ST.b; if (p !== PASS && !b.isLegal(p, b.toPlay)) return;
+    if (ST.line[ST.at] === p) { goTo(ST.at + 1); return; }
+    ST.line = ST.line.slice(0, ST.at).concat([p]); ST.at++;
+    if (p !== PASS && api.sound) api.sound();
+    setPos();
+  }
+  function drawBoard() {
+    const n = ST.n, b = ST.b, s = [], xy = p => b.xy(p);
+    s.push(`<defs><radialGradient id="anGb" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#5b5b5b"/><stop offset="1" stop-color="#0d0d0d"/></radialGradient>
+      <radialGradient id="anGw" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfc6b4"/></radialGradient></defs>`);
+    s.push(`<rect x="-1.1" y="-1.1" width="${n + 1.2}" height="${n + 1.2}" fill="var(--wood)"/>`);
+    for (let k = 0; k < n; k++) s.push(`<line x1="0" y1="${k}" x2="${n - 1}" y2="${k}" stroke="#4a2a12" stroke-width=".04"/><line x1="${k}" y1="0" x2="${k}" y2="${n - 1}" stroke="#4a2a12" stroke-width=".04"/>`);
+    const stars = n === 19 ? [3, 9, 15] : n === 13 ? [3, 6, 9] : [2, 4, 6];
+    for (const a of stars) for (const c of stars) { if (n === 9 && (a === 4) !== (c === 4)) continue; s.push(`<circle cx="${a}" cy="${c}" r=".09" fill="#4a2a12"/>`); }
+    for (let k = 0; k < n; k++) s.push(`<text x="${k}" y="-.62" class="an-co">${LETTERS[k]}</text><text x="-.68" y="${k}" class="an-co">${n - k}</text>`);
+    if (ST.own) for (const p of b.pts) {
+      if (b.color[p] !== 0) continue;
+      const v = ST.own.own[oi(b, p)] * (ST.own.pla === BLACK ? 1 : -1); if (Math.abs(v) < 0.35) continue;
+      const [x, y] = xy(p), k = .12 + .14 * Math.min(1, Math.abs(v));
+      s.push(`<rect x="${x - k}" y="${y - k}" width="${2 * k}" height="${2 * k}" fill="${v > 0 ? "#141414" : "#f6f1e6"}" opacity=".8"/>`);
+    }
+    for (const p of b.pts) {
+      const c = b.color[p]; if (c !== BLACK && c !== WHITE) continue;
+      const [x, y] = xy(p); s.push(`<circle cx="${x}" cy="${y}" r=".47" fill="url(#${c === BLACK ? "anGb" : "anGw"})" stroke="${c === BLACK ? "#000" : "#9c917e"}" stroke-width=".02"/>`);
+    }
+    const last = ST.at ? ST.line[ST.at - 1] : PASS;
+    if (last !== PASS && b.color[last]) { const [x, y] = xy(last); s.push(`<circle cx="${x}" cy="${y}" r=".16" fill="none" stroke="${b.color[last] === BLACK ? "#f3ead8" : "#2a1a0b"}" stroke-width=".06"/>`); }
+    if (ST.pv) {
+      const c0 = b.toPlay; let sb = new Board(n); sb.copyFrom(b);
+      ST.pv.forEach((p, i) => {
+        if (p === PASS) return;
+        const [x, y] = xy(p), c = i % 2 ? 3 - c0 : c0;
+        s.push(`<circle cx="${x}" cy="${y}" r=".46" fill="url(#${c === BLACK ? "anGb" : "anGw"})" opacity=".82"/><text x="${x}" y="${y + .02}" class="an-pvn" fill="${c === BLACK ? "#f3ead8" : "#1a1208"}">${i + 1}</text>`);
+      });
+    } else {
+      const sum = ST.running ? ST.live : ST.res && ST.res.key === keyOf(cur()) ? ST.res.s : null;
+      const list = ST.running ? (sum ? sum.top.slice(0, 10) : []) : ST.res && ST.res.key === keyOf(cur()) ? ST.res.cands : [];
+      const bestLead = list.length ? list[0].lead : 0;
+      list.forEach((cd, i) => {
+        if (cd.move === PASS) return;
+        const [x, y] = xy(cd.move), loss = bestLead - cd.lead;
+        const fill = i === 0 ? "#57c26b" : loss <= 1 ? "#c4d45a" : loss <= 3 ? "#e0a552" : "#cf7b4a";
+        s.push(`<g class="an-cand"><circle cx="${x}" cy="${y}" r=".47" fill="${fill}" stroke="${i === 0 ? "#1f6b3a" : "rgba(42,26,11,.5)"}" stroke-width="${i === 0 ? .07 : .03}"/>
+          <text x="${x}" y="${y - .13}" class="an-w">${pct(cd.winrate)}</text><text x="${x}" y="${y + .2}" class="an-l">${cd.lead >= 0 ? "+" : "−"}${pts(cd.lead)}</text>
+          <text x="${x + .36}" y="${y - .4}" class="an-rk">${i + 1}</text></g>`);
+      });
+      const gm = ST.at < ST.line.length ? ST.line[ST.at] : null; // the next move of the record or of the line being tried
+      if (gm !== null && gm !== PASS) { const [x, y] = xy(gm); s.push(`<circle cx="${x}" cy="${y}" r=".5" fill="none" stroke="#3f8fd8" stroke-width=".07" stroke-dasharray=".16 .1"/>`); }
+    }
+    if (ST.ghost !== null && b.color[ST.ghost] === 0 && b.isLegal(ST.ghost, b.toPlay)) {
+      const [x, y] = xy(ST.ghost); s.push(`<circle cx="${x}" cy="${y}" r=".45" fill="url(#${b.toPlay === BLACK ? "anGb" : "anGw"})" opacity=".4" pointer-events="none"/>`);
+    }
+    $("anBoard").innerHTML = s.join("");
+  }
+  function renderInfo() {
+    const b = ST.b, c = b.toPlay;
+    let win = ST.win, lead = ST.lead;
+    if (ST.running && ST.live) { win = ST.live.winrate; lead = ST.live.searchLead; }
+    const wb = win === null ? 0.5 : ST.pla === BLACK || (ST.running && c === BLACK) ? win : 1 - win;
+    $("anWrFill").style.width = (wb * 100) + "%";
+    $("anWrB").textContent = "ดำ " + pct(wb); $("anWrW").textContent = "ขาว " + pct(1 - wb);
+    const lb = lead === null ? 0 : (ST.pla === BLACK ? lead : -lead);
+    const gm = ST.at < ST.line.length ? ST.line[ST.at] : null;
+    $("anInfo").innerHTML = `ตา ${ST.at}/${ST.line.length} · ตา${CN[c]} · หมากเชลย ดำ ${b.caps[BLACK]} ขาว ${b.caps[WHITE]}` +
+      (lead === null ? "" : ` · ${Math.abs(lb) < 0.5 ? "สูสี" : (lb > 0 ? "ดำ" : "ขาว") + "นำ ~" + pts(lb)}`) +
+      (gm !== null && gm !== PASS ? ` · <span class="an-real">วงฟ้า = ${gameMove() !== null ? "ตาที่เดินจริง" : "ตาที่ลองเดิน"}</span>` : "");
+  }
+  function render() {
+    drawBoard(); renderInfo(); chipsFor();
+    $("anFirst").disabled = $("anPrev").disabled = ST.at === 0;
+    $("anNext").disabled = $("anLast").disabled = ST.at >= ST.line.length;
+    const go = $("anGo"); go.classList.toggle("on", !!ST.auto); go.setAttribute("aria-pressed", String(!!ST.auto)); // ON: every position is read on its own
+    $("anSw").textContent = ST.auto ? "ON" : "OFF";
+    progress();
+  }
+
+  // ---------- wiring ----------
+  let wired = false;
+  function wire() {
+    wired = true;
+    const svg = $("anBoard");
+    const ptAt = e => {
+      const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+      const q = p.matrixTransform(svg.getScreenCTM().inverse()), x = Math.round(q.x), y = Math.round(q.y);
+      return x < 0 || y < 0 || x >= ST.n || y >= ST.n || Math.hypot(q.x - x, q.y - y) > .5 ? null : ST.b0.pt(x, y);
+    };
+    svg.addEventListener("click", e => { const p = ptAt(e); if (ST.pv) { ST.pv = null; drawBoard(); return; } if (p !== null) { ST.ghost = null; play(p); } });
+    svg.addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; const p = ptAt(e); if (p !== ST.ghost) { ST.ghost = p; drawBoard(); } });
+    svg.addEventListener("pointerleave", () => { ST.ghost = null; drawBoard(); });
+    $("anFirst").onclick = () => goTo(0);
+    $("anPrev").onclick = () => goTo(ST.at - 1);
+    $("anNext").onclick = () => goTo(ST.at + 1);
+    $("anLast").onclick = () => goTo(ST.line.length);
+    $("anPass").onclick = () => play(PASS);
+    $("anGo").onclick = () => {
+      if (ST.auto) { ST.auto = false; render(); return; }
+      ST.auto = true; render(); analyze(true);
+    };
+    $("anBack").onclick = () => { close(); api.onBack && api.onBack(ST.from); };
+    $("anel").addEventListener("click", e => {
+      const t = e.target.closest("button"); if (!t) return;
+      if (t.dataset.goto !== undefined) { const k = +t.dataset.goto; if (ST.game) { ST.line = ST.game.moves.slice(); } goTo(k); analyze(true); return; }
+      const act = t.dataset.act; if (!act) return;
+      const label = t.textContent;
+      if (act !== "back" && act !== "last" && !act.startsWith("new")) bubble(esc(label), "me");
+      if (act === "go") analyze(true);
+      else if (act === "why") explainWhy();
+      else if (act === "deep") { ST.deep = (ST.deep || 1) * 2; ST.res = null; analyze(true); }
+      else if (act.startsWith("cand")) explainCand(+act.slice(4));
+      else if (act === "tried") { const m = ST.line[ST.at - 1]; goTo(ST.at - 1); explainMove(m, false, true); }
+      else if (act === "pv") showPv();
+      else if (act === "played") { const g = gameMove(); if (g !== null) explainMove(g, true); }
+      else if (act === "status") explainStatus();
+      else if (act === "mistakes") explainMistakes();
+      else if (act === "back") { ST.line = ST.game.moves.slice(); setPos(); }
+      else if (act.startsWith("new")) { start({ n: +act.slice(3), moves: [] }); }
+      else if (act === "last") { start(api.lastGame()); }
+    });
+    document.addEventListener("keydown", e => {
+      if ($("anel").hidden) return;
+      if (e.key === "ArrowLeft") goTo(ST.at - 1); else if (e.key === "ArrowRight") goTo(ST.at + 1);
+    });
+  }
+  function close() { tok++; $("anel").hidden = true; document.body.classList.remove("analysing"); }
+  function start(g) {
+    const n = g.n || 19;
+    ST = { n, b0: new Board(n), line: (g.moves || []).slice(), at: 0, game: g.moves && g.moves.length ? { moves: g.moves.slice(), human: g.human || 0 } : null,
+      res: null, pv: null, own: null, ghost: null, running: false, live: null, win: null, lead: null, pla: BLACK, auto: ST ? ST.auto : false, from: g.from || (ST && ST.from) };
+    ST.at = g.at === undefined ? ST.line.length : Math.max(0, Math.min(ST.line.length, g.at));
+    $("anChat").innerHTML = "";
+    $("anBoard").setAttribute("viewBox", `-1.1 -1.1 ${n + 1.2} ${n + 1.2}`);
+    say(ST.game ? `สวัสดีครับ ผม<b>กัน</b> มาดูเกมนี้ด้วยกัน (${n}×${n}, ${ST.line.length} ตา) กด ◀ ▶ เพื่อเลือกตา แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมเหตุผล หรือแตะกระดานเพื่อลองเดินเอง แล้วกดปุ่มคำถามด้านล่างได้เลยครับ`
+      : `สวัสดีครับ ผม<b>กัน</b> นี่คือกระดานวิเคราะห์ ${n}×${n} แตะกระดานวางหมาก (ดำ-ขาวสลับกัน) แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมบอกเหตุผล แล้วกดปุ่มคำถามด้านล่างได้เลยครับ` +
+        `<div class="an-list"><button class="an-chip" data-act="new19">กระดาน 19×19</button><button class="an-chip" data-act="new13">13×13</button><button class="an-chip" data-act="new9">9×9</button>${api.lastGame && api.lastGame() ? '<button class="an-chip" data-act="last">เปิดเกมล่าสุดที่เล่น</button>' : ""}</div>`);
+    tok++; ST.b = null; setPos();
+  }
+  api.open = function (g) {
+    E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
+    if (!wired) wire();
+    $("anel").hidden = false; document.body.classList.add("analysing"); window.scrollTo(0, 0);
+    start(g || { n: 19, moves: [] });
+  };
+  return api;
+})();
+
+// Tsumego: a level ladder from 6 kyu to 4 dan. Each problem is a five-move answer line (the player's three moves and the
+// opponent's two replies, worked out ahead by KataGo, see src/tools); solving one moves the player up a level, a wrong
+// move gets one reply from the opponent and sends the player down one level. Problems never repeat until a level runs out.
+const Tsumego = (() => {
+  "use strict";
+  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.sound(), api.onBack()
+  const $ = id => document.getElementById(id);
+  const CATS = { life: "เป็น-ตาย", capture: "จับกิน", connect: "ต่อ-ตัด", tesuji: "ทีเด็ด", endgame: "เอนเกม" };
+  const LEVELS = ["6 คิว", "5 คิว", "4 คิว", "3 คิว", "2 คิว", "1 คิว", "1 ดั้ง", "2 ดั้ง", "3 ดั้ง", "4 ดั้ง"];
+  const TOP = LEVELS.length - 1;
+  const KEY = "gonn.tsume3"; // { lvl: current level, best: highest level reached, solved: count, seen: [problem ids] }
+  const fresh0 = () => ({ lvl: 0, best: 0, solved: 0, seen: [] });
+  const load = () => { try { return Object.assign(fresh0(), JSON.parse(localStorage.getItem(KEY))); } catch (e) { return fresh0(); } };
+  const store = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
+
+  let DATA = null, loading = null, wired = false;
+  const ST = { b: null, base: null, moves: [], done: 0, failed: 0, wait: 0, mark: null, busy: 0, playing: false };
+
+  function fetchData() {
+    if (!loading) loading = fetch("tsumego.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => (DATA = d))
+      .catch(e => { loading = null; throw e; });
+    return loading;
+  }
+  const idOf = q => DATA.src[q.s] + "#" + q.n;
+
+  // ---------- the ladder screen ----------
+  function showLadder() {
+    ST.playing = false; ST.busy++; $("tsPick").hidden = false; $("tsPlay").hidden = true; $("tsTitle").textContent = "โจทย์ฝึกอ่านหมาก";
+    const g = load();
+    $("tsNow").textContent = LEVELS[g.lvl];
+    $("tsStats").textContent = `สูงสุดที่เคยถึง ${LEVELS[g.best]} · ทำถูกแล้ว ${g.solved} ข้อ`;
+    $("tsSteps").innerHTML = LEVELS.map((n, l) => `<i class="${l === g.lvl ? "now" : l <= g.best ? "been" : ""}" title="${n}"></i>`).join("");
+    $("tsGo").textContent = g.lvl ? `เล่นต่อที่ ${LEVELS[g.lvl]}` : "เริ่มที่ 6 คิว";
+    window.scrollTo(0, 0);
+  }
+  // a problem at this level not seen yet; when the level has run out, its problems start over
+  function nextProblem(l) {
+    const g = load(), seen = new Set(g.seen), all = DATA.p.filter(q => q.l === l);
+    let fresh = all.filter(q => !seen.has(idOf(q)));
+    if (!fresh.length) { const ids = new Set(all.map(idOf)); g.seen = g.seen.filter(id => !ids.has(id)); store(g); fresh = all; }
+    return fresh[Math.floor(Math.random() * fresh.length)];
+  }
+
+  // ---------- one problem ----------
+  const c2 = s => [s.charCodeAt(0) - 97, s.charCodeAt(1) - 97];
+  const pairs = s => s.match(/../g) || [];
+  // stones that fill the rest of the board (a "tsumego frame"): a solid wall of the attacking side around the problem area,
+  // then the attacker's and the defender's living masses with eyes, so the network reads only the problem and doesn't
+  // look for big points elsewhere. The defender is the side whose stones sit nearer the edges.
+  function frameOf(q, crop) {
+    const edge = s => { const [x, y] = c2(s); return Math.min(x, y, 18 - x, 18 - y); };
+    const mean = ss => ss.length ? ss.reduce((a, s) => a + edge(s), 0) / ss.length : 9;
+    const atk = mean(pairs(q.b)) > mean(pairs(q.w)) ? "B" : "W";
+    const x0 = Math.max(0, crop.x0 - 1), x1 = Math.min(18, crop.x1 + 1), y0 = Math.max(0, crop.y0 - 1), y1 = Math.min(18, crop.y1 + 1);
+    const out = [];
+    for (let y = 0; y < 19; y++) for (let x = 0; x < 19; x++) {
+      const d = Math.max(x0 - x, x - x1, y0 - y, y - y1, 0); if (d > 0) out.push({ x, y, d });
+    }
+    out.sort((a, b) => a.d - b.d);
+    const half = out.length / 2, f = { B: [], W: [] };
+    out.forEach((o, k) => {
+      const mine = o.d === 1 || k < half ? atk : atk === "B" ? "W" : "B";
+      if (o.d > 1 && o.x % 3 === 1 && o.y % 3 === 1) return; // eyes
+      f[mine].push(String.fromCharCode(97 + o.x, 97 + o.y));
+    });
+    return f;
+  }
+  // the setup stones as a move list the network understands: stones alternate, passes fill in, and the side to move comes last
+  function setupMoves(q, crop) {
+    const { Board, PASS } = api.E, b0 = new Board(19);
+    const build = (bs, ws) => {
+      const B = bs.map(s => b0.pt(...c2(s))), W = ws.map(s => b0.pt(...c2(s)));
+      const enc = lead => {
+        const m = lead ? [PASS] : []; let i = 0, j = 0;
+        while (i < B.length || j < W.length) { if (m.length % 2 === 0) m.push(i < B.length ? B[i++] : PASS); else m.push(j < W.length ? W[j++] : PASS); }
+        if ((m.length % 2 === 0 ? "B" : "W") !== q.t) m.push(PASS);
+        return m;
+      };
+      const ok = m => !m.some((x, k) => x === PASS && m[k - 1] === PASS);
+      const m = enc(false); return ok(m) ? m : enc(true);
+    };
+    // every stone must go down legally and nothing may be captured, or the frame is left out
+    const valid = m => { const b = new Board(19); for (const p of m) { if (p !== PASS && !b.isLegal(p, b.toPlay)) return false; b.play(p); }
+      return m.filter(p => p !== PASS).every(p => b.color[p] !== 0); };
+    const f = frameOf(q, crop), m = build(pairs(q.b).concat(f.B), pairs(q.w).concat(f.W));
+    return valid(m) ? m : build(pairs(q.b), pairs(q.w));
+  }
+  // the part of the board the problem lives in, out to the edge when it is close
+  function cropOf(q) {
+    const xs = [], ys = [];
+    for (const s of pairs(q.b + q.w).concat(q.a)) { const [x, y] = c2(s); xs.push(x); ys.push(y); }
+    let x0 = Math.min(...xs) - 2, x1 = Math.max(...xs) + 2, y0 = Math.min(...ys) - 2, y1 = Math.max(...ys) + 2;
+    if (x0 <= 2) x0 = 0; if (y0 <= 2) y0 = 0; if (x1 >= 16) x1 = 18; if (y1 >= 16) y1 = 18;
+    // at least 7 points each way so the stones don't get huge
+    while (x1 - x0 < 6) { if (x0 > 0) x0--; if (x1 - x0 < 6 && x1 < 18) x1++; }
+    while (y1 - y0 < 6) { if (y0 > 0) y0--; if (y1 - y0 < 6 && y1 < 18) y1++; }
+    return { x0, x1, y0, y1 };
+  }
+  function play() {
+    const g = load(), q = nextProblem(g.lvl);
+    if (!q) return;
+    g.seen.push(idOf(q)); store(g);
+    ST.playing = true; ST.q = q; ST.crop = cropOf(q); ST.show = false;
+    $("tsPick").hidden = true; $("tsPlay").hidden = false;
+    // a problem over most of the board is a choice of three marked points (A, B, C) at each of the player's turns
+    ST.choice = ST.crop.x1 - ST.crop.x0 >= 12 && ST.crop.y1 - ST.crop.y0 >= 12;
+    ST.base = setupMoves(q, ST.crop); reset(); offer();
+    $("tsTitle").textContent = `ระดับ ${LEVELS[g.lvl]}`;
+    $("tsNo").textContent = `หมวด ${CATS[q.c]}`;
+    say(`<b>${q.t === "B" ? "ดำ" : "ขาว"}เดินก่อน</b> ${hintOf(q.c)} ต้องเดินถูกทั้ง 3 ตา (อีกฝ่ายตอบ 2 ตา)${ST.choice ? " โจทย์ทั้งกระดาน เลือกจุด A, B หรือ C" : ""}`);
+    const src = DATA.src[q.s]; // Lee Changho's volumes are named by chapter only
+    $("tsSrc").textContent = `จาก ${/^\d/.test(src) ? "Lee Changho Tesuji · " + src : src} ข้อ ${q.n}`;
+    $("tsAns").hidden = true; $("tsNext").hidden = true;
+    window.scrollTo(0, 0);
+  }
+  const hintOf = cat => ({ life: "หาจุดที่ทำให้รอด หรือทำให้อีกฝ่ายตาย", capture: "หาตาที่จับกินหมากได้", connect: "หาตาที่ต่อหรือตัดได้สำเร็จ",
+    tesuji: "หาท่าไม้ตายที่ได้ผลที่สุด", endgame: "หาตาปิดเขตที่ได้แต้มมากที่สุด" })[cat];
+  // the answer line (q.m: the player's move, the opponent's reply, ... as point names), the other moves the network
+  // rates as just as good at each of the player's turns (q.x), and the komi that makes the framed position even (q.k)
+  const lineOf = q => pairs(q.m || q.a[0]);
+  function reset() {
+    const { Board } = api.E, b = new Board(19);
+    for (const m of ST.base) b.play(m);
+    ST.moves = ST.base.slice();
+    ST.b = b; ST.step = 0; ST.done = 0; ST.failed = 0; ST.wait = 0; ST.mark = null; ST.nums = null; ST.last = null; ST.opts = null; ST.busy++; $("tsChoices").hidden = true;
+    draw();
+  }
+  function say(html) { $("tsSay").innerHTML = html; }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  function put(p) { ST.b.play(p); ST.moves.push(p); ST.last = p; if (api.sound) api.sound(); }
+
+  async function tap(p) {
+    if (ST.done || ST.failed || ST.wait || !ST.b) return;
+    if (ST.choice && !(ST.opts && ST.opts.includes(p))) return;
+    ST.opts = null; $("tsChoices").hidden = true;
+    const b = ST.b; if (!b.isLegal(p, b.toPlay)) return;
+    const [x, y] = b.xy(p), name = String.fromCharCode(97 + x, 97 + y), q = ST.q, line = lineOf(q), k = ST.step;
+    const alts = pairs((k === 0 ? q.a.join("") : "") + ((q.x && q.x[k / 2]) || ""));
+    put(p); ST.mark = { p, ok: true };
+    const my = ++ST.busy;
+    if (name === line[k]) {
+      ST.step++;
+      if (ST.step >= line.length) return end(true);
+      ST.wait = 1; say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบ…`); draw();
+      await wait(450); if (my !== ST.busy) return;
+      put(b.pt(...c2(line[ST.step]))); ST.step++; ST.wait = 0; ST.mark = null;
+      say(`<b class="ts-ok">ถูกทาง!</b> อีกฝ่ายตอบแล้ว ${q.t === "B" ? "ดำ" : "ขาว"}เดินต่อ (เหลืออีก ${(line.length - ST.step + 1) / 2} ตา)${ST.choice ? " เลือก A, B หรือ C" : ""}`); draw(); offer();
+      return;
+    }
+    // another move the network rates as good as the line's counts as solved, after one reply
+    const ok = alts.includes(name);
+    if (!ok) { ST.mark = { p, ok: false }; say(`<b class="ts-ng">ยังไม่ใช่</b> ดูว่าอีกฝ่ายจะตอบยังไง…`); }
+    ST.wait = 1; draw();
+    const r = await replyTo(); if (my !== ST.busy) return;
+    if (r !== null) { put(r); if (!ok) ST.mark.reply = r; }
+    end(ok, ok);
+  }
+  // the three choices: the line's move and the two points the network likes best that aren't as good, in random order
+  async function offer() {
+    if (!ST.choice) return;
+    const my = ST.busy, b = ST.b, q = ST.q, k = ST.step, right = b.pt(...c2(lineOf(q)[k]));
+    const good = new Set(pairs((k === 0 ? q.a.join("") : "") + ((q.x && q.x[k / 2]) || "")).map(s => b.pt(...c2(s))));
+    const { x0, x1, y0, y1 } = ST.crop, cand = [];
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const p = b.pt(x, y); if (p !== right && !good.has(p) && b.isLegal(p, b.toPlay)) cand.push({ p, x, y, v: 0 }); }
+    const ai = api.ai && api.ai();
+    if (ai) { try { const ev = await ai.evaluate(19, ST.moves, q.k === undefined ? 7.5 : q.k); for (const c of cand) c.v = ev.policy[c.y * 19 + c.x]; } catch (e) {} }
+    if (my !== ST.busy) return;
+    // without the network: points near the answer
+    const [rx, ry] = b.xy(right);
+    if (!cand.some(c => c.v > 0)) for (const c of cand) c.v = Math.random() / (1 + Math.abs(c.x - rx) + Math.abs(c.y - ry));
+    cand.sort((a, b2) => b2.v - a.v);
+    const opts = [right, ...cand.slice(0, 2).map(c => c.p)];
+    for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+    ST.opts = opts;
+    $("tsChoices").innerHTML = opts.map((p, i) => `<button data-o="${i}">${"ABC"[i]}</button>`).join("");
+    $("tsChoices").hidden = false; draw();
+  }
+  // the end of a problem: up a level, or down one
+  function end(won, other) {
+    const g = load(), was = g.lvl;
+    ST.done = won ? 1 : 0; ST.failed = won ? 0 : 1; ST.wait = 0;
+    if (won) { g.solved++; g.lvl = Math.min(TOP, g.lvl + 1); g.best = Math.max(g.best, g.lvl); }
+    else g.lvl = Math.max(0, g.lvl - 1);
+    store(g);
+    if (won) say(`<b class="ts-ok">ถูกต้อง!</b> ${other ? "ตานี้ก็ได้ผลเหมือนกับเฉลย " : ""}` + (was === TOP ? "ระดับ 4 ดั้งแล้ว สุดยอดมาก ลองข้อต่อไปที่ 4 ดั้งอีกนะ" : `ขึ้นเป็น <b>${LEVELS[g.lvl]}</b>`));
+    else say(`<b class="ts-ng">ผิด</b> อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ ${was ? `ลงไปเป็น <b>${LEVELS[g.lvl]}</b>` : "ลองข้อต่อไปที่ 6 คิวนะ"} กด "ดูเฉลย" เพื่อดูวิธีที่ถูกได้`);
+    $("tsNext").textContent = `ข้อต่อไป (${LEVELS[g.lvl]}) →`; $("tsNext").hidden = false; $("tsAns").hidden = false;
+    draw();
+  }
+  // the opponent's answer off the line: the network's favourite point inside the problem area
+  async function replyTo() {
+    const ai = api.ai && api.ai(); if (!ai) return null;
+    try {
+      const ev = await ai.evaluate(19, ST.moves, ST.q.k === undefined ? 7.5 : ST.q.k), { x0, x1, y0, y1 } = ST.crop;
+      let best = null, bp = 0;
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const i = y * 19 + x; if (ev.legal[i] && ev.policy[i] > bp) { bp = ev.policy[i]; best = ST.b.pt(x, y); } }
+      return best;
+    } catch (e) { return null; }
+  }
+  // the answer is played out move by move with numbers
+  async function showAnswer() {
+    ST.show = true;
+    reset(); const my = ST.busy, line = lineOf(ST.q); ST.failed = 1; $("tsAns").hidden = true;
+    ST.wait = 1; ST.nums = new Map();
+    say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่`);
+    for (let k = 0; k < line.length; k++) {
+      await wait(k ? 700 : 300); if (my !== ST.busy) return;
+      const p = ST.b.pt(...c2(line[k])); put(p); ST.nums.set(p, k + 1); draw();
+    }
+    ST.wait = 0; $("tsAns").hidden = false;
+    say(`เฉลย: ${ST.q.t === "B" ? "ดำ" : "ขาว"}เดินตามเลขคี่ อีกฝ่ายตอบตามเลขคู่${ST.q.a.length > 1 ? " (ตาแรกมีจุดอื่นที่ถูกด้วย)" : ""} กด "ข้อต่อไป" เมื่อพร้อม`);
+  }
+
+  // ---------- board ----------
+  function draw() {
+    const b = ST.b, { x0, x1, y0, y1 } = ST.crop, s = [];
+    // lines run on past the crop where the board continues, and stop at a real edge
+    const lx0 = x0 === 0 ? 0 : x0 - .6, lx1 = x1 === 18 ? 18 : x1 + .6, ly0 = y0 === 0 ? 0 : y0 - .6, ly1 = y1 === 18 ? 18 : y1 + .6;
+    const vx = x0 - .9, vy = y0 - .9, vw = x1 - x0 + 1.8, vh = y1 - y0 + 1.8;
+    $("tsBoard").setAttribute("viewBox", `${vx} ${vy} ${vw} ${vh}`);
+    s.push(`<defs><radialGradient id="tsGb" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#5b5b5b"/><stop offset="1" stop-color="#0d0d0d"/></radialGradient>
+      <radialGradient id="tsGw" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfc6b4"/></radialGradient></defs>`);
+    s.push(`<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="var(--wood)"/>`);
+    for (let k = y0; k <= y1; k++) s.push(`<line x1="${lx0}" y1="${k}" x2="${lx1}" y2="${k}" stroke="#4a2a12" stroke-width="${k === 0 || k === 18 ? .07 : .04}"/>`);
+    for (let k = x0; k <= x1; k++) s.push(`<line x1="${k}" y1="${ly0}" x2="${k}" y2="${ly1}" stroke="#4a2a12" stroke-width="${k === 0 || k === 18 ? .07 : .04}"/>`);
+    for (const a of [3, 9, 15]) for (const c of [3, 9, 15]) if (a >= x0 && a <= x1 && c >= y0 && c <= y1) s.push(`<circle cx="${a}" cy="${c}" r=".1" fill="#4a2a12"/>`);
+    const { BLACK, WHITE } = api.E;
+    for (const p of b.pts) {
+      const c = b.color[p]; if (c !== BLACK && c !== WHITE) continue;
+      const [x, y] = b.xy(p); if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+      s.push(`<circle cx="${x}" cy="${y}" r=".47" fill="url(#${c === BLACK ? "tsGb" : "tsGw"})" stroke="${c === BLACK ? "#000" : "#9c917e"}" stroke-width=".02"/>`);
+    }
+    if (ST.nums) for (const [p, k] of ST.nums) {
+      if (!b.color[p]) continue;
+      const [x, y] = b.xy(p); s.push(`<text x="${x}" y="${y + .04}" class="ts-num" fill="${b.color[p] === BLACK ? "#f3ead8" : "#1a1208"}">${k}</text>`);
+    } else if (ST.last != null && b.color[ST.last] && !(ST.mark && ST.mark.p === ST.last)) {
+      const [x, y] = b.xy(ST.last); s.push(`<circle cx="${x}" cy="${y}" r=".16" fill="none" stroke="${b.color[ST.last] === BLACK ? "#f3ead8" : "#2a1a0b"}" stroke-width=".06"/>`);
+    }
+    if (ST.mark && !ST.nums) {
+      const [x, y] = b.xy(ST.mark.p);
+      s.push(ST.mark.ok ? `<circle cx="${x}" cy="${y}" r=".24" fill="none" stroke="#57c26b" stroke-width=".1"/>`
+        : `<path d="M${x - .2} ${y - .2}L${x + .2} ${y + .2}M${x + .2} ${y - .2}L${x - .2} ${y + .2}" stroke="#e0533d" stroke-width=".1"/>`);
+      if (ST.mark.reply) { const [rx, ry] = b.xy(ST.mark.reply); s.push(`<circle cx="${rx}" cy="${ry}" r=".18" fill="none" stroke="#e0533d" stroke-width=".07"/>`); }
+    }
+    if (ST.ghost != null && !ST.done && !ST.failed && !ST.wait && b.color[ST.ghost] === 0) {
+      const [x, y] = b.xy(ST.ghost); s.push(`<circle cx="${x}" cy="${y}" r=".45" fill="url(#${b.toPlay === BLACK ? "tsGb" : "tsGw"})" opacity=".45"/>`);
+    }
+    if (ST.opts) ST.opts.forEach((p, i) => { const [x, y] = b.xy(p);
+      s.push(`<circle cx="${x}" cy="${y}" r=".42" fill="#e3b06a" stroke="#2a1a0b" stroke-width=".05"/><text x="${x}" y="${y + .04}" class="ts-num" fill="#2a1a0b">${"ABC"[i]}</text>`); });
+    $("tsBoard").innerHTML = s.join("");
+    $("tsTurn").className = "ts-turn " + (ST.q.t === "B" ? "b" : "w");
+  }
+
+  function wire() {
+    wired = true;
+    const svg = $("tsBoard");
+    const ptAt = e => {
+      const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+      const q = p.matrixTransform(svg.getScreenCTM().inverse()), x = Math.round(q.x), y = Math.round(q.y), c = ST.crop;
+      return x < c.x0 || y < c.y0 || x > c.x1 || y > c.y1 || Math.hypot(q.x - x, q.y - y) > .5 ? null : ST.b.pt(x, y);
+    };
+    svg.addEventListener("click", e => { const p = ptAt(e); if (p !== null) { ST.ghost = null; tap(p); } });
+    svg.addEventListener("pointermove", e => { if (e.pointerType !== "mouse" || !ST.b) return; const p = ptAt(e); if (p !== ST.ghost) { ST.ghost = p; draw(); } });
+    svg.addEventListener("pointerleave", () => { if (!ST.b) return; ST.ghost = null; draw(); });
+    $("tsGo").onclick = play;
+    $("tsChoices").addEventListener("click", e => { const b = e.target.closest("[data-o]"); if (b && ST.opts) tap(ST.opts[+b.dataset.o]); });
+    $("tsAns").onclick = showAnswer;
+    $("tsNext").onclick = play;
+    // leaving in the middle of a problem keeps the level (the problem counts as seen)
+    $("tsBack").onclick = () => { if (ST.playing) showLadder(); else { $("tsel").hidden = true; if (api.onBack) api.onBack(); } };
+  }
+
+  api._setup = q => setupMoves(q, cropOf(q)); // for the script that works out the answer lines (src/tools)
+  api._crop = cropOf;
+  api._opts = () => (ST.opts || []).map(p => String.fromCharCode(...ST.b.xy(p).map(v => 97 + v))); // for tests
+  api.open = async () => {
+    if (!wired) wire();
+    $("tsel").hidden = false; $("tsPick").hidden = false; $("tsPlay").hidden = true; $("tsGo").disabled = true; $("tsGo").textContent = "กำลังโหลดโจทย์…";
+    try { await fetchData(); $("tsGo").disabled = false; showLadder(); }
+    catch (e) { $("tsGo").textContent = "โหลดโจทย์ไม่สำเร็จ ลองเปิดใหม่อีกครั้ง"; }
+  };
+  return api;
+})();
+
+</script>
+<script>
 (function () {
   const E = GoEngine(null);
   const F = GoFeatures(E);
@@ -1743,6 +2970,10 @@ const Tutorial = (function () {
     { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
+    { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
+      early: { visits: 12, local: 3, temperature: 0.1, pda: 0, scoreWeight: 0 },
+      bio: "นักหมากล้อมทีมมหาวิทยาลัย เปิดเกมเรียบร้อยตามแบบ แต่พอพ้นช่วงเปิดเกมจะบุกสุดๆ ชอบตัด ชอบสู้ ไล่ฆ่ากันทั้งกระดาน",
+      say: { hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ", ahead: "สู้แบบนี้แหละที่ผมชอบ", behind: "ยังไม่จบ ตัดกลับเลย!", win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้", lose: "เก่งมาก ขอสู้อีกตาได้ไหม" } },
     { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 30 },
       bio: "ดาวรุ่งอายุน้อยจากจีน เปิดเทนเง็นทุกกระดาน บุกหนักทุกตา ไล่ฆ่าทุกกลุ่มที่เห็น",
       say: { hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่", ahead: "กลุ่มนั้นตายแล้ว", behind: "ยังไม่จบ! เดี๋ยวบุกกลับ", win: "บอกแล้วว่าไม่มีใครหนีพ้น", lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่" } },
@@ -1859,6 +3090,30 @@ const Tutorial = (function () {
       resigned: "ยอมแล้วเหรอ? เพิ่งจะสนุกเอง|ฮ่าๆ หนีไปซะแล้ว",
       timeoutWin: "เวลาหมดซะแล้ว มุกตลกร้ายจริงๆ|นาฬิกาก็เป็นตัวตลกได้นะ",
       giveUp: "โอเค โชว์นี้ล่มแล้ว ผมยอม|ยอมก็ได้ แต่ผมจะกลับมาพร้อมมุกใหม่"
+    },
+    jay: {
+      hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ|สวัสดีครับ วันนี้ขอสู้เต็มที่นะ|ซ้อมกับทีมมหา'ลัยมาทั้งอาทิตย์ มาลองกัน",
+      goodMove: "โห ตานี้แรงดี|ตัดได้ดีครับ ผมชอบ|เอาจริงแล้วสินะ",
+      badMove: "ตรงนั้นบางไปนะ ผมตัดแน่|ขอบคุณครับ ผมจะบุกตรงนี้เลย|ตานี้เปิดช่องให้ผมสู้แล้ว",
+      caught: "โดนไป {n} เม็ด เดี๋ยวเอาคืน|เจ็บ! แต่ศึกยังไม่จบ|โอเค เสียไปนิด ไปสู้ต่อที่อื่น",
+      capture: "จับตาย {n} เม็ด!|ศึกนี้ผมชนะ|บอกแล้วว่าผมตัดแน่",
+      ahead: "สู้แบบนี้แหละที่ผมชอบ|ศึกใหญ่ทีไร ผมได้เปรียบทุกที|เดินหน้าบุกต่อ",
+      behind: "ยังไม่จบ ตัดกลับเลย!|ต้องหาศึกใหม่แล้ว|ยิ่งตามยิ่งต้องสู้",
+      comeback: "กลับมาแล้ว! ศึกพลิกแล้ว|เห็นไหม สู้ไม่ถอยก็พลิกได้",
+      humanPass: "ผ่านเหรอ? ผมยังอยากสู้อยู่เลย|จบแล้วเหรอครับ",
+      aiPass: "ศึกจบแล้ว ผ่านครับ|ไม่มีที่ให้สู้แล้ว ผ่าน",
+      ko: "โค! มาแย่งกันเลย|ผมมีเหตุขู่เยอะนะ",
+      hint: "ดูคำใบ้ได้ แต่ศึกต้องสู้เองนะ|คำใบ้บอกให้หนีหรือให้สู้ล่ะ",
+      slow: "อ่านศึกอยู่เหรอครับ ค่อยๆ คิด|ตรงนั้นซับซ้อนจริง ผมรอได้",
+      byoyomi: "นับวินาทีแล้วนะครับ|เวลาน้อยแล้ว ระวังโดนตัด",
+      lastPeriod: "ครั้งสุดท้ายแล้ว อย่าพลาด|ตาเดียวพลาด กลุ่มอาจตายนะ",
+      aiByo: "เวลาน้อยก็ต้องสู้เร็ว|ไม่ต้องคิดนาน ตัดเลย",
+      mid: "เปิดเกมเสร็จแล้ว ได้เวลาสู้!|ตรงนี้ตัดได้นะ ระวังไว้|กลุ่มนั้นยังไม่มีตานะครับ",
+      win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้|ขอบคุณครับ ศึกดีมาก|ชนะแล้ว! ไปเล่าให้ทีมฟังดีกว่า",
+      lose: "เก่งมาก ขอสู้อีกตาได้ไหม|ผมบุกแรงเกินไปหน่อย เกมดีครับ|ยอมรับครับ คุณรับศึกได้ดีมาก",
+      resigned: "ยอมแล้วเหรอ? ศึกยังไม่จบเลย|ไว้มาสู้กันใหม่นะครับ",
+      timeoutWin: "หมดเวลาซะแล้ว น่าเสียดายศึก|เวลาหมดครับ ไว้สู้กันใหม่",
+      giveUp: "ผมสู้ไม่ไหวแล้ว ยอมครับ|ยอมครับ ศึกนี้คุณชนะ"
     },
     chris: {
       hello: "Good game ahead. เชิญเลยครับ|Shall we? ชาเย็นพร้อมแล้ว|ขอให้เป็นเกมที่มีเหตุผลนะครับ",
@@ -2053,7 +3308,7 @@ const Tutorial = (function () {
   // measured at startup; on a slow device searches send smaller batches so they stop close to their time limit
   let evalMs = 50, checkEngine = null, engineRetries = 0;
   async function initEngine() {
-    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; } };
+    const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
@@ -2187,9 +3442,10 @@ const Tutorial = (function () {
 
   // ---------- clocks: 30 min main time, then byo-yomi 30 s x 3, in every mode ----------
   const PERIODS = 3, MAIN_S = 1800, BYO_S = 30;
+  let gameAway = false, awayAt = 0; // the player left an unfinished game with the back button; it waits in the profile page
   let clocks = null, lastTick = 0, humanSince = 0, slowTold = false;
   const freshClock = () => ({ main: MAIN_S, byo: BYO_S, per: PERIODS });
-  const clockLive = () => board && engineReady && !over && !scoring;
+  const clockLive = () => board && engineReady && !over && !scoring && !gameAway; // clocks stop while the player is away from the game
   function tick() {
     const now = performance.now(), dt = (now - lastTick) / 1000; lastTick = now;
     if (!clocks || !clockLive()) return;
@@ -2206,6 +3462,9 @@ const Tutorial = (function () {
     if (board.toPlay === human && !slowTold && now - humanSince > 90000) { slowTold = true; speak("slow", { gap: 20 }); }
     renderClocks();
   }
+  // seconds both players spent on their clocks this game, for the play time on the main menu
+  const clockSecs = () => clocks ? Math.round([BLACK, WHITE].reduce((a, k) => { const c = clocks[k];
+    return a + MAIN_S - c.main + (c.main > 0 ? 0 : (PERIODS - c.per) * BYO_S + BYO_S - c.byo); }, 0)) : 0;
   // after a move the mover's byo-yomi period starts fresh
   function clockMoved(color) { if (clocks && clocks[color].main <= 0) clocks[color].byo = BYO_S; }
   function timeout(color) {
@@ -2263,19 +3522,58 @@ const Tutorial = (function () {
       liveAt = Date.now(); track({ type: "move", state: snapshot() });
     }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
-  function reportEnd(humanWon, how) {
+  function reportEnd(humanWon, how, margin) {
     save("game", null);
+    save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
     gameReported = true;
+    if (!exam) showResult(humanWon);
+    // the profile page's record of games played in this browser, newest first
+    const id = gameId, hist = load("history", []).filter(h => h.id !== id);
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
+    askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
     if (!exam) return track(ev);
     // the last move's grade may still be computing; the event keeps this game's id in case a new game starts meanwhile
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
+  }
+  // once the result is up (and, in the rank test, the rank is graded), offer to take the game to the analysis board
+  // ---------- VICTORY / DEFEAT banner after a game against a character: chunky pixel letters, white with a black outline ----------
+  const BIG = {
+    A: "..###..|.#####.|##...##|##...##|#######|##...##|##...##", C: ".######|#######|##.....|##.....|##.....|#######|.######",
+    D: "######.|#######|##...##|##...##|##...##|#######|######.", E: "#######|#######|##.....|######.|##.....|#######|#######",
+    F: "#######|#######|##.....|######.|##.....|##.....|##.....", I: "######|######|..##..|..##..|..##..|######|######",
+    O: ".#####.|#######|##...##|##...##|##...##|#######|.#####.", R: "######.|#######|##...##|######.|##.##..|##..##.|##...##",
+    T: "#######|#######|..###..|..###..|..###..|..###..|..###..", V: "##...##|##...##|##...##|##...##|.##.##.|.#####.|..###..",
+    Y: "##...##|##...##|.##.##.|..###..|..###..|..###..|..###.."
+  };
+  function bigWord(word) {
+    const cells = new Set(); let x0 = 2;
+    for (const ch of word) { const rows = BIG[ch].split("|"); rows.forEach((r, y) => [...r].forEach((c, x) => { if (c === "#") cells.add((x0 + x) + "," + (y + 2)); })); x0 += rows[0].length + 1; }
+    const W = x0 + 1, H = 11, ink = new Set();
+    for (const k of cells) { const [x, y] = k.split(",").map(Number); for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (Math.abs(dx) + Math.abs(dy) <= 3) ink.add((x + dx) + "," + (y + dy)); }
+    const rect = (set, fill) => [...set].map(k => { const [x, y] = k.split(","); return `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${fill}"/>`; }).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" role="img" aria-label="${word}">${rect(ink, "#000")}${rect(cells, "#fff")}</svg>`;
+  }
+  function showResult(won) {
+    const el = $("vd");
+    el.innerHTML = bigWord(won ? "VICTORY" : "DEFEAT") + `<small>แตะหน้าจอเพื่อดูกระดาน</small>`;
+    el.className = "vd " + (won ? "win" : "lose"); el.hidden = false;
+  }
+  $("vd").addEventListener("pointerdown", e => { e.preventDefault(); $("vd").hidden = true; });
+  function askAnalyze(wait) {
+    const id = gameId;
+    Promise.resolve(wait).then(() => setTimeout(() => {
+      if (id !== gameId || !ended() || $("game").hidden) return;
+      $("endAsk").hidden = false; $("endAskGo").focus();
+    }, 1200));
   }
   // the position as spectators on /watch see it, with the moves so far for stepping back through the game
   function snapshot() {
@@ -2292,7 +3590,7 @@ const Tutorial = (function () {
   // ---------- game flow ----------
   function cancelAI() { gen++; thinking = false; think = null; }
   function newGame() {
-    cancelAI();
+    cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
@@ -2391,10 +3689,18 @@ const Tutorial = (function () {
     saveGame();
     if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); }
   }
+  // leaving the game screen: an unfinished game is kept (clocks stopped) and can be continued from the profile page
+  function leaveGame() {
+    cancelAI();
+    if (board && !over && !scoring && history.length && $("game").hidden === false) { gameAway = true; awayAt = Date.now(); saveGame(); }
+    else if (!gameAway) save("game", null);
+  }
   // the game in progress survives a page refresh: it is kept in localStorage until it ends or the player leaves it
+  const KEEP_MS = 6 * 36e5; // an unfinished game is kept in the browser for 6 hours
   function saveGame() {
-    if (!board || over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: Date.now() });
+    if (!board) return;
+    if (over || scoring) { save("game", null); return; }
+    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
@@ -2416,8 +3722,8 @@ const Tutorial = (function () {
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
-    gameId = g.gameId || rid(); gameReported = false;
-    $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing");
+    gameId = g.gameId || rid(); gameReported = false; gameAway = false; examMode = !!CHARS[gameChar].exam;
+    hideScreens(); $("game").hidden = false; document.body.classList.add("playing");
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -2512,7 +3818,7 @@ const Tutorial = (function () {
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
         batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
+      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
@@ -2720,7 +4026,12 @@ const Tutorial = (function () {
   }
   function renderReview() {
     const on = !!board && ended();
-    $("review").hidden = !on; $("playActions").hidden = on;
+    $("review").hidden = !on; $("playActions").hidden = on; $("btnAnalyze").hidden = !on;
+    // the rank test has no hints, and no leaving for another character until the game is over
+    $("btnHint").hidden = !!exam; $("playActions").classList.toggle("two", !!exam);
+    $("btnHome").hidden = !!exam && !on; $("btnHome").parentElement.classList.toggle("three", $("btnHome").hidden);
+    if (!on) $("endAsk").hidden = true;
+    $("gMode").textContent = exam ? "RANK TEST" : "PLAY WITH AI";
     if (!on) return;
     const k = reviewAt === null ? history.length : reviewAt;
     const g = exam && k ? exam.grades[k - 1] : null;
@@ -2756,7 +4067,7 @@ const Tutorial = (function () {
       const winner = diff > 0 ? BLACK : WHITE;
       if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
-      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score"); }
+      if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
@@ -2921,7 +4232,9 @@ const Tutorial = (function () {
 
   const syncSize = seg("segSize", "size"); seg("segColor", "human");
   // home screen: arcade-style character select, one featured card with its neighbours either side
-  const charsEl = $("chars"), L8 = CHARS.length;
+  // the opponents only: the tutorial book and the placement test have their own rows on the main menu
+  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam);
+  const charsEl = $("chars"), L8 = PICK.length;
   const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
     if (!actx || !soundOn) return;
@@ -2940,10 +4253,19 @@ const Tutorial = (function () {
     const b = e.target.closest("button"); if (!b || b.disabled) return;
     unlockAudio(); tune(BUTTON_TUNES[b.id] || (b.id === "btnSound" ? [] : [[700, 0]]));
   }, true);
-  $("faces").innerHTML = CHARS.map((c, i) => `<button data-i="${i}" aria-label="${c.name}"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  $("faces").innerHTML = PICK.map(i => `<button data-i="${i}" aria-label="${CHARS[i].name}"><img src="chars/${CHARS[i].id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  // examMode: the same screen opened from RANK TEST on the main menu, showing Hikaru's card alone
+  let examMode = false;
+  const EXAM_I = CHARS.findIndex(c => c.exam);
   function syncChars(anim) {
-    const i = settings.char, c = CHARS[i], prev = CHARS[(i + L8 - 1) % L8], next = CHARS[(i + 1) % L8];
-    charsEl.innerHTML = `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
+    if (examMode) settings.char = EXAM_I;
+    else if (!PICK.includes(settings.char)) settings.char = PICK[0];
+    const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
+    $("home").querySelector(".px-title").textContent = examMode ? "Rank Test" : "Character Select";
+    $("faces").hidden = examMode;
+    charsEl.classList.toggle("solo", examMode);
+    $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
+    charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
       <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
@@ -2954,31 +4276,156 @@ const Tutorial = (function () {
     $("home").querySelector(".opts").hidden = !!c.tutorial;
     $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : "GAME START";
   }
-  function choose(i) { unlockAudio(); settings.char = (i + L8) % L8; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
-  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) choose(settings.char + +b.dataset.go); });
+  function choose(i) { unlockAudio(); settings.char = i; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
+  const step = d => examMode || choose(PICK[(PICK.indexOf(settings.char) + d + L8) % L8]);
+  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) step(+b.dataset.go); });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
-  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) choose(settings.char + (dx < 0 ? 1 : -1)); });
+  charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden) return; // the tutorial has its own keys
+    if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
     }
-    if (e.key === "ArrowLeft") choose(settings.char - 1); else if (e.key === "ArrowRight") choose(settings.char + 1);
+    if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });
   ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
-  function showHome() { cancelAI(); save("game", null); $("game").hidden = true; $("home").hidden = false; document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
-  function openTutorial() { blip(880); $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
-  Tutorial.onHome = showHome;
+  $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen
+  function showHome(exam) { examMode = exam === true; leaveGame(); $("game").hidden = true; $("endAsk").hidden = true; $("vd").hidden = true; $("menu").hidden = true; $("prof").hidden = true; $("home").hidden = false; document.body.classList.remove("menuing"); document.body.classList.add("arcade"); document.body.classList.remove("playing"); window.scrollTo(0, 0); syncChars(); }
+  function openTutorial() { blip(880); tutorFrom = "home"; $("home").hidden = true; document.body.classList.remove("arcade"); Tutorial.open(); }
+  // the book returns to wherever it was opened from: the main menu or the character select
+  let tutorFrom = "home";
+  Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
-  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial(); blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
+    if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
-  const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
+  // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
+  Analysis.E = E;
+  Analysis.sound = Tutorial.sound = () => { unlockAudio(); clack(); };
+  Analysis.ai = () => engineReady ? AI : null;
+  Analysis.evalMs = () => evalMs;
+  Analysis.lastGame = () => load("lastGame", null);
+  Analysis.onBack = from => {
+    if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
+    else if (from === "prof") showProfile();
+    else showMenu();
+  };
+  Tsumego.E = E;
+  Tsumego.ai = () => engineReady ? AI : null;
+  Tsumego.sound = () => { unlockAudio(); clack(); };
+  Tsumego.onBack = () => showMenu();
+  // ---------- main menu and profile ----------
+  const MENU = [
+    { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร" },
+    { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
+    { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
+    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
+    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
+  ];
+  const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
+    <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+  // the player card on wide screens: latest exam rank, wins, and the time spent on the clocks
+  function renderMenuStats() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const ranked = hist.find(x => typeof x.rank === "number"), wins = hist.filter(h => h.won).length;
+    const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
+    $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
+    $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
+    $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
+    $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    const sub = $("mnList").querySelector('[data-mn="profile"] small');
+    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
+  }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
+  renderMenuStats();
+  $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
+  $("mnSound").onclick = () => $("btnSound").click();
+  $("menu").addEventListener("click", e => {
+    const b = e.target.closest("button[data-mn]"); if (!b || b.disabled) return;
+    unlockAudio(); blip(880);
+    const go = b.dataset.mn;
+    if (go === "play") { showHome(); window.scrollTo(0, 0); }
+    else if (go === "profile") showProfile();
+    else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+    else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
+    else if (go === "tsume") { hideScreens(); Tsumego.open(); }
+    else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+  });
+  $("hmBack").onclick = () => { blip(660); showMenu(); };
+  // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
+  $("gBack").onclick = () => { blip(660); showHome(examMode); };
+  $("pfBack").onclick = () => { blip(660); showMenu(); };
+  const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา" };
+  // the unfinished game left with the back button, while it is still kept
+  function pausedGame() {
+    const g = load("game", null);
+    if (!g || !g.away || !CHARS.some(c => c.id === g.char) || !Array.isArray(g.history)) return null;
+    if (Date.now() - (g.at || 0) >= KEEP_MS) { save("game", null); return null; }
+    return g;
+  }
+  function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
+  function renderProfile() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const charOf = id => CHARS.find(c => c.id === id);
+    const wins = hist.filter(h => h.won).length;
+    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+      <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
+    const ranked = hist.find(x => typeof x.rank === "number");
+    const g = pausedGame();
+    if (g) {
+      const c = CHARS.find(c => c.id === g.char), mine = g.clocks && g.clocks[g.human === WHITE ? WHITE : BLACK];
+      const left = mine ? (mine.main > 0 ? `เหลือเวลา ${Math.floor(mine.main / 60)}:${String(Math.floor(mine.main % 60)).padStart(2, "0")}` : `เบียวโยมิ ${mine.per} ครั้ง`) : "";
+      const keep = Math.max(1, Math.round((g.at + KEEP_MS - Date.now()) / 6e4));
+      h += `<div class="pf-h">เกมที่เล่นค้างไว้</div><div class="pf-rows"><div class="pf-row pf-paused"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b>${c.exam ? ' <span class="note" style="display:inline">RANK TEST</span>' : ""}
+        <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
+        <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
+    }
+    h += `<div class="pf-h">ระดับจากการสอบล่าสุด</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
+      : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
+    if (!hist.length) {
+      h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
+      $("pfBody").innerHTML = h; return;
+    }
+    const by = new Map();
+    for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
+    h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+      const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
+      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+        <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
+      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+    $("pfBody").innerHTML = h;
+  }
+  $("pfBody").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
+    if (b.dataset.an !== undefined) {
+      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
+    }
+  });
+  $("endAskNo").onclick = () => { blip(660); $("endAsk").hidden = true; };
+  $("endAskGo").onclick = () => { $("endAsk").hidden = true; $("btnAnalyze").click(); };
+  $("btnAnalyze").onclick = () => {
+    if (!ended()) return;
+    unlockAudio(); blip(880); cancelAI();
+    $("game").hidden = true; $("endAsk").hidden = true; document.body.classList.remove("playing");
+    Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
+  };
+  const syncSound = () => { $("btnSound").textContent = $("mnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };
   syncSound();
   // true fullscreen where the browser allows it (Android, desktop); the layout already fits the screen either way
@@ -2999,7 +4446,9 @@ const Tutorial = (function () {
   window.addEventListener("pagehide", saveGame);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });
   const saved = load("game", null);
-  if (saved && !(Date.now() - (saved.at || 0) < 6 * 36e5 && resumeGame(saved))) save("game", null);
+  // the link always opens on the main menu: a game that was open when the page closed waits in Profile to be continued
+  if (saved && Date.now() - (saved.at || 0) < KEEP_MS) { if (!saved.away) save("game", Object.assign(saved, { away: true })); }
+  else if (saved) save("game", null);
   initEngine();
 })();
 
