@@ -500,6 +500,9 @@
     if (board.toPlay === human && !slowTold && now - humanSince > 90000) { slowTold = true; speak("slow", { gap: 20 }); }
     renderClocks();
   }
+  // seconds both players spent on their clocks this game, for the play time on the main menu
+  const clockSecs = () => clocks ? Math.round([BLACK, WHITE].reduce((a, k) => { const c = clocks[k];
+    return a + MAIN_S - c.main + (c.main > 0 ? 0 : (PERIODS - c.per) * BYO_S + BYO_S - c.byo); }, 0)) : 0;
   // after a move the mover's byo-yomi period starts fresh
   function clockMoved(color) { if (clocks && clocks[color].main <= 0) clocks[color].byo = BYO_S; }
   function timeout(color) {
@@ -570,7 +573,7 @@
     gameReported = true;
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
@@ -1310,23 +1313,6 @@
     else showMenu();
   };
   // ---------- main menu and profile ----------
-  // 16x16 pixel icons: one character per pixel, "." is clear
-  const PAL = { k: "#2a1a0b", w: "#f3ead8", s: "#cfc6b4", t: "#3f8fd8", T: "#2b6aa6", y: "#e3b06a", b: "#151515", h: "#5b5b5b", G: "#57c26b", r: "#c8894a", d: "#5a331a", g: "#9c917e" };
-  const pxIcon = rows => `<svg viewBox="0 0 16 16" aria-hidden="true">${rows.map((row, y) => [...row].map((c, x) => PAL[c] ? `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${PAL[c]}"/>` : "").join("")).join("")}</svg>`;
-  const ICONS = {
-    profile: pxIcon(["................", ".....kkkkkk.....", "....kwwwwwwk....", "...kwwwwwwwwk...", "...kwwkwwkwwk...", "...kwwwwwwwwk...", "...kwwwkkwwwk...",
-      "....kwwwwwwk....", ".....kkkkkk.....", "....kkTTTTkk....", "..kkTTtttttTkk..", ".kTtttttyttttTk.", ".kTttttyyytttTk.", ".kTtttttytttttk.", ".kkkkkkkkkkkkkk.", "................"]),
-    play: pxIcon(["................", "...kkkkk........", "..kbbbbbk.......", ".kbhhbbbbk......", ".kbhbbbbbk......", ".kbbbbbbbkkkkk..", ".kbbbbbbkwwwwwk.", "..kbbbbkwwwwwwsk",
-      "...kkkkwwwwwwwsk", "......kwwwwwwssk", "......kwwwwwsssk", "......ksswssssk.", ".......ksssssk..", "........kkkkk...", "................", "................"]),
-    analysis: pxIcon(["kkkkkkkkkkkk....", "krrdrrdrrdrk....", "kddddddddddk....", "krrdrGGrrdrk....", "krrdGGGGrdrk....", "kddddGGddddk....", "krrdrrdrkkkkk...", "krrdrrdkwwwwwk..",
-      "kdddddkwttwwwwk.", "krrdrrkwtwwwwwk.", "kkkkkkkwwwwwwwk.", "......kwwwwwwwk.", ".......kwwwwwkkk", "........kkkkkdkk", "..............kd", "...............k"]),
-    tutorial: pxIcon(["................", ".kkkkkk..kkkkkk.", "kwwwwwwkkwwwwwwk", "kwddddwkkwddddwk", "kwwwwwwkkwwwwwwk", "kwdddwwkkwddddwk", "kwwwwwwkkwwwwwwk", "kwddddwkkwdddwwk",
-      "kwwwwwwkkwwwwwwk", "kwdddwwkkwddddwk", "kwwwwwwkkwwwwwwk", "kssssssksssssssk", "krrrrrrrrrrrrrrk", ".kkkkkkkkkkkkkk.", ".......yy.......", ".......yy......."]),
-    exam: pxIcon(["....kkkkkkkk....", "...kyyyyyyyyk...", "...kyywwwwyyk...", "..kyyywyywyyyk..", "..kyyyyywyyyyk..", "..kyyyywyyyyyk..", "..kyyywwwwyyyk..", "...kyyyyyyyyk...",
-      "....kyyyyyyk....", ".....kkyykk.....", ".......kk.......", "......kyyk......", ".....kyyyyk.....", "....kkkkkkkk....", "....krrrrrrk....", "....kkkkkkkk...."]),
-    tsume: pxIcon(["kkkkkkkkkkkkkkkk", "krrrdrrrdrrrdrrk", "krrrdrrrdrrrdrrk", "kddddddddddddddk", "krrkkkrrdrrrdrrk", "krkbbbkrdrrrdrrk", "krkbhbkkkkkrdrrk", "kdkbbbkwwwwkdddk",
-      "krrkkkwwwwwwkrrk", "krrrdkwwkkwwkrrk", "krrrdkwwwkwwkrrk", "kddddkwwkwwwkddk", "krrrdrkwwwwkdrrk", "krrrdrrkkkkrdrrk", "krrrdrrrdrrrdrrk", "kkkkkkkkkkkkkkkk"])
-  };
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
     { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 9 ตัวละคร" },
@@ -1335,12 +1321,26 @@
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
     { id: "exam", t: "RANK TEST", s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
   ];
-  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic">${ICONS[m.id]}</span>
-    <span class="mn-lab"><b>${m.t}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span></button>`).join("");
+  const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
+    <span class="mn-lab"><b>${m.t}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+  // the player card on wide screens: latest exam rank, wins, and the time spent on the clocks
+  function renderMenuStats() {
+    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const ranked = hist.find(x => typeof x.rank === "number"), wins = hist.filter(h => h.won).length;
+    const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
+    $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
+    $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
+    $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
+    $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+  }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
-  function showMenu() { hideScreens(); $("menu").hidden = false; document.body.classList.add("arcade", "menuing"); window.scrollTo(0, 0); }
-  $("mnList").addEventListener("click", e => {
-    const b = e.target.closest("button"); if (!b || b.disabled) return;
+  function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
+  renderMenuStats();
+  $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
+  $("mnSound").onclick = () => $("btnSound").click();
+  $("menu").addEventListener("click", e => {
+    const b = e.target.closest("button[data-mn]"); if (!b || b.disabled) return;
     unlockAudio(); blip(880);
     const go = b.dataset.mn;
     if (go === "play") { showHome(); window.scrollTo(0, 0); }
@@ -1394,7 +1394,7 @@
     $("game").hidden = true; document.body.classList.remove("playing");
     Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
   };
-  const syncSound = () => { $("btnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
+  const syncSound = () => { $("btnSound").textContent = $("mnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };
   syncSound();
   // true fullscreen where the browser allows it (Android, desktop); the layout already fits the screen either way
