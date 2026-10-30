@@ -101,7 +101,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 @media (max-width: 560px) {
   .carousel { grid-template-columns: 34px minmax(0, 1fr) 34px; gap: 6px; }
   .ghost { display: none; }
-  .faces { gap: 3px; flex-wrap: nowrap; }
+  .faces { gap: 3px; flex-wrap: wrap; }
   .faces button img { width: 26px; height: 26px; }
 }
 @media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
@@ -1155,6 +1155,7 @@ function GoNNAI(E, F, net) {
     s.elapsed = Date.now() - t0;
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
+    if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -1195,6 +1196,41 @@ function GoNNAI(E, F, net) {
     const [eb, el] = await evalMany(n, [moves.concat([s.move]), moves.concat([localMove])], komi, pdaFor);
     const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
     if (mine(el) >= mine(eb) - margin) { s.move = localMove; s.winrate = mine(el); }
+  }
+
+  // Fighting style: among the searched moves that cost at most `margin` win rate against the best, play the one that
+  // presses the opponent hardest: touching their stones, cutting two of their groups apart, leaving one short of liberties
+  function fightScore(base, p) {
+    const me = base.toPlay, op = me === E.BLACK ? E.WHITE : E.BLACK;
+    if (!base.isLegal(p, me)) return -1;
+    const near = new Set();
+    for (const d of base.dirs) { const q = p + d; if (base.color[q] === op) near.add(base.head[q]); }
+    if (!near.size) return 0;
+    const b = new Board(base.n); b.copyFrom(base); b.play(p);
+    let score = 1 + (near.size >= 2 ? 2 : 0), mine = b.libs(b.head[p], 3);
+    if (mine < 2) return 0; // a move that walks into atari is not a fight, it is a gift
+    for (const h of near) {
+      if (b.color[h] !== op) { score += 4; continue; } // captured
+      const l = b.libs(b.head[h], 3);
+      score += l === 1 ? 3 : l === 2 ? 2 : 0;
+    }
+    return score;
+  }
+  async function preferFight(n, moves, komi, base, root, s, margin, pdaFor) {
+    if (s.move === PASS || moves.length < 2) return;
+    const best = s.top[0], cands = [];
+    for (const c of s.top) {
+      if (c.move === PASS || c.visits < Math.max(2, best.visits * 0.1)) continue;
+      const f = fightScore(base, c.move);
+      if (f > 0) cands.push({ move: c.move, f });
+    }
+    const f0 = fightScore(base, s.move);
+    cands.sort((a, b) => b.f - a.f);
+    const pick = cands[0];
+    if (!pick || pick.move === s.move || pick.f <= f0) return;
+    const [eb, ef] = await evalMany(n, [moves.concat([s.move]), moves.concat([pick.move])], komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss);
+    if (mine(ef) >= mine(eb) - margin) { s.move = pick.move; s.winrate = mine(ef); }
   }
 
   // first-line points (the edge of the board) are only played when the network sees them as needed
@@ -1743,6 +1779,10 @@ const Tutorial = (function () {
     { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
+    { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
+      early: { visits: 12, local: 3, temperature: 0.1, pda: 0, scoreWeight: 0 },
+      bio: "นักหมากล้อมทีมมหาวิทยาลัย เปิดเกมเรียบร้อยตามแบบ แต่พอพ้นช่วงเปิดเกมจะบุกสุดๆ ชอบตัด ชอบสู้ ไล่ฆ่ากันทั้งกระดาน",
+      say: { hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ", ahead: "สู้แบบนี้แหละที่ผมชอบ", behind: "ยังไม่จบ ตัดกลับเลย!", win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้", lose: "เก่งมาก ขอสู้อีกตาได้ไหม" } },
     { id: "weiqi", en: "WEIQI", name: "เว่ยฉี", country: "จีน", rank: "3 ดั้ง", style: "attack", opening: "tengen", search: { visits: 30 },
       bio: "ดาวรุ่งอายุน้อยจากจีน เปิดเทนเง็นทุกกระดาน บุกหนักทุกตา ไล่ฆ่าทุกกลุ่มที่เห็น",
       say: { hello: "เตรียมตัวไว้ ผมไม่ปล่อยกลุ่มไหนรอดแน่", ahead: "กลุ่มนั้นตายแล้ว", behind: "ยังไม่จบ! เดี๋ยวบุกกลับ", win: "บอกแล้วว่าไม่มีใครหนีพ้น", lose: "แค่ครั้งนี้เท่านั้น ครั้งหน้าไม่รอดแน่" } },
@@ -1859,6 +1899,30 @@ const Tutorial = (function () {
       resigned: "ยอมแล้วเหรอ? เพิ่งจะสนุกเอง|ฮ่าๆ หนีไปซะแล้ว",
       timeoutWin: "เวลาหมดซะแล้ว มุกตลกร้ายจริงๆ|นาฬิกาก็เป็นตัวตลกได้นะ",
       giveUp: "โอเค โชว์นี้ล่มแล้ว ผมยอม|ยอมก็ได้ แต่ผมจะกลับมาพร้อมมุกใหม่"
+    },
+    jay: {
+      hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ|สวัสดีครับ วันนี้ขอสู้เต็มที่นะ|ซ้อมกับทีมมหา'ลัยมาทั้งอาทิตย์ มาลองกัน",
+      goodMove: "โห ตานี้แรงดี|ตัดได้ดีครับ ผมชอบ|เอาจริงแล้วสินะ",
+      badMove: "ตรงนั้นบางไปนะ ผมตัดแน่|ขอบคุณครับ ผมจะบุกตรงนี้เลย|ตานี้เปิดช่องให้ผมสู้แล้ว",
+      caught: "โดนไป {n} เม็ด เดี๋ยวเอาคืน|เจ็บ! แต่ศึกยังไม่จบ|โอเค เสียไปนิด ไปสู้ต่อที่อื่น",
+      capture: "จับตาย {n} เม็ด!|ศึกนี้ผมชนะ|บอกแล้วว่าผมตัดแน่",
+      ahead: "สู้แบบนี้แหละที่ผมชอบ|ศึกใหญ่ทีไร ผมได้เปรียบทุกที|เดินหน้าบุกต่อ",
+      behind: "ยังไม่จบ ตัดกลับเลย!|ต้องหาศึกใหม่แล้ว|ยิ่งตามยิ่งต้องสู้",
+      comeback: "กลับมาแล้ว! ศึกพลิกแล้ว|เห็นไหม สู้ไม่ถอยก็พลิกได้",
+      humanPass: "ผ่านเหรอ? ผมยังอยากสู้อยู่เลย|จบแล้วเหรอครับ",
+      aiPass: "ศึกจบแล้ว ผ่านครับ|ไม่มีที่ให้สู้แล้ว ผ่าน",
+      ko: "โค! มาแย่งกันเลย|ผมมีเหตุขู่เยอะนะ",
+      hint: "ดูคำใบ้ได้ แต่ศึกต้องสู้เองนะ|คำใบ้บอกให้หนีหรือให้สู้ล่ะ",
+      slow: "อ่านศึกอยู่เหรอครับ ค่อยๆ คิด|ตรงนั้นซับซ้อนจริง ผมรอได้",
+      byoyomi: "นับวินาทีแล้วนะครับ|เวลาน้อยแล้ว ระวังโดนตัด",
+      lastPeriod: "ครั้งสุดท้ายแล้ว อย่าพลาด|ตาเดียวพลาด กลุ่มอาจตายนะ",
+      aiByo: "เวลาน้อยก็ต้องสู้เร็ว|ไม่ต้องคิดนาน ตัดเลย",
+      mid: "เปิดเกมเสร็จแล้ว ได้เวลาสู้!|ตรงนี้ตัดได้นะ ระวังไว้|กลุ่มนั้นยังไม่มีตานะครับ",
+      win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้|ขอบคุณครับ ศึกดีมาก|ชนะแล้ว! ไปเล่าให้ทีมฟังดีกว่า",
+      lose: "เก่งมาก ขอสู้อีกตาได้ไหม|ผมบุกแรงเกินไปหน่อย เกมดีครับ|ยอมรับครับ คุณรับศึกได้ดีมาก",
+      resigned: "ยอมแล้วเหรอ? ศึกยังไม่จบเลย|ไว้มาสู้กันใหม่นะครับ",
+      timeoutWin: "หมดเวลาซะแล้ว น่าเสียดายศึก|เวลาหมดครับ ไว้สู้กันใหม่",
+      giveUp: "ผมสู้ไม่ไหวแล้ว ยอมครับ|ยอมครับ ศึกนี้คุณชนะ"
     },
     chris: {
       hello: "Good game ahead. เชิญเลยครับ|Shall we? ชาเย็นพร้อมแล้ว|ขอให้เป็นเกมที่มีเหตุผลนะครับ",
@@ -2512,7 +2576,7 @@ const Tutorial = (function () {
       res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
         batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, searchFor(CHARS[gameChar]), STYLE[CHARS[gameChar].style].opts, { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
+      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
