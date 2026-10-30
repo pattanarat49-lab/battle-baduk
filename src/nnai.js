@@ -105,7 +105,7 @@ function GoNNAI(E, F, net) {
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
     root.N = 1; root.W = util(rootEv); root.L = rootEv.lead;
-    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory); return s; }
+    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory, opts.follow || 0, opts.soft); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;
@@ -263,7 +263,9 @@ function GoNNAI(E, F, net) {
   // local: answer within this many lines of the opponent's last move, unless the network sees nothing worth playing there
   // noFloat: never a lone stone out in the centre (5th line or higher with no stone within two lines)
   // keepTerritory: skip points the network already counts as solidly ours, unless it rates the move as needed there
-  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory) {
+  // follow: like local, but always answers within this many lines of the opponent's last move, wherever it was
+  // soft: a timid player, who leans on his own stones instead of pressing against the opponent's
+  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory, follow, soft) {
     const last = moves[moves.length - 1];
     const edge = i => onEdge(n, i) && ev.policy[i] < EDGE_NEED;
     // a point already settled for either side (inside a closed area) is a wasted move unless the network wants it;
@@ -271,9 +273,9 @@ function GoNNAI(E, F, net) {
     const settled = i => i < AREA && Math.abs(ev.own[i]) > 0.75 && ev.policy[i] < 0.1;
     if (ev.policy[AREA] >= 0.5) return PASS;
     const ownPoint = keepTerritory ? (i => i < AREA && ev.own[i] > 0.8 && ev.policy[i] < 0.1) : null;
-    let floating = null;
+    let floating = null, fb = null;
+    if (noFloat || soft) { fb = new Board(n); for (const m of moves) fb.play(m); }
     if (noFloat) {
-      const fb = new Board(n); for (const m of moves) fb.play(m);
       floating = i => {
         const x = i % 19, y = (i / 19) | 0;
         if (Math.min(x, y, n - 1 - x, n - 1 - y) < 4) return false;
@@ -283,8 +285,8 @@ function GoNNAI(E, F, net) {
         return true;
       };
     }
-    let near = nearLast(moves, base, local);
-    if (near) {
+    let near = nearLast(moves, base, follow || local);
+    if (near && !follow) {
       let mass = 0;
       for (let i = 0; i < AREA; i++) if (near(i)) mass += ev.policy[i];
       if (mass < 0.15) near = null;
@@ -315,6 +317,19 @@ function GoNNAI(E, F, net) {
     filter(edge, true);
     if (floating) filter(floating, true);
     if (near) filter(i => !near(i), false);
+    if (soft) {
+      // a move next to (or diagonal from) his own stones is played three times as often; one that only touches the
+      // opponent's stones (a hane, an attachment, a cut) a third as often, unless the network sees it as urgent
+      const me = fb.toPlay;
+      for (let i = 0; i < AREA; i++) {
+        if (!p[i] || ev.policy[i] >= 0.3) continue;
+        const q = fb.pt(i % 19, (i / 19) | 0);
+        let own = false, opp = false;
+        for (const d of fb.dirs) { const c = fb.color[q + d]; if (c === me) own = true; else if (c === E.BLACK || c === E.WHITE) opp = true; }
+        for (const d of fb.diag) if (fb.color[q + d] === me) own = true;
+        if (own) p[i] *= 3; else if (opp) p[i] *= 0.3;
+      }
+    }
     let s = 0; for (let i = 0; i < p.length; i++) s += p[i];
     let r = Math.random() * s;
     for (let i = 0; i < p.length; i++) { r -= p[i]; if (r <= 0) return slotToPoint(base, i); }
