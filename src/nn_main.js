@@ -1285,26 +1285,6 @@
     o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
   }
-  // ---------- home page music: the track the owner chose (menu/home.mp3, made 7 dB quieter, since iOS ignores volume), looped ----------
-  // It plays only on the main menu, fades in and out, and follows its own on/off switch.
-  let musicOn = load("music", true), tapped = false;
-  const Music = (() => {
-    const VOL = 0.9, a = new Audio("menu/home.mp3");
-    a.loop = true; a.preload = "auto"; a.volume = 0;
-    let fade = null, on = false;
-    const ramp = (to, ms, done) => {
-      clearInterval(fade); const from = a.volume, t0 = performance.now();
-      fade = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / ms); a.volume = from + (to - from) * k; if (k === 1) { clearInterval(fade); if (done) done(); } }, 40);
-    };
-    return {
-      start() { if (on || !musicOn) return; on = true; a.play().then(() => ramp(VOL, 1500)).catch(() => { on = false; }); },
-      stop() { if (!on) return; on = false; ramp(0, 700, () => { if (!on) a.pause(); }); }
-    };
-  })();
-  // music needs a tap before the browser lets it play; it runs only while the menu is on screen
-  const syncMusic = () => { if (musicOn && tapped && !$("menu").hidden) Music.start(); else Music.stop(); };
-  document.addEventListener("pointerdown", () => { tapped = true; if (!$("menu").hidden && musicOn) syncMusic(); }, true);
-  new MutationObserver(syncMusic).observe($("menu"), { attributes: true, attributeFilter: ["hidden"] });
   // in-game buttons: short arcade notes in the same voice as the select screen, one tune per button
   function tune(notes) { notes.forEach(([f, ms]) => setTimeout(() => blip(f), ms)); }
   const BUTTON_TUNES = {
@@ -1412,9 +1392,6 @@
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
-  const syncMusicBtn = () => { $("mnMusic").textContent = musicOn ? "เพลง: เปิด" : "เพลง: ปิด"; $("mnMusic").setAttribute("aria-pressed", String(musicOn)); };
-  $("mnMusic").onclick = () => { musicOn = !musicOn; save("music", musicOn); unlockAudio(); syncMusicBtn(); syncMusic(); };
-  syncMusicBtn();
   $("menu").addEventListener("click", e => {
     const b = e.target.closest("button[data-mn]"); if (!b || b.disabled) return;
     unlockAudio(); blip(880);
