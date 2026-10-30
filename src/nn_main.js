@@ -1263,6 +1263,62 @@
     o.type = "square"; o.frequency.setValueAtTime(f, t); g2.gain.setValueAtTime(0.06, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
     o.connect(g2).connect(actx.destination); o.start(t); o.stop(t + 0.09);
   }
+  // ---------- home page music: a slow koto-like tune over a soft drone, made here so there's nothing to license ----------
+  // The miyako-bushi scale (D Eb G A Bb) gives it a Japanese colour; the melody wanders a step or two at a time and rests
+  // now and then, over a four-bar bass. It plays only on the main menu, fades in and out, and follows its own on/off switch.
+  let musicOn = load("music", true);
+  const Music = (() => {
+    const SCALE = [0, 1, 5, 7, 8], BEAT = 0.42; // semitones above D, seconds per eighth note
+    const hz = (deg, oct) => 146.83 * Math.pow(2, oct + (SCALE[((deg % 5) + 5) % 5] + 12 * Math.floor(deg / 5)) / 12);
+    const BASS = [0, 0, 3, 2]; // D, D, A, G (scale steps) one per bar
+    let master = null, timer = null, next = 0, step = 0, deg = 7, on = false;
+    function pluck(t, f, v) {
+      const o = actx.createOscillator(), o2 = actx.createOscillator(), g = actx.createGain(), lp = actx.createBiquadFilter();
+      o.type = "triangle"; o2.type = "sine"; o.frequency.value = f; o2.frequency.value = f * 2.003;
+      lp.type = "lowpass"; lp.frequency.setValueAtTime(f * 6, t); lp.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.6);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+      o.connect(lp); o2.connect(lp); lp.connect(g).connect(master);
+      o.start(t); o2.start(t); o.stop(t + 1.7); o2.stop(t + 1.7);
+    }
+    function pad(t, f, len) {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.05, t + 0.8); g.gain.linearRampToValueAtTime(0.0001, t + len);
+      o.connect(g).connect(master); o.start(t); o.stop(t + len + 0.1);
+    }
+    function schedule() {
+      while (next < actx.currentTime + 0.5) {
+        const inBar = step % 8;
+        if (inBar === 0) { const r = BASS[(step / 8 | 0) % 4]; pad(next, hz(r, -1), BEAT * 8); pad(next, hz(r + 3, -1), BEAT * 8); }
+        // the melody: mostly on the beat, sometimes an eighth in between, a rest at the end of every other bar
+        const rest = (step % 16) >= 14 || (inBar % 2 === 1 && Math.random() < 0.65);
+        if (!rest) {
+          deg += [-2, -1, -1, 1, 1, 2, 0][Math.floor(Math.random() * 7)];
+          deg = Math.max(3, Math.min(12, deg));
+          pluck(next, hz(deg, 0), inBar === 0 ? 0.11 : 0.07);
+          if (inBar === 0 && Math.random() < 0.4) pluck(next + 0.03, hz(deg - 2, 0), 0.04); // a soft second string
+        }
+        next += BEAT; step++;
+      }
+    }
+    return {
+      start() {
+        if (on || !actx || !musicOn) return;
+        on = true; master = actx.createGain(); master.gain.setValueAtTime(0.0001, actx.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.5, actx.currentTime + 2); master.connect(actx.destination);
+        next = actx.currentTime + 0.1; step = 0; timer = setInterval(schedule, 120); schedule();
+      },
+      stop() {
+        if (!on) return; on = false; clearInterval(timer);
+        const m = master, t = actx.currentTime; m.gain.cancelScheduledValues(t); m.gain.setValueAtTime(m.gain.value, t); m.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+        setTimeout(() => m.disconnect(), 1000);
+      }
+    };
+  })();
+  // music needs a tap before the browser lets it play; it runs only while the menu is on screen
+  const syncMusic = () => { if (musicOn && actx && !$("menu").hidden) Music.start(); else Music.stop(); };
+  document.addEventListener("pointerdown", () => { if (!$("menu").hidden && musicOn) { unlockAudio(); syncMusic(); } }, true);
+  new MutationObserver(syncMusic).observe($("menu"), { attributes: true, attributeFilter: ["hidden"] });
   // in-game buttons: short arcade notes in the same voice as the select screen, one tune per button
   function tune(notes) { notes.forEach(([f, ms]) => setTimeout(() => blip(f), ms)); }
   const BUTTON_TUNES = {
@@ -1370,6 +1426,9 @@
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
+  const syncMusicBtn = () => { $("mnMusic").textContent = musicOn ? "เพลง: เปิด" : "เพลง: ปิด"; $("mnMusic").setAttribute("aria-pressed", String(musicOn)); };
+  $("mnMusic").onclick = () => { musicOn = !musicOn; save("music", musicOn); unlockAudio(); syncMusicBtn(); syncMusic(); };
+  syncMusicBtn();
   $("menu").addEventListener("click", e => {
     const b = e.target.closest("button[data-mn]"); if (!b || b.disabled) return;
     unlockAudio(); blip(880);
