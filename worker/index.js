@@ -256,29 +256,38 @@ ${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style=
 }
 
 export default {
+  // an error shows its message instead of Cloudflare's bare "Error 1101", so a failure can be read off the page
   async fetch(req, env) {
-    const url = new URL(req.url);
-    const stub = () => env.STATS.get(env.STATS.idFromName("global"));
-    if (url.pathname === "/api/event") {
-      if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
-      if (req.method !== "POST") return new Response("method", { status: 405, headers: CORS });
-      let body = null;
-      try { body = JSON.parse(await req.text()); } catch (e) {}
-      const e = clean(body);
-      if (!e) return new Response("bad event", { status: 400, headers: CORS });
-      await stub().record(e);
-      return new Response(null, { status: 204, headers: CORS });
+    try { return await handle(req, env); }
+    catch (e) {
+      console.error(e);
+      return new Response("stats error: " + (e && e.message || e), { status: 500, headers: { ...CORS, "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" } });
     }
-    const html = body => new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
-    if (url.pathname === "/api/stats") return Response.json(await stub().summary(), { headers: CORS });
-    if (url.pathname === "/stats" || url.pathname === "/stats/") return html(page({ ...(await stub().summary()), now: Date.now() }));
-    if (url.pathname === "/api/game") {
-      const g = id(url.searchParams.get("g") || ""), st = g && await stub().game(g);
-      return st ? Response.json(st, { headers: { ...CORS, "cache-control": "no-store" } }) : new Response("not found", { status: 404, headers: CORS });
-    }
-    if (url.pathname === "/watch") return html(WATCH);
-    if (url.pathname === "/api/cancel") return Response.json({ n: 0 }, { headers: CORS });
-    return env.ASSETS.fetch(req);
   }
 };
+
+async function handle(req, env) {
+  const url = new URL(req.url);
+  const stub = () => env.STATS.get(env.STATS.idFromName("global"));
+  if (url.pathname === "/api/event") {
+    if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+    if (req.method !== "POST") return new Response("method", { status: 405, headers: CORS });
+    let body = null;
+    try { body = JSON.parse(await req.text()); } catch (e) {}
+    const e = clean(body);
+    if (!e) return new Response("bad event", { status: 400, headers: CORS });
+    await stub().record(e);
+    return new Response(null, { status: 204, headers: CORS });
+  }
+  const html = body => new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  if (url.pathname === "/api/stats") return Response.json(await stub().summary(), { headers: CORS });
+  if (url.pathname === "/stats" || url.pathname === "/stats/") return html(page({ ...(await stub().summary()), now: Date.now() }));
+  if (url.pathname === "/api/game") {
+    const g = id(url.searchParams.get("g") || ""), st = g && await stub().game(g);
+    return st ? Response.json(st, { headers: { ...CORS, "cache-control": "no-store" } }) : new Response("not found", { status: 404, headers: CORS });
+  }
+  if (url.pathname === "/watch") return html(WATCH);
+  if (url.pathname === "/api/cancel") return Response.json({ n: 0 }, { headers: CORS });
+  return env.ASSETS.fetch(req);
+}
 
