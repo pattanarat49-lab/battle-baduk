@@ -1,6 +1,6 @@
 // Tsumego: a level ladder from 10 kyu to 4 dan. Each problem is a five-move answer line (the player's three moves and the
 // opponent's two replies, worked out ahead by KataGo, see src/tools); solving one moves the player up a level, a wrong
-// move gets one reply from the opponent and sends the player back to 10 kyu. Problems never repeat until a level runs out.
+// move gets one reply from the opponent and sends the player down one level. Problems never repeat until a level runs out.
 const Tsumego = (() => {
   "use strict";
   const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.sound(), api.onBack()
@@ -175,15 +175,15 @@ const Tsumego = (() => {
     $("tsChoices").innerHTML = opts.map((p, i) => `<button data-o="${i}">${"ABC"[i]}</button>`).join("");
     $("tsChoices").hidden = false; draw();
   }
-  // the end of a problem: up a level, or back to 10 kyu
+  // the end of a problem: up a level, or down one
   function end(won, other) {
     const g = load(), was = g.lvl;
     ST.done = won ? 1 : 0; ST.failed = won ? 0 : 1; ST.wait = 0;
     if (won) { g.solved++; g.lvl = Math.min(TOP, g.lvl + 1); g.best = Math.max(g.best, g.lvl); }
-    else g.lvl = 0;
+    else g.lvl = Math.max(0, g.lvl - 1);
     store(g);
     if (won) say(`<b class="ts-ok">ถูกต้อง!</b> ${other ? "ตานี้ก็ได้ผลเหมือนกับเฉลย " : ""}` + (was === TOP ? "ระดับ 4 ดั้งแล้ว สุดยอดมาก ลองข้อต่อไปที่ 4 ดั้งอีกนะ" : `ขึ้นเป็น <b>${LEVELS[g.lvl]}</b>`));
-    else say(`<b class="ts-ng">ผิด</b> อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ ${was ? "ต้องกลับไปเริ่มที่ <b>10 คิว</b> ใหม่" : "ลองข้อต่อไปที่ 10 คิวนะ"} กด "ดูเฉลย" เพื่อดูวิธีที่ถูกได้`);
+    else say(`<b class="ts-ng">ผิด</b> อีกฝ่ายตอบแบบนี้แล้วเราเสียเปรียบ ${was ? `ลงไปเป็น <b>${LEVELS[g.lvl]}</b>` : "ลองข้อต่อไปที่ 10 คิวนะ"} กด "ดูเฉลย" เพื่อดูวิธีที่ถูกได้`);
     $("tsNext").textContent = `ข้อต่อไป (${LEVELS[g.lvl]}) →`; $("tsNext").hidden = false; $("tsAns").hidden = false;
     draw();
   }
