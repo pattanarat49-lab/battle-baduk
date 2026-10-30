@@ -3,7 +3,7 @@
 // Everything is worked out in the browser from the network's outputs (policy, win rate, score lead, ownership) and the
 // board itself: no server and no language model, so the player asks by tapping ready-made questions.
 const Analysis = (function () {
-  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack
+  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack, api.sound() (the stone click)
   const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 7.5;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -416,11 +416,17 @@ const Analysis = (function () {
       ST.win = ev.win / (ev.win + ev.loss); ST.lead = ev.lead; ST.pla = ev.pla; renderInfo();
     });
   }
-  function goTo(k) { k = Math.max(0, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return; ST.at = k; setPos(); }
+  function goTo(k) {
+    k = Math.max(0, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return;
+    if (k === ST.at + 1 && ST.line[ST.at] !== PASS && api.sound) api.sound(); // one step forward places a stone
+    ST.at = k; setPos();
+  }
   function play(p) {
     const b = ST.b; if (p !== PASS && !b.isLegal(p, b.toPlay)) return;
     if (ST.line[ST.at] === p) { goTo(ST.at + 1); return; }
-    ST.line = ST.line.slice(0, ST.at).concat([p]); ST.at++; setPos();
+    ST.line = ST.line.slice(0, ST.at).concat([p]); ST.at++;
+    if (p !== PASS && api.sound) api.sound();
+    setPos();
   }
   function drawBoard() {
     const n = ST.n, b = ST.b, s = [], xy = p => b.xy(p);

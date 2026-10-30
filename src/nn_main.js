@@ -1328,6 +1328,7 @@
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
+  Analysis.sound = Tutorial.sound = () => { unlockAudio(); clack(); };
   Analysis.ai = () => engineReady ? AI : null;
   Analysis.evalMs = () => evalMs;
   Analysis.lastGame = () => load("lastGame", null);

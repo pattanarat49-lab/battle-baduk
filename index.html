@@ -1757,7 +1757,7 @@ const Tutorial = (function () {
   ];
 
   const $ = id => document.getElementById(id);
-  const api = { onHome: null, onPlay: null };
+  const api = { onHome: null, onPlay: null, sound: null }; // sound(): the stone click, set by the game
   const ST = { idx: 0, b: null, marks: {}, found: new Set(), done: false, tries: 0, lock: false, seq: 0, last: -1, gone: [], miss: -1, ghost: -1, mood: "", say: null, timers: [] };
   const later = (fn, ms) => ST.timers.push(setTimeout(fn, ms));
   const remember = n => { try { localStorage.setItem("gonn.tutStep", String(n)); } catch (e) {} };
@@ -1852,7 +1852,7 @@ const Tutorial = (function () {
 
   function win(msg) { ST.done = true; ST.mood = "ok"; ST.say = msg; ST.marks.hint = []; render(); }
   function fail(msg, at) { ST.tries++; ST.mood = "bad"; ST.say = msg; ST.miss = at === undefined ? -1 : at; render(); ST.miss = -1; }
-  function placed(r, i, c) { ST.last = i; ST.gone = r.cap.map(s => [s, 3 - c]); }
+  function placed(r, i, c) { ST.last = i; ST.gone = r.cap.map(s => [s, 3 - c]); if (api.sound) api.sound(); }
 
   function tap(i) {
     if (!canTap()) return;
@@ -1949,7 +1949,7 @@ const Tutorial = (function () {
 // Everything is worked out in the browser from the network's outputs (policy, win rate, score lead, ownership) and the
 // board itself: no server and no language model, so the player asks by tapping ready-made questions.
 const Analysis = (function () {
-  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack
+  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack, api.sound() (the stone click)
   const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 7.5;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -2362,11 +2362,17 @@ const Analysis = (function () {
       ST.win = ev.win / (ev.win + ev.loss); ST.lead = ev.lead; ST.pla = ev.pla; renderInfo();
     });
   }
-  function goTo(k) { k = Math.max(0, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return; ST.at = k; setPos(); }
+  function goTo(k) {
+    k = Math.max(0, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return;
+    if (k === ST.at + 1 && ST.line[ST.at] !== PASS && api.sound) api.sound(); // one step forward places a stone
+    ST.at = k; setPos();
+  }
   function play(p) {
     const b = ST.b; if (p !== PASS && !b.isLegal(p, b.toPlay)) return;
     if (ST.line[ST.at] === p) { goTo(ST.at + 1); return; }
-    ST.line = ST.line.slice(0, ST.at).concat([p]); ST.at++; setPos();
+    ST.line = ST.line.slice(0, ST.at).concat([p]); ST.at++;
+    if (p !== PASS && api.sound) api.sound();
+    setPos();
   }
   function drawBoard() {
     const n = ST.n, b = ST.b, s = [], xy = p => b.xy(p);
@@ -3839,6 +3845,7 @@ const Analysis = (function () {
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
+  Analysis.sound = Tutorial.sound = () => { unlockAudio(); clack(); };
   Analysis.ai = () => engineReady ? AI : null;
   Analysis.evalMs = () => evalMs;
   Analysis.lastGame = () => load("lastGame", null);
