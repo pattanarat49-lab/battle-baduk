@@ -62,6 +62,12 @@
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 10000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
+    // secret character: KataGo's big transformer network (tf3), downloaded only when Sai is picked.
+    // Shows on the select screen after the player beats Todo once (or with ?boss in the address for testing)
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, brain: "human", handicap: true, fx: "smoke",
+      search: { visits: 100000, timeMs: 15000 },
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม ใช้สมอง AI ตัวใหญ่ที่สุดของ KataGo เล่นเต็มกำลังทุกตา ไม่ออมมือ ครั้งแรกต้องโหลดสมองขนาดใหญ่ (ราว 160 MB) แนะนำให้ต่อ Wi-Fi",
+      say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 30 นาที + เบียวโยมิ 30 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
@@ -335,6 +341,18 @@
       timeoutWin: "เสียดายครับ ครั้งหน้าลองแบ่งเวลาดีๆ นะครับ|การบริหารเวลาก็สำคัญครับ",
       giveUp: "ผมยอมครับ คุณเล่นดีมาก|ยอมแพ้ครับ ฝีมือดีจริงๆ"
     },
+    sai: {
+      hello: "มาเล่นหมากล้อมด้วยกันเถอะ|ข้ารอคอยคู่มือมาพันปีแล้ว|ขอให้เป็นเกมที่งดงาม",
+      goodMove: "โอ้… ตานี้งดงามนัก|ไม่เลวเลย|หมากที่มีชีวิต",
+      badMove: "ตานั้นเร่งร้อนไปหน่อย|หมากควรมีความหมายทุกตา|อืม…",
+      caught: "{n} เม็ด… ข้าประมาทไป|เก่งนี่",
+      capture: "{n} เม็ด|ลมหายใจของกลุ่มนั้นหมดแล้ว",
+      ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว|กระดานกำลังบอกอะไรบางอย่าง",
+      behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย|สนุกเหลือเกิน",
+      comeback: "เกมยังไม่จบหรอก|หมากล้อมไม่มีวันสิ้นสุด",
+      win: "ขอบคุณสำหรับเกมที่งดงาม|เกมนี้สนุกมาก มาเล่นกันอีกนะ",
+      lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว|ข้าแพ้แล้ว… ช่างงดงามจริงๆ"
+    },
     todo: {
       hello: "...เชิญ|กระดานรออยู่|ข้าจะดูว่าเจ้ามาไกลแค่ไหน",
       goodMove: "หืม|ดี|ตานี้… น่าสนใจ",
@@ -404,13 +422,32 @@
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4) };
+  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
   if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 2 : 1;
   if (!CHARS[settings.char]) settings.char = 5;
-  const KOMI = 7.5;
+  // komi 7.5 in an even game; 0.5 with handicap stones (Sai only), set per game by newGame / resumeGame
+  let KOMI = 7.5, handi = 0;
+  // standard handicap points on 19x19 (x, y from the top left); black takes the first N
+  const HANDI_PTS = [[15, 3], [3, 15], [15, 15], [3, 3], [9, 9], [3, 9], [15, 9], [9, 3], [9, 15]];
+  function handiPoints(k) {
+    if (k < 2) return [];
+    const c = HANDI_PTS.slice(0, 4), mid = [9, 9];
+    if (k === 2 || k === 3 || k === 4) return HANDI_PTS.slice(0, k);
+    if (k === 5) return c.concat([mid]);
+    if (k === 6) return c.concat([[3, 9], [15, 9]]);
+    if (k === 7) return c.concat([[3, 9], [15, 9], mid]);
+    if (k === 8) return c.concat([[3, 9], [15, 9], [9, 3], [9, 15]]);
+    return c.concat([[3, 9], [15, 9], [9, 3], [9, 15], mid]);
+  }
+  // handicap stones go into the move list as black moves with white passes in between, so white plays next
+  function handiLine(b, k) {
+    const out = [];
+    handiPoints(k).forEach(([x, y], i) => { if (i) out.push(PASS); out.push(b.pt(x, y)); });
+    return out;
+  }
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0, examBehind = 0;
   let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
@@ -665,7 +702,7 @@
     if (!exam) showResult(humanWon);
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
@@ -727,9 +764,14 @@
   function newGame() {
     cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
+    handi = 0; KOMI = 7.5;
+    if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
+    if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {}); // start the download before the first AI move
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    document.querySelector(".komi b").textContent = KOMI;
     const ch = CHARS[gameChar];
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
@@ -835,19 +877,21 @@
   function saveGame() {
     if (!board) return;
     if (over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
+    save("game", { char: CHARS[gameChar].id, n, human, handi, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
     exam = CHARS[gameChar].exam ? { grades: Array.isArray(g.grades) ? g.grades : [] } : null; ponder = null;
     const ch = CHARS[gameChar];
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    document.querySelector(".komi b").textContent = KOMI;
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
       $("n" + k).textContent = me ? "คุณ" : ch.name;
@@ -930,6 +974,50 @@
     }
     return odd.length ? odd[(Math.random() * odd.length) | 0] : null;
   }
+  // ---------- bigger brains: a character with `brain` plays with its own network, downloaded the first time it is picked ----------
+  // Files: <brain>.json and <brain>.bin.0, .1, ... (20 MB parts: Cloudflare serves files up to 25 MB). The parts are kept in
+  // the browser's Cache Storage, so later visits load them without the network.
+  const brains = {}; // name -> { ai, promise, pct, error }
+  async function fetchPart(url) {
+    let cache = null;
+    try { cache = await caches.open("baduk-brains-v1"); const hit = await cache.match(url); if (hit) return hit.arrayBuffer(); } catch (e) { cache = null; }
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(url + " " + r.status);
+    if (cache) try { await cache.put(url, r.clone()); } catch (e) {}
+    return r.arrayBuffer();
+  }
+  function loadBrain(name) {
+    const st = brains[name] || (brains[name] = { ai: null, promise: null, pct: 0, error: null });
+    if (st.ai) return Promise.resolve(st.ai);
+    if (!st.promise) st.promise = (async () => {
+      const meta = await fetch(name + ".json").then(r => { if (!r.ok) throw new Error(name + ".json " + r.status); return r.json(); });
+      const parts = meta.parts || 0, out = new Uint8Array(meta.parts ? meta.parts * 20 * 1024 * 1024 : 0);
+      let buf, got = 0;
+      if (!parts) buf = await fetchPart(name + ".bin");
+      else {
+        for (let k = 0; k < parts; k++) {
+          const b = new Uint8Array(await fetchPart(name + ".bin." + k));
+          out.set(b, got); got += b.length; st.pct = got / (meta.bytes || got); renderStatus();
+        }
+        buf = out.buffer.slice(0, got);
+      }
+      st.pct = 1; renderStatus();
+      const ai = GoNNAI(E, F, GoTFNet(tf).build(meta, buf));
+      await ai.evalMany(19, [[]], KOMI); // first run compiles the GPU programs
+      st.ai = ai; st.error = null;
+      return ai;
+    })().catch(e => { st.promise = null; st.error = e; throw e; });
+    return st.promise;
+  }
+  // the network a character plays with; falls back to the standard one if its own cannot be loaded
+  async function brainFor(ch) {
+    if (!ch.brain) return AI;
+    try { return await loadBrain(ch.brain); }
+    catch (e) { console.warn(e); flash("โหลดสมองใหญ่ไม่สำเร็จ ใช้สมองปกติแทน"); return AI; }
+  }
+  const brainLoading = () => { const ch = board && CHARS[gameChar]; const st = ch && ch.brain && brains[ch.brain]; return st && !st.ai && st.promise ? st : null; };
+  // secret characters show on the select screen once the player has beaten Todo (or with ?boss in the address)
+  const secretOpen = () => /[?&]boss\b/.test(location.search) || load("history", []).some(h => h.char === "todo" && h.won);
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.search;
   async function maybeAI() {
@@ -950,8 +1038,11 @@
     }
     let res;
     try {
-      res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-        batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
+      const brain = await brainFor(CHARS[gameChar]);
+      if (my !== gen) return;
+      res = await brain[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
+        // a big brain's attention layers need a lot of memory per position: small batches (WebAssembly runs out at 8)
+        batch: brain !== AI ? (tf.getBackend() === "webgl" ? 4 : 1) : evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
       }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
@@ -988,7 +1079,9 @@
     setEval(res);
     reactTo(res);
     // resign once the player's winning chance has been 99% or more for 5 AI moves in a row
-    hopeless = res.winrate <= 0.01 ? hopeless + 1 : 0;
+    // in a handicap game Sai starts far behind on paper, so it plays on until late in the game and clearly lost on the board
+    const giveUpOk = !handi || handi < 2 || (history.length >= 150 && (ai === BLACK ? leadBlack : -leadBlack) < -20);
+    hopeless = res.winrate <= 0.01 && giveUpOk ? hopeless + 1 : 0;
     if (hopeless >= 5 && !exam) { // the examiner plays on so the player is graded to the end
       over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("giveUp", { force: true }); reportEnd(true, "resign"); render(); return;
     }
@@ -1260,6 +1353,7 @@
     else if (!engineReady) html = "<b>รอสมอง AI โหลดเสร็จ…</b>";
     else if (over) html = "เกมจบแล้ว กด ◀ ▶ เพื่อดูย้อนหมากทีละตา หรือกด \"เล่นใหม่\"";
     else if (scoring) html = scoring.loading ? "ทั้งสองฝ่ายผ่าน กำลังประเมินหมากตาย…" : "<b>นับแต้ม</b> ตรวจหมากตายบนกระดาน";
+    else if (thinking && brainLoading()) html = `<b>กำลังโหลดสมองใหญ่ของ ${CHARS[gameChar].name}… ${Math.round(brainLoading().pct * 100)}%</b><span class="meta">ครั้งแรกเท่านั้น ครั้งต่อไปจะเปิดได้ทันที</span>`;
     else if (thinking) {
       const who = board.toPlay === ai ? "AI กำลังคิด" : "AI กำลังหาตาแนะนำ";
       html = `<b>${who}…</b><span class="meta">${think ? think.visits.toLocaleString() + " รูปแบบ · คิดว่า " + moveName(think.move) + " (" + Math.round(think.winrate * 100) + "%)" : "เริ่มอ่าน"}</span>`;
@@ -1380,10 +1474,10 @@
     }
   }
 
-  const syncSize = seg("segSize", "size"); seg("segColor", "human");
+  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
-  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam);
+  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam && (!CHARS[i].secret || secretOpen()));
   const charsEl = $("chars"), L8 = PICK.length;
   const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
@@ -1413,11 +1507,13 @@
     const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
     $("home").querySelector(".px-title").textContent = examMode ? "Rank Test" : "Character Select";
     $("faces").hidden = examMode;
+    // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
+    $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
     charsEl.classList.toggle("solo", examMode);
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
     charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
+      ${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
     $("pick").innerHTML = `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
@@ -1442,7 +1538,7 @@
     if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });
-  ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
+  ["segSize", "segColor", "segHandi"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen

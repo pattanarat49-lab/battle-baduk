@@ -36,6 +36,38 @@ class Reader:
         return a
 
 
+# HumanSL profiles baked into the export (see KataGo cpp/neuralnet/sgfmetadata.cpp), for a 19x19 board
+PROFILES = ["proyear_1850", "rank_9d"]
+
+
+def meta_row(prof):
+    import datetime, math
+    row = np.zeros(192)
+    if prof.startswith("proyear_"):
+        inv, date, source, tc = 1, datetime.date(int(prof[8:]), 6, 1), 5, 75     # GoGoD, time control unknown
+        rated = 0.0
+    else:
+        ranks = {"9d": 1, "8d": 2, "7d": 3, "6d": 4, "5d": 5, "4d": 6, "3d": 7, "2d": 8, "1d": 9}
+        inv, date, source, tc = ranks[prof.split("_")[1]], datetime.date(2020, 3, 1), 2, 79  # KGS, byo-yomi 1200s + 5x30s
+        rated = 0.5
+    row[0] = row[1] = 1.0                         # both players human
+    row[6:6 + min(inv, 34)] = 1.0; row[40:40 + min(inv, 34)] = 1.0
+    row[74] = rated
+    row[tc] = 1.0
+    main, period, periods = (1200.0, 30.0, 5) if tc == 79 else (0.0, 0.0, 0)
+    row[82] = 0.4 * (math.log(main + 60.0) - 6.5); row[83] = 0.3 * (math.log(period + 1.0) - 3.0)
+    row[84] = 0.5 * (math.log(periods + 2.0) - 1.5); row[85] = 0.25 * (math.log(0 + 2.0) - 1.5)
+    row[86] = 0.0                                 # 0.5*log(area/361) on 19x19
+    days = (date - datetime.date(1970, 1, 1)).days
+    period_ = 7.0; factor = 80000 ** (1.0 / 31)
+    for i in range(32):
+        rev = days / period_
+        row[87 + 2 * i] = math.cos(rev * 2 * math.pi); row[88 + 2 * i] = math.sin(rev * 2 * math.pi)
+        period_ *= factor
+    row[151 + source] = 1.0
+    return row
+
+
 ACTS = {"ACTIVATION_RELU": "relu", "ACTIVATION_MISH": "mish", "ACTIVATION_SILU": "silu", "ACTIVATION_IDENTITY": "id"}
 
 
@@ -48,12 +80,13 @@ def parse(path):
     if ver >= 13:
         td = r.float(); post["scoreMean"] = r.float(); r.float(); post["lead"] = r.float(); r.float(); r.float(); r.float()
     if ver >= 15:
-        meta = r.int(); assert meta == 0, "SGF-metadata (human) nets are not supported here"
+        meta = r.int(); assert meta in (0, 1), meta
         extra = [r.int() for _ in range(7)]
         assert all(e in (0, 1) for e in extra[:2]) and not any(extra[2:]), extra
         prefer = extra[:2]
     else:
         prefer = [0, 0]
+        meta = 0
 
     tensors, chunks = [], []
     off = [0]
@@ -153,6 +186,22 @@ def parse(path):
         norm = r.int(); assert norm in (0, 1), norm
         assert not any(r.int() for _ in range(5))
     conv("init.conv"); matmul("init.mm")
+    metaBias = []
+    if meta:
+        # HumanSL: SGF metadata (rank, date, source...) goes through a small MLP into a per-channel trunk bias. The profiles
+        # used by the game are fixed, so the MLP is run here and only its output vector is stored per profile.
+        r.tok(); nmeta = r.int(); assert nmeta == 192
+        def mm():
+            r.tok(); ic = r.int(); oc = r.int(); return r.floats(ic * oc).reshape(ic, oc)
+        def mb():
+            r.tok(); c = r.int(); return r.floats(c)
+        m1 = mm(); b1 = mb(); a1 = act(); m2 = mm(); b2 = mb(); a2 = act(); m3 = mm()
+        F = {"relu": lambda v: np.maximum(v, 0), "mish": lambda v: v * np.tanh(np.where(v < 20, np.log1p(np.exp(np.minimum(v, 20))), v)),
+             "silu": lambda v: v / (1 + np.exp(-v)), "id": lambda v: v}
+        for prof in PROFILES:
+            row = meta_row(prof).astype(np.float64)
+            h = F[a1](row @ m1 + b1); h = F[a2](h @ m2 + b2); out = h @ m3
+            add("meta." + prof, out); metaBias.append(prof)
     tree = stack(nblocks, "b")
     tipNorm = None
     if norm == 0:
@@ -180,7 +229,7 @@ def parse(path):
 
     layout = {"name": name, "version": ver, "format": 2, "dtype": "float16", "tree": tree,
               "acts": {"tip": tipAct, "g1": g1Act, "p1": p1Act, "pass": passAct, "v1": v1Act, "v2": v2Act},
-              "policyChannels": pch, "tipNorm": tipNorm, "norms": norms, "prefer": prefer, "scoreMul": post["scoreMean"] / 20.0, "leadMul": post["lead"] / 20.0,
+              "policyChannels": pch, "metaProfiles": metaBias, "tipNorm": tipNorm, "norms": norms, "prefer": prefer, "scoreMul": post["scoreMean"] / 20.0, "leadMul": post["lead"] / 20.0,
               "tensors": tensors}
     # float32 extras (RoPE tables) go after the float16 weights, 4-byte aligned
     data = b"".join(chunks)
