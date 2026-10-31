@@ -1,4 +1,5 @@
-// KataGo residual network (model versions 8-10) evaluated with TensorFlow.js, NHWC layout.
+// KataGo residual network evaluated with TensorFlow.js, NHWC layout.
+// Layout format 1 (export_tf.py): plain v8-10 nets. Format 2 (export_tf2.py): v8-15 incl. nested bottleneck nets.
 function GoTFNet(tf) {
   "use strict";
   function halfToFloat(u16) {
@@ -19,11 +20,13 @@ function GoTFNet(tf) {
       W[t.name] = tf.tensor(all.subarray(t.offset, t.offset + size), t.shape, "float32");
     }
     const conv = (x, name) => tf.conv2d(x, W[name], 1, "same");
+    const actFn = (y, a) => a === "mish" ? tf.mul(y, tf.tanh(tf.softplus(y))) : a === "silu" ? tf.mul(y, tf.sigmoid(y)) : a === "id" ? y : tf.relu(y);
     const bnAct = (x, name, mask, act = true) => {
       let y = tf.add(tf.mul(x, W[name + ".s"]), W[name + ".b"]);
-      if (act) y = tf.relu(y);
+      if (act) y = actFn(y, act === true ? "relu" : act);
       return tf.mul(y, mask);
     };
+    const v2 = meta.format === 2, A = meta.acts || {};
     const asBias = v => tf.expandDims(tf.expandDims(v, 1), 1);
 
     // spatial: [N,19,19,22] float32, global: [N,19]
@@ -40,30 +43,45 @@ function GoTFNet(tf) {
           return tf.concat([mean, tf.mul(mean, f14), third], 1);
         };
         let x = tf.add(conv(spatial, "init.conv"), asBias(tf.matMul(global, W["init.mm"])));
-        meta.blocks.forEach((kind, i) => {
-          const p = "b" + i + ".";
-          const o = bnAct(x, p + "pre", mask);
+        const block = (x, b) => {
+          const p = b.p;
+          if (b.kind === "nested_bottleneck_block") {
+            let h = conv(bnAct(x, p + "pre", mask, b.preAct), p + "preconv");
+            for (const ib of b.inner) h = block(h, ib);
+            return tf.add(x, conv(bnAct(h, p + "post", mask, b.postAct), p + "postconv"));
+          }
+          const o = bnAct(x, p + "pre", mask, b.preAct || true);
           let a = conv(o, p + "conv1");
-          if (kind === "gpool_block") {
-            const g = bnAct(conv(o, p + "gconv"), p + "gbn", mask);
+          if (b.kind === "gpool_block") {
+            const g = bnAct(conv(o, p + "gconv"), p + "gbn", mask, b.gAct || true);
             a = tf.add(a, asBias(tf.matMul(gpool(g, false), W[p + "gmm"])));
           }
-          a = bnAct(a, p + "mid", mask);
-          x = tf.add(x, conv(a, p + "conv2"));
-        });
-        const trunk = bnAct(x, "tip", mask);
-        const g1 = bnAct(conv(trunk, "p.g1"), "p.g1bn", mask);
+          a = bnAct(a, p + "mid", mask, b.midAct || true);
+          return tf.add(x, conv(a, p + "conv2"));
+        };
+        const tree = v2 ? meta.tree : meta.blocks.map((kind, i) => ({ kind, p: "b" + i + "." }));
+        for (const b of tree) x = block(x, b);
+        const trunk = bnAct(x, "tip", mask, A.tip || true);
+        const g1 = bnAct(conv(trunk, "p.g1"), "p.g1bn", mask, A.g1 || true);
         const pooled = gpool(g1, false);
         let p1 = tf.add(conv(trunk, "p.p1"), asBias(tf.matMul(pooled, W["p.gmm"])));
-        p1 = bnAct(p1, "p.p1bn", mask);
+        p1 = bnAct(p1, "p.p1bn", mask, A.p1 || true);
         let p2 = conv(p1, "p.p2");
+        if (v2 && meta.policyChannels > 1) p2 = tf.slice(p2, [0, 0, 0, 0], [-1, -1, -1, 1]);
         p2 = tf.add(tf.mul(p2, mask), tf.mul(maskM1, 5000));
         const n = spatial.shape[0];
-        const policy = tf.concat([tf.reshape(p2, [n, 361]), tf.matMul(pooled, W["p.pass"])], 1);
-        const v1 = bnAct(conv(trunk, "v.v1"), "v.v1bn", mask);
-        const v2 = tf.relu(tf.add(tf.matMul(gpool(v1, true), W["v.v2"]), W["v.v2b"]));
-        const value = tf.add(tf.matMul(v2, W["v.v3"]), W["v.v3b"]);
-        const score = tf.add(tf.matMul(v2, W["v.sv3"]), W["v.sv3b"]);
+        let pass = tf.matMul(pooled, W["p.pass"]);
+        if (A.pass) pass = tf.matMul(actFn(tf.add(pass, W["p.passb"]), A.pass), W["p.pass2"]);
+        if (pass.shape[1] > 1) pass = tf.slice(pass, [0, 0], [-1, 1]);
+        const policy = tf.concat([tf.reshape(p2, [n, 361]), pass], 1);
+        const v1 = bnAct(conv(trunk, "v.v1"), "v.v1bn", mask, A.v1 || true);
+        const vh = actFn(tf.add(tf.matMul(gpool(v1, true), W["v.v2"]), W["v.v2b"]), A.v2 || "relu");
+        const value = tf.add(tf.matMul(vh, W["v.v3"]), W["v.v3b"]);
+        let score = tf.add(tf.matMul(vh, W["v.sv3"]), W["v.sv3b"]);
+        if (v2 && (meta.scoreMul !== 1 || meta.leadMul !== 1)) {
+          const k = [meta.scoreMul, 1, meta.leadMul].concat(Array(score.shape[1] - 3).fill(1));
+          score = tf.mul(score, tf.tensor1d(k));
+        }
         const own = tf.reshape(tf.tanh(tf.mul(conv(v1, "v.own"), mask)), [n, 361]);
         return [policy, value, score, own];
       });
@@ -86,7 +104,7 @@ function GoTFNet(tf) {
       const res = [];
       for (let k = 0; k < n; k++) res.push({
         policy: data[0].subarray(k * 362, k * 362 + 362), value: data[1].subarray(k * 3, k * 3 + 3),
-        score: data[2].subarray(k * 4, k * 4 + 4), own: data[3].subarray(k * 361, k * 361 + 361)
+        score: data[2].subarray(k * (data[2].length / n), k * (data[2].length / n) + 4), own: data[3].subarray(k * 361, k * 361 + 361)
       });
       return res;
     }
