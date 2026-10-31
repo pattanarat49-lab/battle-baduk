@@ -1,0 +1,2 @@
+url: https://github.com/lightvector/KataGo/releases/download/v1.15.0/b18c384nbt-humanv0.bin.gz
+bytes: 99066230
