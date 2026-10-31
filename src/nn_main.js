@@ -74,6 +74,16 @@
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.1, points: 5, pool: 8, until: 200 } },
       bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมด้วยซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน ใช้สมองมืออาชีพยุค 1980 เล่นเต็มกำลังทุกตา ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
+    // special character: the same HumanSL download, three phases. Opening (about 40 moves): the KGS 9-dan amateur profile
+    // with a short read and a strong pull to solid shape, so it is slow and a little passive. Middle game: 1995
+    // professionals (Lee Changho's prime), still preferring solid moves. Endgame (from about move 145): the full search,
+    // no style, and a pull to the biggest margin, so every point is collected
+    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, brain: "human", profile: "proyear_1995",
+      early: { visits: 40, timeMs: 4000, profile: "rank_9d", solid: { margin: 0.06, points: 2.5, pool: 6 } },
+      search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
+      late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
+      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เปิดเกมช้าและเสียเปรียบเล็กน้อย แต่ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 30 นาที + เบียวโยมิ 30 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
@@ -358,6 +368,18 @@
       comeback: "เกมยังไม่จบหรอก|หมากล้อมไม่มีวันสิ้นสุด",
       win: "ขอบคุณสำหรับเกมที่งดงาม|เกมนี้สนุกมาก มาเล่นกันอีกนะ",
       lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว|ข้าแพ้แล้ว… ช่างงดงามจริงๆ"
+    },
+    changho: {
+      hello: "...|ขอให้เป็นเกมที่ดีครับ|(พยักหน้าเงียบๆ)",
+      goodMove: "หืม|ตาดีครับ|...",
+      badMove: "...|ตานั้นมีช่องโหว่",
+      caught: "{n} เม็ด… ไม่เป็นไร|...",
+      capture: "{n} เม็ด|...",
+      ahead: "ครึ่งแต้มก็คือชนะ|ช่วงปลายเกมเป็นของผม|...",
+      behind: "ยังไม่ถึงปลายเกม|ค่อยๆ เก็บไปทีละแต้ม",
+      comeback: "ปลายเกมเพิ่งเริ่ม|แต้มยังเก็บได้อีก",
+      win: "ขอบคุณสำหรับเกมครับ|ชนะครึ่งแต้มก็พอแล้ว",
+      lose: "คุณเล่นได้ดีมากครับ|ผมแพ้แล้ว ขอบคุณครับ"
     },
     takemiya: {
       hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล|มาสร้างหมากที่ยิ่งใหญ่กันเถอะ|อย่ากลัวกลางกระดานนะครับ",
@@ -1113,7 +1135,8 @@
   // a HumanSL brain plays as the character's profile (Sai 1850, Takemiya 1980); switching clears the evaluations cached
   // under the other profile
   function asProfile(ai, ch) {
-    if (ch.profile && ai.big && ai.big.setProfile && ai.big.getProfile() !== ch.profile) { ai.big.setProfile(ch.profile); ai.clearCache(); }
+    const want = (board && searchFor(ch).profile) || ch.profile; // a phase can play as another profile (Lee Changho's opening)
+    if (want && ai.big && ai.big.setProfile && ai.big.getProfile() !== want) { ai.big.setProfile(want); ai.clearCache(); }
     return ai;
   }
   async function brainFor(ch) {
@@ -1157,7 +1180,8 @@
   // the planned unlock is a win against Todo: load("history", []).some(h => h.char === "todo" && h.won)
   const secretOpen = () => /[?&]boss\b/.test(location.search);
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
-  const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.search;
+  // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
+  const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
   async function maybeAI() {
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
     const my = ++gen; thinking = true; think = null; render();
@@ -1183,7 +1207,7 @@
         // compiled new GPU programs and textures at the first move until Safari closed the page
         batch: brain !== AI ? 1 : evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
+      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(searchFor(CHARS[gameChar]).timeMs || CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
