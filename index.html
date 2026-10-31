@@ -1653,7 +1653,9 @@ function GoNNAI(E, F, net) {
     if (opts.era) await preferEra(n, moves, komi, base, root, s, opts.era, pdaFor);
     if (opts.solid) await preferSolid(n, moves, komi, base, root, s, opts.solid, pdaFor);
     if (opts.creative) await preferCreative(n, moves, komi, base, root, s, opts.creative, pdaFor);
+    if (opts.tenuki && moves.length < (opts.tenuki.until || 150)) await preferTenuki(n, moves, komi, base, root, s, opts.tenuki, pdaFor);
     if (opts.cosmic && moves.length < (opts.cosmic.until || 150)) await preferHigh(n, moves, komi, base, root, s, opts.cosmic, pdaFor);
+    if (opts.no33 && moves.length < opts.no33) avoid33(n, base, root, s);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -1831,6 +1833,53 @@ function GoNNAI(E, F, net) {
       const ev = evs[k + 1];
       if (mine(ev) >= w0 - (cosmic.margin || 0.04) && -ev.lead >= l0 - (cosmic.points || 2)) { s.move = high[k].move; s.winrate = mine(ev); s.cosmic = true; return; }
     }
+  }
+
+  // Light play (Takemiya): when the best move answers next to the opponent's last stone, leave it (tenuki) for a point at
+  // least five lines away, preferring the highest one, if that costs at most tk.margin win rate and tk.points of lead.
+  // A local answer that matters more than that (a fight, a group in danger) is still played
+  async function preferTenuki(n, moves, komi, base, root, s, tk, pdaFor) {
+    const last = moves[moves.length - 1];
+    if (s.move === PASS || last === undefined || last === PASS) return;
+    const [lx, ly] = base.xy(last), dist = p => { const [x, y] = base.xy(p); return Math.max(Math.abs(x - lx), Math.abs(y - ly)); };
+    if (dist(s.move) > 3) return;
+    const seen = new Set([s.move]), cands = [];
+    const best = s.top[0] ? s.top[0].visits : 0;
+    for (const c of s.top) if (c.move !== PASS && c.visits >= Math.max(2, best * 0.1) && !seen.has(c.move)) { seen.add(c.move); cands.push({ move: c.move, prior: c.prior }); }
+    const order = [];
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
+    order.sort((a, b) => root.priors[b] - root.priors[a]);
+    for (const i of order.slice(0, tk.pool || 8)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
+    const away = cands.filter(c => c.prior >= 0.01 && dist(c.move) >= 5)
+      .sort((a, b) => Math.min(5, height(n, base, b.move)) - Math.min(5, height(n, base, a.move)) || b.prior - a.prior).slice(0, 3);
+    if (!away.length) return;
+    const evs = await evalMany(n, [moves.concat([s.move])].concat(away.map(c => moves.concat([c.move]))), komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    const w0 = mine(evs[0]), l0 = -evs[0].lead;
+    for (let k = 0; k < away.length; k++) {
+      const ev = evs[k + 1];
+      if (mine(ev) >= w0 - (tk.margin || 0.04) && -ev.lead >= l0 - (tk.points || 1.5)) { s.move = away[k].move; s.winrate = mine(ev); s.tenuki = true; return; }
+    }
+  }
+
+  // Players from before the 3-3 invasion became common (Sai, Takemiya, Go Seigen) never take a 3-3 point in a corner where
+  // they have no stone yet, in the opening; the next move the search liked is played instead (a style rule, not a cost check)
+  function entry33(n, base, p) {
+    const [x, y] = base.xy(p), cx = x === 2 ? 0 : x === n - 3 ? 1 : -1, cy = y === 2 ? 0 : y === n - 3 ? 1 : -1;
+    if (cx < 0 || cy < 0) return false;
+    for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) if (base.color[base.pt(cx ? n - 1 - a : a, cy ? n - 1 - b : b)] === base.toPlay) return false;
+    return true;
+  }
+  function avoid33(n, base, root, s) {
+    if (s.move === PASS || n < 13 || !entry33(n, base, s.move)) return;
+    const alt = s.top.find(c => c.move !== PASS && c.visits > 0 && !entry33(n, base, c.move));
+    if (alt) { s.move = alt.move; s.winrate = alt.winrate; s.no33 = true; return; }
+    let bi = -1;
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA && (bi < 0 || root.priors[i] > root.priors[bi])) {
+      const m = slotToPoint(base, root.slots[i]);
+      if (base.color[m] === E.EMPTY && base.isLegal(m, base.toPlay) && !entry33(n, base, m)) bi = i;
+    }
+    if (bi >= 0) { s.move = slotToPoint(base, root.slots[bi]); s.no33 = true; }
   }
 
   // first-line points (the edge of the board) are only played when the network sees them as needed
@@ -3459,7 +3508,11 @@ const Tsumego = (() => {
   const STYLE = {
     balance: { label: "สมดุล", opts: {} },
     attack: { label: "บุกสุดๆ", opts: { pda: 1.5, scoreWeight: 0.5 } },
-    defend: { label: "ตั้งรับสุดๆ", opts: { pda: -1.25 } }
+    defend: { label: "ตั้งรับสุดๆ", opts: { pda: -1.25 } },
+    // the special characters' own styles; how each plays is set in its search settings
+    ancient: { label: "หมากล้อมโบราณ", opts: {} },
+    cosmic: { label: "หมากจักรวาล", opts: {} },
+    creative: { label: "สร้างสรรค์", opts: {} }
   };
   // Strength comes from how much the network reads ahead; ranks are estimates, not measured against people.
   const CHARS = [
@@ -3513,28 +3566,34 @@ const Tsumego = (() => {
     // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now.
     // Sai instead thinks with KataGo's HumanSL network set to the 1850s professionals (Shusaku's era) and leans to its
     // favourite moves (era), so his shapes look old; even games with a colour choice like everyone else (owner 2026-10-31)
-    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", book: "shusaku-book.json",
-      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.06, points: 2.5 } },
-      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", book: "shusaku-book.json", no33: true,
+      // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
+      early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 ชอบเล่นโจเซกิโบราณที่สมัยนี้ไม่นิยม ไม่เข้ามุม 3-3 ช่วงเปิดเกม เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
-    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", opening: "sanrensei", book: "takemiya-book.json",
-      search: { visits: 100000, timeMs: 15000, cosmic: { margin: 0.1, points: 5, pool: 8, until: 200 } },
-      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมตามคิฟุจริงของทาเคมิยะหรือซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน สมอง KataGo b18 เล่นเต็มกำลังทุกตา ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
+      // light and quick: leaves a small local answer for a big point elsewhere (tenuki), and of near-equal moves takes the
+      // highest; the margins are tight enough that a real fight is still fought with the best move
+      search: { visits: 100000, timeMs: 15000, tenuki: { margin: 0.04, points: 1.5, pool: 8, until: 180 }, cosmic: { margin: 0.05, points: 2.5, pool: 8, until: 200 }, no33: 60 },
+      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากจักรวาล\" (Cosmic style) เปิดเกมตามคิฟุจริงของทาเคมิยะหรือซันเร็นเซ เดินหมากเบาและเร็ว ทิ้งมือไปจุดใหญ่บ่อย เดินหมากสูงสร้างโมโยกลางกระดานให้ใหญ่ที่สุด แต่ถ้าต้องสู้ก็สู้เต็มที่ ไม่เข้ามุม 3-3 สมอง KataGo b18 เล่นเต็มกำลังทุกตา ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
-    // Lee Changho, three phases. Opening (about 40 moves): a short read and a strong pull to solid shape, so it is slow and
-    // a little passive. Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
+    // Lee Changho, three phases. Opening (about 40 moves): a full read with a strong pull to solid shape, so it is slow and
+    // a little passive (owner 2026-10-31: still 9 dan, not weak). Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
     // pull to the biggest margin, so every point is collected
     { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, brain: "b18", book: "changho-book.json",
-      early: { visits: 40, timeMs: 4000, solid: { margin: 0.06, points: 2.5, pool: 6 } },
+      early: { visits: 100000, timeMs: 12000, solid: { margin: 0.05, points: 2, pool: 6 } },
       search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
-      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เปิดเกมช้าและเสียเปรียบเล็กน้อย แต่ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ช่วงเปิดเกมเดินตามคิฟุจริงของอีชางโฮเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เดินช้าแต่หนักแน่น เลี่ยงการต่อสู้ที่ไม่จำเป็น ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ช่วงเปิดเกมเดินตามคิฟุจริงของอีชางโฮเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
     // Go Seigen: his own game records first, then a free (weighted random) choice among near-equal moves
-    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", book: "seigen-book.json",
-      search: { visits: 100000, timeMs: 15000, creative: { margin: 0.03, points: 1.2, pool: 6 } },
-      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "creative", secret: true, special: true, brain: "b18", book: "seigen-book.json", no33: true,
+      // unusual joseki in the opening (a wider pick among near-equal moves), then creative only where it costs little
+      early: { visits: 100000, timeMs: 15000, creative: { margin: 0.05, points: 2, pool: 10 }, no33: 60 },
+      search: { visits: 100000, timeMs: 15000, creative: { margin: 0.03, points: 1.2, pool: 6 }, no33: 60 },
+      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ชอบโจเซกิแปลกๆ ช่วงเปิดเกม ไม่เข้ามุม 3-3 ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "หมากล้อมคือความกลมกลืน", ahead: "ทุกเม็ดอยู่ในที่ของมัน", behind: "น่าสนใจมาก", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "คุณเล่นได้ยอดเยี่ยม" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
@@ -4501,6 +4560,13 @@ const Tsumego = (() => {
   }
   const loadBook = ch => books[ch.book] || (books[ch.book] = fetch(ch.book).then(r => r.ok ? r.json() : null)
     .then(j => { books[ch.book] = j || { book: {} }; }).catch(() => { books[ch.book] = { book: {} }; }));
+  // a 3-3 point in a corner where the side to play has no stone yet (see avoid33 in nnai.js)
+  function entry33(p) {
+    const [x, y] = board.xy(p), cx = x === 2 ? 0 : x === n - 3 ? 1 : -1, cy = y === 2 ? 0 : y === n - 3 ? 1 : -1;
+    if (cx < 0 || cy < 0) return false;
+    for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) if (board.color[board.pt(cx ? n - 1 - a : a, cy ? n - 1 - b : b)] === ai) return false;
+    return true;
+  }
   function kifuMove(ch) {
     if (n !== 19 || !ch.book) return null;
     const bk = books[ch.book];
@@ -4514,7 +4580,7 @@ const Tsumego = (() => {
       // canonical frame back to the board: find the point that transform ti sends to (o.x, o.y)
       let p = null;
       for (let y = 0; y < 19 && p === null; y++) for (let x = 0; x < 19; x++) { const [a, b] = KT[ti](x, y); if (a === o.x && b === o.y) { p = board.pt(x, y); break; } }
-      if ((r -= o.n) <= 0 && p !== null && board.color[p] === EMPTY && board.isLegal(p, ai)) return p;
+      if ((r -= o.n) <= 0 && p !== null && board.color[p] === EMPTY && board.isLegal(p, ai) && !(ch.no33 && entry33(p))) return p;
     }
     return null;
   }
