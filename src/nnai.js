@@ -151,7 +151,9 @@ function GoNNAI(E, F, net) {
     if (opts.era) await preferEra(n, moves, komi, base, root, s, opts.era, pdaFor);
     if (opts.solid) await preferSolid(n, moves, komi, base, root, s, opts.solid, pdaFor);
     if (opts.creative) await preferCreative(n, moves, komi, base, root, s, opts.creative, pdaFor);
+    if (opts.tenuki && moves.length < (opts.tenuki.until || 150)) await preferTenuki(n, moves, komi, base, root, s, opts.tenuki, pdaFor);
     if (opts.cosmic && moves.length < (opts.cosmic.until || 150)) await preferHigh(n, moves, komi, base, root, s, opts.cosmic, pdaFor);
+    if (opts.no33 && moves.length < opts.no33) avoid33(n, base, root, s);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -329,6 +331,53 @@ function GoNNAI(E, F, net) {
       const ev = evs[k + 1];
       if (mine(ev) >= w0 - (cosmic.margin || 0.04) && -ev.lead >= l0 - (cosmic.points || 2)) { s.move = high[k].move; s.winrate = mine(ev); s.cosmic = true; return; }
     }
+  }
+
+  // Light play (Takemiya): when the best move answers next to the opponent's last stone, leave it (tenuki) for a point at
+  // least five lines away, preferring the highest one, if that costs at most tk.margin win rate and tk.points of lead.
+  // A local answer that matters more than that (a fight, a group in danger) is still played
+  async function preferTenuki(n, moves, komi, base, root, s, tk, pdaFor) {
+    const last = moves[moves.length - 1];
+    if (s.move === PASS || last === undefined || last === PASS) return;
+    const [lx, ly] = base.xy(last), dist = p => { const [x, y] = base.xy(p); return Math.max(Math.abs(x - lx), Math.abs(y - ly)); };
+    if (dist(s.move) > 3) return;
+    const seen = new Set([s.move]), cands = [];
+    const best = s.top[0] ? s.top[0].visits : 0;
+    for (const c of s.top) if (c.move !== PASS && c.visits >= Math.max(2, best * 0.1) && !seen.has(c.move)) { seen.add(c.move); cands.push({ move: c.move, prior: c.prior }); }
+    const order = [];
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
+    order.sort((a, b) => root.priors[b] - root.priors[a]);
+    for (const i of order.slice(0, tk.pool || 8)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
+    const away = cands.filter(c => c.prior >= 0.01 && dist(c.move) >= 5)
+      .sort((a, b) => Math.min(5, height(n, base, b.move)) - Math.min(5, height(n, base, a.move)) || b.prior - a.prior).slice(0, 3);
+    if (!away.length) return;
+    const evs = await evalMany(n, [moves.concat([s.move])].concat(away.map(c => moves.concat([c.move]))), komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    const w0 = mine(evs[0]), l0 = -evs[0].lead;
+    for (let k = 0; k < away.length; k++) {
+      const ev = evs[k + 1];
+      if (mine(ev) >= w0 - (tk.margin || 0.04) && -ev.lead >= l0 - (tk.points || 1.5)) { s.move = away[k].move; s.winrate = mine(ev); s.tenuki = true; return; }
+    }
+  }
+
+  // Players from before the 3-3 invasion became common (Sai, Takemiya, Go Seigen) never take a 3-3 point in a corner where
+  // they have no stone yet, in the opening; the next move the search liked is played instead (a style rule, not a cost check)
+  function entry33(n, base, p) {
+    const [x, y] = base.xy(p), cx = x === 2 ? 0 : x === n - 3 ? 1 : -1, cy = y === 2 ? 0 : y === n - 3 ? 1 : -1;
+    if (cx < 0 || cy < 0) return false;
+    for (let a = 0; a < 6; a++) for (let b = 0; b < 6; b++) if (base.color[base.pt(cx ? n - 1 - a : a, cy ? n - 1 - b : b)] === base.toPlay) return false;
+    return true;
+  }
+  function avoid33(n, base, root, s) {
+    if (s.move === PASS || n < 13 || !entry33(n, base, s.move)) return;
+    const alt = s.top.find(c => c.move !== PASS && c.visits > 0 && !entry33(n, base, c.move));
+    if (alt) { s.move = alt.move; s.winrate = alt.winrate; s.no33 = true; return; }
+    let bi = -1;
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA && (bi < 0 || root.priors[i] > root.priors[bi])) {
+      const m = slotToPoint(base, root.slots[i]);
+      if (base.color[m] === E.EMPTY && base.isLegal(m, base.toPlay) && !entry33(n, base, m)) bi = i;
+    }
+    if (bi >= 0) { s.move = slotToPoint(base, root.slots[bi]); s.no33 = true; }
   }
 
   // first-line points (the edge of the board) are only played when the network sees them as needed
