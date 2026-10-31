@@ -4366,7 +4366,8 @@ const Tsumego = (() => {
         const net = !(meta.metaProfiles && meta.metaProfiles.length) ? big : {
           name: big.name,
           async run(batch) {
-            const [h, b] = await Promise.all([big.run(batch), AI.net.run(batch)]);
+            // one network at a time: running both at once doubles the peak memory, which an iPhone does not have
+            const h = await big.run(batch), b = await AI.net.run(batch);
             return h.map((r, i) => ({ policy: r.policy, value: b[i].value, score: b[i].score, own: b[i].own }));
           }
         };
@@ -4457,8 +4458,9 @@ const Tsumego = (() => {
       const brain = await brainFor(CHARS[gameChar]);
       if (my !== gen) return;
       res = await brain[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-        // a big brain's attention layers need a lot of memory per position: small batches (WebAssembly runs out at 8)
-        batch: brain !== AI ? (tf.getBackend() === "webgl" ? 4 : 1) : evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
+        // a big brain evaluates one position at a time: WebAssembly runs out of memory at 8, and on an iPhone GPU batch 4
+        // compiled new GPU programs and textures at the first move until Safari closed the page
+        batch: brain !== AI ? 1 : evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
       }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
