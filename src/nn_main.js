@@ -62,11 +62,11 @@
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 10000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
-    // secret character: KataGo's big transformer network (tf3), downloaded only when Sai is picked.
-    // Shows on the select screen after the player beats Todo once (or with ?boss in the address for testing)
+    // secret character: KataGo's HumanSL network playing as an 1850s professional (Honinbo Shusaku's era), downloaded only
+    // when Sai is picked. Shows on the select screen after the player beats Todo once (or with ?boss in the address)
     { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, brain: "human", handicap: true, fx: "smoke",
       search: { visits: 100000, timeMs: 15000 },
-      bio: "ตัวละครลับ เทพแห่งหมากล้อม ใช้สมอง AI ตัวใหญ่ที่สุดของ KataGo เล่นเต็มกำลังทุกตา ไม่ออมมือ ครั้งแรกต้องโหลดสมองขนาดใหญ่ (ราว 160 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์มืออาชีพยุคโบราณแบบฮงอินโบ ชูซากุ เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
@@ -1002,7 +1002,17 @@
         buf = out.buffer.slice(0, got);
       }
       st.pct = 1; renderStatus();
-      const ai = GoNNAI(E, F, GoTFNet(tf).build(meta, buf));
+      const big = GoTFNet(tf).build(meta, buf);
+      // a HumanSL brain chooses moves like its human profile, but its value head learned from human game results, so the
+      // search judges positions with the standard network: candidates in the style of the era, read with KataGo's eye
+      const net = !(meta.metaProfiles && meta.metaProfiles.length) ? big : {
+        name: big.name,
+        async run(batch) {
+          const [h, b] = await Promise.all([big.run(batch), AI.net.run(batch)]);
+          return h.map((r, i) => ({ policy: r.policy, value: b[i].value, score: b[i].score, own: b[i].own }));
+        }
+      };
+      const ai = GoNNAI(E, F, net);
       await ai.evalMany(19, [[]], KOMI); // first run compiles the GPU programs
       st.ai = ai; st.error = null;
       return ai;
