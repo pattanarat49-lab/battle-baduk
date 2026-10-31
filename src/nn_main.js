@@ -62,12 +62,14 @@
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 10000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
-    // special characters (Sai, Takemiya, Lee Changho, Go Seigen): KataGo b18 (kata1-b18c384nbt, about 50 MB, downloaded
+    // special characters (Takemiya, Lee Changho, Go Seigen): KataGo b18 (kata1-b18c384nbt, about 50 MB, downloaded
     // the first time one is picked; owner 2026-10-31). Each opens from the real player's games (an opening book built by
-    // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now
-    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", handicap: true, fx: "smoke", book: "shusaku-book.json",
-      search: { visits: 100000, timeMs: 15000 },
-      bio: "ตัวละครลับ เทพแห่งหมากล้อม ช่วงเปิดเกมเดินตามคิฟุจริงของฮงอินโบ ชูซากุเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now.
+    // Sai instead thinks with KataGo's HumanSL network set to the 1850s professionals (Shusaku's era) and leans to its
+    // favourite moves (era), so his shapes look old; even games with a colour choice like everyone else (owner 2026-10-31)
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", book: "shusaku-book.json",
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.06, points: 2.5 } },
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", opening: "sanrensei", book: "takemiya-book.json",
