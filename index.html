@@ -101,6 +101,15 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
 .home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
+/* full-screen wait while a character's own brain downloads, before its game starts */
+.brainload { position: fixed; inset: 0; z-index: 50; background: #07090d; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; }
+.brainload[hidden] { display: none; }
+.bl-t { font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 20px; color: var(--fg); text-align: center; margin: 0; }
+.bl-bar { width: min(420px, 86vw); height: 18px; border: 3px solid #b9a2ff; background: #14102a; padding: 2px; }
+.bl-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6a4fd8, #c9b6ff); transition: width .2s; }
+.bl-p { font-family: var(--f-px), var(--f-body); font-size: 18px; color: #c9b6ff; margin: 0; }
+.bl-n { font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
+.bl-x { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--muted); padding: 6px 16px; min-height: 0; }
 .home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
 .home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
 .home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
@@ -563,6 +572,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div>
 </section>
 
+<section class="brainload" id="brainLoad" hidden aria-live="polite">
+  <p class="bl-t" id="blTitle">กำลังโหลดสมอง AI</p>
+  <div class="bl-bar"><i id="blFill"></i></div>
+  <p class="bl-p" id="blPct">0%</p>
+  <p class="bl-n" id="blNote">โหลดครั้งแรกเท่านั้น ครั้งต่อไปจะเริ่มได้ทันที</p>
+  <button id="blCancel" class="bl-x">ยกเลิก</button>
+</section>
 <section class="prof" id="prof" hidden>
   <div class="an-head">
     <button class="an-back" id="pfBack">← กลับ</button>
@@ -4279,13 +4295,21 @@ const Tsumego = (() => {
   // Files: <brain>.json and <brain>.bin.0, .1, ... (20 MB parts: Cloudflare serves files up to 25 MB). The parts are kept in
   // the browser's Cache Storage, so later visits load them without the network.
   const brains = {}; // name -> { ai, promise, pct, error }
-  async function fetchPart(url) {
+  // onBytes(n) reports progress while a part streams in, so the bar moves smoothly on a slow connection
+  async function fetchPart(url, onBytes) {
     let cache = null;
     try { cache = await caches.open("baduk-brains-v1"); const hit = await cache.match(url); if (hit) return hit.arrayBuffer(); } catch (e) { cache = null; }
     const r = await fetch(url);
     if (!r.ok) throw new Error(url + " " + r.status);
-    if (cache) try { await cache.put(url, r.clone()); } catch (e) {}
-    return r.arrayBuffer();
+    let buf;
+    if (r.body && r.body.getReader) {
+      const rd = r.body.getReader(), chunks = []; let got = 0;
+      for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; onBytes && onBytes(got); }
+      const all = new Uint8Array(got); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+      buf = all.buffer;
+    } else buf = await r.arrayBuffer();
+    if (cache) try { await cache.put(url, new Response(buf.slice(0), { headers: { "content-type": "application/octet-stream" } })); } catch (e) {}
+    return buf;
   }
   function loadBrain(name) {
     const st = brains[name] || (brains[name] = { ai: null, promise: null, pct: 0, error: null });
@@ -4297,12 +4321,13 @@ const Tsumego = (() => {
       if (!parts) buf = await fetchPart(name + ".bin");
       else {
         for (let k = 0; k < parts; k++) {
-          const b = new Uint8Array(await fetchPart(name + ".bin." + k));
-          out.set(b, got); got += b.length; st.pct = got / (meta.bytes || got); renderStatus();
+          const b = new Uint8Array(await fetchPart(name + ".bin." + k, n => { st.pct = Math.min(0.99, (got + n) / (meta.bytes || 1)); brainUI(st); }));
+          out.set(b, got); got += b.length; st.pct = got / (meta.bytes || got); renderStatus(); brainUI(st);
         }
         buf = out.buffer.slice(0, got);
       }
-      st.pct = 1; renderStatus();
+      st.pct = 1; renderStatus(); brainUI(st);
+      while (!engineReady) await new Promise(r => setTimeout(r, 200)); // the backend is chosen by initEngine, and Sai's search reads with its network
       const big = GoTFNet(tf).build(meta, buf);
       // a HumanSL brain chooses moves like its human profile, but its value head learned from human game results, so the
       // search judges positions with the standard network: candidates in the style of the era, read with KataGo's eye
@@ -4325,6 +4350,28 @@ const Tsumego = (() => {
     if (!ch.brain) return AI;
     try { return await loadBrain(ch.brain); }
     catch (e) { console.warn(e); flash("โหลดสมองใหญ่ไม่สำเร็จ ใช้สมองปกติแทน"); return AI; }
+  }
+  // the loading screen: a bar while the parts download, then a short "getting ready" while the network is built
+  let brainUI = () => {};
+  let brainWait = 0;
+  async function ensureBrain(ch) {
+    if (!ch.brain || (brains[ch.brain] && brains[ch.brain].ai)) return true;
+    const my = ++brainWait;
+    hideScreens(); $("brainLoad").hidden = false; window.scrollTo(0, 0);
+    $("blTitle").textContent = `กำลังโหลดสมองของ ${ch.name}`;
+    const show = st => {
+      const p = Math.round((st ? st.pct : 0) * 100);
+      $("blFill").style.width = p + "%";
+      $("blPct").textContent = st && st.pct >= 1 ? "กำลังเตรียมสมอง…" : p + "%";
+    };
+    brainUI = show; show(brains[ch.brain]);
+    const cancelled = new Promise(r => { $("blCancel").onclick = () => r("cancel"); });
+    try {
+      if ((await Promise.race([loadBrain(ch.brain), cancelled])) === "cancel" || my !== brainWait) { brainWait++; showHome(); return false; }
+      return true;
+    } catch (e) {
+      console.warn(e); alert("โหลดสมองไม่สำเร็จ ลองใหม่อีกครั้ง (ตรวจการเชื่อมต่ออินเทอร์เน็ต)"); showHome(); return false;
+    } finally { brainUI = () => {}; $("brainLoad").hidden = true; }
   }
   const brainLoading = () => { const ch = board && CHARS[gameChar]; const st = ch && ch.brain && brains[ch.brain]; return st && !st.ai && st.promise ? st : null; };
   // secret characters show on the select screen only with ?boss in the address (owner's test link, 2026-10-31);
@@ -4860,8 +4907,9 @@ const Tsumego = (() => {
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
-  function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
-    if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880); $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+  async function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
+    if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880);
+    if (!(await ensureBrain(CHARS[settings.char]))) return; $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
@@ -4976,7 +5024,12 @@ const Tsumego = (() => {
   }
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
-    if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
+    if (b.id === "pfResume") {
+      const g = pausedGame(); unlockAudio(); blip(880);
+      const ch = g && CHARS.find(c => c.id === g.char);
+      (async () => { if (ch && !(await ensureBrain(ch))) return; if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } })();
+      return;
+    }
     if (b.dataset.an !== undefined) {
       const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
       unlockAudio(); blip(880); hideScreens(); trackMode("analysis"); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });

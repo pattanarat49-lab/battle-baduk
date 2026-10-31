@@ -101,6 +101,15 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
 .home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
+/* full-screen wait while a character's own brain downloads, before its game starts */
+.brainload { position: fixed; inset: 0; z-index: 50; background: #07090d; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; }
+.brainload[hidden] { display: none; }
+.bl-t { font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 20px; color: var(--fg); text-align: center; margin: 0; }
+.bl-bar { width: min(420px, 86vw); height: 18px; border: 3px solid #b9a2ff; background: #14102a; padding: 2px; }
+.bl-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6a4fd8, #c9b6ff); transition: width .2s; }
+.bl-p { font-family: var(--f-px), var(--f-body); font-size: 18px; color: #c9b6ff; margin: 0; }
+.bl-n { font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
+.bl-x { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--muted); padding: 6px 16px; min-height: 0; }
 .home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
 .home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
 .home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
@@ -563,6 +572,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div>
 </section>
 
+<section class="brainload" id="brainLoad" hidden aria-live="polite">
+  <p class="bl-t" id="blTitle">กำลังโหลดสมอง AI</p>
+  <div class="bl-bar"><i id="blFill"></i></div>
+  <p class="bl-p" id="blPct">0%</p>
+  <p class="bl-n" id="blNote">โหลดครั้งแรกเท่านั้น ครั้งต่อไปจะเริ่มได้ทันที</p>
+  <button id="blCancel" class="bl-x">ยกเลิก</button>
+</section>
 <section class="prof" id="prof" hidden>
   <div class="an-head">
     <button class="an-back" id="pfBack">← กลับ</button>
