@@ -1,6 +1,7 @@
-# Builds an opening book from a player's game records (src/tools/kifu_book.py) and commits only the book JSON.
-# The records come from Andries Brouwer's public game collection; they are not stored in the repository.
-name: Build kifu opening book
+# Builds opening books from players' game records (src/tools/kifu_book.py) and commits only the book JSON files.
+# The records come from Andries Brouwer's public game collection (https://homepages.cwi.nl/~aeb/go/games); they are not
+# stored in the repository. Per-player archives where they exist, the whole database for the others.
+name: Build kifu opening books
 on:
   push:
     branches: [claude/project-thread-s2uaqo]
@@ -13,19 +14,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download and build
+      - name: Download
         run: |
           set -e
-          mkdir -p kifu nets
-          curl -fSL -o seigen.tgz https://homepages.cwi.nl/~aeb/go/games/go_seigen.tgz
-          tar -xzf seigen.tgz -C kifu
-          find kifu -name '*.sgf' | wc -l
-          grep -rhoa 'P[BW]\[[^]]*\]' kifu | sort | uniq -c | sort -rn | head -5
-          python3 src/tools/kifu_book.py kifu seigen-book.json "go seigen,wu qingyuan,go sei-gen,wu ch'ing-yuan,wu qing yuan" | tee nets/seigen-book.txt
+          B=https://homepages.cwi.nl/~aeb/go/games
+          mkdir -p k/seigen k/shusaku k/all nets
+          curl -fsSL $B/go_seigen.tgz | tar -xz -C k/seigen
+          curl -fsSL $B/shusaku.tgz | tar -xz -C k/shusaku
+          curl -fsSL $B/games.tgz | tar -xz -C k/all
+          for d in k/*; do echo "$d $(find $d -iname '*.sgf' | wc -l)"; done
+          grep -rlaiE 'P[BW]\[(Takemiya|Takemiya Masaki)' k/all | wc -l
+          grep -rlaiE "P[BW]\[(Lee Chang-?ho|Yi Ch'ang-?ho|Lee Changho|I Chang-?ho)" k/all | wc -l
+      - name: Build
+        run: |
+          set -e
+          python3 src/tools/kifu_book.py k/seigen seigen-book.json "go seigen,wu qingyuan,go sei-gen,wu ch'ing-yuan,wu qing yuan" | tee nets/seigen-book.txt
+          python3 src/tools/kifu_book.py k/shusaku shusaku-book.json "shusaku,shuusaku" | tee nets/shusaku-book.txt
+          python3 src/tools/kifu_book.py k/all takemiya-book.json "takemiya" | tee nets/takemiya-book.txt
+          python3 src/tools/kifu_book.py k/all changho-book.json "lee chang-ho,lee changho,lee chang ho,yi ch'ang-ho,yi chang-ho,i chang-ho,lee chang-ho 9p" | tee nets/changho-book.txt
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
-          git add seigen-book.json nets/seigen-book.txt
-          git commit -m "Build Go Seigen opening book from his game records" || exit 0
+          git add *-book.json nets/*-book.txt
+          git commit -m "Build kifu opening books (Seigen, Shusaku, Takemiya, Lee Changho)" || exit 0
           git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME}

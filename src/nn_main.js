@@ -62,33 +62,31 @@
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 10000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
-    // secret character: KataGo's HumanSL network playing as an 1850s professional (Honinbo Shusaku's era), downloaded only
-    // when Sai is picked. Shows on the select screen only with ?boss in the address for now
-    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1850", handicap: true, fx: "smoke",
-      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 } },
-      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์มืออาชีพยุคโบราณแบบฮงอินโบ ชูซากุ เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    // special characters (Sai, Takemiya, Lee Changho, Go Seigen): KataGo b18 (kata1-b18c384nbt, about 50 MB, downloaded
+    // the first time one is picked; owner 2026-10-31). Each opens from the real player's games (an opening book built by
+    // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", handicap: true, fx: "smoke", book: "shusaku-book.json",
+      search: { visits: 100000, timeMs: 15000 },
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม ช่วงเปิดเกมเดินตามคิฟุจริงของฮงอินโบ ชูซากุเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
-    // special character: the same HumanSL download as Sai, set to the 1980 professionals (Takemiya's prime), with the cosmic
-    // style on top: sanrensei openings, and of near-equal moves the one highest toward the centre
-    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1980", opening: "sanrensei",
-      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.1, points: 5, pool: 8, until: 200 } },
-      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมด้วยซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน ใช้สมองมืออาชีพยุค 1980 เล่นเต็มกำลังทุกตา ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
+    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", opening: "sanrensei", book: "takemiya-book.json",
+      search: { visits: 100000, timeMs: 15000, cosmic: { margin: 0.1, points: 5, pool: 8, until: 200 } },
+      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมตามคิฟุจริงของทาเคมิยะหรือซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน สมอง KataGo b18 เล่นเต็มกำลังทุกตา ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
-    // special character: the same HumanSL download, three phases. Opening (about 40 moves): the KGS 9-dan amateur profile
-    // with a short read and a strong pull to solid shape, so it is slow and a little passive. Middle game: 1995
-    // professionals (Lee Changho's prime), still preferring solid moves. Endgame (from about move 145): the full search,
-    // no style, and a pull to the biggest margin, so every point is collected
-    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, brain: "human", profile: "proyear_1995",
-      early: { visits: 40, timeMs: 4000, profile: "rank_9d", solid: { margin: 0.06, points: 2.5, pool: 6 } },
+    // Lee Changho, three phases. Opening (about 40 moves): a short read and a strong pull to solid shape, so it is slow and
+    // a little passive. Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
+    // pull to the biggest margin, so every point is collected
+    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, brain: "b18", book: "changho-book.json",
+      early: { visits: 40, timeMs: 4000, solid: { margin: 0.06, points: 2.5, pool: 6 } },
       search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
-      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เปิดเกมช้าและเสียเปรียบเล็กน้อย แต่ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เปิดเกมช้าและเสียเปรียบเล็กน้อย แต่ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ช่วงเปิดเกมเดินตามคิฟุจริงของอีชางโฮเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
-    // special character: plays from his own game records first (an opening book built from his kifu by
-    // .github/workflows/kifu-book.yml), then as a 1940 professional (HumanSL) choosing freely among near-equal moves
-    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1940", opening: "kifu", book: "seigen-book.json",
-      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.03, points: 1 }, creative: { margin: 0.03, points: 1.2, pool: 6 } },
-      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น จากนั้นใช้สมองมืออาชีพยุค 1940 ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+    // Go Seigen: his own game records first, then a free (weighted random) choice among near-equal moves
+    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "b18", book: "seigen-book.json",
+      search: { visits: 100000, timeMs: 15000, creative: { margin: 0.03, points: 1.2, pool: 6 } },
+      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "หมากล้อมคือความกลมกลืน", ahead: "ทุกเม็ดอยู่ในที่ของมัน", behind: "น่าสนใจมาก", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "คุณเล่นได้ยอดเยี่ยม" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
@@ -983,8 +981,10 @@
   // signature openings: Weiqi takes tengen (or attaches to it), Tora takes 3-3 in every empty corner
   function openingMove() {
     const ch = CHARS[gameChar];
-    if (!ch.opening || history.length >= 80) return null; // an opening book only for the opening, never in the endgame
+    if ((!ch.opening && !ch.book) || history.length >= 80) return null; // an opening book only for the opening, never in the endgame
     for (const p of board.pts) if (board.color[p] === ai && board.libs(board.head[p], 2) === 1) return null; // a group in atari comes first
+    // the special characters' own game records come first (see kifuMove), then their opening style
+    if (ch.book) { const k = kifuMove(ch); if (k !== null) return k; }
     const ok = p => board.color[p] === EMPTY && board.isLegal(p, ai);
     if (ch.opening === "tengen") {
       if (history.some((m, i) => (i % 2 === 0 ? BLACK : WHITE) === ai)) return null;
@@ -995,7 +995,6 @@
     }
     if (ch.opening === "raid") return raidMove();
     if (ch.opening === "sanrensei") return sanrensei();
-    if (ch.opening === "kifu") return kifuMove(ch);
     if (ch.opening === "33" || ch.opening === "corners") {
       // a corner counts as free while its 6x6 area is empty; "corners" picks 4-4, 3-4 or 3-3 there
       const free = [];
