@@ -32,7 +32,7 @@ canvas { width: calc(min(100cqw, 100cqh) - 12px); height: calc(min(100cqw, 100cq
     <a href="/stats">← กลับไปหน้าสถิติ</a></div>
 </main>
 <script>
-const NAMES = { mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์", chris: "คริส", jay: "เจ", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", sai: "ไซ", takemiya: "ทาเคมิยะ", changho: "อีชางโฮ", hikaru: "ฮิคารุ" };
+const NAMES = { mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์", chris: "คริส", jay: "เจ", weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", sai: "ไซ", takemiya: "ทาเคมิยะ", changho: "อีชางโฮ", seigen: "โกเซเก็น", hikaru: "ฮิคารุ" };
 const HOW = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 const g = new URLSearchParams(location.search).get("g");
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");

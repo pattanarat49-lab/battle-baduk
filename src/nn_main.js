@@ -84,6 +84,12 @@
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
       bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เปิดเกมช้าและเสียเปรียบเล็กน้อย แต่ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
+    // special character: plays from his own game records first (an opening book built from his kifu by
+    // .github/workflows/kifu-book.yml), then as a 1940 professional (HumanSL) choosing freely among near-equal moves
+    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1940", opening: "kifu", book: "seigen-book.json",
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.03, points: 1 }, creative: { margin: 0.03, points: 1.2, pool: 6 } },
+      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น จากนั้นใช้สมองมืออาชีพยุค 1940 ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      say: { hello: "หมากล้อมคือความกลมกลืน", ahead: "ทุกเม็ดอยู่ในที่ของมัน", behind: "น่าสนใจมาก", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "คุณเล่นได้ยอดเยี่ยม" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 30 นาที + เบียวโยมิ 30 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
@@ -368,6 +374,18 @@
       comeback: "เกมยังไม่จบหรอก|หมากล้อมไม่มีวันสิ้นสุด",
       win: "ขอบคุณสำหรับเกมที่งดงาม|เกมนี้สนุกมาก มาเล่นกันอีกนะ",
       lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว|ข้าแพ้แล้ว… ช่างงดงามจริงๆ"
+    },
+    seigen: {
+      hello: "หมากล้อมคือความกลมกลืน|มาเล่นอย่างอิสระกันเถอะ|เล่นด้วยใจที่สงบ",
+      goodMove: "ตาที่สร้างสรรค์|ดีมาก|อืม… สวย",
+      badMove: "ตานั้นฝืนธรรมชาติไปหน่อย|ลองหาความกลมกลืนดู|...",
+      caught: "{n} เม็ด… เป็นบทเรียนที่ดี|ไม่เป็นไร",
+      capture: "{n} เม็ด|...",
+      ahead: "ทุกเม็ดอยู่ในที่ของมัน|กระดานกำลังสมดุล",
+      behind: "น่าสนใจมาก|คุณเล่นได้ดี",
+      comeback: "ยังมีทางเสมอ|หมากล้อมไม่มีที่สิ้นสุด",
+      win: "ขอบคุณสำหรับเกมที่งดงาม|เกมนี้มีความกลมกลืนดี",
+      lose: "คุณเล่นได้ยอดเยี่ยม|ผมได้เรียนรู้จากเกมนี้"
     },
     changho: {
       hello: "...|ขอให้เป็นเกมที่ดีครับ|(พยักหน้าเงียบๆ)",
@@ -818,7 +836,8 @@
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
-    if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {}); // start the download before the first AI move
+    if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {});
+    if (CHARS[gameChar].book) loadBook(CHARS[gameChar]); // fetch the opening book // start the download before the first AI move
     $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
     const ch = CHARS[gameChar];
@@ -976,6 +995,7 @@
     }
     if (ch.opening === "raid") return raidMove();
     if (ch.opening === "sanrensei") return sanrensei();
+    if (ch.opening === "kifu") return kifuMove(ch);
     if (ch.opening === "33" || ch.opening === "corners") {
       // a corner counts as free while its 6x6 area is empty; "corners" picks 4-4, 3-4 or 3-3 there
       const free = [];
@@ -988,6 +1008,44 @@
         if (empty && ok(p)) free.push(p);
       }
       return free.length ? free[(Math.random() * free.length) | 0] : null;
+    }
+    return null;
+  }
+  // Go Seigen's opening book (src/tools/kifu_book.py): the board, canonical over the 8 symmetries, hashed; the moves he
+  // chose there in his games, picked in proportion to how often he played them. Loaded on the first lookup.
+  const books = {};
+  const KT = [(x, y) => [x, y], (x, y) => [18 - x, y], (x, y) => [x, 18 - y], (x, y) => [18 - x, 18 - y],
+    (x, y) => [y, x], (x, y) => [18 - y, x], (x, y) => [y, 18 - x], (x, y) => [18 - y, 18 - x]];
+  const sgc = (x, y) => String.fromCharCode(97 + x, 97 + y);
+  function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); }
+  function kifuKey(toMove) {
+    const st = [];
+    for (let y = 0; y < 19; y++) for (let x = 0; x < 19; x++) { const c = board.color[board.pt(x, y)]; if (c === BLACK || c === WHITE) st.push([x, y, c]); }
+    let best = null, bt = 0;
+    KT.forEach((t, i) => {
+      const b = [], w = [];
+      for (const [x, y, c] of st) (c === BLACK ? b : w).push(sgc(...t(x, y)));
+      const k = toMove + ":" + b.sort().join("") + "|" + w.sort().join("");
+      if (best === null || k < best) { best = k; bt = i; }
+    });
+    return [fnv(best), bt];
+  }
+  const loadBook = ch => books[ch.book] || (books[ch.book] = fetch(ch.book).then(r => r.ok ? r.json() : null)
+    .then(j => { books[ch.book] = j || { book: {} }; }).catch(() => { books[ch.book] = { book: {} }; }));
+  function kifuMove(ch) {
+    if (n !== 19 || !ch.book) return null;
+    const bk = books[ch.book];
+    if (!bk) { loadBook(ch); return null; }
+    if (bk.then || history.length >= (bk.maxMove || 60)) return null;
+    const [h, ti] = kifuKey(ai === BLACK ? "B" : "W"), e = bk.book[h];
+    if (!e) return null;
+    const opts = e.split(",").map(s => ({ x: s.charCodeAt(0) - 97, y: s.charCodeAt(1) - 97, n: +s.slice(2) }));
+    let r = Math.random() * opts.reduce((a, o) => a + o.n, 0);
+    for (const o of opts) {
+      // canonical frame back to the board: find the point that transform ti sends to (o.x, o.y)
+      let p = null;
+      for (let y = 0; y < 19 && p === null; y++) for (let x = 0; x < 19; x++) { const [a, b] = KT[ti](x, y); if (a === o.x && b === o.y) { p = board.pt(x, y); break; } }
+      if ((r -= o.n) <= 0 && p !== null && board.color[p] === EMPTY && board.isLegal(p, ai)) return p;
     }
     return null;
   }
@@ -1729,7 +1787,9 @@
   async function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
     if (CHARS[settings.char].special && spView !== "char" && !examMode) { spView = "pick"; syncChars(true); blip(660); return; }
     if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880);
-    if (!(await ensureBrain(CHARS[settings.char]))) return; $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
+    if (!(await ensureBrain(CHARS[settings.char]))) return;
+    if (CHARS[settings.char].book) await loadBook(CHARS[settings.char]); // Go Seigen's first move already comes from his games
+    $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
