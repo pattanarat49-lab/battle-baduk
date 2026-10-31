@@ -4273,8 +4273,8 @@ const Tsumego = (() => {
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
-    if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {});
-    if (CHARS[gameChar].book) loadBook(CHARS[gameChar]); // fetch the opening book // start the download before the first AI move
+    if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {}); // start the download before the first AI move
+    if (CHARS[gameChar].book) loadBook(CHARS[gameChar]); // fetch the opening book
     $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
     const ch = CHARS[gameChar];
