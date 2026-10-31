@@ -37,7 +37,9 @@ class Reader:
 
 
 # HumanSL profiles baked into the export (see KataGo cpp/neuralnet/sgfmetadata.cpp), for a 19x19 board
-PROFILES = ["proyear_1850", "rank_9d", "proyear_1980"]  # Sai, (unused), Takemiya
+PROFILES = ["proyear_1850", "rank_9d", "proyear_1980"]  # Sai, Lee Changho's opening, Takemiya (stored in the .bin)
+# later profiles go into the .json only, so adding one leaves the 53 MB .bin unchanged and players keep their download
+EXTRA_PROFILES = ["proyear_1995"]  # Lee Changho
 
 
 def meta_row(prof):
@@ -187,6 +189,7 @@ def parse(path):
         assert not any(r.int() for _ in range(5))
     conv("init.conv"); matmul("init.mm")
     metaBias = []
+    metaExtra = {}
     if meta:
         # HumanSL: SGF metadata (rank, date, source...) goes through a small MLP into a per-channel trunk bias. The profiles
         # used by the game are fixed, so the MLP is run here and only its output vector is stored per profile.
@@ -202,6 +205,10 @@ def parse(path):
             row = meta_row(prof).astype(np.float64)
             h = F[a1](row @ m1 + b1); h = F[a2](h @ m2 + b2); out = h @ m3
             add("meta." + prof, out); metaBias.append(prof)
+        for prof in EXTRA_PROFILES:
+            row = meta_row(prof).astype(np.float64)
+            h = F[a1](row @ m1 + b1); h = F[a2](h @ m2 + b2)
+            metaExtra[prof] = [float(v) for v in (h @ m3)]
     tree = stack(nblocks, "b")
     tipNorm = None
     if norm == 0:
@@ -229,7 +236,7 @@ def parse(path):
 
     layout = {"name": name, "version": ver, "format": 2, "dtype": "float16", "tree": tree,
               "acts": {"tip": tipAct, "g1": g1Act, "p1": p1Act, "pass": passAct, "v1": v1Act, "v2": v2Act},
-              "policyChannels": pch, "metaProfiles": metaBias, "tipNorm": tipNorm, "norms": norms, "prefer": prefer, "scoreMul": post["scoreMean"] / 20.0, "leadMul": post["lead"] / 20.0,
+              "policyChannels": pch, "metaProfiles": metaBias, "metaExtra": metaExtra, "tipNorm": tipNorm, "norms": norms, "prefer": prefer, "scoreMul": post["scoreMean"] / 20.0, "leadMul": post["lead"] / 20.0,
               "tensors": tensors}
     # float32 extras (RoPE tables) go after the float16 weights, 4-byte aligned
     data = b"".join(chunks)
