@@ -148,6 +148,7 @@ function GoNNAI(E, F, net) {
     if (opts.local) await preferLocal(n, moves, komi, base, root, rootEv, s, opts.local, opts.localMargin || 0.05, pdaFor);
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
     if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
+    if (opts.era) await preferEra(n, moves, komi, base, root, s, opts.era, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -223,6 +224,26 @@ function GoNNAI(E, F, net) {
     const [eb, ef] = await evalMany(n, [moves.concat([s.move]), moves.concat([pick.move])], komi, pdaFor);
     const mine = ev => ev.loss / (ev.win + ev.loss);
     if (mine(ef) >= mine(eb) - margin) { s.move = pick.move; s.winrate = mine(ef); }
+  }
+
+  // Period style (Sai): the root priors come from a HumanSL network set to an era's professionals. Of its favourite moves,
+  // play the one it likes most that costs at most era.margin win rate and era.points of lead against the searched best,
+  // so the search keeps him strong but the choice between near-equal moves is the old masters'
+  async function preferEra(n, moves, komi, base, root, s, era, pdaFor) {
+    if (s.move === PASS) return;
+    const order = [];
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
+    order.sort((a, b) => root.priors[b] - root.priors[a]);
+    const top = order.slice(0, era.top || 3).filter(i => root.priors[i] >= root.priors[order[0]] * 0.15).map(i => slotToPoint(base, root.slots[i]));
+    if (!top.length || top[0] === s.move) return;
+    const cands = top.slice(0, top.indexOf(s.move) < 0 ? top.length : top.indexOf(s.move));
+    const evs = await evalMany(n, [moves.concat([s.move])].concat(cands.map(m => moves.concat([m]))), komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    const w0 = mine(evs[0]), l0 = -evs[0].lead;
+    for (let k = 0; k < cands.length; k++) {
+      const ev = evs[k + 1];
+      if (mine(ev) >= w0 - (era.margin || 0.04) && -ev.lead >= l0 - (era.points || 1.5)) { s.move = cands[k]; s.winrate = mine(ev); s.era = true; return; }
+    }
   }
 
   // first-line points (the edge of the board) are only played when the network sees them as needed

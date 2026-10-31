@@ -65,7 +65,7 @@
     // secret character: KataGo's HumanSL network playing as an 1850s professional (Honinbo Shusaku's era), downloaded only
     // when Sai is picked. Shows on the select screen only with ?boss in the address for now
     { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, brain: "human", handicap: true, fx: "smoke",
-      search: { visits: 100000, timeMs: 15000 },
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 } },
       bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์มืออาชีพยุคโบราณแบบฮงอินโบ ชูซากุ เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
