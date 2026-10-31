@@ -12,6 +12,7 @@ page=head+'''<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/d
 '''+open('tutorial.js').read()+'''
 </script>
 <script>
+'''+open('photo.js').read()+'''
 '''+open('analysis.js').read()+'''
 '''+open('tsumego.js').read()+'''
 </script>
