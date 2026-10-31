@@ -1723,7 +1723,9 @@
     const b = e.target.closest("button"); if (!b || b.disabled) return;
     unlockAudio(); tune(BUTTON_TUNES[b.id] || (b.id === "btnSound" ? [] : [[700, 0]]));
   }, true);
-  $("faces").innerHTML = PICK.map(i => `<button data-i="${i}" aria-label="${CHARS[i].name}"><img src="chars/${CHARS[i].id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
+  // the Special Character slot shows a question mark until it is opened
+  const qMark = cls => `<div class="qmark ${cls}" aria-hidden="true"><span>?</span></div>`;
+  $("faces").innerHTML = PICK.map(i => CHARS[i].special ? `<button data-i="${i}" aria-label="ตัวละครพิเศษ"><span class="qf">?</span></button>` : `<button data-i="${i}" aria-label="${CHARS[i].name}"><img src="chars/${CHARS[i].id}_face.jpg" alt="" width="160" height="160"></button>`).join("");
   // examMode: the same screen opened from RANK TEST on the main menu, showing Hikaru's card alone
   let examMode = false;
   const EXAM_I = CHARS.findIndex(c => c.exam);
@@ -1737,18 +1739,18 @@
     $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
     const spHead = '<button class="cexam sp-head" data-sp="pick">SPECIAL CHARACTER</button>';
     const spCard = sp === "cover"
-      ? `<div class="card sp-cover${anim ? " pop" : ""}" data-sp="pick" role="button" tabindex="0" aria-label="เลือกตัวละครพิเศษ"><div class="card-in">${spHead}<div class="cname">SPECIAL</div><div class="cthai">ตัวละครพิเศษ</div><div class="sp-faces">${SPECIAL.map(j => pxImg(CHARS[j], "pxp")).join("")}</div><div class="crank">แตะเพื่อเลือก</div></div></div>`
+      ? `<div class="card sp-cover${anim ? " pop" : ""}" data-sp="pick" role="button" tabindex="0" aria-label="เลือกตัวละครพิเศษ"><div class="card-in">${spHead}<div class="cname">SPECIAL</div><div class="cthai">ตัวละครพิเศษ</div>${qMark("big")}<div class="crank">แตะเพื่อเลือก</div></div></div>`
       : sp === "pick"
       ? `<div class="card${anim ? " pop" : ""}"><div class="card-in">${spHead}<div class="sp-grid">${SPECIAL.map(j => `<button class="sp-opt" data-sp-i="${j}">${pxImg(CHARS[j], "pxp")}<b>${CHARS[j].en}</b><span>${CHARS[j].name} · ${CHARS[j].rank}</span></button>`).join("")}</div></div></div>`
       : "";
     charsEl.classList.toggle("solo", examMode);
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
-    charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
+    charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${prev.special ? qMark("") : pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
       ${spCard || `${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
-      <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
-    $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "แตะการ์ดเพื่อเปิดดูตัวละครพิเศษ" : "เลือกตัวละครพิเศษที่จะเล่นด้วย"}: ${SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
+      <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${next.special ? qMark("") : pxImg(next, "")}</button>`;
+    $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "ตัวละครลึกลับ แตะการ์ดเพื่อดูว่ามีใครบ้าง" : "เลือกตัวละครพิเศษที่จะเล่นด้วย: " + SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
     $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === slotOf(i))));
     syncSize();
     $("home").querySelector(".opts").hidden = !!c.tutorial || (sp && sp !== "char");
