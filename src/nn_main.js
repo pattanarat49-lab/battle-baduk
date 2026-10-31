@@ -634,6 +634,17 @@
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
   }
+  // Analysis / Tsumego use: one event per mode per page load, so going back and forth costs no extra requests
+  const modeSeen = new Set();
+  function trackMode(mode) {
+    if (!STATS_URL || modeSeen.has(mode)) return;
+    modeSeen.add(mode);
+    try {
+      const body = JSON.stringify({ type: "open", player: playerId, mode });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
+        fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
   const LIVE_EVERY = 60000;
   let liveAt = 0, liveTimer = null;
@@ -1488,9 +1499,9 @@
     const go = b.dataset.mn;
     if (go === "play") { showHome(); window.scrollTo(0, 0); }
     else if (go === "profile") showProfile();
-    else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+    else if (go === "analysis") { hideScreens(); trackMode("analysis"); Analysis.open({ n: 19, moves: [], from: "menu" }); }
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
-    else if (go === "tsume") { hideScreens(); Tsumego.open(); }
+    else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
@@ -1547,7 +1558,7 @@
     if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
     if (b.dataset.an !== undefined) {
       const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
-      unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
+      unlockAudio(); blip(880); hideScreens(); trackMode("analysis"); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
     }
   });
   $("endAskNo").onclick = () => { blip(660); $("endAsk").hidden = true; };
@@ -1556,7 +1567,7 @@
     if (!ended()) return;
     unlockAudio(); blip(880); cancelAI();
     $("game").hidden = true; $("endAsk").hidden = true; document.body.classList.remove("playing");
-    Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
+    trackMode("analysis"); Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
   };
   const syncSound = () => { $("btnSound").textContent = $("mnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };
