@@ -150,6 +150,7 @@ function GoNNAI(E, F, net) {
     if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (opts.era) await preferEra(n, moves, komi, base, root, s, opts.era, pdaFor);
     if (opts.solid) await preferSolid(n, moves, komi, base, root, s, opts.solid, pdaFor);
+    if (opts.creative) await preferCreative(n, moves, komi, base, root, s, opts.creative, pdaFor);
     if (opts.cosmic && moves.length < (opts.cosmic.until || 150)) await preferHigh(n, moves, komi, base, root, s, opts.cosmic, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
@@ -246,6 +247,28 @@ function GoNNAI(E, F, net) {
       const ev = evs[k + 1];
       if (mine(ev) >= w0 - (era.margin || 0.04) && -ev.lead >= l0 - (era.points || 1.5)) { s.move = cands[k]; s.winrate = mine(ev); s.era = true; return; }
     }
+  }
+
+  // Creative style (Go Seigen): of the moves the search and the network rate near the best, play one at random, weighted
+  // toward the network's liking, so the same position does not always get the same answer
+  async function preferCreative(n, moves, komi, base, root, s, cr, pdaFor) {
+    if (s.move === PASS) return;
+    const seen = new Set([s.move]), cands = [];
+    const best = s.top[0] ? s.top[0].visits : 0;
+    for (const c of s.top) if (c.move !== PASS && c.visits >= Math.max(2, best * 0.1) && !seen.has(c.move)) { seen.add(c.move); cands.push({ m: c.move, p: c.prior }); }
+    const order = [];
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
+    order.sort((a, b) => root.priors[b] - root.priors[a]);
+    for (const i of order.slice(0, cr.pool || 6)) if (root.priors[i] >= 0.02) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ m, p: root.priors[i] }); } }
+    if (!cands.length) return;
+    const evs = await evalMany(n, [moves.concat([s.move])].concat(cands.map(c => moves.concat([c.m]))), komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    const w0 = mine(evs[0]), l0 = -evs[0].lead;
+    const ok = [{ m: s.move, p: 1, w: w0 }];
+    cands.forEach((c, k) => { const ev = evs[k + 1]; if (mine(ev) >= w0 - (cr.margin || 0.03) && -ev.lead >= l0 - (cr.points || 1)) ok.push({ m: c.m, p: Math.sqrt(c.p) + 0.1, w: mine(ev) }); });
+    if (ok.length < 2) return;
+    let r = Math.random() * ok.reduce((a, o) => a + o.p, 0);
+    for (const o of ok) if ((r -= o.p) <= 0) { if (o.m !== s.move) { s.move = o.m; s.winrate = o.w; s.creative = true; } return; }
   }
 
   // Solid style (Lee Changho): a move scores for joining or touching its own stones, for linking two of its groups and
