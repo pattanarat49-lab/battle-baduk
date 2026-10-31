@@ -258,9 +258,11 @@ function GoNNAI(E, F, net) {
     const order = [];
     for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
     order.sort((a, b) => root.priors[b] - root.priors[a]);
-    for (const i of order.slice(0, 4)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
-    const high = cands.filter(c => height(n, base, c.move) >= 3 && height(n, base, c.move) > h0 && height(n, base, c.move) <= h0 + 3)
-      .sort((a, b) => height(n, base, b.move) - height(n, base, a.move) || b.prior - a.prior).slice(0, 3);
+    for (const i of order.slice(0, cosmic.pool || 4)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
+    // higher is better up to the sixth line; past that the network's own liking decides (tengen is not the goal)
+    const hs = c => Math.min(5, height(n, base, c.move));
+    const high = cands.filter(c => c.prior >= 0.005 && height(n, base, c.move) >= 3 && height(n, base, c.move) > h0)
+      .sort((a, b) => hs(b) - hs(a) || b.prior - a.prior).slice(0, 4);
     if (!high.length) return;
     const evs = await evalMany(n, [moves.concat([s.move])].concat(high.map(c => moves.concat([c.move]))), komi, pdaFor);
     const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
