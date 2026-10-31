@@ -3,7 +3,7 @@
 // Everything is worked out in the browser from the network's outputs (policy, win rate, score lead, ownership) and the
 // board itself: no server and no language model, so the player asks by tapping ready-made questions.
 const Analysis = (function () {
-  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack, api.sound() (the stone click)
+  const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack, api.sound() (the stone click), api.onPhoto() (a picture was chosen)
   const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 7.5;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
@@ -547,6 +547,7 @@ const Analysis = (function () {
     });
     $("anFile").addEventListener("change", () => {
       const f = $("anFile").files[0]; if (!f) return;
+      if (api.onPhoto) api.onPhoto();
       BoardPhoto.open(f).then(pos => { if (pos) fromPhoto(pos); }).catch(() => say("เปิดรูปนี้ไม่ได้ครับ ลองเลือกไฟล์รูปอื่นดูนะ"));
     });
     document.addEventListener("keydown", e => {

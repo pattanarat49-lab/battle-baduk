@@ -636,8 +636,8 @@
   }
   // Analysis / Tsumego use: one event per mode per page load, so going back and forth costs no extra requests
   const modeSeen = new Set();
-  function trackMode(mode) {
-    if (!STATS_URL || modeSeen.has(mode)) return;
+  function trackMode(mode, every) { // every: count each time (a picture upload), not once per page load
+    if (!STATS_URL || (!every && modeSeen.has(mode))) return;
     modeSeen.add(mode);
     try {
       const body = JSON.stringify({ type: "open", player: playerId, mode });
@@ -1470,6 +1470,7 @@
   Tsumego.ai = () => engineReady ? AI : null;
   Tsumego.sound = () => { unlockAudio(); clack(); };
   Tsumego.onBack = () => showMenu();
+  Analysis.onPhoto = () => trackMode("photo", true);
   // ---------- main menu and profile ----------
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
