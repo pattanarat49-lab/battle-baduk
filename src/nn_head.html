@@ -71,6 +71,17 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .pxp { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 3px var(--wood-dark); }
 .crank { font-family: var(--f-px); font-weight: 700; font-size: 15px; color: var(--accent-fg); background: var(--accent); padding: 4px 12px; }
 .card.pop { animation: pop .24s steps(3) both; }
+/* Sai: purple smoke (36-frame sprite, chars/sai_fx.jpg, black screened out) curls up both sides of a glowing frame */
+.fxwrap { position: relative; width: 100%; }
+#home { overflow-x: clip; }
+.fxwrap .card { position: relative; z-index: 1; animation: saiGlow 3s ease-in-out infinite; }
+.fxwrap .card.pop { animation: pop .24s steps(3) both, saiGlow 3s ease-in-out .24s infinite; }
+@keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
+.smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
+  background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }
+.smoke.l { left: -20%; bottom: -2%; }
+.smoke.r { right: -20%; top: 4%; transform: scaleX(-1); animation-delay: -1.6s; }
+@keyframes smoke { to { background-position: 100% 0; } }
 @keyframes pop { from { transform: scale(.92); opacity: .5; } to { transform: none; opacity: 1; } }
 .cinfo { max-width: 46ch; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
 .cinfo .cmeta { color: var(--gold); font-size: 14px; font-weight: 600; }
@@ -90,6 +101,8 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
 .home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
+.home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
+.home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
 .home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
 .px-start { font-family: var(--f-px); font-weight: 700; font-size: clamp(34px, 9vw, 52px); line-height: 1; color: var(--gold); background: none; border: 0; padding: 8px 14px; min-height: 0;
   text-shadow: 3px 3px 0 var(--gold-dim); margin-top: 6px; cursor: pointer; transition: transform .1s; }
@@ -105,7 +118,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
   .faces { gap: 3px; flex-wrap: wrap; }
   .faces button img { width: 26px; height: 26px; }
 }
-@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink, .smoke, .fxwrap .card { animation: none; } }
 
 /* ---------- tutorial: one lesson step at a time; phone stacks speech / task / board, wide puts the board left ---------- */
 .tutor { max-width: 1040px; margin: 0 auto; padding-bottom: 96px; }
@@ -569,6 +582,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
     <div class="opt"><span class="opt-l">คุณถือ (ดำเดินก่อน)</span>
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
+    <div class="opt" id="optHandi" hidden><span class="opt-l">หมากต่อ (คุณถือดำ · โคมิ 0.5)</span>
+      <div class="seg seg9" id="segHandi"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="7">7</button><button data-v="8">8</button><button data-v="9">9</button></div></div>
   </div>
   <button id="btnNew" class="px-start">GAME START</button>
   <p class="timectl">30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>

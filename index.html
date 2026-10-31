@@ -71,6 +71,17 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .pxp { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 3px var(--wood-dark); }
 .crank { font-family: var(--f-px); font-weight: 700; font-size: 15px; color: var(--accent-fg); background: var(--accent); padding: 4px 12px; }
 .card.pop { animation: pop .24s steps(3) both; }
+/* Sai: purple smoke (36-frame sprite, chars/sai_fx.jpg, black screened out) curls up both sides of a glowing frame */
+.fxwrap { position: relative; width: 100%; }
+#home { overflow-x: clip; }
+.fxwrap .card { position: relative; z-index: 1; animation: saiGlow 3s ease-in-out infinite; }
+.fxwrap .card.pop { animation: pop .24s steps(3) both, saiGlow 3s ease-in-out .24s infinite; }
+@keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
+.smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
+  background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }
+.smoke.l { left: -20%; bottom: -2%; }
+.smoke.r { right: -20%; top: 4%; transform: scaleX(-1); animation-delay: -1.6s; }
+@keyframes smoke { to { background-position: 100% 0; } }
 @keyframes pop { from { transform: scale(.92); opacity: .5; } to { transform: none; opacity: 1; } }
 .cinfo { max-width: 46ch; display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
 .cinfo .cmeta { color: var(--gold); font-size: 14px; font-weight: 600; }
@@ -90,6 +101,8 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .seg button[aria-pressed="true"] { color: var(--gold); background: none; }
 .home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
+.home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
+.home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
 .home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
 .px-start { font-family: var(--f-px); font-weight: 700; font-size: clamp(34px, 9vw, 52px); line-height: 1; color: var(--gold); background: none; border: 0; padding: 8px 14px; min-height: 0;
   text-shadow: 3px 3px 0 var(--gold-dim); margin-top: 6px; cursor: pointer; transition: transform .1s; }
@@ -105,7 +118,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
   .faces { gap: 3px; flex-wrap: wrap; }
   .faces button img { width: 26px; height: 26px; }
 }
-@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink, .smoke, .fxwrap .card { animation: none; } }
 
 /* ---------- tutorial: one lesson step at a time; phone stacks speech / task / board, wide puts the board left ---------- */
 .tutor { max-width: 1040px; margin: 0 auto; padding-bottom: 96px; }
@@ -569,6 +582,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="seg" id="segSize"><button data-v="19">19×19</button><button data-v="13">13×13</button><button data-v="9">9×9</button></div></div>
     <div class="opt"><span class="opt-l">คุณถือ (ดำเดินก่อน)</span>
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
+    <div class="opt" id="optHandi" hidden><span class="opt-l">หมากต่อ (คุณถือดำ · โคมิ 0.5)</span>
+      <div class="seg seg9" id="segHandi"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="7">7</button><button data-v="8">8</button><button data-v="9">9</button></div></div>
   </div>
   <button id="btnNew" class="px-start">GAME START</button>
   <p class="timectl">30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว</p>
@@ -1271,7 +1286,8 @@ function GoFeatures(E) {
   return { featurize, NN, AREA, NSP, NGL };
 }
 
-// KataGo residual network (model versions 8-10) evaluated with TensorFlow.js, NHWC layout.
+// KataGo residual network evaluated with TensorFlow.js, NHWC layout.
+// Layout format 1 (export_tf.py): plain v8-10 nets. Format 2 (export_tf2.py): v8-15 incl. nested bottleneck nets.
 function GoTFNet(tf) {
   "use strict";
   function halfToFloat(u16) {
@@ -1284,20 +1300,41 @@ function GoTFNet(tf) {
   }
 
   // meta: parsed JSON layout, buf: ArrayBuffer of float16 weights
-  function build(meta, buf) {
-    const all = halfToFloat(new Uint16Array(buf));
+  // opts.profile: HumanSL profile to play as (one of meta.metaProfiles; the first by default)
+  function build(meta, buf, opts) {
+    const profile = opts && opts.profile;
+    // converted one tensor at a time so a big net never holds a full float32 copy of itself in memory
+    const halves = new Uint16Array(buf, 0, meta.bytes ? meta.bytes >> 1 : buf.byteLength >> 1);
     const W = {};
     for (const t of meta.tensors) {
       const size = t.shape.reduce((a, b) => a * b, 1);
-      W[t.name] = tf.tensor(all.subarray(t.offset, t.offset + size), t.shape, "float32");
+      W[t.name] = tf.tensor(halfToFloat(halves.subarray(t.offset, t.offset + size)), t.shape, "float32");
     }
+    for (const t of meta.f32 || []) W[t.name] = tf.tensor(new Float32Array(buf, t.byteOffset, t.shape.reduce((a, b) => a * b, 1)), t.shape, "float32");
     const conv = (x, name) => tf.conv2d(x, W[name], 1, "same");
+    const actFn = (y, a) => a === "mish" ? tf.mul(y, tf.tanh(tf.softplus(y))) : a === "silu" ? tf.mul(y, tf.sigmoid(y)) : a === "id" ? y : tf.relu(y);
     const bnAct = (x, name, mask, act = true) => {
       let y = tf.add(tf.mul(x, W[name + ".s"]), W[name + ".b"]);
-      if (act) y = tf.relu(y);
+      if (act) y = actFn(y, act === true ? "relu" : act);
       return tf.mul(y, mask);
     };
+    const v2 = meta.format === 2, A = meta.acts || {};
+    const ropeQ = {}; // query-head RoPE tables, built on first use and kept with the weights
     const asBias = v => tf.expandDims(tf.expandDims(v, 1), 1);
+    // grouped-query attention: each key/value head serves g query heads in a row (head h uses kv head h/g)
+    const repeatHeads = (x, g, axis) => tf.gather(x, Array.from({ length: x.shape[axis] * g }, (_, h) => Math.floor(h / g)), axis);
+    // RoPE without 5-D tensors (the WebAssembly backend fails on them): x*cos2 + swapPairs(x)*sin2, where cos2/sin2 repeat
+    // each pair's value on both channels (sin2 negated on the first) and swapPairs is a fixed DxD permutation
+    const ropeTab = {};
+    function ropeTables(p) {
+      if (ropeTab[p]) return ropeTab[p];
+      const cos = W[p + "cos"], [L, Hk, P] = cos.shape, c = cos.dataSync(), sn = W[p + "sin"].dataSync();
+      const c2 = new Float32Array(L * Hk * P * 2), s2 = new Float32Array(L * Hk * P * 2);
+      for (let i = 0; i < L * Hk * P; i++) { c2[2 * i] = c2[2 * i + 1] = c[i]; s2[2 * i] = -sn[i]; s2[2 * i + 1] = sn[i]; }
+      const D = P * 2, sw = new Float32Array(D * D);
+      for (let q = 0; q < P; q++) { sw[(2 * q) * D + 2 * q + 1] = 1; sw[(2 * q + 1) * D + 2 * q] = 1; }
+      return (ropeTab[p] = { cos: tf.keep(tf.tensor3d(c2, [L, Hk, D])), sin: tf.keep(tf.tensor3d(s2, [L, Hk, D])), swap: tf.keep(tf.tensor2d(sw, [D, D])) });
+    }
 
     // spatial: [N,19,19,22] float32, global: [N,19]
     function forward(spatial, global) {
@@ -1313,30 +1350,86 @@ function GoTFNet(tf) {
           return tf.concat([mean, tf.mul(mean, f14), third], 1);
         };
         let x = tf.add(conv(spatial, "init.conv"), asBias(tf.matMul(global, W["init.mm"])));
-        meta.blocks.forEach((kind, i) => {
-          const p = "b" + i + ".";
-          const o = bnAct(x, p + "pre", mask);
+        // HumanSL: the chosen profile's precomputed metadata bias (see export_tf2.py)
+        if (meta.metaProfiles && meta.metaProfiles.length) x = tf.add(x, W["meta." + (profile || meta.metaProfiles[0])]);
+        const n0 = spatial.shape[0], flatMask = tf.reshape(mask, [n0, 361, 1]);
+        const keyBias = tf.reshape(tf.mul(tf.sub(flatMask, 1), 1e9), [n0, 1, 1, 361]);
+        // RMSNorm across channels at each point (transformer blocks), x: [N,361,C]
+        const tnorm = (x, nm) => tf.mul(tf.mul(x, tf.rsqrt(tf.add(tf.mean(tf.square(x), -1, true), meta.norms[nm]))), W[nm]);
+        const lin = (x, nm) => { const [a, b, c] = x.shape; return tf.reshape(tf.matMul(tf.reshape(x, [a * b, c]), W[nm]), [a, b, -1]); };
+        // rotate interleaved channel pairs; x: [N,361,H,D], cos/sin: [361,H,D], swap: [D,D]
+        const rope = (x, cos, sin, swap) => {
+          const [a, , h, d] = x.shape, sw = tf.reshape(tf.matMul(tf.reshape(x, [-1, d]), swap), [a, 361, h, d]);
+          return tf.add(tf.mul(x, cos), tf.mul(sw, sin));
+        };
+        const tblock = (x, b) => {
+          const p = b.p, [N, , , C] = x.shape, t = tf.reshape(x, [N, 361, C]);
+          let out;
+          if (b.kind === "transformer_ffn_block") {
+            const h = tnorm(t, p + "ln");
+            out = lin(tf.mul(actFn(lin(h, p + "l1"), "silu"), lin(h, p + "gate")), p + "l2");
+          } else {
+            const h = tnorm(t, p + "ln"), H = b.heads, KV = b.kvHeads, g = H / KV;
+            let q = tf.reshape(lin(h, p + "q"), [N, 361, H, b.qDim]), k = tf.reshape(lin(h, p + "k"), [N, 361, KV, b.qDim]);
+            const v = tf.reshape(lin(h, p + "v"), [N, 361, KV, b.vDim]);
+            if (b.rope) {
+              const T = ropeQ[p] || (ropeQ[p] = (t => g === 1 ? t : { cos: tf.keep(repeatHeads(t.cos, g, 1)), sin: tf.keep(repeatHeads(t.sin, g, 1)), swap: t.swap })(ropeTables(p)));
+              const K = ropeTables(p);
+              q = rope(q, T.cos, T.sin, T.swap); k = rope(k, K.cos, K.sin, K.swap);
+            }
+            const kh = tf.transpose(g === 1 ? k : repeatHeads(k, g, 2), [0, 2, 1, 3]), vh = tf.transpose(g === 1 ? v : repeatHeads(v, g, 2), [0, 2, 1, 3]);
+            const scores = tf.add(tf.mul(tf.matMul(tf.transpose(q, [0, 2, 1, 3]), kh, false, true), 1 / Math.sqrt(b.qDim)), keyBias);
+            const o = tf.matMul(tf.softmax(scores), vh);                       // [N,H,361,vDim]
+            out = lin(tf.reshape(tf.transpose(o, [0, 2, 1, 3]), [N, 361, H * b.vDim]), p + "o");
+          }
+          return tf.add(x, tf.reshape(tf.mul(out, flatMask), [N, 19, 19, C]));
+        };
+        const block = (x, b) => {
+          const p = b.p;
+          if (b.kind.startsWith("transformer")) return tblock(x, b);
+          if (b.kind === "nested_bottleneck_block") {
+            let h = conv(bnAct(x, p + "pre", mask, b.preAct), p + "preconv");
+            for (const ib of b.inner) h = block(h, ib);
+            return tf.add(x, conv(bnAct(h, p + "post", mask, b.postAct), p + "postconv"));
+          }
+          const o = bnAct(x, p + "pre", mask, b.preAct || true);
           let a = conv(o, p + "conv1");
-          if (kind === "gpool_block") {
-            const g = bnAct(conv(o, p + "gconv"), p + "gbn", mask);
+          if (b.kind === "gpool_block") {
+            const g = bnAct(conv(o, p + "gconv"), p + "gbn", mask, b.gAct || true);
             a = tf.add(a, asBias(tf.matMul(gpool(g, false), W[p + "gmm"])));
           }
-          a = bnAct(a, p + "mid", mask);
-          x = tf.add(x, conv(a, p + "conv2"));
-        });
-        const trunk = bnAct(x, "tip", mask);
-        const g1 = bnAct(conv(trunk, "p.g1"), "p.g1bn", mask);
+          a = bnAct(a, p + "mid", mask, b.midAct || true);
+          return tf.add(x, conv(a, p + "conv2"));
+        };
+        const tree = v2 ? meta.tree : meta.blocks.map((kind, i) => ({ kind, p: "b" + i + "." }));
+        for (const b of tree) x = block(x, b);
+        let trunk;
+        if (meta.tipNorm) {
+          // RMSNorm with gamma/beta: over channels at each point, or over all channels and points ("spatial")
+          const ms = meta.tipNorm.spatial ? tf.div(tf.sum(tf.mul(tf.square(x), mask), [1, 2, 3], true), tf.mul(tf.reshape(maskSum, [-1, 1, 1, 1]), x.shape[3]))
+            : tf.mean(tf.square(x), -1, true);
+          trunk = tf.mul(actFn(tf.add(tf.mul(tf.mul(x, tf.rsqrt(tf.add(ms, meta.tipNorm.eps))), W["tip.g"]), W["tip.b"]), A.tip || "relu"), mask);
+        } else trunk = bnAct(x, "tip", mask, A.tip || true);
+        const g1 = bnAct(conv(trunk, "p.g1"), "p.g1bn", mask, A.g1 || true);
         const pooled = gpool(g1, false);
         let p1 = tf.add(conv(trunk, "p.p1"), asBias(tf.matMul(pooled, W["p.gmm"])));
-        p1 = bnAct(p1, "p.p1bn", mask);
+        p1 = bnAct(p1, "p.p1bn", mask, A.p1 || true);
         let p2 = conv(p1, "p.p2");
+        if (v2 && meta.policyChannels > 1) p2 = tf.slice(p2, [0, 0, 0, 0], [-1, -1, -1, 1]);
         p2 = tf.add(tf.mul(p2, mask), tf.mul(maskM1, 5000));
         const n = spatial.shape[0];
-        const policy = tf.concat([tf.reshape(p2, [n, 361]), tf.matMul(pooled, W["p.pass"])], 1);
-        const v1 = bnAct(conv(trunk, "v.v1"), "v.v1bn", mask);
-        const v2 = tf.relu(tf.add(tf.matMul(gpool(v1, true), W["v.v2"]), W["v.v2b"]));
-        const value = tf.add(tf.matMul(v2, W["v.v3"]), W["v.v3b"]);
-        const score = tf.add(tf.matMul(v2, W["v.sv3"]), W["v.sv3b"]);
+        let pass = tf.matMul(pooled, W["p.pass"]);
+        if (A.pass) pass = tf.matMul(actFn(tf.add(pass, W["p.passb"]), A.pass), W["p.pass2"]);
+        if (pass.shape[1] > 1) pass = tf.slice(pass, [0, 0], [-1, 1]);
+        const policy = tf.concat([tf.reshape(p2, [n, 361]), pass], 1);
+        const v1 = bnAct(conv(trunk, "v.v1"), "v.v1bn", mask, A.v1 || true);
+        const vh = actFn(tf.add(tf.matMul(gpool(v1, true), W["v.v2"]), W["v.v2b"]), A.v2 || "relu");
+        const value = tf.add(tf.matMul(vh, W["v.v3"]), W["v.v3b"]);
+        let score = tf.add(tf.matMul(vh, W["v.sv3"]), W["v.sv3b"]);
+        if (v2 && (meta.scoreMul !== 1 || meta.leadMul !== 1)) {
+          const k = [meta.scoreMul, 1, meta.leadMul].concat(Array(score.shape[1] - 3).fill(1));
+          score = tf.mul(score, tf.tensor1d(k));
+        }
         const own = tf.reshape(tf.tanh(tf.mul(conv(v1, "v.own"), mask)), [n, 361]);
         return [policy, value, score, own];
       });
@@ -1359,7 +1452,7 @@ function GoTFNet(tf) {
       const res = [];
       for (let k = 0; k < n; k++) res.push({
         policy: data[0].subarray(k * 362, k * 362 + 362), value: data[1].subarray(k * 3, k * 3 + 3),
-        score: data[2].subarray(k * 4, k * 4 + 4), own: data[3].subarray(k * 361, k * 361 + 361)
+        score: data[2].subarray(k * (data[2].length / n), k * (data[2].length / n) + 4), own: data[3].subarray(k * 361, k * 361 + 361)
       });
       return res;
     }
@@ -1808,7 +1901,7 @@ function GoNNAI(E, F, net) {
   }
   const gradeOf = g => g.same || g.loss <= 0.5 ? "best" : g.loss <= 2 ? "good" : g.loss <= 5 ? "normal" : "bad";
 
-  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear() };
+  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear(), net };
 }
 
 </script>
@@ -3270,6 +3363,12 @@ const Tsumego = (() => {
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 10000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
+    // secret character: KataGo's HumanSL network playing as an 1850s professional (Honinbo Shusaku's era), downloaded only
+    // when Sai is picked. Shows on the select screen only with ?boss in the address for now
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, brain: "human", handicap: true, fx: "smoke",
+      search: { visits: 100000, timeMs: 15000 },
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์มืออาชีพยุคโบราณแบบฮงอินโบ ชูซากุ เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 30 นาที + เบียวโยมิ 30 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
@@ -3543,6 +3642,18 @@ const Tsumego = (() => {
       timeoutWin: "เสียดายครับ ครั้งหน้าลองแบ่งเวลาดีๆ นะครับ|การบริหารเวลาก็สำคัญครับ",
       giveUp: "ผมยอมครับ คุณเล่นดีมาก|ยอมแพ้ครับ ฝีมือดีจริงๆ"
     },
+    sai: {
+      hello: "มาเล่นหมากล้อมด้วยกันเถอะ|ข้ารอคอยคู่มือมาพันปีแล้ว|ขอให้เป็นเกมที่งดงาม",
+      goodMove: "โอ้… ตานี้งดงามนัก|ไม่เลวเลย|หมากที่มีชีวิต",
+      badMove: "ตานั้นเร่งร้อนไปหน่อย|หมากควรมีความหมายทุกตา|อืม…",
+      caught: "{n} เม็ด… ข้าประมาทไป|เก่งนี่",
+      capture: "{n} เม็ด|ลมหายใจของกลุ่มนั้นหมดแล้ว",
+      ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว|กระดานกำลังบอกอะไรบางอย่าง",
+      behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย|สนุกเหลือเกิน",
+      comeback: "เกมยังไม่จบหรอก|หมากล้อมไม่มีวันสิ้นสุด",
+      win: "ขอบคุณสำหรับเกมที่งดงาม|เกมนี้สนุกมาก มาเล่นกันอีกนะ",
+      lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว|ข้าแพ้แล้ว… ช่างงดงามจริงๆ"
+    },
     todo: {
       hello: "...เชิญ|กระดานรออยู่|ข้าจะดูว่าเจ้ามาไกลแค่ไหน",
       goodMove: "หืม|ดี|ตานี้… น่าสนใจ",
@@ -3612,13 +3723,32 @@ const Tsumego = (() => {
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4) };
+  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
   if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 2 : 1;
   if (!CHARS[settings.char]) settings.char = 5;
-  const KOMI = 7.5;
+  // komi 7.5 in an even game; 0.5 with handicap stones (Sai only), set per game by newGame / resumeGame
+  let KOMI = 7.5, handi = 0;
+  // standard handicap points on 19x19 (x, y from the top left); black takes the first N
+  const HANDI_PTS = [[15, 3], [3, 15], [15, 15], [3, 3], [9, 9], [3, 9], [15, 9], [9, 3], [9, 15]];
+  function handiPoints(k) {
+    if (k < 2) return [];
+    const c = HANDI_PTS.slice(0, 4), mid = [9, 9];
+    if (k === 2 || k === 3 || k === 4) return HANDI_PTS.slice(0, k);
+    if (k === 5) return c.concat([mid]);
+    if (k === 6) return c.concat([[3, 9], [15, 9]]);
+    if (k === 7) return c.concat([[3, 9], [15, 9], mid]);
+    if (k === 8) return c.concat([[3, 9], [15, 9], [9, 3], [9, 15]]);
+    return c.concat([[3, 9], [15, 9], [9, 3], [9, 15], mid]);
+  }
+  // handicap stones go into the move list as black moves with white passes in between, so white plays next
+  function handiLine(b, k) {
+    const out = [];
+    handiPoints(k).forEach(([x, y], i) => { if (i) out.push(PASS); out.push(b.pt(x, y)); });
+    return out;
+  }
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0, examBehind = 0;
   let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
@@ -3873,7 +4003,7 @@ const Tsumego = (() => {
     if (!exam) showResult(humanWon);
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
@@ -3935,9 +4065,14 @@ const Tsumego = (() => {
   function newGame() {
     cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
+    handi = 0; KOMI = 7.5;
+    if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
+    if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {}); // start the download before the first AI move
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    document.querySelector(".komi b").textContent = KOMI;
     const ch = CHARS[gameChar];
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
@@ -4043,19 +4178,21 @@ const Tsumego = (() => {
   function saveGame() {
     if (!board) return;
     if (over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
+    save("game", { char: CHARS[gameChar].id, n, human, handi, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5;
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
     exam = CHARS[gameChar].exam ? { grades: Array.isArray(g.grades) ? g.grades : [] } : null; ponder = null;
     const ch = CHARS[gameChar];
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    document.querySelector(".komi b").textContent = KOMI;
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
       $("n" + k).textContent = me ? "คุณ" : ch.name;
@@ -4138,6 +4275,61 @@ const Tsumego = (() => {
     }
     return odd.length ? odd[(Math.random() * odd.length) | 0] : null;
   }
+  // ---------- bigger brains: a character with `brain` plays with its own network, downloaded the first time it is picked ----------
+  // Files: <brain>.json and <brain>.bin.0, .1, ... (20 MB parts: Cloudflare serves files up to 25 MB). The parts are kept in
+  // the browser's Cache Storage, so later visits load them without the network.
+  const brains = {}; // name -> { ai, promise, pct, error }
+  async function fetchPart(url) {
+    let cache = null;
+    try { cache = await caches.open("baduk-brains-v1"); const hit = await cache.match(url); if (hit) return hit.arrayBuffer(); } catch (e) { cache = null; }
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(url + " " + r.status);
+    if (cache) try { await cache.put(url, r.clone()); } catch (e) {}
+    return r.arrayBuffer();
+  }
+  function loadBrain(name) {
+    const st = brains[name] || (brains[name] = { ai: null, promise: null, pct: 0, error: null });
+    if (st.ai) return Promise.resolve(st.ai);
+    if (!st.promise) st.promise = (async () => {
+      const meta = await fetch(name + ".json").then(r => { if (!r.ok) throw new Error(name + ".json " + r.status); return r.json(); });
+      const parts = meta.parts || 0, out = new Uint8Array(meta.parts ? meta.parts * 20 * 1024 * 1024 : 0);
+      let buf, got = 0;
+      if (!parts) buf = await fetchPart(name + ".bin");
+      else {
+        for (let k = 0; k < parts; k++) {
+          const b = new Uint8Array(await fetchPart(name + ".bin." + k));
+          out.set(b, got); got += b.length; st.pct = got / (meta.bytes || got); renderStatus();
+        }
+        buf = out.buffer.slice(0, got);
+      }
+      st.pct = 1; renderStatus();
+      const big = GoTFNet(tf).build(meta, buf);
+      // a HumanSL brain chooses moves like its human profile, but its value head learned from human game results, so the
+      // search judges positions with the standard network: candidates in the style of the era, read with KataGo's eye
+      const net = !(meta.metaProfiles && meta.metaProfiles.length) ? big : {
+        name: big.name,
+        async run(batch) {
+          const [h, b] = await Promise.all([big.run(batch), AI.net.run(batch)]);
+          return h.map((r, i) => ({ policy: r.policy, value: b[i].value, score: b[i].score, own: b[i].own }));
+        }
+      };
+      const ai = GoNNAI(E, F, net);
+      await ai.evalMany(19, [[]], KOMI); // first run compiles the GPU programs
+      st.ai = ai; st.error = null;
+      return ai;
+    })().catch(e => { st.promise = null; st.error = e; throw e; });
+    return st.promise;
+  }
+  // the network a character plays with; falls back to the standard one if its own cannot be loaded
+  async function brainFor(ch) {
+    if (!ch.brain) return AI;
+    try { return await loadBrain(ch.brain); }
+    catch (e) { console.warn(e); flash("โหลดสมองใหญ่ไม่สำเร็จ ใช้สมองปกติแทน"); return AI; }
+  }
+  const brainLoading = () => { const ch = board && CHARS[gameChar]; const st = ch && ch.brain && brains[ch.brain]; return st && !st.ai && st.promise ? st : null; };
+  // secret characters show on the select screen only with ?boss in the address (owner's test link, 2026-10-31);
+  // the planned unlock is a win against Todo: load("history", []).some(h => h.char === "todo" && h.won)
+  const secretOpen = () => /[?&]boss\b/.test(location.search);
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.search;
   async function maybeAI() {
@@ -4158,8 +4350,11 @@ const Tsumego = (() => {
     }
     let res;
     try {
-      res = await AI[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
-        batch: evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
+      const brain = await brainFor(CHARS[gameChar]);
+      if (my !== gen) return;
+      res = await brain[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
+        // a big brain's attention layers need a lot of memory per position: small batches (WebAssembly runs out at 8)
+        batch: brain !== AI ? (tf.getBackend() === "webgl" ? 4 : 1) : evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
       }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
@@ -4196,7 +4391,9 @@ const Tsumego = (() => {
     setEval(res);
     reactTo(res);
     // resign once the player's winning chance has been 99% or more for 5 AI moves in a row
-    hopeless = res.winrate <= 0.01 ? hopeless + 1 : 0;
+    // in a handicap game Sai starts far behind on paper, so it plays on until late in the game and clearly lost on the board
+    const giveUpOk = !handi || handi < 2 || (history.length >= 150 && (ai === BLACK ? leadBlack : -leadBlack) < -20);
+    hopeless = res.winrate <= 0.01 && giveUpOk ? hopeless + 1 : 0;
     if (hopeless >= 5 && !exam) { // the examiner plays on so the player is graded to the end
       over = { text: `${CHARS[gameChar].name} ยอมแพ้ คุณชนะ!`, detail: "โอกาสชนะของคุณอยู่ที่ 99% ขึ้นไปติดกัน 5 ตา" }; speak("giveUp", { force: true }); reportEnd(true, "resign"); render(); return;
     }
@@ -4468,6 +4665,7 @@ const Tsumego = (() => {
     else if (!engineReady) html = "<b>รอสมอง AI โหลดเสร็จ…</b>";
     else if (over) html = "เกมจบแล้ว กด ◀ ▶ เพื่อดูย้อนหมากทีละตา หรือกด \"เล่นใหม่\"";
     else if (scoring) html = scoring.loading ? "ทั้งสองฝ่ายผ่าน กำลังประเมินหมากตาย…" : "<b>นับแต้ม</b> ตรวจหมากตายบนกระดาน";
+    else if (thinking && brainLoading()) html = `<b>กำลังโหลดสมองใหญ่ของ ${CHARS[gameChar].name}… ${Math.round(brainLoading().pct * 100)}%</b><span class="meta">ครั้งแรกเท่านั้น ครั้งต่อไปจะเปิดได้ทันที</span>`;
     else if (thinking) {
       const who = board.toPlay === ai ? "AI กำลังคิด" : "AI กำลังหาตาแนะนำ";
       html = `<b>${who}…</b><span class="meta">${think ? think.visits.toLocaleString() + " รูปแบบ · คิดว่า " + moveName(think.move) + " (" + Math.round(think.winrate * 100) + "%)" : "เริ่มอ่าน"}</span>`;
@@ -4588,10 +4786,10 @@ const Tsumego = (() => {
     }
   }
 
-  const syncSize = seg("segSize", "size"); seg("segColor", "human");
+  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
-  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam);
+  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam && (!CHARS[i].secret || secretOpen()));
   const charsEl = $("chars"), L8 = PICK.length;
   const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
@@ -4621,11 +4819,13 @@ const Tsumego = (() => {
     const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
     $("home").querySelector(".px-title").textContent = examMode ? "Rank Test" : "Character Select";
     $("faces").hidden = examMode;
+    // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
+    $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
     charsEl.classList.toggle("solo", examMode);
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
     charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      <div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>
+      ${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
     $("pick").innerHTML = `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
@@ -4650,7 +4850,7 @@ const Tsumego = (() => {
     if (e.key === "ArrowLeft") step(-1); else if (e.key === "ArrowRight") step(1);
     else if (e.key === "Enter" && !e.target.closest("button")) { unlockAudio(); startGame(); }
   });
-  ["segSize", "segColor"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
+  ["segSize", "segColor", "segHandi"].forEach(id => $(id).addEventListener("click", () => { unlockAudio(); blip(520); }));
   syncChars();
   document.body.classList.add("arcade");
   $("home").hidden = true; document.body.classList.add("menuing"); // the main menu is the first screen

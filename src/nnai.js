@@ -438,6 +438,6 @@ function GoNNAI(E, F, net) {
   }
   const gradeOf = g => g.same || g.loss <= 0.5 ? "best" : g.loss <= 2 ? "good" : g.loss <= 5 ? "normal" : "bad";
 
-  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear() };
+  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear(), net };
 }
 if (typeof module !== "undefined") module.exports = GoNNAI;

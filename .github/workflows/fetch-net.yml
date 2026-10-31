@@ -1,0 +1,68 @@
+# Downloads a KataGo network, converts it for the browser (src/export_tf2.py), asks a real KataGo build for reference
+# outputs (src/tools/katago_ref.py), and commits <out>.json, <out>.bin.N and nets/<out>-*.txt|json to the branch it ran on.
+# A URL downloads that file; otherwise the newest network on katagotraining.org whose name contains MATCH.
+# The draft branch runs it on push; any branch can run it by hand.
+name: Fetch KataGo network
+on:
+  push:
+    branches: [claude/project-thread-s2uaqo]
+    paths: [.github/workflows/fetch-net.yml, src/export_tf2.py, src/tools/katago_ref.py]
+  workflow_dispatch:
+    inputs:
+      url: { description: "direct download URL (leave empty to search katagotraining.org)", default: "" }
+      match: { description: "text the network file name must contain", default: "" }
+      out: { description: "output name", default: "human" }
+      human: { description: "HumanSL net: profile for the reference outputs (empty for a normal net)", default: "proyear_1850" }
+permissions:
+  contents: write
+env:
+  URL: ${{ github.event_name == 'push' && 'https://github.com/lightvector/KataGo/releases/download/v1.15.0/b18c384nbt-humanv0.bin.gz' || inputs.url }}
+  MATCH: ${{ inputs.match || '' }}
+  OUT: ${{ inputs.out || 'human' }}
+  HUMAN: ${{ github.event_name == 'push' && 'proyear_1850' || inputs.human }}
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install numpy
+      - name: Download network
+        run: |
+          set -e; mkdir -p nets
+          if [ -z "$URL" ]; then
+            curl -fsSL https://katagotraining.org/networks/ -o page.html
+            URL=$(grep -oE 'https?://[^"]+\.bin\.gz' page.html | grep -i -- "$MATCH" | head -1)
+          fi
+          echo "URL=$URL"
+          { echo "url: $URL"; } > nets/$OUT-download.txt
+          curl -fSL -o net.bin.gz "$URL"
+          echo "bytes: $(stat -c %s net.bin.gz)" >> nets/$OUT-download.txt
+      - name: Convert
+        run: |
+          rm -f $OUT.json $OUT.bin $OUT.bin.*
+          python3 src/export_tf2.py net.bin.gz $OUT 2>&1 | tee nets/$OUT-convert.txt
+          ls -l $OUT.*
+      - name: Build KataGo (Eigen, CPU) for reference outputs
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq libeigen3-dev libzip-dev zlib1g-dev cmake g++ > /dev/null
+          git clone --depth 1 https://github.com/lightvector/KataGo kg
+          cd kg/cpp && cmake . -DUSE_BACKEND=EIGEN -DNO_GIT_REVISION=1 > /dev/null && make -j4 katago > /dev/null
+          cp configs/gtp_example.cfg ../../ref.cfg
+          cd ../.. && sed -i 's/^#* *numSearchThreads.*/numSearchThreads = 1/' ref.cfg
+          if [ -n "$HUMAN" ]; then
+            echo "humanSLProfile = $HUMAN" >> ref.cfg
+            timeout 1200 python3 src/tools/katago_ref.py kg/cpp/katago kg/cpp/tests/models/g170e-b10c128-s1141046784-d204142634.bin.gz ref.cfg net.bin.gz > nets/$OUT-ref.json
+          else
+            timeout 1200 python3 src/tools/katago_ref.py kg/cpp/katago net.bin.gz ref.cfg > nets/$OUT-ref.json
+          fi
+          head -c 600 nets/$OUT-ref.json
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          git add nets/ || true
+          ls $OUT.json > /dev/null 2>&1 && git add $OUT.json $OUT.bin* || true
+          git commit -m "Fetch and convert KataGo network ($OUT) for the browser" || exit 0
+          git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME}
