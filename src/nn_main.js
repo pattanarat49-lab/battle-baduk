@@ -24,9 +24,18 @@
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", search: { temperature: 2.0, blunder: 0.3, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
+    { id: "chai", en: "RIDER CHAI", name: "ไรเดอร์ชัย", country: "ไทย", rank: "10 คิว", style: "defend", opening: "corners",
+      search: { temperature: 1.7, blunder: 0.18, follow: 2, soft: true, noFloat: true, keepTerritory: true },
+      early: { temperature: 1.6, blunder: 0.15, local: 3, noFloat: true, keepTerritory: true },
+      bio: "ไรเดอร์ส่งอาหาร น้องชายของลุงวิน เพิ่งหัดเล่นโกะเพราะพี่ชายชวน เปิดเกมเหมือนลุงวินเป๊ะ แต่หลังจากนั้นเล่นนิ่มๆ ตั้งรับสุดๆ คุณเดินตรงไหนก็ตามไปรับตรงนั้น",
+      say: { hello: "พี่วินชวนมาเล่นครับ ระหว่างรอออเดอร์", ahead: "เอ้า ผมนำเหรอ แค่ตามไปรับเองนะ", behind: "ไม่เป็นไรครับ ผมรับไว้ก่อน", win: "ชนะแล้ว! ต้องไปบอกพี่วิน", lose: "เก่งจังครับ ผมยังต้องหัดอีกเยอะ" } },
     { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", opening: "corners", search: { temperature: 1.6, blunder: 0.15, local: 3, noFloat: true, keepTerritory: true },
       bio: "เซียนหมากฮอสประจำวินมอเตอร์ไซค์ เพิ่งมาลองเล่นโกะ",
       say: { hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย", ahead: "กินได้กินเลย เหมือนหมากฮอสนั่นแหละ", behind: "เดี๋ยวๆ ขอคิดแป๊บ", win: "เห็นไหม เซียนก็คือเซียน", lose: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่" } },
+    { id: "ek", en: "KRU EK", name: "ครูเอก", country: "ไทย", rank: "6 คิว", style: "balance", opening: "corners",
+      search: { temperature: 1.5, blunder: 0.12, local: 3, noFloat: true, keepTerritory: true },
+      bio: "ครูคณิตศาสตร์หัวดี สนใจหมากล้อมเพราะชอบคิดคำนวณ เดินแนวเดียวกับลุงวินแต่คิดเป็นระบบกว่า",
+      say: { hello: "เอาล่ะ มาพิสูจน์กันบนกระดานครับ", ahead: "ผลลัพธ์เป็นไปตามที่คำนวณไว้", behind: "ตัวแปรเยอะกว่าที่คิดแฮะ", win: "Q.E.D. ครับ ขอบคุณที่เล่น", lose: "สมการนี้ผมยังแก้ไม่ออก เก่งมากครับ" } },
     { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "3 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03, local: 3, keepTerritory: true }, early: { temperature: 0.25, local: 3, keepTerritory: true },
       bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
       say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
@@ -86,6 +95,30 @@
       timeoutWin: "พี่หมดเวลา… ผมชนะแบบนี้ได้เหรอครับ|ไม่เป็นไรนะพี่ ผมก็ลืมดูนาฬิกาบ่อย",
       giveUp: "ผมยอมแล้วครับ ไม่เหลืออะไรให้สู้เลย|ยอมครับ พี่เก่งเกินไป"
     },
+    chai: {
+      hello: "พี่วินชวนมาเล่นครับ ระหว่างรอออเดอร์|เพิ่งหัดได้ไม่กี่วันครับ เบาๆ นะครับ|ถ้ามีออเดอร์เด้งผมขอรับก่อนนะครับ",
+      goodMove: "โห ตานี้ผมไม่ทันเห็นเลย|เดินตรงนั้นได้ด้วยเหรอครับ|เก่งจริงพี่",
+      badMove: "เอ๊ะ ตรงนั้นผมว่าแปลกๆ นะครับ|ผมก็ไม่แน่ใจ แต่ผมรับไว้ก่อน|พี่ใจดีจังครับ",
+      caught: "หมากผมหายไป {n} เม็ดเลยครับ|อ้าว รับไม่ทัน|ผมตามไปรับแล้วนะ ทำไมยังโดนกิน",
+      capture: "ขอโทษครับ ได้ {n} เม็ด|เอ้า กินได้ด้วย|ผมแค่รับเฉยๆ นะครับ ไม่ได้ตั้งใจ",
+      ahead: "เอ้า ผมนำเหรอ แค่ตามไปรับเองนะ|ปลอดภัยไว้ก่อน เหมือนขับรถ|ค่อยๆ ไปครับ ไม่รีบ",
+      behind: "ไม่เป็นไรครับ ผมรับไว้ก่อน|พี่วินบอกว่าใจเย็นๆ|ผมยังตามรับไหวครับ",
+      comeback: "เอ๊ะ ผมกลับมาได้ไง|รับไปรับมา ชนะซะงั้น",
+      humanPass: "พี่ผ่านเหรอครับ งั้นผมรับต่อ|ผ่านแล้วเหรอครับ",
+      aiPass: "ผมไม่รู้จะรับตรงไหนแล้ว ผ่านครับ|ผ่านครับ",
+      ko: "อันนี้ที่พี่วินเรียกว่าโคใช่ไหม|ต้องไปเดินที่อื่นก่อนสินะครับ",
+      hint: "พี่ดูคำแนะนำด้วย ผมขอดูบ้างได้ไหม|ดูโพยเหมือนดูแผนที่เลยครับ",
+      slow: "ไม่ต้องรีบครับ ผมรอออเดอร์อยู่พอดี|คิดนานจัง ผมขอเช็คแอปแป๊บ",
+      byoyomi: "เวลานับถอยหลังแล้วนะพี่|รีบหน่อยครับ เหมือนส่งอาหารไม่ทัน",
+      lastPeriod: "ครั้งสุดท้ายแล้วครับพี่|อย่าหมดเวลานะครับ",
+      aiByo: "ผมต้องรีบแล้ว ลูกค้ารอ|เวลาผมใกล้หมดแล้ว",
+      mid: "พี่วินบอกว่าเกมนี้เหมือนหาทางลัดในซอย|เดินที่ไหน ผมก็ตามไปรับที่นั่นครับ|ผมชอบเล่นแบบปลอดภัยไว้ก่อน",
+      win: "ชนะแล้ว! ต้องไปบอกพี่วิน|ไม่อยากเชื่อ ผมตามรับอย่างเดียวเลยนะ",
+      lose: "เก่งจังครับ ผมยังต้องหัดอีกเยอะ|เดี๋ยวกลับไปให้พี่วินสอนเพิ่ม|ขอบคุณครับ ไปส่งออเดอร์ก่อนนะ",
+      resigned: "พี่ยอมเหรอครับ ผมยังงงอยู่เลย|ขอบคุณที่เล่นด้วยครับ",
+      timeoutWin: "พี่หมดเวลาครับ ผมชนะแบบนี้ได้เหรอ|เวลาสำคัญเหมือนส่งอาหารเลยนะครับ",
+      giveUp: "ผมยอมครับ รับไม่ไหวแล้ว|ยอมครับ ไปส่งออเดอร์ดีกว่า"
+    },
     win: {
       hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย|รอลูกค้าอยู่ ขอตาสองตาก่อนแล้วกัน|มาๆ ลุงให้เดินก่อนก็ได้นะไอ้หนู",
       goodMove: "เฮ้ย ตานี้แสบ|เดินแบบนี้ลุงต้องเกาหัวแล้ว|ไอ้หนูนี่ไม่ธรรมดาแฮะ",
@@ -109,6 +142,30 @@
       resigned: "ยอมเลยเหรอ ลุงยังไม่ทันได้เกร็งเลย|ไม่เป็นไรหลาน มาเล่นใหม่ได้",
       timeoutWin: "หมดเวลาหลาน ช้ากว่าลุงขับรถอีก|ชนะเพราะนาฬิกา ลุงก็เอานะ",
       giveUp: "พอๆ ลุงยอม ไปขับรถดีกว่า|ลุงยอม หลานเก่งจริง"
+    },
+    ek: {
+      hello: "เอาล่ะ มาพิสูจน์กันบนกระดานครับ|หมากล้อมคือคณิตศาสตร์ที่สวยที่สุด|ตรวจการบ้านนักเรียนเสร็จพอดี มาเล่นกันครับ",
+      goodMove: "อืม ตานี้คำนวณมาดีครับ|น่าสนใจ ผมไม่ได้ใส่ตัวแปรนี้ไว้|ให้คะแนนเต็มตานี้เลยครับ",
+      badMove: "ตานี้ผมว่ายังคิดไม่ครบนะครับ|ลองตรวจคำตอบอีกรอบดีไหม|ผิดสูตรนิดหน่อยครับ",
+      caught: "เสีย {n} เม็ด ผมคำนวณพลาดตรงไหนนะ|อ้อ ลืมนับลมไปหนึ่งช่อง|ตัวแปรนี้ผมมองข้ามไป",
+      capture: "ลมเหลือศูนย์ เก็บ {n} เม็ดครับ|นับลมแล้ว ไม่รอดครับ|เป็นไปตามสมการ",
+      ahead: "ผลลัพธ์เป็นไปตามที่คำนวณไว้|ส่วนต่างกำลังสวยเลยครับ|ตอนนี้ความน่าจะเป็นเข้าข้างผม",
+      behind: "ตัวแปรเยอะกว่าที่คิดแฮะ|ขอทดเลขในใจก่อนครับ|ต้องแก้สมการใหม่แล้ว",
+      comeback: "พลิกสมการได้แล้วครับ|เห็นไหม คณิตไม่เคยโกหก",
+      humanPass: "ผ่านแล้วเหรอครับ ขอนับแต้มในใจก่อน|โอเค ผมคิดต่ออีกนิด",
+      aiPass: "คำนวณแล้วไม่มีจุดที่คุ้มค่า ผ่านครับ|ผ่านครับ",
+      ko: "โคครับ ต้องหาจุดคุกคามก่อน|กติกาข้อนี้ผมสอนนักเรียนบ่อย",
+      hint: "ดูเฉลยก่อนทำโจทย์เหรอครับ|ไม่เป็นไรครับ ดูแล้วลองคิดตามด้วยนะ",
+      slow: "คิดนานแบบนี้ ผมตรวจข้อสอบได้อีกสองแผ่น|ใจเย็นครับ โจทย์ยากต้องใช้เวลา",
+      byoyomi: "หมดเวลาหลักแล้วครับ เหลือ 30 วิ|รีบหน่อยครับ เหมือนสอบใกล้หมดเวลา",
+      lastPeriod: "ครั้งสุดท้ายแล้วครับ ส่งคำตอบได้เลย|อย่าลืมส่งกระดาษคำตอบนะครับ",
+      aiByo: "ผมต้องคิดเร็วขึ้นแล้ว|เวลาผมเหลือน้อย ขอคิดเลขเร็ว",
+      mid: "กระดาน 361 จุด ความเป็นไปได้มากกว่าจำนวนอะตอมในจักรวาลอีกนะครับ|นักเรียนผมชอบถามว่าเรียนเลขไปทำอะไร ผมตอบว่าเล่นโกะ|ลุงวินชอบเล่นด้วยความรู้สึก ผมชอบนับ",
+      win: "Q.E.D. ครับ ขอบคุณที่เล่น|พิสูจน์เสร็จสิ้นครับ|เกมดีครับ ลองทบทวนจุดพลิกเกมนะ",
+      lose: "สมการนี้ผมยังแก้ไม่ออก เก่งมากครับ|ต้องกลับไปทำการบ้านเพิ่มแล้ว|ยอดเยี่ยมครับ คุณคิดได้เป็นระบบมาก",
+      resigned: "ยอมแล้วเหรอครับ ยังมีทางให้คิดอีกนะ|ขอบคุณที่เล่นครับ",
+      timeoutWin: "หมดเวลาครับ การบริหารเวลาก็สำคัญนะ|ส่งคำตอบไม่ทัน น่าเสียดายครับ",
+      giveUp: "ผมคำนวณแล้วไม่มีทางชนะ ขอยอมครับ|ยอมครับ ผลลัพธ์ชัดเจนแล้ว"
     },
     yuto: {
       hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ|วันนี้ชมรมไม่มีซ้อม เลยมาขอเล่นด้วยครับ|รุ่นพี่บอกว่าให้เล่นกับคนเก่งเยอะๆ ครับ",
@@ -334,7 +391,7 @@
   // characters' own levels, narrow steps through 13-7 kyu and 3-2 kyu, clear gaps between 1 kyu and
   // 1 dan and between 2 and 3 dan, wider jumps to 3 and 4 dan, and 5 dan hard to reach. Each entry: a score below "under" reads as "rank" (1 kyu = 0, 15 kyu = -14, 1 dan = 1, ...).
   const EXAM_BANDS = [
-    [0.10, 5], [0.18, 4], [0.24, 3], [0.30, 2], [0.33, 1], [0.45, 0], [0.49, -1], [0.54, -2], [0.70, -3], [0.88, -4],
+    [0.10, 5], [0.18, 4], [0.24, 3], [0.30, 2], [0.35, 1], [0.45, 0], [0.49, -1], [0.54, -2], [0.70, -3], [0.88, -4],
     [1.04, -5], [1.08, -6], [1.12, -7], [1.16, -8], [1.20, -9], [1.24, -10], [1.28, -11], [Infinity, -12]
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
@@ -573,6 +630,17 @@
     if (!STATS_URL || !gameId) return;
     try {
       const body = JSON.stringify(Object.assign({ player: playerId, game: gameId, char: CHARS[gameChar].id }, ev));
+      if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
+        fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+  // Analysis / Tsumego use: one event per mode per page load, so going back and forth costs no extra requests
+  const modeSeen = new Set();
+  function trackMode(mode) {
+    if (!STATS_URL || modeSeen.has(mode)) return;
+    modeSeen.add(mode);
+    try {
+      const body = JSON.stringify({ type: "open", player: playerId, mode });
       if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
@@ -904,9 +972,12 @@
       let m = res.move;
       if (m === PASS && exam && open !== null) m = open;
       else if (open === null && m !== PASS) {
-        // every area is sealed: answer a pass with a pass, and never fill in a settled area (its own or the opponent's)
-        const [x, y] = board.xy(m);
-        if (history[history.length - 1] === PASS || Math.abs(ev.own[y * 19 + x]) > 0.75) m = PASS;
+        // every area is sealed: answer a pass with a pass, and never fill in a settled area (its own or the opponent's).
+        // A move next to the opponent's last stone is an answer to it (an invasion of a settled area), not filling, and is
+        // played: passing there let invaders live and turned won games into resignations
+        const [x, y] = board.xy(m), last = history[history.length - 1];
+        const answers = last !== PASS && (([lx, ly]) => Math.abs(lx - x) <= 2 && Math.abs(ly - y) <= 2)(board.xy(last));
+        if (last === PASS || (Math.abs(ev.own[y * 19 + x]) > 0.75 && !answers)) m = PASS;
       }
       if (m !== res.move) res = Object.assign({}, res, { move: m });
     }
@@ -1390,7 +1461,7 @@
   // ---------- main menu and profile ----------
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
-    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 10 ตัวละคร" },
+    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 12 ตัวละคร" },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
@@ -1428,9 +1499,9 @@
     const go = b.dataset.mn;
     if (go === "play") { showHome(); window.scrollTo(0, 0); }
     else if (go === "profile") showProfile();
-    else if (go === "analysis") { hideScreens(); Analysis.open({ n: 19, moves: [], from: "menu" }); }
+    else if (go === "analysis") { hideScreens(); trackMode("analysis"); Analysis.open({ n: 19, moves: [], from: "menu" }); }
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
-    else if (go === "tsume") { hideScreens(); Tsumego.open(); }
+    else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
@@ -1487,7 +1558,7 @@
     if (b.id === "pfResume") { const g = pausedGame(); unlockAudio(); blip(880); if (!g || !resumeGame(g)) { save("game", null); renderProfile(); } return; }
     if (b.dataset.an !== undefined) {
       const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
-      unlockAudio(); blip(880); hideScreens(); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
+      unlockAudio(); blip(880); hideScreens(); trackMode("analysis"); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
     }
   });
   $("endAskNo").onclick = () => { blip(660); $("endAsk").hidden = true; };
@@ -1496,7 +1567,7 @@
     if (!ended()) return;
     unlockAudio(); blip(880); cancelAI();
     $("game").hidden = true; $("endAsk").hidden = true; document.body.classList.remove("playing");
-    Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
+    trackMode("analysis"); Analysis.open({ n, moves: history.slice(), human, at: atNow(), from: "game" });
   };
   const syncSound = () => { $("btnSound").textContent = $("mnSound").textContent = soundOn ? "เสียง: เปิด" : "เสียง: ปิด"; $("btnSound").setAttribute("aria-pressed", String(soundOn)); };
   $("btnSound").onclick = () => { soundOn = !soundOn; save("sound", soundOn); unlockAudio(); syncSound(); clack(); };

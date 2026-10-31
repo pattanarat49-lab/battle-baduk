@@ -7,7 +7,7 @@ import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
 
 const CHARS = {
-  mek: "เมฆ", win: "ลุงวิน", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
+  mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
   chris: "คริส", jay: "เจ",
   weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", hikaru: "ฮิคารุ"
 };
@@ -41,6 +41,9 @@ export class Stats extends DurableObject {
     this.sql.exec("CREATE TABLE IF NOT EXISTS exam_players (player TEXT PRIMARY KEY)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS exam_ranks (r REAL PRIMARY KEY, n INTEGER)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v INTEGER)");
+    // Analysis and Tsumego: how many times they were opened and by how many players (one row per mode, one per player and mode)
+    this.sql.exec("CREATE TABLE IF NOT EXISTS mode_tally (mode TEXT PRIMARY KEY, opens INTEGER, players INTEGER)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS mode_players (player TEXT, mode TEXT, PRIMARY KEY (player, mode))");
     if ((this.sql.exec("SELECT v FROM meta WHERE k = 'tally'").toArray()[0]?.v || 0) < 1) ctx.storage.transactionSync(() => this.rebuildTally());
   }
   // one-off upgrade of older data: fills in exam fields added later, then counts every stored game into the running totals
@@ -97,6 +100,11 @@ export class Stats extends DurableObject {
   }
   record(e) {
     const now = Date.now();
+    if (e.type === "open") {
+      this.sql.exec("INSERT INTO mode_tally VALUES (?, 1, 0) ON CONFLICT(mode) DO UPDATE SET opens = opens + 1", e.mode);
+      if (this.firstTime("INSERT OR IGNORE INTO mode_players VALUES (?, ?)", e.player, e.mode)) this.sql.exec("UPDATE mode_tally SET players = players + 1 WHERE mode = ?", e.mode);
+      return;
+    }
     if (e.type === "move") { this.saveState(e, false); return; }
     if (e.type === "start") {
       this.saveState(e, false);
@@ -142,7 +150,8 @@ export class Stats extends DurableObject {
     const exams = this.sql.exec("SELECT tests, players, ranked, full FROM exam_tally").toArray()[0] || { tests: 0, players: 0, ranked: 0, full: 0 };
     const examRanks = this.sql.exec("SELECT r, n FROM exam_ranks ORDER BY r DESC").toArray();
     const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank, score FROM exams ORDER BY ended DESC LIMIT 10").toArray();
-    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent };
+    const modes = Object.fromEntries(this.sql.exec("SELECT mode, opens, players FROM mode_tally").toArray().map(r => [r.mode, r]));
+    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent, modes };
   }
 }
 
@@ -162,7 +171,9 @@ function cleanState(s) {
     moves: Array.isArray(s.moves) && s.moves.length <= 1000 && s.moves.every(m => Number.isInteger(m) && m >= -1 && m < s.size * s.size) ? s.moves : null };
 }
 
+const MODES = new Set(["analysis", "tsumego"]);
 function clean(b) {
+  if (b && b.type === "open") { const player = id(b.player); return player && MODES.has(b.mode) ? { type: "open", player, mode: b.mode } : null; }
   if (!b || !["start", "move", "end"].includes(b.type)) return null;
   const e = { type: b.type, game: id(b.game), player: id(b.player), char: b.char, state: cleanState(b.state) };
   if (!e.game || !e.player || !(e.char in CHARS)) return null;
@@ -188,7 +199,7 @@ function clean(b) {
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
 // same bands as EXAM_BANDS in src/nn_main.js: an average move score (Best 0, Good 1, Normal 2, Bad 3) below "under" reads as "rank"
-const EXAM_BANDS = [[0.10, 5], [0.18, 4], [0.24, 3], [0.30, 2], [0.33, 1], [0.45, 0], [0.49, -1], [0.54, -2], [0.70, -3], [0.88, -4],
+const EXAM_BANDS = [[0.10, 5], [0.18, 4], [0.24, 3], [0.30, 2], [0.35, 1], [0.45, 0], [0.49, -1], [0.54, -2], [0.70, -3], [0.88, -4],
   [1.04, -5], [1.08, -6], [1.12, -7], [1.16, -8], [1.20, -9], [1.24, -10], [1.28, -11], [Infinity, -12]];
 // the table before 2026-10-29, by share of non-Best moves, for results sent without a score
 const EXAM_CALIB_OLD = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
@@ -241,6 +252,9 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <h1>สถิติ Baduk Battle</h1>
 <div class="tiles"><div class="tile"><b>${s.total.games}</b><span>เกมที่เริ่มเล่นทั้งหมด</span></div><div class="tile"><b>${s.total.players}</b><span>ผู้เล่น (นับตามเครื่อง)</span></div></div>
 <section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
+<section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)"], ["tsumego", "Tsumego (โจทย์)"]].map(([k, t]) => { const m = (s.modes || {})[k] || {};
+  return `<div class="tile"><b>${m.players || 0} คน</b><span>${t} · เปิดทั้งหมด ${m.opens || 0} ครั้ง</span></div>`; }).join("")}</div>
+<p class="muted">นับตั้งแต่ 31 ต.ค. 2026 · นับคนตามเครื่อง · เปิดซ้ำในหน้าเดิมโดยไม่รีเฟรชนับครั้งเดียว</p></section>
 <section><h2>สอบวัดระดับ (ฮิคารุ)</h2>
 <div class="tiles"><div class="tile"><b>${s.exams.tests || 0}</b><span>สอบจบแล้ว (${s.exams.players || 0} คน)</span></div>
 <div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เกมยาวอย่างน้อย 100 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
