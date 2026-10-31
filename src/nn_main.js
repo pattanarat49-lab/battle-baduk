@@ -1128,8 +1128,20 @@
     thinking = false; think = null; hint = res.move; setEval(res); render();
     if (res.move === PASS) flash("AI แนะนำให้ผ่าน");
   };
-  $("btnResign").onclick = () => {
+  // a second question before a button that ends or leaves the game in progress
+  let sureDone = null;
+  function askSure(title, text, ok) {
+    if (sureDone) sureDone(false);
+    $("sureT").innerHTML = `<b>${title}</b>${text}`; $("sureOk").textContent = ok; $("sure").hidden = false; $("sureNo").focus();
+    return new Promise(r => { sureDone = v => { sureDone = null; $("sure").hidden = true; r(v); }; });
+  }
+  $("sureOk").onclick = () => sureDone && sureDone(true);
+  $("sureNo").onclick = () => sureDone && sureDone(false);
+  $("sure").addEventListener("click", e => { if (e.target === $("sure") && sureDone) sureDone(false); });
+  const gameLive = () => board && !over && !scoring && history.length > 0;
+  $("btnResign").onclick = async () => {
     if (over || scoring || !history.length) return;
+    if (!await askSure("ยอมแพ้?", "ยอมแพ้เกมนี้จริงไหม", "ยอมแพ้") || over || scoring) return;
     cancelAI(); over = { text: `คุณยอมแพ้ ${CHARS[gameChar].name} ชนะ`, detail: "" }; speak("resigned", { force: true }); reportEnd(false, "resign"); render();
   };
   // characters from 3 kyu up (index 3 onwards) only play on the full 19x19 board
@@ -1488,7 +1500,7 @@
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
@@ -1584,8 +1596,14 @@
   };
   const syncFs = () => { $("btnFull").textContent = isFs() ? "ออกเต็มจอ" : "เต็มจอ"; if (board) resize(); };
   document.addEventListener("fullscreenchange", syncFs); document.addEventListener("webkitfullscreenchange", syncFs);
-  $("btnRestart").onclick = () => { settings.char = gameChar; newGame(); };
-  $("btnHome").onclick = showHome;
+  $("btnRestart").onclick = async () => {
+    if (gameLive() && !await askSure("เล่นใหม่?", "เกมที่เล่นอยู่จะหายไป เริ่มเกมใหม่จริงไหม", "เล่นใหม่")) return;
+    settings.char = gameChar; newGame();
+  };
+  $("btnHome").onclick = async () => {
+    if (gameLive() && !await askSure("เปลี่ยนตัว?", "ออกไปเลือกคู่แข่งใหม่จริงไหม เกมนี้จะเก็บไว้ในหน้าโปรไฟล์ให้กลับมาเล่นต่อได้", "เปลี่ยนตัว")) return;
+    showHome();
+  };
   // clocks keep their time across a refresh too
   window.addEventListener("pagehide", saveGame);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveGame(); });

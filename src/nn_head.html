@@ -475,6 +475,11 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 @keyframes resPop { from { transform: scale(1.6); opacity: 0; } }
 @keyframes resBlink { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .vd, .vd svg, .vd small { animation: none; } }
+.sure { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(6, 14, 16, .6); }
+.sure-card { width: min(400px, 100%); box-sizing: border-box; background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .2s ease-out; }
+.sure-card p { margin: 0 0 14px; font-size: 16px; color: var(--fg); text-align: center; }
+.sure-card p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 4px; font-size: 18px; }
+.sure .actions { padding: 0; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
 .end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
@@ -646,6 +651,10 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 </section>
 
 <div class="vd" id="vd" hidden></div>
+<div class="sure" id="sure" hidden><div class="sure-card" role="alertdialog" aria-labelledby="sureT">
+  <p id="sureT"></p>
+  <div class="actions two"><button id="sureNo">ยกเลิก</button><button id="sureOk" class="primary">ยืนยัน</button></div>
+</div></div>
 <div class="end-ask" id="endAsk" role="dialog" aria-labelledby="endAskT" hidden>
   <p id="endAskT"><b>ANALYSIS</b>จบเกมแล้ว เอาเกมนี้ไปวิเคราะห์กับ AI เลยไหม?</p>
   <div class="actions two"><button id="endAskNo">ไว้ก่อน</button><button id="endAskGo" class="primary">วิเคราะห์เลย</button></div>
