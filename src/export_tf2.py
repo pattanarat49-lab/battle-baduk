@@ -39,7 +39,8 @@ class Reader:
 # HumanSL profiles baked into the export (see KataGo cpp/neuralnet/sgfmetadata.cpp), for a 19x19 board
 PROFILES = ["proyear_1850", "rank_9d", "proyear_1980"]  # Sai, Lee Changho's opening, Takemiya (stored in the .bin)
 # later profiles go into the .json only, so adding one leaves the 53 MB .bin unchanged and players keep their download
-EXTRA_PROFILES = ["proyear_1995", "proyear_1940"]  # Lee Changho, Go Seigen
+EXTRA_PROFILES = ["proyear_1995", "proyear_1940",  # Lee Changho, Go Seigen
+                  "rank_15k", "rank_10k", "rank_8k", "rank_6k", "rank_3k", "rank_1d", "rank_2d"]  # kyu characters up to Jay (test)
 
 
 def meta_row(prof):
