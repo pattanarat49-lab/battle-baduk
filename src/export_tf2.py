@@ -37,7 +37,7 @@ class Reader:
 
 
 # HumanSL profiles baked into the export (see KataGo cpp/neuralnet/sgfmetadata.cpp), for a 19x19 board
-PROFILES = ["proyear_1850", "rank_9d"]
+PROFILES = ["proyear_1850", "rank_9d", "proyear_1980"]  # Sai, (unused), Takemiya
 
 
 def meta_row(prof):
