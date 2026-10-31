@@ -64,10 +64,16 @@
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // secret character: KataGo's HumanSL network playing as an 1850s professional (Honinbo Shusaku's era), downloaded only
     // when Sai is picked. Shows on the select screen only with ?boss in the address for now
-    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, brain: "human", handicap: true, fx: "smoke",
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1850", handicap: true, fx: "smoke",
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 } },
       bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์มืออาชีพยุคโบราณแบบฮงอินโบ ชูซากุ เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
+    // special character: the same HumanSL download as Sai, set to the 1980 professionals (Takemiya's prime), with the cosmic
+    // style on top: sanrensei openings, and of near-equal moves the one highest toward the centre
+    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1980", opening: "sanrensei",
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.04, points: 2 } },
+      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมด้วยซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน ใช้สมองมืออาชีพยุค 1980 เล่นเต็มกำลังทุกตา ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
       bio: "ผู้คุมสอบวัดระดับ อ่านหมากได้ระดับโทโด เดินโจเซกิและหมากพื้นฐานแน่นๆ คุมเกมให้สูสี บางตาจะเปิดช่องให้ลองดูว่าคุณตอบโต้ได้ดีแค่ไหน ทุกตาที่คุณเดินจะถูกให้คะแนน จบเกมแล้วบอกระดับฝีมือโดยประมาณ (เกมต้องยาวอย่างน้อย 100 ตา) เวลา 30 นาที + เบียวโยมิ 30 วิ × 3 แนะนำให้เล่นจนจบกระดานและนับแต้ม ผลสอบจะใกล้เคียงที่สุด",
@@ -352,6 +358,18 @@
       comeback: "เกมยังไม่จบหรอก|หมากล้อมไม่มีวันสิ้นสุด",
       win: "ขอบคุณสำหรับเกมที่งดงาม|เกมนี้สนุกมาก มาเล่นกันอีกนะ",
       lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว|ข้าแพ้แล้ว… ช่างงดงามจริงๆ"
+    },
+    takemiya: {
+      hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล|มาสร้างหมากที่ยิ่งใหญ่กันเถอะ|อย่ากลัวกลางกระดานนะครับ",
+      goodMove: "ตาดี|สวยมาก|น่าสนใจ",
+      badMove: "ตานั้นเล็กไปหน่อย|ลองมองให้กว้างกว่านี้|อืม…",
+      caught: "{n} เม็ด… ช่างเถอะ เขตกลางยังเป็นของผม|โดนจนได้",
+      capture: "{n} เม็ด|ขอบคุณครับ",
+      ahead: "เขตกลางกระดานเป็นของผมแล้ว|จักรวาลกำลังก่อตัว",
+      behind: "บุกเข้ามาได้สวยนะ|เขตผมยังใหญ่พอ",
+      comeback: "จักรวาลยังไม่ปิด|กลางกระดานยังมีที่ว่าง",
+      win: "ขอบคุณสำหรับเกมที่สนุกครับ|เล่นหมากให้กว้างแบบนี้สนุกใช่ไหม",
+      lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้|ผมแพ้แล้ว เกมนี้สวยมาก"
     },
     todo: {
       hello: "...เชิญ|กระดานรออยู่|ข้าจะดูว่าเจ้ามาไกลแค่ไหน",
@@ -935,6 +953,7 @@
       return near.length ? near[(Math.random() * near.length) | 0] : null;
     }
     if (ch.opening === "raid") return raidMove();
+    if (ch.opening === "sanrensei") return sanrensei();
     if (ch.opening === "33" || ch.opening === "corners") {
       // a corner counts as free while its 6x6 area is empty; "corners" picks 4-4, 3-4 or 3-3 there
       const free = [];
@@ -949,6 +968,21 @@
       return free.length ? free[(Math.random() * free.length) | 0] : null;
     }
     return null;
+  }
+  // Takemiya's sanrensei: three star points along one side, corners first. A side counts while the opponent has nothing
+  // within two lines of the points still to take; the side with most of his own stones on it already is kept
+  function sanrensei() {
+    if (n !== 19 || history.length >= 24) return null;
+    const sides = [[[15, 3], [15, 15], [15, 9]], [[3, 15], [15, 15], [9, 15]], [[3, 3], [3, 15], [3, 9]], [[3, 3], [15, 3], [9, 3]]];
+    const near = (x, y) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (board.color[board.pt(x + dx, y + dy)] === human) return true; return false; };
+    let pick = null, most = -1;
+    for (const side of sides) {
+      let mine = 0, free = [];
+      for (const [x, y] of side) { const p = board.pt(x, y), c = board.color[p]; if (c === ai) mine++; else if (c === EMPTY && !near(x, y) && board.isLegal(p, ai)) free.push(p); else { mine = -9; break; } }
+      if (mine < 0 || !free.length) continue;
+      if (mine > most || (mine === most && Math.random() < 0.5)) { most = mine; pick = free[0]; }
+    }
+    return pick;
   }
   // Joker never takes an empty corner of his own: early on he approaches or invades each corner the opponent holds,
   // and with nothing to attack yet he opens on the side or in the centre
@@ -993,7 +1027,7 @@
   async function fetchPart(url, dest, at, onBytes) {
     let cache = null;
     try {
-      cache = await caches.open("baduk-brains-v1");
+      cache = await caches.open("baduk-brains-v2");
       const hit = await cache.match(url);
       if (hit) { const b = new Uint8Array(await hit.arrayBuffer()); dest.set(b, at); return b.length; }
     } catch (e) { cache = null; }
@@ -1020,6 +1054,7 @@
     const step = (stage) => { st.stage = stage; gameStatus(); brainUI(st); };
     if (!st.promise) st.promise = (async () => {
       step("dl");
+      try { caches.delete("baduk-brains-v1"); } catch (e) {} // parts from before the 1980 profile was added
       const meta = await fetch(name + ".json").then(r => { if (!r.ok) throw new Error(name + ".json HTTP " + r.status); return r.json(); });
       const parts = meta.parts || 0;
       let buf;
@@ -1051,6 +1086,7 @@
           }
         };
         const ai = GoNNAI(E, F, net);
+        ai.big = big;
         step("warm");
         await new Promise(r => setTimeout(r, 50));
         try { await ai.evalMany(19, [[]], KOMI); } // first run compiles the GPU programs; NaN output throws here
@@ -1074,9 +1110,15 @@
     return st.promise;
   }
   // the network a character plays with; falls back to the standard one if its own cannot be loaded
+  // a HumanSL brain plays as the character's profile (Sai 1850, Takemiya 1980); switching clears the evaluations cached
+  // under the other profile
+  function asProfile(ai, ch) {
+    if (ch.profile && ai.big && ai.big.setProfile && ai.big.getProfile() !== ch.profile) { ai.big.setProfile(ch.profile); ai.clearCache(); }
+    return ai;
+  }
   async function brainFor(ch) {
     if (!ch.brain) return AI;
-    try { return await loadBrain(ch.brain); }
+    try { return asProfile(await loadBrain(ch.brain), ch); }
     catch (e) { console.warn(e); flash("โหลดสมองใหญ่ไม่สำเร็จ ใช้สมองปกติแทน"); return AI; }
   }
   // the loading screen: a bar while the parts download, then a short "getting ready" while the network is built
@@ -1574,7 +1616,12 @@
   const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
-  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam && (!CHARS[i].secret || secretOpen()));
+  // special characters (Sai, Takemiya) share one slot: a "Special Character" card that opens a choice between them.
+  // spView: "cover" (the slot's own card), "pick" (the special characters side by side), "char" (the one chosen)
+  const SPECIAL = CHARS.map((c, i) => i).filter(i => CHARS[i].special), SP0 = SPECIAL[0];
+  const slotOf = i => CHARS[i].special ? SP0 : i;
+  const PICK = CHARS.map((c, i) => i).filter(i => !CHARS[i].tutorial && !CHARS[i].exam && (!CHARS[i].secret || secretOpen()) && (!CHARS[i].special || i === SP0));
+  let spView = CHARS[settings.char] && CHARS[settings.char].special ? "char" : "cover";
   const charsEl = $("chars"), L8 = PICK.length;
   const pxImg = (c, cls) => `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">`;
   function blip(f) {
@@ -1600,28 +1647,38 @@
   const EXAM_I = CHARS.findIndex(c => c.exam);
   function syncChars(anim) {
     if (examMode) settings.char = EXAM_I;
-    else if (!PICK.includes(settings.char)) settings.char = PICK[0];
-    const i = settings.char, k = PICK.indexOf(i), c = CHARS[i], prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
+    else if (!PICK.includes(slotOf(settings.char))) settings.char = PICK[0];
+    const i = settings.char, k = PICK.indexOf(slotOf(i)), c = CHARS[i], sp = c.special && !examMode ? spView : "", prev = CHARS[PICK[(k + L8 - 1) % L8]], next = CHARS[PICK[(k + 1) % L8]];
     $("home").querySelector(".px-title").textContent = examMode ? "Rank Test" : "Character Select";
     $("faces").hidden = examMode;
     // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
     $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
+    const spHead = '<button class="cexam sp-head" data-sp="pick">SPECIAL CHARACTER</button>';
+    const spCard = sp === "cover"
+      ? `<div class="card sp-cover${anim ? " pop" : ""}" data-sp="pick" role="button" tabindex="0" aria-label="เลือกตัวละครพิเศษ"><div class="card-in">${spHead}<div class="cname">SPECIAL</div><div class="cthai">ตัวละครพิเศษ</div><div class="sp-faces">${SPECIAL.map(j => pxImg(CHARS[j], "pxp")).join("")}</div><div class="crank">แตะเพื่อเลือก</div></div></div>`
+      : sp === "pick"
+      ? `<div class="card${anim ? " pop" : ""}"><div class="card-in">${spHead}<div class="sp-grid">${SPECIAL.map(j => `<button class="sp-opt" data-sp-i="${j}">${pxImg(CHARS[j], "pxp")}<b>${CHARS[j].en}</b><span>${CHARS[j].name} · ${CHARS[j].rank}</span></button>`).join("")}</div></div></div>`
+      : "";
     charsEl.classList.toggle("solo", examMode);
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
     charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      ${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}
+      ${spCard || `${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${pxImg(next, "")}</button>`;
-    $("pick").innerHTML = `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
-    $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === i)));
+    $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "แตะการ์ดเพื่อเปิดดูตัวละครพิเศษ" : "เลือกตัวละครพิเศษที่จะเล่นด้วย"}: ${SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
+    $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === slotOf(i))));
     syncSize();
-    $("home").querySelector(".opts").hidden = !!c.tutorial;
-    $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : "GAME START";
+    $("home").querySelector(".opts").hidden = !!c.tutorial || (sp && sp !== "char");
+    $("btnNew").textContent = c.tutorial ? "OPEN BOOK" : sp && sp !== "char" ? "SELECT" : "GAME START";
   }
-  function choose(i) { unlockAudio(); settings.char = i; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
+  function choose(i) { unlockAudio(); if (CHARS[i].special && slotOf(i) !== slotOf(settings.char)) spView = "cover"; settings.char = i; save("charId", CHARS[settings.char].id); syncChars(true); blip(660); }
   const step = d => examMode || choose(PICK[(PICK.indexOf(settings.char) + d + L8) % L8]);
-  charsEl.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) step(+b.dataset.go); });
+  charsEl.addEventListener("click", e => {
+    const o = e.target.closest("[data-sp-i]"); if (o) { spView = "char"; choose(+o.dataset.spI); return; }
+    const sp = e.target.closest("[data-sp]"); if (sp) { unlockAudio(); spView = "pick"; syncChars(true); blip(660); return; }
+    const b = e.target.closest("[data-go]"); if (b) step(+b.dataset.go);
+  });
   $("faces").addEventListener("click", e => { const b = e.target.closest("button"); if (b) choose(+b.dataset.i); });
   let swipeX = null;
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
@@ -1646,6 +1703,7 @@
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
   async function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
+    if (CHARS[settings.char].special && spView !== "char" && !examMode) { spView = "pick"; syncChars(true); blip(660); return; }
     if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880);
     if (!(await ensureBrain(CHARS[settings.char]))) return; $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };

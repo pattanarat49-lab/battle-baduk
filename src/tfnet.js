@@ -14,7 +14,7 @@ function GoTFNet(tf) {
   // meta: parsed JSON layout, buf: ArrayBuffer of float16 weights
   // opts.profile: HumanSL profile to play as (one of meta.metaProfiles; the first by default)
   function build(meta, buf, opts) {
-    const profile = opts && opts.profile;
+    let profile = opts && opts.profile; // setProfile changes it: Sai and Takemiya share one download
     // converted one tensor at a time so a big net never holds a full float32 copy of itself in memory
     const halves = new Uint16Array(buf, 0, meta.bytes ? meta.bytes >> 1 : buf.byteLength >> 1);
     const W = {};
@@ -170,7 +170,8 @@ function GoTFNet(tf) {
     }
     // frees the weights (a big brain that failed its warmup on the GPU is rebuilt on WebAssembly)
     const dispose = () => { for (const k in W) W[k].dispose(); };
-    return { run, forward, dispose, name: meta.name };
+    const setProfile = p => { if (p && !W["meta." + p]) throw new Error("no HumanSL profile " + p); profile = p; };
+    return { run, forward, dispose, setProfile, getProfile: () => profile || (meta.metaProfiles || [])[0], name: meta.name };
   }
   return { build };
 }

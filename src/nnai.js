@@ -149,6 +149,7 @@ function GoNNAI(E, F, net) {
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
     if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (opts.era) await preferEra(n, moves, komi, base, root, s, opts.era, pdaFor);
+    if (opts.cosmic && moves.length < (opts.cosmic.until || 150)) await preferHigh(n, moves, komi, base, root, s, opts.cosmic, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
       const plain = await evaluate(n, moves, komi);
@@ -243,6 +244,30 @@ function GoNNAI(E, F, net) {
     for (let k = 0; k < cands.length; k++) {
       const ev = evs[k + 1];
       if (mine(ev) >= w0 - (era.margin || 0.04) && -ev.lead >= l0 - (era.points || 1.5)) { s.move = cands[k]; s.winrate = mine(ev); s.era = true; return; }
+    }
+  }
+
+  // Cosmic style (Takemiya): of the moves the search or the network rates near the best, play the one highest on the board
+  // (fourth line or above, toward the centre) when it costs at most cosmic.margin win rate and cosmic.points of lead
+  const height = (n, base, p) => { const [x, y] = base.xy(p); return Math.min(x, y, n - 1 - x, n - 1 - y); };
+  async function preferHigh(n, moves, komi, base, root, s, cosmic, pdaFor) {
+    if (s.move === PASS) return;
+    const h0 = height(n, base, s.move), seen = new Set([s.move]), cands = [];
+    const best = s.top[0] ? s.top[0].visits : 0;
+    for (const c of s.top) if (c.move !== PASS && c.visits >= Math.max(2, best * 0.1) && !seen.has(c.move)) { seen.add(c.move); cands.push({ move: c.move, prior: c.prior }); }
+    const order = [];
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
+    order.sort((a, b) => root.priors[b] - root.priors[a]);
+    for (const i of order.slice(0, 4)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
+    const high = cands.filter(c => height(n, base, c.move) >= 3 && height(n, base, c.move) > h0 && height(n, base, c.move) <= h0 + 3)
+      .sort((a, b) => height(n, base, b.move) - height(n, base, a.move) || b.prior - a.prior).slice(0, 3);
+    if (!high.length) return;
+    const evs = await evalMany(n, [moves.concat([s.move])].concat(high.map(c => moves.concat([c.move]))), komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    const w0 = mine(evs[0]), l0 = -evs[0].lead;
+    for (let k = 0; k < high.length; k++) {
+      const ev = evs[k + 1];
+      if (mine(ev) >= w0 - (cosmic.margin || 0.04) && -ev.lead >= l0 - (cosmic.points || 2)) { s.move = high[k].move; s.winrate = mine(ev); s.cosmic = true; return; }
     }
   }
 
