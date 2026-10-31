@@ -89,6 +89,10 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .card.pop { animation: pop .24s steps(3) both; }
 /* Sai: purple smoke (36-frame sprite, chars/sai_fx.jpg, black screened out) curls up both sides of a glowing frame */
 .fxwrap { position: relative; width: 100%; }
+/* Takemiya: the portrait itself animates, 11 frames of swirling smoke from the owner's sheet (chars/takemiya_fx.jpg) */
+.fxf { position: relative; width: 100%; }
+.fxf i { position: absolute; inset: 0; border-radius: 6px; background-size: 1100% 100%; background-repeat: no-repeat; animation: fxf 3.3s steps(11, jump-none) infinite; }
+@keyframes fxf { from { background-position: 0% 0; } to { background-position: 100% 0; } }
 #home { overflow-x: clip; }
 .fxwrap .card { position: relative; z-index: 1; animation: saiGlow 3s ease-in-out infinite; }
 .fxwrap .card.pop { animation: pop .24s steps(3) both, saiGlow 3s ease-in-out .24s infinite; }
@@ -145,7 +149,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
   .faces button img { width: 26px; height: 26px; }
   .faces .qf { width: 26px; height: 26px; font-size: 16px; }
 }
-@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink, .smoke, .fxwrap .card { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .card.pop, .px-start .blink, .smoke, .fxwrap .card, .fxf i { animation: none; } }
 
 /* ---------- tutorial: one lesson step at a time; phone stacks speech / task / board, wide puts the board left ---------- */
 .tutor { max-width: 1040px; margin: 0 auto; padding-bottom: 96px; }
