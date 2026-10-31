@@ -107,7 +107,8 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .bl-t { font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 20px; color: var(--fg); text-align: center; margin: 0; }
 .bl-bar { width: min(420px, 86vw); height: 18px; border: 3px solid #b9a2ff; background: #14102a; padding: 2px; }
 .bl-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6a4fd8, #c9b6ff); transition: width .2s; }
-.bl-p { font-family: var(--f-px), var(--f-body); font-size: 18px; color: #c9b6ff; margin: 0; }
+.bl-p { font-family: var(--f-px), var(--f-body); font-size: 28px; color: #c9b6ff; margin: 0; }
+.bl-s { font-size: 14px; color: #e6dcff; margin: 0; text-align: center; }
 .bl-n { font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
 .bl-x { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--muted); padding: 6px 16px; min-height: 0; }
 .home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
@@ -576,6 +577,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   <p class="bl-t" id="blTitle">กำลังโหลดสมอง AI</p>
   <div class="bl-bar"><i id="blFill"></i></div>
   <p class="bl-p" id="blPct">0%</p>
+  <p class="bl-s" id="blStep">กำลังดาวน์โหลด</p>
   <p class="bl-n" id="blNote">โหลดครั้งแรกเท่านั้น ครั้งต่อไปจะเริ่มได้ทันที</p>
   <button id="blCancel" class="bl-x">ยกเลิก</button>
 </section>

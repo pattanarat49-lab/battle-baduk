@@ -467,7 +467,7 @@
     return out.buffer;
   }
   // measured at startup; on a slow device searches send smaller batches so they stop close to their time limit
-  let evalMs = 50, checkEngine = null, engineRetries = 0;
+  let evalMs = 50, checkEngine = null, engineToWasm = null, engineRetries = 0;
   async function initEngine() {
     const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
     try {
@@ -529,6 +529,15 @@
       }
       // the GPU can stop computing correctly mid-game (a phone app switch can lose the WebGL context);
       // checkEngine re-runs the sanity test, and if it fails rebuilds the network on WebAssembly or the CPU
+      // a big brain that cannot run on this GPU (iPhone memory or precision) moves the whole engine to WebAssembly
+      engineToWasm = async () => {
+        if (backend === "wasm") return true;
+        const prev = backend;
+        if ((await useWasm()) && (await sane())) { label(); return true; }
+        await tf.setBackend(prev); await tf.ready(); backend = prev;
+        net = GoTFNet(tf).build(meta, buf); AI = GoNNAI(E, F, net);
+        return false;
+      };
       checkEngine = async () => {
         AI.clearCache();
         if (await sane()) return "ok";
@@ -979,53 +988,88 @@
   // the browser's Cache Storage, so later visits load them without the network.
   const brains = {}; // name -> { ai, promise, pct, error }
   // onBytes(n) reports progress while a part streams in, so the bar moves smoothly on a slow connection
-  async function fetchPart(url, onBytes) {
+  // fetchPart(url, dest, at, onBytes): writes the part straight into dest at offset `at` and returns its length, so a big
+  // brain is held in memory once (iPhone Safari fails large allocations: every extra 20-60 MB copy is a risk)
+  async function fetchPart(url, dest, at, onBytes) {
     let cache = null;
-    try { cache = await caches.open("baduk-brains-v1"); const hit = await cache.match(url); if (hit) return hit.arrayBuffer(); } catch (e) { cache = null; }
+    try {
+      cache = await caches.open("baduk-brains-v1");
+      const hit = await cache.match(url);
+      if (hit) { const b = new Uint8Array(await hit.arrayBuffer()); dest.set(b, at); return b.length; }
+    } catch (e) { cache = null; }
     const r = await fetch(url);
-    if (!r.ok) throw new Error(url + " " + r.status);
-    let buf;
+    if (!r.ok) throw new Error(url + " HTTP " + r.status);
+    let got = 0;
     if (r.body && r.body.getReader) {
-      const rd = r.body.getReader(), chunks = []; let got = 0;
-      for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; onBytes && onBytes(got); }
-      const all = new Uint8Array(got); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
-      buf = all.buffer;
-    } else buf = await r.arrayBuffer();
-    if (cache) try { await cache.put(url, new Response(buf.slice(0), { headers: { "content-type": "application/octet-stream" } })); } catch (e) {}
-    return buf;
+      const rd = r.body.getReader();
+      for (;;) { const { done, value } = await rd.read(); if (done) break; dest.set(value, at + got); got += value.length; onBytes && onBytes(got); }
+    } else { const b = new Uint8Array(await r.arrayBuffer()); dest.set(b, at); got = b.length; }
+    // the cache copy is a Blob view of the part (no extra JavaScript buffer); a full or missing cache only costs a re-download
+    if (cache) try { await cache.put(url, new Response(new Blob([dest.subarray(at, at + got)]), { headers: { "content-type": "application/octet-stream" } })); } catch (e) {}
+    return got;
   }
+  // st.stage: "dl" (parts downloading, st.pct 0..1 of the bytes), "build" (weights to the GPU/CPU), "warm" (first run),
+  // "wasm" (the GPU failed: rebuilding on WebAssembly); st.error carries the stage it failed in
+  const BRAIN_PART = 20 * 1024 * 1024;
+  // the status line exists only with a game on the board: a first visit with no saved game loads Sai's brain before any game
+  // (calling renderStatus then threw on the missing history, and the load failed after its first part)
+  const gameStatus = () => { if (board && history) renderStatus(); };
   function loadBrain(name) {
-    const st = brains[name] || (brains[name] = { ai: null, promise: null, pct: 0, error: null });
+    const st = brains[name] || (brains[name] = { ai: null, promise: null, pct: 0, stage: "dl", error: null });
     if (st.ai) return Promise.resolve(st.ai);
+    const step = (stage) => { st.stage = stage; gameStatus(); brainUI(st); };
     if (!st.promise) st.promise = (async () => {
-      const meta = await fetch(name + ".json").then(r => { if (!r.ok) throw new Error(name + ".json " + r.status); return r.json(); });
-      const parts = meta.parts || 0, out = new Uint8Array(meta.parts ? meta.parts * 20 * 1024 * 1024 : 0);
-      let buf, got = 0;
-      if (!parts) buf = await fetchPart(name + ".bin");
+      step("dl");
+      const meta = await fetch(name + ".json").then(r => { if (!r.ok) throw new Error(name + ".json HTTP " + r.status); return r.json(); });
+      const parts = meta.parts || 0;
+      let buf;
+      if (!parts) { const r = await fetch(name + ".bin"); if (!r.ok) throw new Error(name + ".bin HTTP " + r.status); buf = await r.arrayBuffer(); }
       else {
+        const out = new Uint8Array(parts * BRAIN_PART), total = meta.bytes || out.length;
+        st.mb = Math.round(total / 1e6);
+        let got = 0;
         for (let k = 0; k < parts; k++) {
-          const b = new Uint8Array(await fetchPart(name + ".bin." + k, n => { st.pct = Math.min(0.99, (got + n) / (meta.bytes || 1)); brainUI(st); }));
-          out.set(b, got); got += b.length; st.pct = got / (meta.bytes || got); renderStatus(); brainUI(st);
+          got += await fetchPart(name + ".bin." + k, out, got, n => { st.pct = Math.min(0.99, (got + n) / total); brainUI(st); });
+          st.pct = Math.min(1, got / total); gameStatus(); brainUI(st);
         }
-        buf = out.buffer.slice(0, got);
+        buf = out.buffer; // build() reads the tensors by offset, so the unused tail of the last part is never copied
       }
-      st.pct = 1; renderStatus(); brainUI(st);
+      st.pct = 1;
+      step("build");
       while (!engineReady) await new Promise(r => setTimeout(r, 200)); // the backend is chosen by initEngine, and Sai's search reads with its network
-      const big = GoTFNet(tf).build(meta, buf);
-      // a HumanSL brain chooses moves like its human profile, but its value head learned from human game results, so the
-      // search judges positions with the standard network: candidates in the style of the era, read with KataGo's eye
-      const net = !(meta.metaProfiles && meta.metaProfiles.length) ? big : {
-        name: big.name,
-        async run(batch) {
-          const [h, b] = await Promise.all([big.run(batch), AI.net.run(batch)]);
-          return h.map((r, i) => ({ policy: r.policy, value: b[i].value, score: b[i].score, own: b[i].own }));
-        }
+      await new Promise(r => setTimeout(r, 50)); // lets the screen show the step before the build blocks it
+      const make = async () => {
+        const big = GoTFNet(tf).build(meta, buf);
+        // a HumanSL brain chooses moves like its human profile, but its value head learned from human game results, so the
+        // search judges positions with the standard network: candidates in the style of the era, read with KataGo's eye
+        const net = !(meta.metaProfiles && meta.metaProfiles.length) ? big : {
+          name: big.name,
+          async run(batch) {
+            const [h, b] = await Promise.all([big.run(batch), AI.net.run(batch)]);
+            return h.map((r, i) => ({ policy: r.policy, value: b[i].value, score: b[i].score, own: b[i].own }));
+          }
+        };
+        const ai = GoNNAI(E, F, net);
+        step("warm");
+        await new Promise(r => setTimeout(r, 50));
+        try { await ai.evalMany(19, [[]], KOMI); } // first run compiles the GPU programs; NaN output throws here
+        catch (e) { try { big.dispose(); } catch (e2) {} throw e; }
+        return ai;
       };
-      const ai = GoNNAI(E, F, net);
-      await ai.evalMany(19, [[]], KOMI); // first run compiles the GPU programs
-      st.ai = ai; st.error = null;
+      let ai;
+      try { ai = await make(); }
+      catch (e) {
+        // iPhone GPUs can run out of memory or precision with a net this size: move to WebAssembly and build again
+        if (tf.getBackend() !== "webgl" || !engineToWasm) throw e;
+        console.warn("big brain failed on webgl, trying wasm", e);
+        step("wasm");
+        if (!(await engineToWasm())) throw e;
+        step("build"); await new Promise(r => setTimeout(r, 50));
+        ai = await make();
+      }
+      st.ai = ai; st.error = null; step("done");
       return ai;
-    })().catch(e => { st.promise = null; st.error = e; throw e; });
+    })().catch(e => { st.promise = null; st.error = e; e.stage = e.stage || st.stage; throw e; });
     return st.promise;
   }
   // the network a character plays with; falls back to the standard one if its own cannot be loaded
@@ -1042,10 +1086,15 @@
     const my = ++brainWait;
     hideScreens(); $("brainLoad").hidden = false; window.scrollTo(0, 0);
     $("blTitle").textContent = `กำลังโหลดสมองของ ${ch.name}`;
+    // the bar runs 0-90% while downloading, then steps through building and the first run
     const show = st => {
-      const p = Math.round((st ? st.pct : 0) * 100);
+      const stage = st ? st.stage : "dl", dl = st ? st.pct : 0;
+      const p = Math.round(stage === "dl" ? dl * 90 : ({ build: 92, wasm: 93, warm: 97, done: 100 })[stage] || 90);
       $("blFill").style.width = p + "%";
-      $("blPct").textContent = st && st.pct >= 1 ? "กำลังเตรียมสมอง…" : p + "%";
+      $("blPct").textContent = p + "%";
+      $("blStep").textContent = stage === "dl" ? (st && st.mb ? `กำลังดาวน์โหลด ${Math.round(dl * st.mb)} / ${st.mb} MB` : "กำลังดาวน์โหลด") : ({
+        build: "กำลังเตรียมสมอง…", wasm: "การ์ดจอรับไม่ไหว กำลังสลับไปใช้ CPU…", warm: "กำลังอุ่นเครื่อง…", done: "พร้อมแล้ว"
+      })[stage] || "";
     };
     brainUI = show; show(brains[ch.brain]);
     const cancelled = new Promise(r => { $("blCancel").onclick = () => r("cancel"); });
@@ -1053,7 +1102,11 @@
       if ((await Promise.race([loadBrain(ch.brain), cancelled])) === "cancel" || my !== brainWait) { brainWait++; showHome(); return false; }
       return true;
     } catch (e) {
-      console.warn(e); alert("โหลดสมองไม่สำเร็จ ลองใหม่อีกครั้ง (ตรวจการเชื่อมต่ออินเทอร์เน็ต)"); showHome(); return false;
+      // the stage and the browser's message tell a network failure from a device that cannot hold the net
+      console.warn(e);
+      const where = { dl: "ระหว่างดาวน์โหลด", build: "ระหว่างเตรียมสมอง", warm: "ระหว่างอุ่นเครื่อง", wasm: "ระหว่างสลับไปใช้ CPU" }[e.stage] || "";
+      alert(`โหลดสมองไม่สำเร็จ${where ? " " + where : ""}\n${(e && (e.message || e.name)) || e}\n\nลองใหม่อีกครั้ง`);
+      showHome(); return false;
     } finally { brainUI = () => {}; $("brainLoad").hidden = true; }
   }
   const brainLoading = () => { const ch = board && CHARS[gameChar]; const st = ch && ch.brain && brains[ch.brain]; return st && !st.ai && st.promise ? st : null; };
