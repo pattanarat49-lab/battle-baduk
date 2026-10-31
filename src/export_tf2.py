@@ -42,7 +42,7 @@ ACTS = {"ACTIVATION_RELU": "relu", "ACTIVATION_MISH": "mish", "ACTIVATION_SILU":
 def parse(path):
     r = Reader(gzip.open(path).read())
     name = r.tok(); ver = r.int()
-    assert 8 <= ver <= 15, "model version %d not supported" % ver
+    assert 8 <= ver <= 17, "model version %d not supported" % ver
     nin = r.int(); nglob = r.int()
     post = dict(scoreMean=20.0, lead=20.0)
     if ver >= 13:
@@ -51,6 +51,9 @@ def parse(path):
         meta = r.int(); assert meta == 0, "SGF-metadata (human) nets are not supported here"
         extra = [r.int() for _ in range(7)]
         assert all(e in (0, 1) for e in extra[:2]) and not any(extra[2:]), extra
+        prefer = extra[:2]
+    else:
+        prefer = [0, 0]
 
     tensors, chunks = [], []
     off = [0]
@@ -87,6 +90,11 @@ def parse(path):
     def matbias(nm):
         r.tok(); c = r.int(); add(nm, r.floats(c))
 
+    def tnorm(nm):
+        r.tok(); c = r.int(); eps = r.float(); add(nm, r.floats(c)); norms[nm] = eps
+
+    norms, rope32 = {}, {}
+
     def stack(n, prefix):
         out = []
         for i in range(n):
@@ -102,6 +110,37 @@ def parse(path):
                 if kind == "gpool_block":
                     conv(p + "gconv"); bn(p + "gbn"); b["gAct"] = act(); matmul(p + "gmm")
                 bn(p + "mid"); b["midAct"] = act(); conv(p + "conv2")
+            elif kind == "transformer_attention_block":
+                nh = r.int(); nkv = r.int(); qd = r.int(); vd = r.int(); rope = r.int(); lrope = r.int()
+                b.update(heads=nh, kvHeads=nkv, qDim=qd, vDim=vd)
+                tnorm(p + "ln")
+                for k in ("q", "k", "v", "o"):
+                    matmul(p + k)
+                if rope:
+                    P = qd // 2
+                    if lrope:
+                        r.tok(); hk = r.int(); pp = r.int(); two = r.int(); assert hk == nkv and pp == P and two == 2
+                        fr = r.floats(nkv * P * 2).reshape(nkv, P, 2)
+                        ang = np.array([[[x * fr[h, q, 0] + y * fr[h, q, 1] for q in range(P)] for h in range(nkv)]
+                                        for y in range(19) for x in range(19)], np.float64)  # [361, kv, P]
+                    else:
+                        r.tok(); theta = r.float(); half = P // 2; ang1 = np.zeros((361, P))
+                        for q in range(P):
+                            f = 1.0 / theta ** (2 * (q % half) / (qd / 2))
+                            for xy in range(361):
+                                ang1[xy, q] = (xy // 19 if q < half else xy % 19) * f
+                        ang = np.repeat(ang1[:, None, :], nkv, axis=1)
+                    # RoPE tables are kept in float32 (stored as two float16 halves would lose angle precision)
+                    rope32[p + "cos"] = np.cos(ang).astype(np.float32); rope32[p + "sin"] = np.sin(ang).astype(np.float32)
+                    b["rope"] = True
+            elif kind == "transformer_ffn_block":
+                c = r.int(); fc = r.int(); swi = r.int()
+                tnorm(p + "ln"); matmul(p + "l1")
+                if swi:
+                    matmul(p + "gate")
+                matmul(p + "l2")
+                b.update(swiglu=bool(swi))
+                assert swi, "only SwiGLU feed-forward blocks are supported"
             else:
                 raise ValueError("unsupported block kind " + kind)
             out.append(b)
@@ -109,15 +148,24 @@ def parse(path):
 
     # trunk
     r.tok(); nblocks = r.int(); r.int(); r.int(); r.int(); r.int(); r.int()
+    norm = 0
     if ver >= 15:
-        norm = r.int(); assert norm == 0, "only standard batchnorm trunks are supported"
+        norm = r.int(); assert norm in (0, 1), norm
         assert not any(r.int() for _ in range(5))
     conv("init.conv"); matmul("init.mm")
     tree = stack(nblocks, "b")
-    bn("tip"); tipAct = act()
+    tipNorm = None
+    if norm == 0:
+        bn("tip")
+    else:
+        r.tok(); c = r.int(); eps = r.float(); spatial = r.int(); cg = r.int(); assert cg == 0
+        add("tip.g", r.floats(c)); add("tip.b", r.floats(c)); tipNorm = {"eps": eps, "spatial": bool(spatial)}
+    tipAct = act()
 
     # policy head
     r.tok()
+    if ver >= 17:
+        r.int(); assert not any(r.int() for _ in range(3))
     conv("p.p1"); conv("p.g1"); bn("p.g1bn"); g1Act = act(); matmul("p.gmm"); bn("p.p1bn"); p1Act = act()
     pch = conv("p.p2"); matmul("p.pass")
     passAct = None
@@ -125,14 +173,24 @@ def parse(path):
         matbias("p.passb"); passAct = act(); matmul("p.pass2")
     # value head
     r.tok()
+    if ver >= 17:
+        assert not any(r.int() for _ in range(3))
     conv("v.v1"); bn("v.v1bn"); v1Act = act(); matmul("v.v2"); matbias("v.v2b"); v2Act = act()
     matmul("v.v3"); matbias("v.v3b"); matmul("v.sv3"); matbias("v.sv3b"); conv("v.own")
 
     layout = {"name": name, "version": ver, "format": 2, "dtype": "float16", "tree": tree,
               "acts": {"tip": tipAct, "g1": g1Act, "p1": p1Act, "pass": passAct, "v1": v1Act, "v2": v2Act},
-              "policyChannels": pch, "scoreMul": post["scoreMean"] / 20.0, "leadMul": post["lead"] / 20.0,
+              "policyChannels": pch, "tipNorm": tipNorm, "norms": norms, "prefer": prefer, "scoreMul": post["scoreMean"] / 20.0, "leadMul": post["lead"] / 20.0,
               "tensors": tensors}
-    return layout, b"".join(chunks), off[0]
+    # float32 extras (RoPE tables) go after the float16 weights, 4-byte aligned
+    data = b"".join(chunks)
+    if len(data) % 4:
+        data += b"\0" * (4 - len(data) % 4)
+    extra = []
+    for nm, a in rope32.items():
+        extra.append({"name": nm, "shape": list(a.shape), "byteOffset": len(data)}); data += np.ascontiguousarray(a).tobytes()
+    layout["f32"] = extra
+    return layout, data, off[0]
 
 
 def main(src, dst):
