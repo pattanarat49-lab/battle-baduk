@@ -171,7 +171,7 @@ function cleanState(s) {
     moves: Array.isArray(s.moves) && s.moves.length <= 1000 && s.moves.every(m => Number.isInteger(m) && m >= -1 && m < s.size * s.size) ? s.moves : null };
 }
 
-const MODES = new Set(["analysis", "tsumego"]);
+const MODES = new Set(["analysis", "tsumego", "photo"]); // photo: a board picture uploaded in Analysis
 function clean(b) {
   if (b && b.type === "open") { const player = id(b.player); return player && MODES.has(b.mode) ? { type: "open", player, mode: b.mode } : null; }
   if (!b || !["start", "move", "end"].includes(b.type)) return null;
@@ -252,9 +252,9 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <h1>สถิติ Baduk Battle</h1>
 <div class="tiles"><div class="tile"><b>${s.total.games}</b><span>เกมที่เริ่มเล่นทั้งหมด</span></div><div class="tile"><b>${s.total.players}</b><span>ผู้เล่น (นับตามเครื่อง)</span></div></div>
 <section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
-<section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)"], ["tsumego", "Tsumego (โจทย์)"]].map(([k, t]) => { const m = (s.modes || {})[k] || {};
-  return `<div class="tile"><b>${m.players || 0} คน</b><span>${t} · เปิดทั้งหมด ${m.opens || 0} ครั้ง</span></div>`; }).join("")}</div>
-<p class="muted">นับตั้งแต่ 31 ต.ค. 2026 · นับคนตามเครื่อง · เปิดซ้ำในหน้าเดิมโดยไม่รีเฟรชนับครั้งเดียว</p></section>
+<section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)", "เปิด"], ["tsumego", "Tsumego (โจทย์)", "เปิด"], ["photo", "อัปโหลดรูปกระดาน (Analysis)", "อัปรูป"]].map(([k, t, v]) => { const m = (s.modes || {})[k] || {};
+  return `<div class="tile"><b>${m.players || 0} คน</b><span>${t} · ${v}ทั้งหมด ${m.opens || 0} ครั้ง</span></div>`; }).join("")}</div>
+<p class="muted">นับตั้งแต่ 31 ต.ค. 2026 · นับคนตามเครื่อง · เปิดซ้ำในหน้าเดิมโดยไม่รีเฟรชนับครั้งเดียว · อัปรูปนับเริ่ม 31 ต.ค. และนับทุกครั้งที่อัป</p></section>
 <section><h2>สอบวัดระดับ (ฮิคารุ)</h2>
 <div class="tiles"><div class="tile"><b>${s.exams.tests || 0}</b><span>สอบจบแล้ว (${s.exams.players || 0} คน)</span></div>
 <div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เกมยาวอย่างน้อย 100 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
