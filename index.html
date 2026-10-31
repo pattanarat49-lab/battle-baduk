@@ -2756,7 +2756,7 @@ const Analysis = (function () {
     const stars = n === 19 ? [3, 9, 15] : n === 13 ? [3, 6, 9] : [2, 4, 6];
     for (const a of stars) for (const c of stars) { if (n === 9 && (a === 4) !== (c === 4)) continue; s.push(`<circle cx="${a}" cy="${c}" r=".09" fill="#4a2a12"/>`); }
     for (let k = 0; k < n; k++) s.push(`<text x="${k}" y="-.62" class="an-co">${LETTERS[k]}</text><text x="-.68" y="${k}" class="an-co">${n - k}</text>`);
-    if (ST.own) for (const p of b.pts) {
+    if (ST.own && ST.auto) for (const p of b.pts) {
       if (b.color[p] !== 0) continue;
       const v = ST.own.own[oi(b, p)] * (ST.own.pla === BLACK ? 1 : -1); if (Math.abs(v) < 0.35) continue;
       const [x, y] = xy(p), k = .12 + .14 * Math.min(1, Math.abs(v));
@@ -2775,7 +2775,7 @@ const Analysis = (function () {
         const [x, y] = xy(p), c = i % 2 ? 3 - c0 : c0;
         s.push(`<circle cx="${x}" cy="${y}" r=".46" fill="url(#${c === BLACK ? "anGb" : "anGw"})" opacity=".82"/><text x="${x}" y="${y + .02}" class="an-pvn" fill="${c === BLACK ? "#f3ead8" : "#1a1208"}">${i + 1}</text>`);
       });
-    } else {
+    } else if (ST.auto) { // ANALYSIS OFF leaves a clean board; ON brings the marks back
       const sum = ST.running ? ST.live : ST.res && ST.res.key === keyOf(cur()) ? ST.res.s : null;
       const list = ST.running ? (sum ? sum.top.slice(0, 10) : []) : ST.res && ST.res.key === keyOf(cur()) ? ST.res.cands : [];
       const bestLead = list.length ? list[0].lead : 0;
@@ -2837,7 +2837,8 @@ const Analysis = (function () {
     $("anPass").onclick = () => play(PASS);
     $("anGo").onclick = () => {
       if (ST.auto) { ST.auto = false; render(); return; }
-      ST.auto = true; render(); analyze(true);
+      ST.auto = true; render();
+      if (!(ST.res && ST.res.key === keyOf(cur()))) analyze(true);
     };
     $("anBack").onclick = () => { close(); api.onBack && api.onBack(ST.from); };
     $("anel").addEventListener("click", e => {
@@ -2847,6 +2848,8 @@ const Analysis = (function () {
       const label = t.textContent;
       if (act === "photo") { $("anFile").value = ""; $("anFile").click(); return; }
       if (act !== "back" && act !== "last" && !act.startsWith("new")) bubble(esc(label), "me");
+      // a question about the marks turns them back on
+      if (act === "go" || act === "why" || act === "deep" || act === "status" || act.startsWith("cand")) { if (!ST.auto) { ST.auto = true; render(); } }
       if (act === "go") analyze(true);
       else if (act === "why") explainWhy();
       else if (act === "deep") { ST.deep = (ST.deep || 1) * 2; ST.res = null; analyze(true); }
@@ -2891,7 +2894,7 @@ const Analysis = (function () {
     start({ n: pos.n, moves: setup, setup: true });
     $("anChat").innerHTML = "";
     say(`อ่านจากรูปแล้วครับ กระดาน ${pos.n}×${pos.n} ดำ ${nb} เม็ด ขาว ${nw} เม็ด ตาต่อไป<b>${CN[pos.toPlay]}</b>เดิน เดี๋ยวผมดูให้ว่าควรเดินตรงไหน ถ้าหมากบนกระดานไม่ตรงกับรูป กด 📷 เพื่ออ่านใหม่ได้ครับ`);
-    ST.auto = false; analyze(true);
+    ST.auto = true; analyze(true);
   }
   function close() { tok++; $("anel").hidden = true; document.body.classList.remove("analysing"); }
   function start(g) {
