@@ -1750,9 +1750,11 @@ function GoNNAI(E, F, net) {
     const order = [];
     for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
     order.sort((a, b) => root.priors[b] - root.priors[a]);
-    for (const i of order.slice(0, 4)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
-    const high = cands.filter(c => height(n, base, c.move) >= 3 && height(n, base, c.move) > h0 && height(n, base, c.move) <= h0 + 3)
-      .sort((a, b) => height(n, base, b.move) - height(n, base, a.move) || b.prior - a.prior).slice(0, 3);
+    for (const i of order.slice(0, cosmic.pool || 4)) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push({ move: m, prior: root.priors[i] }); } }
+    // higher is better up to the sixth line; past that the network's own liking decides (tengen is not the goal)
+    const hs = c => Math.min(5, height(n, base, c.move));
+    const high = cands.filter(c => c.prior >= 0.005 && height(n, base, c.move) >= 3 && height(n, base, c.move) > h0)
+      .sort((a, b) => hs(b) - hs(a) || b.prior - a.prior).slice(0, 4);
     if (!high.length) return;
     const evs = await evalMany(n, [moves.concat([s.move])].concat(high.map(c => moves.concat([c.move]))), komi, pdaFor);
     const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
@@ -3447,7 +3449,7 @@ const Tsumego = (() => {
     // special character: the same HumanSL download as Sai, set to the 1980 professionals (Takemiya's prime), with the cosmic
     // style on top: sanrensei openings, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1980", opening: "sanrensei",
-      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.04, points: 2 } },
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.1, points: 5, pool: 8, until: 200 } },
       bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมด้วยซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน ใช้สมองมืออาชีพยุค 1980 เล่นเต็มกำลังทุกตา ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes

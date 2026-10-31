@@ -71,7 +71,7 @@
     // special character: the same HumanSL download as Sai, set to the 1980 professionals (Takemiya's prime), with the cosmic
     // style on top: sanrensei openings, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, special: true, brain: "human", profile: "proyear_1980", opening: "sanrensei",
-      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.04, points: 2 } },
+      search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.04, points: 1.5 }, cosmic: { margin: 0.1, points: 5, pool: 8, until: 200 } },
       bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากอวกาศ\" (Cosmic style) เปิดเกมด้วยซันเร็นเซ เดินหมากสูงสร้างเขตใหญ่กลางกระดาน ใช้สมองมืออาชีพยุค 1980 เล่นเต็มกำลังทุกตา ใช้สมองชุดเดียวกับไซ ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
