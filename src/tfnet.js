@@ -168,7 +168,9 @@ function GoTFNet(tf) {
       });
       return res;
     }
-    return { run, forward, name: meta.name };
+    // frees the weights (a big brain that failed its warmup on the GPU is rebuilt on WebAssembly)
+    const dispose = () => { for (const k in W) W[k].dispose(); };
+    return { run, forward, dispose, name: meta.name };
   }
   return { build };
 }
