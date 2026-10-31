@@ -19,7 +19,7 @@ env:
   URL: ${{ github.event_name == 'push' && 'https://github.com/lightvector/KataGo/releases/download/v1.15.0/b18c384nbt-humanv0.bin.gz' || inputs.url }}
   MATCH: ${{ inputs.match || '' }}
   OUT: ${{ inputs.out || 'human' }}
-  HUMAN: ${{ github.event_name == 'push' && 'proyear_1980' || inputs.human }}
+  HUMAN: ${{ github.event_name == 'push' && 'proyear_1995' || inputs.human }}
 jobs:
   fetch:
     runs-on: ubuntu-latest

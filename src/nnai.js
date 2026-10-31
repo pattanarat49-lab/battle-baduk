@@ -149,6 +149,7 @@ function GoNNAI(E, F, net) {
     await avoidEdge(n, moves, komi, base, root, s, pdaFor);
     if (opts.fight) await preferFight(n, moves, komi, base, root, s, opts.fight, pdaFor);
     if (opts.era) await preferEra(n, moves, komi, base, root, s, opts.era, pdaFor);
+    if (opts.solid) await preferSolid(n, moves, komi, base, root, s, opts.solid, pdaFor);
     if (opts.cosmic && moves.length < (opts.cosmic.until || 150)) await preferHigh(n, moves, komi, base, root, s, opts.cosmic, pdaFor);
     if (pdaVal || sw) {
       // style settings bias the search values, so report an unbiased evaluation for display
@@ -244,6 +245,40 @@ function GoNNAI(E, F, net) {
     for (let k = 0; k < cands.length; k++) {
       const ev = evs[k + 1];
       if (mine(ev) >= w0 - (era.margin || 0.04) && -ev.lead >= l0 - (era.points || 1.5)) { s.move = cands[k]; s.winrate = mine(ev); s.era = true; return; }
+    }
+  }
+
+  // Solid style (Lee Changho): a move scores for joining or touching its own stones, for linking two of its groups and
+  // for the liberties of the shape it makes; touching the opponent and a short-of-liberties shape count against it
+  function solidScore(base, p) {
+    const me = base.toPlay, op = me === E.BLACK ? E.WHITE : E.BLACK;
+    if (!base.isLegal(p, me)) return -99;
+    let sc = 0; const mine = new Set();
+    for (const d of base.dirs) { const c = base.color[p + d]; if (c === me) { sc += 2; mine.add(base.head[p + d]); } else if (c === op) sc -= 1; }
+    for (const d of base.diag) if (base.color[p + d] === me) sc += 1;
+    if (mine.size >= 2) sc += 3; // connects two groups
+    const b = new Board(base.n); b.copyFrom(base); b.play(p);
+    const l = b.libs(b.head[p], 4);
+    return sc + (l >= 4 ? 2 : l === 3 ? 1 : l === 1 ? -6 : 0);
+  }
+  async function preferSolid(n, moves, komi, base, root, s, solid, pdaFor) {
+    if (s.move === PASS || moves.length < 6) return;
+    const seen = new Set([s.move]), cands = [];
+    const best = s.top[0] ? s.top[0].visits : 0;
+    for (const c of s.top) if (c.move !== PASS && c.visits >= Math.max(2, best * 0.1) && !seen.has(c.move)) { seen.add(c.move); cands.push(c.move); }
+    const order = [];
+    for (let i = 0; i < root.slots.length; i++) if (root.slots[i] < AREA) order.push(i);
+    order.sort((a, b) => root.priors[b] - root.priors[a]);
+    for (const i of order.slice(0, solid.pool || 5)) if (root.priors[i] >= 0.01) { const m = slotToPoint(base, root.slots[i]); if (!seen.has(m)) { seen.add(m); cands.push(m); } }
+    const s0 = solidScore(base, s.move);
+    const better = cands.map(m => ({ m, sc: solidScore(base, m) })).filter(c => c.sc >= s0 + 2).sort((a, b) => b.sc - a.sc).slice(0, 3);
+    if (!better.length) return;
+    const evs = await evalMany(n, [moves.concat([s.move])].concat(better.map(c => moves.concat([c.m]))), komi, pdaFor);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the opponent's side
+    const w0 = mine(evs[0]), l0 = -evs[0].lead;
+    for (let k = 0; k < better.length; k++) {
+      const ev = evs[k + 1];
+      if (mine(ev) >= w0 - (solid.margin || 0.03) && -ev.lead >= l0 - (solid.points || 1)) { s.move = better[k].m; s.winrate = mine(ev); s.solid = true; return; }
     }
   }
 

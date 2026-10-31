@@ -22,6 +22,7 @@ function GoTFNet(tf) {
       const size = t.shape.reduce((a, b) => a * b, 1);
       W[t.name] = tf.tensor(halfToFloat(halves.subarray(t.offset, t.offset + size)), t.shape, "float32");
     }
+    for (const p in meta.metaExtra || {}) W["meta." + p] = tf.tensor(Float32Array.from(meta.metaExtra[p]), [meta.metaExtra[p].length], "float32");
     for (const t of meta.f32 || []) W[t.name] = tf.tensor(new Float32Array(buf, t.byteOffset, t.shape.reduce((a, b) => a * b, 1)), t.shape, "float32");
     const conv = (x, name) => tf.conv2d(x, W[name], 1, "same");
     const actFn = (y, a) => a === "mish" ? tf.mul(y, tf.tanh(tf.softplus(y))) : a === "silu" ? tf.mul(y, tf.sigmoid(y)) : a === "id" ? y : tf.relu(y);

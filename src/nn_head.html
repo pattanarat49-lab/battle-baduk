@@ -70,12 +70,12 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .cthai { font-family: var(--f-display); font-weight: 700; font-size: 15px; color: var(--accent); margin-top: -4px; }
 .sp-head { border: 0; cursor: pointer; }
 .sp-cover { cursor: pointer; }
-.sp-faces { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
-.sp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.sp-faces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+.sp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
 .sp-opt { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; background: var(--bg-2); border: 3px solid var(--wood-dark); cursor: pointer; color: var(--fg); }
 .sp-opt:hover, .sp-opt:focus-visible { border-color: var(--accent); }
-.sp-opt b { font-family: var(--f-px); font-size: clamp(16px, 4.5vw, 22px); line-height: 1; }
-.sp-opt span { font-size: 12px; color: var(--accent); }
+.sp-opt b { font-family: var(--f-px); font-size: clamp(11px, 3.2vw, 18px); line-height: 1.1; text-align: center; }
+.sp-opt span { font-size: 11px; color: var(--accent); text-align: center; }
 .pxp { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; box-shadow: 0 0 0 3px var(--wood-dark); }
 .crank { font-family: var(--f-px); font-weight: 700; font-size: 15px; color: var(--accent-fg); background: var(--accent); padding: 4px 12px; }
 .card.pop { animation: pop .24s steps(3) both; }
