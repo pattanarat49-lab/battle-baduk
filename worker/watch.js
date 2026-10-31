@@ -64,7 +64,7 @@ function renderPanels() {
   if (!st) return;
   const live = !st.ended;
   for (const [col, id] of [[1, "pB"], [2, "pW"]]) {
-    const name = col === st.human ? "ผู้เล่น" : (NAMES[st.char] || "AI");
+    const name = st.match ? NAMES[col === 1 ? st.match.b : st.match.w] : col === st.human ? "ผู้เล่น" : (NAMES[st.char] || "AI");
     const [c, s] = clockText(st.clocks && st.clocks[col - 1], live && st.toPlay === col);
     const el = document.getElementById(id);
     el.className = "p" + (live && st.toPlay === col ? " turn" : "");
@@ -99,9 +99,11 @@ function renderInfo() {
   const s = document.getElementById("status");
   if (!st) return;
   if (st.ended) {
-    const who = st.how === "cancel" ? "ยกเลิก ขออภัยด้วยครับ" : st.winner === "human" ? "ผู้เล่นชนะ" : st.winner === "ai" ? (NAMES[st.char] || "AI") + " ชนะ" : "จบเกม";
-    s.innerHTML = '<span class="done">' + who + (st.how && st.how !== "cancel" ? " (" + HOW[st.how] + ")" : "") + '</span> · ' + st.moveNo + ' ตา';
-  } else s.innerHTML = '<span class="live">● กำลังเล่น</span> · ตาที่ ' + (st.moveNo + 1) + ' · ตา' + (st.toPlay === st.human ? "ผู้เล่น" : (NAMES[st.char] || "AI"));
+    const r = st.result, who = r ? NAMES[r.winner === "b" ? st.match.b : st.match.w] + " ชนะ" + (r.margin !== null ? " " + (r.how === "score" ? "" : "~") + r.margin + " แต้ม" : "")
+      : st.how === "cancel" ? "ยกเลิก ขออภัยด้วยครับ" : st.winner === "human" ? "ผู้เล่นชนะ" : st.winner === "ai" ? (NAMES[st.char] || "AI") + " ชนะ" : "จบเกม";
+    const how = r ? r.how : st.how;
+    s.innerHTML = '<span class="done">' + who + (how && how !== "cancel" ? " (" + HOW[how] + ")" : "") + '</span> · ' + st.moveNo + ' ตา';
+  } else s.innerHTML = '<span class="live">● กำลังเล่น</span>' + (st.match ? ' · AI ทดสอบ' : '') + ' · ตาที่ ' + (st.moveNo + 1) + ' · ตา' + (st.match ? NAMES[st.toPlay === 1 ? st.match.b : st.match.w] : st.toPlay === st.human ? "ผู้เล่น" : (NAMES[st.char] || "AI"));
   document.getElementById("wr").style.width = st.winB + "%";
   const lead = typeof st.leadB === "number" && st.moveNo ? " · " + (st.leadB >= 0 ? "ดำ" : "ขาว") + " นำ ~" + Math.abs(st.leadB).toFixed(1) + " แต้ม" : "";
   document.getElementById("wrl").textContent = "โอกาสชนะ ดำ " + st.winB + "% · ขาว " + (100 - st.winB) + "%" + lead + " (ตามที่ AI ประเมิน)";

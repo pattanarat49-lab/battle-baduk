@@ -3954,6 +3954,17 @@ const Tsumego = (() => {
   }
   let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0, examBehind = 0;
+  // AI test match (?match=black,white, character ids): both sides are characters and the page plays the game by itself,
+  // sending it to the stats page as a match (kept apart from players' games). Run by .github/workflows/ai-match.yml
+  const MATCH = (() => {
+    const m = /[?&]match=([a-z]+),([a-z]+)/.exec(location.search), b = m ? CHARS.findIndex(c => c.id === m[1]) : -1, w = m ? CHARS.findIndex(c => c.id === m[2]) : -1;
+    return b >= 0 && w >= 0 && !CHARS[b].tutorial && !CHARS[w].tutorial ? { [BLACK]: b, [WHITE]: w, hope: {} } : null;
+  })();
+  // the side to move plays as "ai": swap which character that is (and its resign count) whenever the turn changes
+  function matchTurn() {
+    if (!MATCH || !board || over || scoring || ai === board.toPlay) return;
+    MATCH.hope[ai] = hopeless; ai = board.toPlay; human = 3 - ai; gameChar = MATCH[ai]; hopeless = MATCH.hope[ai] || 0;
+  }
   let reviewAt = null, reviewBoard = null, exam = null, ponder = null; // after the game: which move the board shows (null = final position)
   let AI = null, gen = 0, engineReady = false;
 
@@ -4063,7 +4074,8 @@ const Tsumego = (() => {
       engineReady = true;
       label();
       console.log("warmup", Math.round(t1 - t0), "ms; per eval", ms, "ms");
-      if (board) { render(); maybeAI(); startPonder(); }
+      if (MATCH) startMatch();
+      else if (board) { render(); maybeAI(); startPonder(); }
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
@@ -4170,8 +4182,9 @@ const Tsumego = (() => {
 
   // ---------- anonymous play statistics, stored by the site's Worker at /api/event ----------
   const host = location.hostname;
-  const STATS_URL = /workers\.dev$|^localhost$|^127\.0\.0\.1$/.test(host) ? "/api/event"
-    : /github\.io$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev/api/event" : null;
+  // a test match run from a local copy (GitHub Actions) still reports to the live stats page
+  const STATS_URL = /workers\.dev$/.test(host) ? "/api/event" : /^localhost$|^127\.0\.0\.1$/.test(host) && !MATCH ? "/api/event"
+    : /github\.io$|^localhost$|^127\.0\.0\.1$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev/api/event" : null;
   const rid = () => (Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).replace(/[^a-z0-9]/g, "");
   let playerId = load("pid", null);
   if (!playerId) { playerId = rid(); save("pid", playerId); }
@@ -4179,7 +4192,8 @@ const Tsumego = (() => {
   function track(ev) {
     if (!STATS_URL || !gameId) return;
     try {
-      const body = JSON.stringify(Object.assign({ player: playerId, game: gameId, char: CHARS[gameChar].id }, ev));
+      const body = JSON.stringify(Object.assign({ player: playerId, game: gameId, char: CHARS[gameChar].id },
+        MATCH ? { player: "aimatch", char: CHARS[MATCH[BLACK]].id, match: { b: CHARS[MATCH[BLACK]].id, w: CHARS[MATCH[WHITE]].id } } : null, ev));
       if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
@@ -4196,7 +4210,7 @@ const Tsumego = (() => {
     } catch (e) {}
   }
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
-  const LIVE_EVERY = 60000;
+  const LIVE_EVERY = MATCH ? 20000 : 60000; // a test match has no player to wait on: every 20 s
   let liveAt = 0, liveTimer = null;
   function liveUpdate() {
     if (!STATS_URL || liveTimer) return;
@@ -4208,6 +4222,15 @@ const Tsumego = (() => {
     }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
   function reportEnd(humanWon, how, margin) {
+    if (MATCH) {
+      if (gameReported) return;
+      gameReported = true;
+      const win = humanWon ? human : ai, lead = Math.abs(Math.round(leadBlack * 10) / 10);
+      // a resignation has no count: the margin is the AI's estimate of the lead at that point
+      window.MATCH_RESULT = { black: CHARS[MATCH[BLACK]].id, white: CHARS[MATCH[WHITE]].id, winner: win === BLACK ? "b" : "w",
+        how, margin: margin === undefined ? lead : margin, estimated: margin === undefined, moves: history.length, game: gameId };
+      return track({ type: "end", winner: win === BLACK ? "b" : "w", how, margin: window.MATCH_RESULT.margin, moves: history.length, state: snapshot() });
+    }
     save("game", null);
     save("lastGame", { n, moves: history.slice(), human, at: Date.now() }); // for the analysis board on the home screen
     if (gameReported) return;
@@ -4286,9 +4309,8 @@ const Tsumego = (() => {
     if (CHARS[gameChar].book) loadBook(CHARS[gameChar]); // fetch the opening book
     $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
-    const ch = CHARS[gameChar];
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
-      const me = col === human;
+      const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
       $("n" + k).textContent = me ? "คุณ" : ch.name;
       $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
@@ -4389,7 +4411,7 @@ const Tsumego = (() => {
   // the game in progress survives a page refresh: it is kept in localStorage until it ends or the player leaves it
   const KEEP_MS = 6 * 36e5; // an unfinished game is kept in the browser for 6 hours
   function saveGame() {
-    if (!board) return;
+    if (!board || MATCH) return;
     if (over || scoring) { save("game", null); return; }
     save("game", { char: CHARS[gameChar].id, n, human, handi, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
@@ -4688,6 +4710,7 @@ const Tsumego = (() => {
   // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
   const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
   async function maybeAI() {
+    matchTurn();
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
     const my = ++gen; thinking = true; think = null; render();
     const moves = history.slice(), started = Date.now();
@@ -5233,6 +5256,11 @@ const Tsumego = (() => {
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
+  async function startMatch() {
+    for (const c of [BLACK, WHITE]) { const ch = CHARS[MATCH[c]]; if (!(await ensureBrain(ch))) return; if (ch.book) await loadBook(ch); }
+    settings.char = MATCH[BLACK]; settings.human = WHITE; settings.size = 19; save("size", 19);
+    hideScreens(); $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); newGame();
+  }
   async function startGame() { if (CHARS[settings.char].tutorial) return openTutorial();
     if (CHARS[settings.char].special && spView !== "char" && !examMode) { spView = "pick"; syncChars(true); blip(660); return; }
     if (pausedGame() && !confirm("มีเกมที่เล่นค้างไว้ในหน้าโปรไฟล์ เริ่มเกมใหม่จะทิ้งเกมนั้น ตกลงไหม?")) return; blip(880);

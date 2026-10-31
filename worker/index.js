@@ -44,6 +44,9 @@ export class Stats extends DurableObject {
     // Analysis and Tsumego: how many times they were opened and by how many players (one row per mode, one per player and mode)
     this.sql.exec("CREATE TABLE IF NOT EXISTS mode_tally (mode TEXT PRIMARY KEY, opens INTEGER, players INTEGER)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS mode_players (player TEXT, mode TEXT, PRIMARY KEY (player, mode))");
+    // AI test matches (two characters, run by .github/workflows/ai-match.yml): kept out of the players' totals
+    this.sql.exec("CREATE TABLE IF NOT EXISTS matches (game TEXT PRIMARY KEY, b TEXT, w TEXT, winner TEXT, how TEXT, margin REAL, moves INTEGER, ended INTEGER)");
+    this.sql.exec("CREATE INDEX IF NOT EXISTS matches_ended ON matches (ended)");
     if ((this.sql.exec("SELECT v FROM meta WHERE k = 'tally'").toArray()[0]?.v || 0) < 1) ctx.storage.transactionSync(() => this.rebuildTally());
   }
   // one-off upgrade of older data: fills in exam fields added later, then counts every stored game into the running totals
@@ -81,6 +84,7 @@ export class Stats extends DurableObject {
   // latest position of a game, kept for spectators; old rows are dropped as new ones arrive
   saveState(e, ended) {
     if (!e.state) return;
+    if (e.match) e.state = { ...e.state, match: e.match, result: e.result || null };
     const now = Date.now();
     this.sql.exec(`INSERT INTO live (game, char, updated, ended, state) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(game) DO UPDATE SET updated = excluded.updated, ended = COALESCE(live.ended, excluded.ended), state = excluded.state`,
@@ -90,7 +94,7 @@ export class Stats extends DurableObject {
   liveGames() {
     return this.sql.exec(`SELECT live.game, live.char, updated, live.ended, state, games.how FROM live LEFT JOIN games ON games.id = live.game
         WHERE updated >= ? ORDER BY updated DESC LIMIT 50`, Date.now() - 20 * 6e4)
-      .toArray().map(r => { const st = JSON.parse(r.state); return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, how: r.how, size: st.size, moveNo: st.moveNo, human: st.human }; });
+      .toArray().map(r => { const st = JSON.parse(r.state); return { game: r.game, char: r.char, updated: r.updated, ended: r.ended, how: r.how || (st.result && st.result.how), size: st.size, moveNo: st.moveNo, human: st.human, match: st.match || null }; });
   }
   game(g) {
     const r = this.sql.exec("SELECT game, char, updated, ended, state FROM live WHERE game = ?", g).toArray()[0];
@@ -106,6 +110,11 @@ export class Stats extends DurableObject {
       return;
     }
     if (e.type === "move") { this.saveState(e, false); return; }
+    if (e.match) {
+      this.saveState(e, e.type === "end");
+      if (e.type === "end") this.sql.exec("INSERT OR IGNORE INTO matches VALUES (?, ?, ?, ?, ?, ?, ?, ?)", e.game, e.match.b, e.match.w, e.result.winner, e.result.how, e.result.margin, e.moves, now);
+      return;
+    }
     if (e.type === "start") {
       this.saveState(e, false);
       if (!this.firstTime("INSERT OR IGNORE INTO games (id, player, char, size, color, started) VALUES (?, ?, ?, ?, ?, ?)",
@@ -151,7 +160,8 @@ export class Stats extends DurableObject {
     const examRanks = this.sql.exec("SELECT r, n FROM exam_ranks ORDER BY r DESC").toArray();
     const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank, score FROM exams ORDER BY ended DESC LIMIT 10").toArray();
     const modes = Object.fromEntries(this.sql.exec("SELECT mode, opens, players FROM mode_tally").toArray().map(r => [r.mode, r]));
-    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent, modes };
+    const matches = this.sql.exec("SELECT game, b, w, winner, how, margin, moves, ended FROM matches ORDER BY ended DESC LIMIT 40").toArray();
+    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent, modes, matches };
   }
 }
 
@@ -177,6 +187,18 @@ function clean(b) {
   if (!b || !["start", "move", "end"].includes(b.type)) return null;
   const e = { type: b.type, game: id(b.game), player: id(b.player), char: b.char, state: cleanState(b.state) };
   if (!e.game || !e.player || !(e.char in CHARS)) return null;
+  if (b.match) {
+    // an AI test match: black and white characters, the winner as a colour and the margin in points
+    if (!(b.match.b in CHARS) || !(b.match.w in CHARS) || b.match.b !== e.char) return null;
+    e.match = { b: b.match.b, w: b.match.w };
+    if (b.type === "end") {
+      if (b.winner !== "b" && b.winner !== "w") return null;
+      const m = typeof b.margin === "number" && isFinite(b.margin) && Math.abs(b.margin) < 400 ? Math.round(Math.abs(b.margin) * 10) / 10 : null;
+      e.result = { winner: b.winner, how: HOWS.has(b.how) ? b.how : "score", margin: m };
+      e.moves = Number.isInteger(b.moves) && b.moves >= 0 && b.moves < 2000 ? b.moves : null;
+    }
+    return b.type === "move" && !e.state ? null : e;
+  }
   if (b.type === "move") return e.state ? e : null;
   if (b.type === "start") {
     e.size = [9, 13, 19].includes(b.size) ? b.size : 19;
@@ -213,6 +235,24 @@ function rankFrom(T, avg) {
 const estimateRank = v => EXAM_BANDS.find(([under]) => v < under)[1], estimateRankOld = v => rankFrom(EXAM_CALIB_OLD, v);
 const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
 const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
+// AI test matches: a standings table (wins, losses, average margin) and the latest games, each linked to its board
+function matchSection(s, ago) {
+  const ms = s.matches || [];
+  if (!ms.length) return "";
+  const st = {};
+  const row = k => st[k] || (st[k] = { w: 0, l: 0, pts: 0 });
+  for (const m of ms) {
+    const win = m.winner === "b" ? m.b : m.w, lose = m.winner === "b" ? m.w : m.b;
+    row(win).w++; row(lose).l++; row(win).pts += m.margin || 0; row(lose).pts -= m.margin || 0;
+  }
+  const table = Object.entries(st).sort((a, b) => b[1].w - a[1].w || b[1].pts - a[1].pts).map(([k, r]) =>
+    `<tr><th>${CHARS[k]}</th><td>${r.w}</td><td>${r.l}</td><td>${(r.pts >= 0 ? "+" : "") + (r.pts / (r.w + r.l)).toFixed(1)}</td></tr>`).join("");
+  const games = ms.map(m => `<tr><th><a href="/watch?g=${m.game}">${CHARS[m.b]} ⚫ vs ⚪ ${CHARS[m.w]}</a></th><td>${CHARS[m.winner === "b" ? m.b : m.w]} ชนะ</td>
+    <td>${m.margin === null ? "–" : (m.how === "score" ? "" : "~") + m.margin + " แต้ม"}</td><td>${HOW_TH[m.how] || m.how}</td><td>${m.moves ?? "–"}</td><td>${ago(m.ended)}</td></tr>`).join("");
+  return `<section><h2>AI แข่งกันเอง (ทดสอบ)</h2><div class="wrap"><table style="min-width:0"><thead><tr><th style="text-align:left">ตัวละคร</th><th>ชนะ</th><th>แพ้</th><th>แต้มเฉลี่ยต่อเกม</th></tr></thead><tbody>${table}</tbody></table></div>
+<div class="wrap" style="margin-top:10px"><table><thead><tr><th style="text-align:left">เกม</th><th>ผล</th><th>ห่าง</th><th>จบด้วย</th><th>ตา</th><th>เมื่อ</th></tr></thead><tbody>${games}</tbody></table></div>
+<p class="muted">เกมทดสอบที่ AI เล่นกันเองบนเซิร์ฟเวอร์ ไม่นับรวมในสถิติผู้เล่น · "~" คือแต้มที่ AI ประเมินตอนอีกฝ่ายยอมแพ้</p></section>`;
+}
 function page(s) {
   const order = Object.keys(CHARS);
   const by = Object.fromEntries(s.chars.map(r => [r.char, r]));
@@ -225,8 +265,8 @@ function page(s) {
   const max = Math.max(1, ...s.days.map(d => d.games));
   const days = s.days.map(d => `<div class="day"><span>${d.day.slice(5)}</span><i style="width:${Math.round(100 * d.games / max)}%"></i><b>${d.games} เกม · ${d.players} คน</b></div>`).join("") || "<p class=\"muted\">ยังไม่มีข้อมูล</p>";
   const ago = t => { const m = Math.round((s.now - t) / 6e4); return m < 1 ? "เมื่อสักครู่" : m < 60 ? m + " นาทีที่แล้ว" : m < 1440 ? Math.round(m / 60) + " ชั่วโมงที่แล้ว" : Math.round(m / 1440) + " วันที่แล้ว"; };
-  const live = s.live.length ? `<div class="live">${s.live.map(g => `<a class="lg" href="/watch?g=${g.game}"><b>${CHARS[g.char]}</b>
-    <span>${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.how === "cancel" ? "ยกเลิก" : g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
+  const live = s.live.length ? `<div class="live">${s.live.map(g => `<a class="lg${g.match ? " ai" : ""}" href="/watch?g=${g.game}"><b>${g.match ? `${CHARS[g.match.b]} ⚫ vs ⚪ ${CHARS[g.match.w]}` : CHARS[g.char]}</b>
+    <span>${g.match ? "AI ทดสอบ" : `${g.size}×${g.size} · คนถือ${g.human === 1 ? "ดำ" : "ขาว"}`} · ตาที่ ${g.moveNo}</span><span class="${g.ended ? "done" : "on"}">${g.how === "cancel" ? "ยกเลิก" : g.ended ? "จบแล้ว" : "● กำลังเล่น"} · ${ago(g.updated)}</span></a>`).join("")}</div>`
     : `<p class="muted">ตอนนี้ยังไม่มีใครเล่นอยู่ (หน้านี้รีเฟรชเองทุก 1 นาที)</p>`;
   return `<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 
@@ -246,7 +286,7 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 .day { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; font-size: 13px; padding: 3px 0; }
 .live { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .lg { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--fg); text-decoration: none; }
-.lg:hover { border-color: var(--accent); } .lg span { font-size: 13px; color: var(--muted); } .lg .on { color: #9fd8c0; }
+.lg:hover { border-color: var(--accent); } .lg.ai { border-style: dashed; } .lg span { font-size: 13px; color: var(--muted); } .lg .on { color: #9fd8c0; }
 .day i { display: block; height: 10px; border-radius: 5px; background: var(--accent); min-width: 4px; } .day span, .day b { color: var(--muted); font-weight: 400; }
 </style></head><body><main>
 <h1>สถิติ Baduk Battle</h1>
@@ -265,6 +305,7 @@ ${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style=
 <thead><tr><th style="text-align:left">ตัวละคร</th><th>เกม</th><th>ผู้เล่น</th><th>เล่นจบ</th><th>คนชนะ</th><th>AI ชนะ</th><th>คนชนะ %</th><th>ตาเฉลี่ย</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
 <p class="muted">"เล่นจบ" นับเกมที่มีผลแพ้ชนะ (นับแต้ม ยอมแพ้ หรือหมดเวลา) เกมที่ปิดกลางคันจะนับแค่ในช่อง "เกม"</p></section>
+${matchSection(s, ago)}
 <section><h2>14 วันล่าสุด</h2>${days}</section>
 </main><script>setInterval(() => { if (!document.hidden) location.reload(); }, 60000);</script></body></html>`;
 }
