@@ -204,8 +204,9 @@ const Analysis = (function () {
       list.push(["🔍 อ่านต่อให้ลึกขึ้น", "deep"]);
     }
     const g = gameMove(); if (g !== null) list.push([`ตาที่เดินจริง (${name(g)}) เป็นไง?`, "played"]);
-    if (ST.at && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
+    if (ST.at > ST.floor && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
     list.push(["ตอนนี้ใครได้เปรียบ?", "status"]);
+    if (ST.floor) list.push(["📷 อ่านรูปใหม่", "photo"]);
     if (ST.game && ST.game.moves.length > 10) list.push(["จุดพลาดในเกมนี้", "mistakes"]);
     if (ST.game && !onGameLine()) list.push(["↩ กลับเส้นเกมจริง", "back"]);
     setChips(list);
@@ -257,7 +258,7 @@ const Analysis = (function () {
     const why = list.map((m, i) => reasons(moves, m, evs[i].evB, evs[i].evA, evs[i].evP, evs[i].evPm));
     r.why = why;
     const pos = why[0].filter(x => !x.neg).slice(0, 3);
-    let h = `<b>ตาที่ ${ST.at + 1} · ${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
+    let h = `<b>${ST.floor ? "" : `ตาที่ ${ST.at + 1} · `}${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
     h += `<span class="an-dim">อ่านไป ${s.visits.toLocaleString()} รูปแบบ ตัวเลือกที่น่าสนใจ ${r.cands.length} จุด วงบนกระดาน (ตัวเลขบน = % ชนะ, ล่าง = แต้มนำ)</span>`;
     if (best.move === PASS) { say(h + `<p>★ ตอนนี้แนะนำให้<b>ผ่าน</b> ไม่มีจุดไหนได้แต้มเพิ่มแล้ว</p>`); chipsFor(); return; }
     h += `<p><span class="an-tag best">★ ตาแนะนำ ${name(best.move)}</span> ชนะ ${pct(best.winrate)}% · ${pos.map(x => esc(x.t)).join(" · ")}</p>`;
@@ -417,7 +418,7 @@ const Analysis = (function () {
     });
   }
   function goTo(k) {
-    k = Math.max(0, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return;
+    k = Math.max(ST.floor, Math.min(ST.line.length, k)); if (k === ST.at && ST.b) return;
     if (k === ST.at + 1 && ST.line[ST.at] !== PASS && api.sound) api.sound(); // one step forward places a stone
     ST.at = k; setPos();
   }
@@ -447,7 +448,7 @@ const Analysis = (function () {
       const c = b.color[p]; if (c !== BLACK && c !== WHITE) continue;
       const [x, y] = xy(p); s.push(`<circle cx="${x}" cy="${y}" r=".47" fill="url(#${c === BLACK ? "anGb" : "anGw"})" stroke="${c === BLACK ? "#000" : "#9c917e"}" stroke-width=".02"/>`);
     }
-    const last = ST.at ? ST.line[ST.at - 1] : PASS;
+    const last = ST.at > ST.floor ? ST.line[ST.at - 1] : PASS;
     if (last !== PASS && b.color[last]) { const [x, y] = xy(last); s.push(`<circle cx="${x}" cy="${y}" r=".16" fill="none" stroke="${b.color[last] === BLACK ? "#f3ead8" : "#2a1a0b"}" stroke-width=".06"/>`); }
     if (ST.pv) {
       const c0 = b.toPlay; let sb = new Board(n); sb.copyFrom(b);
@@ -485,13 +486,13 @@ const Analysis = (function () {
     $("anWrB").textContent = "ดำ " + pct(wb); $("anWrW").textContent = "ขาว " + pct(1 - wb);
     const lb = lead === null ? 0 : (ST.pla === BLACK ? lead : -lead);
     const gm = ST.at < ST.line.length ? ST.line[ST.at] : null;
-    $("anInfo").innerHTML = `ตา ${ST.at}/${ST.line.length} · ตา${CN[c]} · หมากเชลย ดำ ${b.caps[BLACK]} ขาว ${b.caps[WHITE]}` +
+    $("anInfo").innerHTML = `ตา ${ST.at - ST.floor}/${ST.line.length - ST.floor} · ตา${CN[c]} · หมากเชลย ดำ ${b.caps[BLACK]} ขาว ${b.caps[WHITE]}` +
       (lead === null ? "" : ` · ${Math.abs(lb) < 0.5 ? "สูสี" : (lb > 0 ? "ดำ" : "ขาว") + "นำ ~" + pts(lb)}`) +
       (gm !== null && gm !== PASS ? ` · <span class="an-real">วงฟ้า = ${gameMove() !== null ? "ตาที่เดินจริง" : "ตาที่ลองเดิน"}</span>` : "");
   }
   function render() {
     drawBoard(); renderInfo(); chipsFor();
-    $("anFirst").disabled = $("anPrev").disabled = ST.at === 0;
+    $("anFirst").disabled = $("anPrev").disabled = ST.at <= ST.floor;
     $("anNext").disabled = $("anLast").disabled = ST.at >= ST.line.length;
     const go = $("anGo"); go.classList.toggle("on", !!ST.auto); go.setAttribute("aria-pressed", String(!!ST.auto)); // ON: every position is read on its own
     $("anSw").textContent = ST.auto ? "ON" : "OFF";
@@ -511,7 +512,7 @@ const Analysis = (function () {
     svg.addEventListener("click", e => { const p = ptAt(e); if (ST.pv) { ST.pv = null; drawBoard(); return; } if (p !== null) { ST.ghost = null; play(p); } });
     svg.addEventListener("pointermove", e => { if (e.pointerType !== "mouse") return; const p = ptAt(e); if (p !== ST.ghost) { ST.ghost = p; drawBoard(); } });
     svg.addEventListener("pointerleave", () => { ST.ghost = null; drawBoard(); });
-    $("anFirst").onclick = () => goTo(0);
+    $("anFirst").onclick = () => goTo(ST.floor);
     $("anPrev").onclick = () => goTo(ST.at - 1);
     $("anNext").onclick = () => goTo(ST.at + 1);
     $("anLast").onclick = () => goTo(ST.line.length);
@@ -526,6 +527,7 @@ const Analysis = (function () {
       if (t.dataset.goto !== undefined) { const k = +t.dataset.goto; if (ST.game) { ST.line = ST.game.moves.slice(); } goTo(k); analyze(true); return; }
       const act = t.dataset.act; if (!act) return;
       const label = t.textContent;
+      if (act === "photo") { $("anFile").value = ""; $("anFile").click(); return; }
       if (act !== "back" && act !== "last" && !act.startsWith("new")) bubble(esc(label), "me");
       if (act === "go") analyze(true);
       else if (act === "why") explainWhy();
@@ -540,22 +542,51 @@ const Analysis = (function () {
       else if (act.startsWith("new")) { start({ n: +act.slice(3), moves: [] }); }
       else if (act === "last") { start(api.lastGame()); }
     });
+    $("anFile").addEventListener("change", () => {
+      const f = $("anFile").files[0]; if (!f) return;
+      BoardPhoto.open(f).then(pos => { if (pos) fromPhoto(pos); }).catch(() => say("เปิดรูปนี้ไม่ได้ครับ ลองเลือกไฟล์รูปอื่นดูนะ"));
+    });
     document.addEventListener("keydown", e => {
       if ($("anel").hidden) return;
       if (e.key === "ArrowLeft") goTo(ST.at - 1); else if (e.key === "ArrowRight") goTo(ST.at + 1);
     });
+  }
+  // a position read from a picture: its stones become setup moves that the board can't step back through, ordered so that
+  // they alternate as long as they can (the passes needed for an uneven count come first) and the right side plays next
+  function setupLine(n, stones, toPlay) {
+    const b = new Board(n), bl = [], wh = [];
+    stones.forEach((v, i) => { if (v === 1) bl.push(b.pt(i % n, (i / n) | 0)); else if (v === 2) wh.push(b.pt(i % n, (i / n) | 0)); });
+    for (let L = bl.length + wh.length; ; L++) for (const first of [BLACK, WHITE]) {
+      const slots = c => c === first ? Math.ceil(L / 2) : Math.floor(L / 2);
+      if (slots(BLACK) < bl.length || slots(WHITE) < wh.length || (L % 2 ? 3 - first : first) !== toPlay) continue;
+      let pb = slots(BLACK) - bl.length, pw = slots(WHITE) - wh.length, ib = 0, iw = 0;
+      const out = [];
+      for (let i = 0; i < L; i++) {
+        const c = i % 2 ? 3 - first : first;
+        if (c === BLACK) out.push(pb > 0 ? (pb--, PASS) : bl[ib++]); else out.push(pw > 0 ? (pw--, PASS) : wh[iw++]);
+      }
+      return out;
+    }
+  }
+  function fromPhoto(pos) {
+    const setup = setupLine(pos.n, pos.stones, pos.toPlay), nb = pos.stones.filter(v => v === 1).length, nw = pos.stones.filter(v => v === 2).length;
+    start({ n: pos.n, moves: setup, setup: true });
+    $("anChat").innerHTML = "";
+    say(`อ่านจากรูปแล้วครับ กระดาน ${pos.n}×${pos.n} ดำ ${nb} เม็ด ขาว ${nw} เม็ด ตาต่อไป<b>${CN[pos.toPlay]}</b>เดิน เดี๋ยวผมดูให้ว่าควรเดินตรงไหน ถ้าหมากบนกระดานไม่ตรงกับรูป กด 📷 เพื่ออ่านใหม่ได้ครับ`);
+    ST.auto = false; analyze(true);
   }
   function close() { tok++; $("anel").hidden = true; document.body.classList.remove("analysing"); }
   function start(g) {
     const n = g.n || 19;
     ST = { n, b0: new Board(n), line: (g.moves || []).slice(), at: 0, game: g.moves && g.moves.length ? { moves: g.moves.slice(), human: g.human || 0 } : null,
       res: null, pv: null, own: null, ghost: null, running: false, live: null, win: null, lead: null, pla: BLACK, auto: ST ? ST.auto : false, from: g.from || (ST && ST.from) };
-    ST.at = g.at === undefined ? ST.line.length : Math.max(0, Math.min(ST.line.length, g.at));
+    ST.floor = g.setup ? ST.line.length : 0; if (g.setup) ST.game = null;
+    ST.at = g.at === undefined ? ST.line.length : Math.max(ST.floor, Math.min(ST.line.length, g.at));
     $("anChat").innerHTML = "";
     $("anBoard").setAttribute("viewBox", `-1.1 -1.1 ${n + 1.2} ${n + 1.2}`);
-    say(ST.game ? `สวัสดีครับ ผม<b>กัน</b> มาดูเกมนี้ด้วยกัน (${n}×${n}, ${ST.line.length} ตา) กด ◀ ▶ เพื่อเลือกตา แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมเหตุผล หรือแตะกระดานเพื่อลองเดินเอง แล้วกดปุ่มคำถามด้านล่างได้เลยครับ`
+    say(ST.game ? `สวัสดีครับ ผม<b>กัน</b> มาดูเกมนี้ด้วยกัน (${n}×${n}, ${ST.line.length} ตา) กด ◀ ▶ เพื่อเลือกตา แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมเหตุผล หรือแตะกระดานเพื่อลองเดินเอง แล้วกดปุ่มคำถามด้านล่างได้เลยครับ<div class="an-list"><button class="an-chip" data-act="photo">📷 อัปโหลดรูปกระดาน</button></div>`
       : `สวัสดีครับ ผม<b>กัน</b> นี่คือกระดานวิเคราะห์ ${n}×${n} แตะกระดานวางหมาก (ดำ-ขาวสลับกัน) แล้วกด <b>ANALYSIS</b> ให้ AI ชี้จุดที่น่าเดินพร้อมบอกเหตุผล แล้วกดปุ่มคำถามด้านล่างได้เลยครับ` +
-        `<div class="an-list"><button class="an-chip" data-act="new19">กระดาน 19×19</button><button class="an-chip" data-act="new13">13×13</button><button class="an-chip" data-act="new9">9×9</button>${api.lastGame && api.lastGame() ? '<button class="an-chip" data-act="last">เปิดเกมล่าสุดที่เล่น</button>' : ""}</div>`);
+        `<div class="an-list"><button class="an-chip" data-act="new19">กระดาน 19×19</button><button class="an-chip" data-act="new13">13×13</button><button class="an-chip" data-act="new9">9×9</button><button class="an-chip" data-act="photo">📷 อัปโหลดรูปกระดาน</button>${api.lastGame && api.lastGame() ? '<button class="an-chip" data-act="last">เปิดเกมล่าสุดที่เล่น</button>' : ""}</div>`);
     tok++; ST.b = null; setPos();
   }
   api.open = function (g) {
