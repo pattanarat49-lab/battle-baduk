@@ -3364,7 +3364,7 @@ const Tsumego = (() => {
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // secret character: KataGo's HumanSL network playing as an 1850s professional (Honinbo Shusaku's era), downloaded only
-    // when Sai is picked. Shows on the select screen after the player beats Todo once (or with ?boss in the address)
+    // when Sai is picked. Shows on the select screen only with ?boss in the address for now
     { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "balance", secret: true, brain: "human", handicap: true, fx: "smoke",
       search: { visits: 100000, timeMs: 15000 },
       bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์มืออาชีพยุคโบราณแบบฮงอินโบ ชูซากุ เล่นเต็มกำลังทุกตา คุณถือดำเสมอ เลือกหมากต่อได้ 1–9 เม็ด ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
@@ -4327,8 +4327,9 @@ const Tsumego = (() => {
     catch (e) { console.warn(e); flash("โหลดสมองใหญ่ไม่สำเร็จ ใช้สมองปกติแทน"); return AI; }
   }
   const brainLoading = () => { const ch = board && CHARS[gameChar]; const st = ch && ch.brain && brains[ch.brain]; return st && !st.ai && st.promise ? st : null; };
-  // secret characters show on the select screen once the player has beaten Todo (or with ?boss in the address)
-  const secretOpen = () => /[?&]boss\b/.test(location.search) || load("history", []).some(h => h.char === "todo" && h.won);
+  // secret characters show on the select screen only with ?boss in the address (owner's test link, 2026-10-31);
+  // the planned unlock is a win against Todo: load("history", []).some(h => h.char === "todo" && h.won)
+  const secretOpen = () => /[?&]boss\b/.test(location.search);
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.search;
   async function maybeAI() {
