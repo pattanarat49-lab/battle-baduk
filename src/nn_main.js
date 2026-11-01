@@ -570,6 +570,11 @@
   let evalMs = 50, checkEngine = null, engineToWasm = null, engineRetries = 0;
   async function initEngine() {
     const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
+    // the opening loading page covers both brains: b10 to 15%, then HumanSL; it lifts when both are ready (or one failed)
+    const splash = p => { $("ldFill").style.width = p + "%"; $("ldPct").textContent = Math.round(p) + "%"; };
+    const splashDone = () => { splash(100); setTimeout(() => { $("splash").classList.add("out"); setTimeout(() => { $("splash").hidden = true; }, 500); }, 250); };
+    if (MATCH || EXAMBOT !== null) $("splash").hidden = true;
+    splash(3);
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
@@ -583,6 +588,7 @@
       ]);
       let net = GoTFNet(tf).build(meta, buf);
       AI = GoNNAI(E, F, net);
+      splash(10);
       // some phone GPUs compute the network wrongly; after black D16 the reference answer is a corner (Q4/Q16/D4) at ~49%
       const sane = async () => {
         let ev; try { ev = (await AI.evalMany(19, [[new Board(19).pt(3, 3)]], KOMI))[0]; } catch (e) { return false; }
@@ -663,9 +669,9 @@
       // (owner, 2026-11-01); the chip shows the progress as a percentage only
       if (!MATCH && EXAMBOT === null) (async () => {
         const p = loadBrain("human"), st = brains.human;
-        el.textContent = "กำลังโหลดสมอง AI… 0%";
-        const tick = setInterval(() => { if (!st.ai) el.textContent = `กำลังโหลดสมอง AI… ${Math.round(st.stage === "dl" ? st.pct * 90 : 95)}%`; }, 400);
-        try { await p; } catch (e) { console.warn("HumanSL preload failed", e); } finally { clearInterval(tick); label(); }
+        el.textContent = "กำลังโหลดสมอง AI… 15%"; splash(15);
+        const tick = setInterval(() => { if (st.ai) return; const v = st.stage === "dl" ? 15 + st.pct * 78 : 96; el.textContent = `กำลังโหลดสมอง AI… ${Math.round(v)}%`; splash(v); }, 300);
+        try { await p; } catch (e) { console.warn("HumanSL preload failed", e); } finally { clearInterval(tick); label(); splashDone(); }
       })();
       if (MATCH) startMatch();
       else if (EXAMBOT !== null) startExamBot();
@@ -673,6 +679,7 @@
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
+      splashDone();
     }
   }
 

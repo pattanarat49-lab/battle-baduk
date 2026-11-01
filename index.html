@@ -166,15 +166,28 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
 /* full-screen wait while a character's own brain downloads, before its game starts */
-.brainload { position: fixed; inset: 0; z-index: 50; background: #07090d; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; }
+.brainload { position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #1b3d46; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; }
 .brainload[hidden] { display: none; }
 .bl-t { font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 20px; color: var(--fg); text-align: center; margin: 0; }
-.bl-bar { width: min(420px, 86vw); height: 18px; border: 3px solid #b9a2ff; background: #14102a; padding: 2px; }
-.bl-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6a4fd8, #c9b6ff); transition: width .2s; }
-.bl-p { font-family: var(--f-px), var(--f-body); font-size: 28px; color: #c9b6ff; margin: 0; }
-.bl-s { font-size: 14px; color: #e6dcff; margin: 0; text-align: center; }
+.bl-p { font-family: var(--f-px), var(--f-body); font-size: 26px; color: #f8e8c9; margin: 0; }
+.bl-s { font-size: 14px; color: #f8e8c9; margin: 0; text-align: center; }
 .bl-n { font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
 .bl-x { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--muted); padding: 6px 16px; min-height: 0; }
+/* loading pages (owner's pixel art, 2026-11-01): the two stone friends hop on the board while the bar fills */
+.ld { position: fixed; inset: 0; z-index: 60; overflow: hidden; background: #1b3d46; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px 16px; transition: opacity .45s; }
+.ld.out { opacity: 0; pointer-events: none; }
+.ld-art { position: relative; flex: none; width: min(760px, 132vw); aspect-ratio: 1080 / 410; }
+.ld-art > img { position: absolute; image-rendering: pixelated; }
+.ld-bg { inset: 0; width: 100%; height: 100%; }
+.ld-c { top: 4.88%; height: 28.29%; transform-origin: 50% 100%; animation: hop .9s ease-in-out infinite; }
+.ld-c.w { left: 27.59%; width: 14.07%; }
+.ld-c.b { left: 58.15%; width: 14.81%; animation-delay: -.45s; }
+@keyframes hop { 0%, 100% { transform: translateY(0) scale(1.1, .88); } 14% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-38%) scale(.95, 1.07); } 72% { transform: translateY(0) scale(1); } 84% { transform: translateY(0) scale(1.1, .88); } }
+.ld-bar { position: absolute; left: 18.98%; top: 61.46%; width: 60.46%; height: 9.76%; box-sizing: border-box; border: 2px solid #8da792; border-radius: 999px; padding: 3px; }
+.ld-bar i { display: block; height: 100%; width: 0; background: #f8e8c9; border-radius: 999px; transition: width .25s; }
+.ld-p { font-family: var(--f-px), var(--f-body); font-size: 26px; color: #f8e8c9; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .ld-c { animation: none; } }
 .home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
 .home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
 .home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
@@ -638,9 +651,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div>
 </section>
 
+<section class="ld" id="splash" aria-live="polite">
+  <div class="ld-art"><img class="ld-bg" src="menu/load_bg.png" alt=""><img class="ld-c w" src="menu/load_w.png" alt=""><img class="ld-c b" src="menu/load_b.png" alt=""><div class="ld-bar"><i id="ldFill"></i></div></div>
+  <p class="ld-p" id="ldPct">0%</p>
+</section>
 <section class="brainload" id="brainLoad" hidden aria-live="polite">
   <p class="bl-t" id="blTitle">กำลังโหลดสมอง AI</p>
-  <div class="bl-bar"><i id="blFill"></i></div>
+  <div class="ld-art"><img class="ld-bg" src="menu/load_bg.png" alt=""><img class="ld-c w" src="menu/load_w.png" alt=""><img class="ld-c b" src="menu/load_b.png" alt=""><div class="ld-bar"><i id="blFill"></i></div></div>
   <p class="bl-p" id="blPct">0%</p>
   <p class="bl-s" id="blStep">กำลังดาวน์โหลด</p>
   <p class="bl-n" id="blNote">โหลดครั้งแรกเท่านั้น ครั้งต่อไปจะเริ่มได้ทันที</p>
@@ -4113,6 +4130,11 @@ const Tsumego = (() => {
   let evalMs = 50, checkEngine = null, engineToWasm = null, engineRetries = 0;
   async function initEngine() {
     const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
+    // the opening loading page covers both brains: b10 to 15%, then HumanSL; it lifts when both are ready (or one failed)
+    const splash = p => { $("ldFill").style.width = p + "%"; $("ldPct").textContent = Math.round(p) + "%"; };
+    const splashDone = () => { splash(100); setTimeout(() => { $("splash").classList.add("out"); setTimeout(() => { $("splash").hidden = true; }, 500); }, 250); };
+    if (MATCH || EXAMBOT !== null) $("splash").hidden = true;
+    splash(3);
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
@@ -4126,6 +4148,7 @@ const Tsumego = (() => {
       ]);
       let net = GoTFNet(tf).build(meta, buf);
       AI = GoNNAI(E, F, net);
+      splash(10);
       // some phone GPUs compute the network wrongly; after black D16 the reference answer is a corner (Q4/Q16/D4) at ~49%
       const sane = async () => {
         let ev; try { ev = (await AI.evalMany(19, [[new Board(19).pt(3, 3)]], KOMI))[0]; } catch (e) { return false; }
@@ -4206,9 +4229,9 @@ const Tsumego = (() => {
       // (owner, 2026-11-01); the chip shows the progress as a percentage only
       if (!MATCH && EXAMBOT === null) (async () => {
         const p = loadBrain("human"), st = brains.human;
-        el.textContent = "กำลังโหลดสมอง AI… 0%";
-        const tick = setInterval(() => { if (!st.ai) el.textContent = `กำลังโหลดสมอง AI… ${Math.round(st.stage === "dl" ? st.pct * 90 : 95)}%`; }, 400);
-        try { await p; } catch (e) { console.warn("HumanSL preload failed", e); } finally { clearInterval(tick); label(); }
+        el.textContent = "กำลังโหลดสมอง AI… 15%"; splash(15);
+        const tick = setInterval(() => { if (st.ai) return; const v = st.stage === "dl" ? 15 + st.pct * 78 : 96; el.textContent = `กำลังโหลดสมอง AI… ${Math.round(v)}%`; splash(v); }, 300);
+        try { await p; } catch (e) { console.warn("HumanSL preload failed", e); } finally { clearInterval(tick); label(); splashDone(); }
       })();
       if (MATCH) startMatch();
       else if (EXAMBOT !== null) startExamBot();
@@ -4216,6 +4239,7 @@ const Tsumego = (() => {
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
+      splashDone();
     }
   }
 
