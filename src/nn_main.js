@@ -492,7 +492,7 @@
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1) };
+  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
@@ -500,6 +500,11 @@
   if (!CHARS[settings.char]) settings.char = 5;
   // komi 7.5 in an even game; 0.5 with handicap stones (Sai only), set per game by newGame / resumeGame
   let KOMI = 7.5, handi = 0;
+  // points given to the player against a special character (owner 2026-11-01): 0-100, added to the player's side at the
+  // count. The AI still thinks with komi 7.5, so it plays its normal game; only the score and the lead shown include them
+  let bonus = 0;
+  const bonusFor = (i, v) => CHARS[i].special && !CHARS[i].handicap ? Math.max(0, Math.min(100, Math.round((v | 0) / 10) * 10)) : 0;
+  const bonusTxt = () => bonus ? `ต่อแต้มให้คุณ ${bonus} · ` : "";
   // standard handicap points on 19x19 (x, y from the top left); black takes the first N
   const HANDI_PTS = [[15, 3], [3, 15], [15, 15], [3, 3], [9, 9], [3, 9], [15, 9], [9, 3], [9, 15]];
   function handiPoints(k) {
@@ -839,7 +844,7 @@
     if (!exam) showResult(humanWon);
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
@@ -904,13 +909,15 @@
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
     handi = 0; KOMI = 7.5;
     if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
+    bonus = MATCH || EXAMBOT !== null ? 0 : bonusFor(gameChar, settings.bonus);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
     if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {}); // start the download before the first AI move
     if (CHARS[gameChar].book) loadBook(CHARS[gameChar]); // fetch the opening book
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}${bonusTxt()}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
+    { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
       $("n" + k).textContent = me ? "คุณ" : ch.name;
@@ -1015,21 +1022,22 @@
   function saveGame() {
     if (!board || MATCH) return;
     if (over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, handi, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
+    save("game", { char: CHARS[gameChar].id, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
-    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5;
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
     exam = CHARS[gameChar].exam ? { grades: Array.isArray(g.grades) ? g.grades : [] } : null; ponder = null;
     const ch = CHARS[gameChar];
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}${bonusTxt()}โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
+    { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
       $("n" + k).textContent = me ? "คุณ" : ch.name;
@@ -1049,6 +1057,8 @@
     const forBlack = res.pla === BLACK;
     winBlack = forBlack ? res.winrate : 1 - res.winrate;
     leadBlack = forBlack ? res.lead : -res.lead;
+    // the points given to the player count in the lead shown; the chance to win is then read off that lead
+    if (bonus) { leadBlack += human === BLACK ? bonus : -bonus; winBlack = 1 / (1 + Math.exp(-leadBlack / 6)); }
   }
   // signature openings: Weiqi takes tengen (or attaches to it), Tora takes 3-3 in every empty corner
   function openingMove() {
@@ -1657,13 +1667,13 @@
     if (over) { res.hidden = false; res.innerHTML = `<h2>${over.text}</h2><div class="nums">${over.detail}</div>` + examReport(); }
     else if (scoring && !scoring.loading) {
       const r = areaCount(scoring.dead); scoring.terr = r.terr;
-      const diff = r.b - (r.w + KOMI);
+      const bB = human === BLACK ? bonus : 0, bW = human === WHITE ? bonus : 0, diff = r.b + bB - (r.w + KOMI + bW);
       const winner = diff > 0 ? BLACK : WHITE;
       if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
       if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
-        <div class="nums">ดำ ${r.b} · ขาว ${r.w} + โคมิ ${KOMI} = ${r.w + KOMI}</div>
+        <div class="nums">ดำ ${r.b}${bB ? ` + ต่อแต้ม ${bB} = ${r.b + bB}` : ""} · ขาว ${r.w} + โคมิ ${KOMI}${bW ? ` + ต่อแต้ม ${bW}` : ""} = ${r.w + KOMI + bW}</div>
         <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
     } else res.hidden = true;
   }
@@ -1825,7 +1835,7 @@
     }
   }
 
-  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi");
+  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
   // special characters (Sai, Takemiya) share one slot: a "Special Character" card that opens a choice between them.
@@ -1867,6 +1877,7 @@
     $("faces").hidden = examMode;
     // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
     $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
+    $("optBonus").hidden = !bonusFor(settings.char, 10) || examMode || (CHARS[settings.char].special && spView !== "char");
     const spHead = '<button class="cexam sp-head" data-sp="pick">SPECIAL CHARACTER</button>';
     const spCard = sp === "cover"
       ? `<div class="card sp-cover${anim ? " pop" : ""}" data-sp="pick" role="button" tabindex="0" aria-label="เลือกตัวละครพิเศษ"><div class="card-in">${spHead}<div class="cname">SPECIAL</div><div class="cthai">ตัวละครพิเศษ</div>${qMark("big")}<div class="crank">แตะเพื่อเลือก</div></div></div>`
