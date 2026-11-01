@@ -1260,6 +1260,15 @@
         step("build"); await new Promise(r => setTimeout(r, 50));
         ai = await make();
       }
+      // mid-game the GPU can stop computing this big network correctly while the small one still works (lost WebGL
+      // context, iPhone memory): rebuild it from the weights already in memory, on WebAssembly, with no new download
+      st.rebuild = async () => {
+        try { ai.big.dispose(); } catch (e) {}
+        st.ai = null;
+        if (tf.getBackend() === "webgl" && engineToWasm && !(await engineToWasm())) return false;
+        ai = await make(); st.ai = ai;
+        try { await ai.evalMany(19, [[E.PASS]], KOMI); return true; } catch (e) { return false; }
+      };
       st.ai = ai; st.error = null; step("done");
       return ai;
     })().catch(e => { st.promise = null; st.error = e; e.stage = e.stage || st.stage; throw e; });
@@ -1348,7 +1357,10 @@
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
       // which fills the board row by row from the top-left corner
       console.warn(e);
-      const state = checkEngine ? await checkEngine() : "broken";
+      let state = checkEngine ? await checkEngine() : "broken";
+      // the small network is fine but the character's big one is not (HumanSL, b18): rebuild that one too
+      const big = CHARS[gameChar].brain && brains[CHARS[gameChar].brain];
+      if (state !== "broken" && big && big.rebuild) state = (await big.rebuild().catch(() => false)) ? "rebuilt" : "broken";
       if (my !== gen) return;
       thinking = false;
       if (state !== "broken" && ++engineRetries <= 2) return maybeAI();
