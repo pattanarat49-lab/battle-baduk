@@ -3636,14 +3636,14 @@ const Tsumego = (() => {
     // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now.
     // Sai instead thinks with KataGo's HumanSL network set to the 1850s professionals (Shusaku's era) and leans to its
     // favourite moves (era), so his shapes look old; even games with a colour choice like everyone else (owner 2026-10-31)
-    { id: "sai", en: "SAI", name: "ซาอิ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", opening: "shusaku", book: "shusaku-book.json", no33: true,
+    { id: "sai", en: "SAI", name: "ซาอิ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", opening: "shusaku", cornersFirst: "34", book: "shusaku-book.json", no33: true,
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
       bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เปิดเกมด้วยหมากโคสุมิที่ขึ้นชื่อของชูซากุ และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
-    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
+    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", cornersFirst: "44", book: "takemiya-book.json", no33: true,
       // light and quick: leaves a small local answer for a big point elsewhere (tenuki), and of near-equal moves takes the
       // highest; the margins are tight enough that a real fight is still fought with the best move
       search: { visits: 100000, timeMs: 15000, tenuki: { margin: 0.04, points: 1.5, pool: 8, until: 180 }, cosmic: { margin: 0.05, points: 2.5, pool: 8, until: 200 }, no33: 60 },
@@ -3652,7 +3652,7 @@ const Tsumego = (() => {
     // Lee Changho, three phases. Opening (about 40 moves): a full read with a strong pull to solid shape, so it is slow and
     // a little passive (owner 2026-10-31: still 9 dan, not weak). Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
     // pull to the biggest margin, so every point is collected
-    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, fx: "shine", brain: "b18", book: "changho-book.json",
+    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, fx: "shine", brain: "b18", cornersFirst: "34", book: "changho-book.json",
       early: { visits: 100000, timeMs: 12000, solid: { margin: 0.05, points: 2, pool: 6 } },
       search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
@@ -4630,6 +4630,7 @@ const Tsumego = (() => {
     for (const p of board.pts) if (board.color[p] === ai && board.libs(board.head[p], 2) === 1) return null; // a group in atari comes first
     // the special characters' own game records come first (see kifuMove), then their opening style
     if (ch.opening === "shusaku") { const s = shusakuFuseki(); if (s !== null) return s; }
+    if (ch.cornersFirst) { const c = cornerFirst(ch.cornersFirst); if (c !== null) return c; }
     if (ch.book) { const k = kifuMove(ch); if (k !== null) return k; }
     const ok = p => board.color[p] === EMPTY && board.isLegal(p, ai);
     if (ch.opening === "tengen") {
@@ -4725,6 +4726,21 @@ const Tsumego = (() => {
       if (stones === 2 && ok(p)) return p;
     }
     return null;
+  }
+  // owner 2026-11-01: Sai, Takemiya and Lee Changho take every empty corner before approaching the opponent's ones.
+  // A corner is empty while its 6x6 area has no stone; "44" plays the star point, "34" a 3-4 point (either way round)
+  function cornerFirst(kind) {
+    if (n !== 19 || history.length >= 30) return null;
+    const free = [];
+    for (const [cx, cy] of [[0, 0], [n - 6, 0], [0, n - 6], [n - 6, n - 6]]) {
+      let empty = true;
+      for (let y = cy; y < cy + 6 && empty; y++) for (let x = cx; x < cx + 6; x++) if (board.color[board.pt(x, y)] !== EMPTY) { empty = false; break; }
+      if (!empty) continue;
+      const [a, b] = kind === "44" ? [3, 3] : Math.random() < 0.5 ? [2, 3] : [3, 2];
+      const p = board.pt(cx ? n - 1 - a : a, cy ? n - 1 - b : b);
+      if (board.isLegal(p, ai)) free.push(p);
+    }
+    return free.length ? free[(Math.random() * free.length) | 0] : null;
   }
   // Takemiya's sanrensei: three star points along one side, corners first. A side counts while the opponent has nothing
   // within two lines of the points still to take; the side with most of his own stones on it already is kept
