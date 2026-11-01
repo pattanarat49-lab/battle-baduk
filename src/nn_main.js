@@ -31,7 +31,7 @@
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
     { id: "chai", en: "RIDER CHAI", name: "ไรเดอร์ชัย", country: "ไทย", rank: "10 คิว", style: "defend", opening: "corners", brain: "human", profile: "rank_10k",
-      search: { temperature: 0.7, follow: 2, soft: true, noFloat: true, keepTerritory: true },
+      search: { temperature: 0.7, local: 3, soft: true, noFloat: true, keepTerritory: true },
       early: { temperature: 0.7, local: 3, noFloat: true, keepTerritory: true },
       bio: "ไรเดอร์ส่งอาหาร น้องชายของลุงวิน เพิ่งหัดเล่นโกะเพราะพี่ชายชวน เปิดเกมเหมือนลุงวินเป๊ะ แต่หลังจากนั้นเล่นนิ่มๆ ตั้งรับสุดๆ คุณเดินตรงไหนก็ตามไปรับตรงนั้น",
       say: { hello: "พี่วินชวนมาเล่นครับ ระหว่างรอออเดอร์", ahead: "เอ้า ผมนำเหรอ แค่ตามไปรับเองนะ", behind: "ไม่เป็นไรครับ ผมรับไว้ก่อน", win: "ชนะแล้ว! ต้องไปบอกพี่วิน", lose: "เก่งจังครับ ผมยังต้องหัดอีกเยอะ" } },
