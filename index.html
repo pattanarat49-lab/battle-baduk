@@ -3633,11 +3633,11 @@ const Tsumego = (() => {
     // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now.
     // Sai instead thinks with KataGo's HumanSL network set to the 1850s professionals (Shusaku's era) and leans to its
     // favourite moves (era), so his shapes look old; even games with a colour choice like everyone else (owner 2026-10-31)
-    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", book: "shusaku-book.json", no33: true,
+    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", opening: "shusaku", book: "shusaku-book.json", no33: true,
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
-      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เปิดเกมด้วยหมากโคสุมิที่ขึ้นชื่อของชูซากุ และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
+      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เมื่อถือดำจะเปิดเกมด้วยฟุเซกิชูซากุ พร้อมหมากโคสุมิอันโด่งดัง และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
@@ -4616,6 +4616,7 @@ const Tsumego = (() => {
     if ((!ch.opening && !ch.book) || history.length >= 80) return null; // an opening book only for the opening, never in the endgame
     for (const p of board.pts) if (board.color[p] === ai && board.libs(board.head[p], 2) === 1) return null; // a group in atari comes first
     // the special characters' own game records come first (see kifuMove), then their opening style
+    if (ch.opening === "shusaku") { const s = shusakuFuseki(); if (s !== null) return s; }
     if (ch.book) { const k = kifuMove(ch); if (k !== null) return k; }
     const ok = p => board.color[p] === EMPTY && board.isLegal(p, ai);
     if (ch.opening === "tengen") {
@@ -4684,6 +4685,31 @@ const Tsumego = (() => {
       let p = null;
       for (let y = 0; y < 19 && p === null; y++) for (let x = 0; x < 19; x++) { const [a, b] = KT[ti](x, y); if (a === o.x && b === o.y) { p = board.pt(x, y); break; } }
       if ((r -= o.n) <= 0 && p !== null && board.color[p] === EMPTY && board.isLegal(p, ai) && !(ch.no33 && entry33(p))) return p;
+    }
+    return null;
+  }
+  // the Shusaku fuseki (owner 2026-11-01): with Black, Sai takes 3-4 points in empty corners in Shusaku's pinwheel
+  // (R16, Q3, C4, then D17), and answers a low approach on a lone 3-4 stone with Shusaku's kosumi (R16 + P17 -> Q15)
+  function shusakuFuseki() {
+    if (n !== 19 || ai !== BLACK || history.length >= 40) return null;
+    const at = (x, y) => board.color[board.pt(x, y)], ok = p => board.color[p] === EMPTY && board.isLegal(p, ai);
+    let mine = 0;
+    for (const p of board.pts) if (board.color[p] === BLACK) mine++;
+    if (mine < 3 && history.length < 12) for (const [x, y] of [[16, 3], [15, 16], [2, 15], [3, 2]]) {
+      const cx = x > 9 ? 13 : 0, cy = y > 9 ? 13 : 0;
+      let empty = true;
+      for (let b = cy; b < cy + 6 && empty; b++) for (let a = cx; a < cx + 6; a++) if (at(a, b) !== EMPTY) { empty = false; break; }
+      const p = board.pt(x, y);
+      if (empty && ok(p)) return p;
+    }
+    for (const t of KT) {
+      const [kx, ky] = t(16, 3), [ax, ay] = t(14, 2), [sx, sy] = t(15, 4);
+      if (at(kx, ky) !== BLACK || at(ax, ay) !== WHITE || at(sx, sy) !== EMPTY) continue;
+      // only while that corner holds just those two stones
+      let stones = 0;
+      for (let b = 0; b <= 6; b++) for (let a = 12; a <= 18; a++) { const [x, y] = t(a, b); if (at(x, y) !== EMPTY) stones++; }
+      const p = board.pt(sx, sy);
+      if (stones === 2 && ok(p)) return p;
     }
     return null;
   }
