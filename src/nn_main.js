@@ -1336,7 +1336,7 @@
   const brainLoading = () => { const ch = board && CHARS[gameChar]; const st = ch && ch.brain && brains[ch.brain]; return st && !st.ai && st.promise ? st : null; };
   // secret characters show on the select screen only with ?boss in the address (owner's test link, 2026-10-31);
   // the planned unlock is a win against Todo: load("history", []).some(h => h.char === "todo" && h.won)
-  const secretOpen = () => /[?&]boss\b/.test(location.search);
+  const secretOpen = () => true; // owner 2026-11-01: special characters open to everyone
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
   const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
