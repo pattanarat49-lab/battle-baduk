@@ -73,7 +73,7 @@
     // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now.
     // Sai instead thinks with KataGo's HumanSL network set to the 1850s professionals (Shusaku's era) and leans to its
     // favourite moves (era), so his shapes look old; even games with a colour choice like everyone else (owner 2026-10-31)
-    { id: "sai", en: "SAI", name: "ไซ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", opening: "shusaku", book: "shusaku-book.json", no33: true,
+    { id: "sai", en: "SAI", name: "ซาอิ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "ancient", secret: true, special: true, brain: "human", profile: "proyear_1850", fx: "smoke", opening: "shusaku", book: "shusaku-book.json", no33: true,
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
