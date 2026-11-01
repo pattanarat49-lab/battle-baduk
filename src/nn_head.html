@@ -104,7 +104,7 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 @keyframes gSpin { to { transform: rotate(-360deg); } }
 @keyframes gBob { 50% { transform: translateY(-6%) rotate(-6deg); } }
 @keyframes gDrift { 0%, 100% { transform: translateX(0); opacity: .85; } 50% { transform: translateX(8%); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .gfx, .fx-shine, .fx-shine .card::before, .spark { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .gfx, .fx-shine, .fx-shine .card::before, .spark, .mist i { animation: none; } }
 /* Lee Changho: a beam of light runs round the frame, and small stars twinkle on it */
 @property --shA { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
 .fxwrap.fx-shine { animation: shineGlow 3s ease-in-out infinite; }
@@ -129,6 +129,17 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .spark:nth-of-type(6) { left: 62%; bottom: -9px; animation-delay: -1.5s; }
 .spark:nth-of-type(7) { right: 14%; top: -9px; animation-delay: -2.1s; width: 14px; }
 @keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: .8; transform: scale(.8) rotate(60deg); } }
+/* Go Seigen: lavender mist (seamless texture chars/gs_mist.webp) drifts across the bottom of the card, a thinner veil at the top */
+.fxwrap.fx-mist .card { animation-name: mistGlow; }
+.fxwrap.fx-mist .card.pop { animation-name: pop, mistGlow; }
+@keyframes mistGlow { 0%, 100% { background: #8f86b8; } 50% { background: #d9d2f5; } }
+.mist { position: absolute; z-index: 2; left: -14%; right: -14%; overflow: hidden; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+.mist i { position: absolute; inset: 0 auto 0 0; width: 200%; background: url(chars/gs_mist.webp) 0 0 / 50% 100% repeat-x; animation: mistRun 22s linear infinite; }
+.mist.b { bottom: -4%; height: 36%; opacity: .9; }
+.mist.t { top: -3%; height: 22%; opacity: .55; transform: scaleY(-1); }
+.mist.t i { animation-duration: 34s; animation-direction: reverse; }
+@keyframes mistRun { to { transform: translateX(-50%); } }
 @keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
 .smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
   background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }
