@@ -4378,6 +4378,19 @@ const Tsumego = (() => {
         fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
     } catch (e) {}
   }
+  // online count on /stats: a ping every 2 minutes while the page is visible (one request each, nothing stored)
+  let pingAt = 0;
+  function ping() {
+    if (!STATS_URL || MATCH || document.hidden || Date.now() - pingAt < 6e4) return;
+    pingAt = Date.now();
+    try {
+      const body = JSON.stringify({ type: "ping", player: playerId });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
+        fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+  ping(); setInterval(ping, 12e4);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) ping(); });
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
   const LIVE_EVERY = MATCH ? 20000 : 60000; // a test match has no player to wait on: every 20 s
   let liveAt = 0, liveTimer = null;

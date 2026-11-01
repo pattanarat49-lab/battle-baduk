@@ -19,6 +19,8 @@ export class Stats extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
+    // who is on the site right now: player -> last time heard from, kept in memory only (no rows read or written)
+    this.online = new Map();
     this.sql.exec(`CREATE TABLE IF NOT EXISTS games (
       id TEXT PRIMARY KEY, player TEXT, char TEXT, size INTEGER, color INTEGER,
       started INTEGER, ended INTEGER, winner TEXT, how TEXT, moves INTEGER)`);
@@ -104,6 +106,8 @@ export class Stats extends DurableObject {
   }
   record(e) {
     const now = Date.now();
+    if (e.player && e.player !== "aimatch") this.online.set(e.player, now);
+    if (e.type === "ping") return;
     if (e.type === "open") {
       this.sql.exec("INSERT INTO mode_tally VALUES (?, 1, 0) ON CONFLICT(mode) DO UPDATE SET opens = opens + 1", e.mode);
       if (this.firstTime("INSERT OR IGNORE INTO mode_players VALUES (?, ?)", e.player, e.mode)) this.sql.exec("UPDATE mode_tally SET players = players + 1 WHERE mode = ?", e.mode);
@@ -147,10 +151,14 @@ export class Stats extends DurableObject {
   }
   // one answer serves every visitor for a minute
   summary() {
-    if (this.sumCache && Date.now() - this.sumCache.at < 6e4) return this.sumCache.s;
-    const s = this.summaryNow();
-    this.sumCache = { at: Date.now(), s };
-    return s;
+    if (!(this.sumCache && Date.now() - this.sumCache.at < 6e4)) this.sumCache = { at: Date.now(), s: this.summaryNow() };
+    return { ...this.sumCache.s, online: this.onlineNow() };
+  }
+  // a page pings every 2 minutes while it is visible, so anyone heard from in the last 3 minutes is counted as online
+  onlineNow() {
+    const since = Date.now() - 18e4;
+    for (const [p, t] of this.online) if (t < since) this.online.delete(p);
+    return this.online.size;
   }
   summaryNow() {
     const all = this.sql.exec("SELECT * FROM tally").toArray().map(r => ({ ...r, avg_moves: r.moves_n ? r.moves_sum / r.moves_n : null }));
@@ -183,6 +191,7 @@ function cleanState(s) {
 
 const MODES = new Set(["analysis", "tsumego", "photo"]); // photo: a board picture uploaded in Analysis
 function clean(b) {
+  if (b && b.type === "ping") { const player = id(b.player); return player ? { type: "ping", player } : null; }
   if (b && b.type === "open") { const player = id(b.player); return player && MODES.has(b.mode) ? { type: "open", player, mode: b.mode } : null; }
   if (!b || !["start", "move", "end"].includes(b.type)) return null;
   const e = { type: b.type, game: id(b.game), player: id(b.player), char: b.char, state: cleanState(b.state) };
@@ -286,10 +295,12 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 .day { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; font-size: 13px; padding: 3px 0; }
 .live { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .lg { display: flex; flex-direction: column; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; color: var(--fg); text-decoration: none; }
+.online b { color: #9fd8c0; }
 .lg:hover { border-color: var(--accent); } .lg.ai { border-style: dashed; } .lg span { font-size: 13px; color: var(--muted); } .lg .on { color: #9fd8c0; }
 .day i { display: block; height: 10px; border-radius: 5px; background: var(--accent); min-width: 4px; } .day span, .day b { color: var(--muted); font-weight: 400; }
 </style></head><body><main>
 <h1>สถิติ Baduk Battle</h1>
+<div class="tile online"><b>● ${s.online || 0} คน</b><span>ออนไลน์อยู่ตอนนี้ (เปิดเว็บอยู่ใน 3 นาทีล่าสุด · อัปเดตทุก 1 นาที)</span></div>
 <div class="tiles"><div class="tile"><b>${s.total.games}</b><span>เกมที่เริ่มเล่นทั้งหมด</span></div><div class="tile"><b>${s.total.players}</b><span>ผู้เล่น (นับตามเครื่อง)</span></div></div>
 <section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
 <section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)", "เปิด"], ["tsumego", "Tsumego (โจทย์)", "เปิด"], ["photo", "อัปโหลดรูปกระดาน (Analysis)", "อัปรูป"]].map(([k, t, v]) => { const m = (s.modes || {})[k] || {};
