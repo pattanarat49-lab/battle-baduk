@@ -77,14 +77,14 @@
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
-      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 ชอบเล่นโจเซกิโบราณที่สมัยนี้ไม่นิยม ไม่เข้ามุม 3-3 ช่วงเปิดเกม เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 ชอบเล่นโจเซกิโบราณที่สมัยนี้ไม่นิยม ไม่เข้ามุม 3-3 ช่วงเปิดเกม เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
       // light and quick: leaves a small local answer for a big point elsewhere (tenuki), and of near-equal moves takes the
       // highest; the margins are tight enough that a real fight is still fought with the best move
       search: { visits: 100000, timeMs: 15000, tenuki: { margin: 0.04, points: 1.5, pool: 8, until: 180 }, cosmic: { margin: 0.05, points: 2.5, pool: 8, until: 200 }, no33: 60 },
-      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากจักรวาล\" (Cosmic style) เปิดเกมตามคิฟุจริงของทาเคมิยะหรือซันเร็นเซ เดินหมากเบาและเร็ว ทิ้งมือไปจุดใหญ่บ่อย เดินหมากสูงสร้างโมโยกลางกระดานให้ใหญ่ที่สุด แต่ถ้าต้องสู้ก็สู้เต็มที่ ไม่เข้ามุม 3-3 สมอง KataGo b18 เล่นเต็มกำลังทุกตา ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากจักรวาล\" (Cosmic style) เปิดเกมตามคิฟุจริงของทาเคมิยะหรือซันเร็นเซ เดินหมากเบาและเร็ว ทิ้งมือไปจุดใหญ่บ่อย เดินหมากสูงสร้างโมโยกลางกระดานให้ใหญ่ที่สุด แต่ถ้าต้องสู้ก็สู้เต็มที่ ไม่เข้ามุม 3-3 สมอง KataGo b18 เล่นเต็มกำลังทุกตา ครั้งแรกต้องโหลดเพิ่ม แนะนำให้ต่อ Wi-Fi",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
     // Lee Changho, three phases. Opening (about 40 moves): a full read with a strong pull to solid shape, so it is slow and
     // a little passive (owner 2026-10-31: still 9 dan, not weak). Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
@@ -93,14 +93,14 @@
       early: { visits: 100000, timeMs: 12000, solid: { margin: 0.05, points: 2, pool: 6 } },
       search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
-      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เดินช้าแต่หนักแน่น เลี่ยงการต่อสู้ที่ไม่จำเป็น ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ช่วงเปิดเกมเดินตามคิฟุจริงของอีชางโฮเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เดินช้าแต่หนักแน่น เลี่ยงการต่อสู้ที่ไม่จำเป็น ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ช่วงเปิดเกมเดินตามคิฟุจริงของอีชางโฮเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม แนะนำให้ต่อ Wi-Fi",
       say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
     // Go Seigen: his own game records first, then a free (weighted random) choice among near-equal moves
     { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "creative", secret: true, special: true, fx: "mist", brain: "b18", book: "seigen-book.json", no33: true,
       // unusual joseki in the opening (a wider pick among near-equal moves), then creative only where it costs little
       early: { visits: 100000, timeMs: 15000, creative: { margin: 0.05, points: 2, pool: 10 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, creative: { margin: 0.03, points: 1.2, pool: 6 }, no33: 60 },
-      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ชอบโจเซกิแปลกๆ ช่วงเปิดเกม ไม่เข้ามุม 3-3 ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ชอบโจเซกิแปลกๆ ช่วงเปิดเกม ไม่เข้ามุม 3-3 ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม แนะนำให้ต่อ Wi-Fi",
       say: { hello: "หมากล้อมคือความกลมกลืน", ahead: "ทุกเม็ดอยู่ในที่ของมัน", behind: "น่าสนใจมาก", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "คุณเล่นได้ยอดเยี่ยม" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
@@ -576,7 +576,7 @@
       try { if (await tf.setBackend("webgl")) backend = "webgl"; } catch (e) {}
       if (backend !== "webgl") await tf.setBackend("cpu");
       await tf.ready();
-      el.textContent = "กำลังดาวน์โหลดสมอง AI (6 MB)…";
+      el.textContent = "กำลังโหลดสมอง AI…";
       const [meta, buf] = await Promise.all([
         fetch(MODEL + ".json").then(r => { if (!r.ok) throw new Error("model json " + r.status); return r.json(); }),
         loadWeights()
@@ -659,6 +659,14 @@
       engineReady = true;
       label();
       console.log("warmup", Math.round(t1 - t0), "ms; per eval", ms, "ms");
+      // the kyu characters' HumanSL brain downloads now, on the home screen, so picking one needs no loading screen
+      // (owner, 2026-11-01); the chip shows the progress as a percentage only
+      if (!MATCH && EXAMBOT === null) (async () => {
+        const p = loadBrain("human"), st = brains.human;
+        el.textContent = "กำลังโหลดสมอง AI… 0%";
+        const tick = setInterval(() => { if (!st.ai) el.textContent = `กำลังโหลดสมอง AI… ${Math.round(st.stage === "dl" ? st.pct * 90 : 95)}%`; }, 400);
+        try { await p; } catch (e) { console.warn("HumanSL preload failed", e); } finally { clearInterval(tick); label(); }
+      })();
       if (MATCH) startMatch();
       else if (EXAMBOT !== null) startExamBot();
       else if (board) { render(); maybeAI(); startPonder(); }
@@ -1301,7 +1309,7 @@
       const p = Math.round(stage === "dl" ? dl * 90 : ({ build: 92, wasm: 93, warm: 97, done: 100 })[stage] || 90);
       $("blFill").style.width = p + "%";
       $("blPct").textContent = p + "%";
-      $("blStep").textContent = stage === "dl" ? (st && st.mb ? `กำลังดาวน์โหลด ${Math.round(dl * st.mb)} / ${st.mb} MB` : "กำลังดาวน์โหลด") : ({
+      $("blStep").textContent = stage === "dl" ? "กำลังดาวน์โหลด" : ({
         build: "กำลังเตรียมสมอง…", wasm: "การ์ดจอรับไม่ไหว กำลังสลับไปใช้ CPU…", warm: "กำลังอุ่นเครื่อง…", done: "พร้อมแล้ว"
       })[stage] || "";
     };
