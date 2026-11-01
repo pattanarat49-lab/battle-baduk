@@ -92,6 +92,19 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 #home { overflow-x: clip; }
 .fxwrap .card { position: relative; z-index: 1; animation: saiGlow 3s ease-in-out infinite; }
 .fxwrap .card.pop { animation: pop .24s steps(3) both, saiGlow 3s ease-in-out .24s infinite; }
+.fxwrap.fx-gold .card { animation-name: goldGlow; }
+.fxwrap.fx-gold .card.pop { animation-name: pop, goldGlow; }
+@keyframes goldGlow { 0%, 100% { background: #a8792a; } 50% { background: #f3d58a; } }
+/* Takemiya: golden cosmic clouds (owner's sheet, cut into chars/tk_*.webp) drift round the card, a vortex turns behind it */
+.gfx { position: absolute; z-index: 2; pointer-events: none; background: center / contain no-repeat; }
+.gfx.v { z-index: 0; width: 62%; aspect-ratio: 1; right: -24%; top: -10%; background-image: url(chars/tk_vortex.webp); animation: gSpin 14s linear infinite; opacity: .9; }
+.gfx.s { width: 50%; aspect-ratio: 300 / 225; left: -22%; top: -4%; background-image: url(chars/tk_swirl.webp); animation: gBob 5s ease-in-out infinite; }
+.gfx.c1 { width: 58%; aspect-ratio: 300 / 143; right: -26%; top: 46%; background-image: url(chars/tk_cloud1.webp); animation: gDrift 7s ease-in-out infinite reverse; }
+.gfx.c2 { width: 62%; aspect-ratio: 300 / 215; left: -26%; bottom: -6%; background-image: url(chars/tk_cloud2.webp); animation: gDrift 6s ease-in-out infinite; }
+@keyframes gSpin { to { transform: rotate(-360deg); } }
+@keyframes gBob { 50% { transform: translateY(-6%) rotate(-6deg); } }
+@keyframes gDrift { 0%, 100% { transform: translateX(0); opacity: .85; } 50% { transform: translateX(8%); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gfx { animation: none; } }
 @keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
 .smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
   background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }

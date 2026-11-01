@@ -92,6 +92,19 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 #home { overflow-x: clip; }
 .fxwrap .card { position: relative; z-index: 1; animation: saiGlow 3s ease-in-out infinite; }
 .fxwrap .card.pop { animation: pop .24s steps(3) both, saiGlow 3s ease-in-out .24s infinite; }
+.fxwrap.fx-gold .card { animation-name: goldGlow; }
+.fxwrap.fx-gold .card.pop { animation-name: pop, goldGlow; }
+@keyframes goldGlow { 0%, 100% { background: #a8792a; } 50% { background: #f3d58a; } }
+/* Takemiya: golden cosmic clouds (owner's sheet, cut into chars/tk_*.webp) drift round the card, a vortex turns behind it */
+.gfx { position: absolute; z-index: 2; pointer-events: none; background: center / contain no-repeat; }
+.gfx.v { z-index: 0; width: 62%; aspect-ratio: 1; right: -24%; top: -10%; background-image: url(chars/tk_vortex.webp); animation: gSpin 14s linear infinite; opacity: .9; }
+.gfx.s { width: 50%; aspect-ratio: 300 / 225; left: -22%; top: -4%; background-image: url(chars/tk_swirl.webp); animation: gBob 5s ease-in-out infinite; }
+.gfx.c1 { width: 58%; aspect-ratio: 300 / 143; right: -26%; top: 46%; background-image: url(chars/tk_cloud1.webp); animation: gDrift 7s ease-in-out infinite reverse; }
+.gfx.c2 { width: 62%; aspect-ratio: 300 / 215; left: -26%; bottom: -6%; background-image: url(chars/tk_cloud2.webp); animation: gDrift 6s ease-in-out infinite; }
+@keyframes gSpin { to { transform: rotate(-360deg); } }
+@keyframes gBob { 50% { transform: translateY(-6%) rotate(-6deg); } }
+@keyframes gDrift { 0%, 100% { transform: translateX(0); opacity: .85; } 50% { transform: translateX(8%); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gfx { animation: none; } }
 @keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
 .smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
   background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }
@@ -3575,7 +3588,7 @@ const Tsumego = (() => {
       bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 ชอบเล่นโจเซกิโบราณที่สมัยนี้ไม่นิยม ไม่เข้ามุม 3-3 ช่วงเปิดเกม เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
-    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
+    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
       // light and quick: leaves a small local answer for a big point elsewhere (tenuki), and of near-equal moves takes the
       // highest; the margins are tight enough that a real fight is still fought with the best move
       search: { visits: 100000, timeMs: 15000, tenuki: { margin: 0.04, points: 1.5, pool: 8, until: 180 }, cosmic: { margin: 0.05, points: 2.5, pool: 8, until: 200 }, no33: 60 },
@@ -5319,7 +5332,7 @@ const Tsumego = (() => {
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
     charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${prev.special ? qMark("") : pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      ${spCard || `${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
+      ${spCard || `${c.fx ? `<div class="fxwrap fx-${c.fx}">` : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx === "gold" ? '<i class="gfx v"></i><i class="gfx s"></i><i class="gfx c1"></i><i class="gfx c2"></i></div>' : c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${next.special ? qMark("") : pxImg(next, "")}</button>`;
     $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "ตัวละครลึกลับ แตะการ์ดเพื่อดูว่ามีใครบ้าง" : "เลือกตัวละครพิเศษที่จะเล่นด้วย: " + SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
