@@ -634,7 +634,6 @@ body.coaching .app .quote { display: none; }
 @keyframes coBlink { 50% { opacity: .35; } }
 .co-top button { margin-left: auto; min-height: 30px; padding: 2px 10px; font-size: 13px; border-radius: 999px; }
 .co-top button + button { margin-left: 0; }
-#coAuto { font-size: 12px; } #coAuto[aria-pressed="false"] { opacity: .65; }
 #coClose { display: none; }
 .co-log { position: relative; display: grid; gap: 8px; align-content: start; overflow-y: auto; overscroll-behavior: contain; max-height: 4.9em; font-size: 14px; line-height: 1.55; }
 .co-msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 6px; align-items: start; }
@@ -748,6 +747,8 @@ body.coaching .app .quote { display: none; }
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
     <div class="opt" id="optHandi" hidden><span class="opt-l">หมากต่อ (คุณถือดำ · โคมิ 0.5)</span>
       <div class="seg seg9" id="segHandi"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="7">7</button><button data-v="8">8</button><button data-v="9">9</button></div></div>
+    <div class="opt" id="optFon" hidden><span class="opt-l">ระดับฝีมือครูฝน</span>
+      <div class="seg seg9" id="segFon"><button data-v="15">15 คิว</button><button data-v="10">10 คิว</button><button data-v="8">8 คิว</button><button data-v="6">6 คิว</button><button data-v="3">3 คิว</button><button data-v="1">1 ดั้ง</button></div></div>
     <div class="opt" id="optBonus" hidden><span class="opt-l">ต่อแต้มให้คุณ (บวกตอนนับแต้ม)</span>
       <div class="seg seg9" id="segBonus"><button data-v="0">0</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="40">40</button><button data-v="50">50</button><button data-v="60">60</button><button data-v="70">70</button><button data-v="80">80</button><button data-v="90">90</button><button data-v="100">100</button></div></div>
   </div>
@@ -883,7 +884,7 @@ body.coaching .app .quote { display: none; }
     <div class="quote" id="quote" hidden></div>
     <div class="coach" id="coach" hidden>
       <div class="co-top"><img src="chars/fon_face.jpg" alt="" width="160" height="160"><b>KRU FON · ครูฝน</b><span class="co-busy" id="coBusy" hidden>กำลังคิด…</span>
-        <button type="button" id="coAuto" aria-pressed="true">แนะนำทุกตา: เปิด</button><button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
+        <button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
       <div class="co-log" id="coLog" aria-live="polite"></div>
       <div class="co-picks" id="coPicks"></div>
       <div class="co-chips" id="coChips"></div>

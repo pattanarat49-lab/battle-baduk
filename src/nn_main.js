@@ -29,11 +29,12 @@
       say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
     // beginner coach (owner 2026-11-01, not live yet): plays a gentle 19x19 game with HumanSL at 15 kyu, and during the
     // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
-    // (src/coach.js). The choices are read with KataGo b10 together with HumanSL at 8 kyu (natural, easy to understand moves)
-    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, brain: "human", profile: "rank_15k",
-      search: { temperature: 0.8, local: 3, keepTerritory: true },
-      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
-      say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ครูจะช่วยดูให้ทุกตาเลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
+    // (src/coach.js). Choice A is HumanSL at 9 dan's best move (its search judges positions with KataGo b10); the other
+    // choices are good moves that the same network finds natural, checked with KataGo b10
+    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
+      search: { temperature: 0.8, local: 3, keepTerritory: true }, // used only before a level is set; FON_LV holds each level's settings
+      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
+      say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
@@ -119,7 +120,7 @@
   // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
   const TALK = {
     fon: {
-      hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ครูจะช่วยดูให้ทุกตาเลย",
+      hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย",
       caught: "โอ๊ะ ครูโดนกินไป {n} เม็ด เก่งมาก!|กินได้ {n} เม็ด ดีมาก แบบนี้แหละ",
       capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
       humanPass: "ผ่านแล้วเหรอ ถ้ายังมีที่ได้แต้ม ลองถามครูก่อนนะ|ผ่านได้เมื่อไม่มีจุดได้แต้มแล้วนะ",
@@ -515,7 +516,18 @@
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
+  // Kru Fon's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
+  const FON_LV = {
+    15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
+    10: { name: "10 คิว", search: { profile: "rank_10k", temperature: 0.8, local: 3, keepTerritory: true } },
+    8: { name: "8 คิว", search: { profile: "rank_8k", temperature: 0.8, local: 3, keepTerritory: true } },
+    6: { name: "6 คิว", search: { profile: "rank_6k", temperature: 0.8, local: 3, keepTerritory: true } },
+    3: { name: "3 คิว", search: { profile: "rank_3k", temperature: 0.7, local: 3, keepTerritory: true } },
+    1: { name: "1 ดั้ง", search: { profile: "rank_1d", visits: 12, local: 3 } }
+  };
+  const fonLvOf = v => FON_LV[v] ? +v : 15;
+  let fonLv = 15; // the level of the game on the board
+  const settings = { fonLv: fonLvOf(load("fonLv", 15)), size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
@@ -947,6 +959,7 @@
     handi = 0; KOMI = 7.5;
     if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
     bonus = MATCH || EXAMBOT !== null ? 0 : bonusFor(gameChar, settings.bonus);
+    fonLv = fonLvOf(settings.fonLv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
@@ -958,7 +971,7 @@
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
       $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
@@ -1061,14 +1074,14 @@
   function saveGame() {
     if (!board || MATCH) return;
     if (over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
+    save("game", { char: CHARS[gameChar].id, lv: fonLv, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
-    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus);
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus); fonLv = fonLvOf(g.lv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
@@ -1080,7 +1093,7 @@
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
       $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
@@ -1431,7 +1444,7 @@
   const secretOpen = () => true; // owner 2026-11-01: special characters open to everyone
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
-  const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
+  const searchFor = ch => ch.levels ? FON_LV[fonLv].search : ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
   async function maybeAI() {
     matchTurn();
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
@@ -1625,6 +1638,7 @@
   };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
+    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Fon answers with her three choices
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
     let res;
     try {
@@ -1902,7 +1916,7 @@
     }
   }
 
-  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus");
+  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus"); seg("segFon", "fonLv");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
   // special characters (Sai, Takemiya) share one slot: a "Special Character" card that opens a choice between them.
@@ -1944,6 +1958,7 @@
     $("faces").hidden = examMode;
     // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
     $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
+    $("optFon").hidden = !CHARS[settings.char].levels || examMode;
     $("optBonus").hidden = !bonusFor(settings.char, 10) || examMode || (CHARS[settings.char].special && spView !== "char");
     const spHead = '<button class="cexam sp-head" data-sp="pick">SPECIAL CHARACTER</button>';
     const spCard = sp === "cover"
@@ -2013,17 +2028,17 @@
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // the beginner coach in a game with Kru Fon
   const coachOn = () => !!CHARS[gameChar].coach && !MATCH && EXAMBOT === null;
-  const COACH_PROFILE = "rank_8k"; // the human eye the coach reads the choices with: natural moves of a club player
+  const COACH_PROFILE = "rank_9d"; // the coach's best move: HumanSL at its strongest (owner 2026-11-01)
   Coach.E = E;
   Coach.ai = () => engineReady ? AI : null;
   Coach.evalMs = () => evalMs;
   Coach.komi = () => KOMI;
   Coach.state = () => ({ n, moves: history ? history.slice() : [], human, live: !!board && !over && !scoring,
     myTurn: !!board && engineReady && !over && !scoring && !thinking && reviewAt === null && board.toPlay === human });
-  Coach.human = async moves => {
+  Coach.humanAI = async () => {
     const st = brains.human; if (!st || !st.ai || thinking) return null;
     const a = st.ai; if (a.big.getProfile() !== COACH_PROFILE) { a.big.setProfile(COACH_PROFILE); a.clearCache(); }
-    return (await a.evaluate(n, moves, KOMI)).policy;
+    return a;
   };
   Coach.play = p => { if (!engineReady || over || scoring || thinking || board.toPlay !== human || !board.isLegal(p, human)) return; unlockAudio(); playMove(p); };
   Coach.preview = p => { if (!board || board.toPlay !== human || !board.isLegal(p, human)) return; pending = p; blip(700); render(); };

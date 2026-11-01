@@ -634,7 +634,6 @@ body.coaching .app .quote { display: none; }
 @keyframes coBlink { 50% { opacity: .35; } }
 .co-top button { margin-left: auto; min-height: 30px; padding: 2px 10px; font-size: 13px; border-radius: 999px; }
 .co-top button + button { margin-left: 0; }
-#coAuto { font-size: 12px; } #coAuto[aria-pressed="false"] { opacity: .65; }
 #coClose { display: none; }
 .co-log { position: relative; display: grid; gap: 8px; align-content: start; overflow-y: auto; overscroll-behavior: contain; max-height: 4.9em; font-size: 14px; line-height: 1.55; }
 .co-msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 6px; align-items: start; }
@@ -748,6 +747,8 @@ body.coaching .app .quote { display: none; }
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
     <div class="opt" id="optHandi" hidden><span class="opt-l">หมากต่อ (คุณถือดำ · โคมิ 0.5)</span>
       <div class="seg seg9" id="segHandi"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="7">7</button><button data-v="8">8</button><button data-v="9">9</button></div></div>
+    <div class="opt" id="optFon" hidden><span class="opt-l">ระดับฝีมือครูฝน</span>
+      <div class="seg seg9" id="segFon"><button data-v="15">15 คิว</button><button data-v="10">10 คิว</button><button data-v="8">8 คิว</button><button data-v="6">6 คิว</button><button data-v="3">3 คิว</button><button data-v="1">1 ดั้ง</button></div></div>
     <div class="opt" id="optBonus" hidden><span class="opt-l">ต่อแต้มให้คุณ (บวกตอนนับแต้ม)</span>
       <div class="seg seg9" id="segBonus"><button data-v="0">0</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="40">40</button><button data-v="50">50</button><button data-v="60">60</button><button data-v="70">70</button><button data-v="80">80</button><button data-v="90">90</button><button data-v="100">100</button></div></div>
   </div>
@@ -883,7 +884,7 @@ body.coaching .app .quote { display: none; }
     <div class="quote" id="quote" hidden></div>
     <div class="coach" id="coach" hidden>
       <div class="co-top"><img src="chars/fon_face.jpg" alt="" width="160" height="160"><b>KRU FON · ครูฝน</b><span class="co-busy" id="coBusy" hidden>กำลังคิด…</span>
-        <button type="button" id="coAuto" aria-pressed="true">แนะนำทุกตา: เปิด</button><button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
+        <button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
       <div class="co-log" id="coLog" aria-live="polite"></div>
       <div class="co-picks" id="coPicks"></div>
       <div class="co-chips" id="coChips"></div>
@@ -3645,7 +3646,7 @@ const Tsumego = (() => {
 // network at a club-kyu profile (how natural the move is for a human), so the suggestions are good moves a beginner can
 // understand and remember, not the engine's most surprising one. Everything runs in the browser: no server, no LLM.
 const Coach = (function () {
-  // set by the game: E, ai() (KataGo b10 or null), human(moves) (HumanSL policy for the position, or null), state()
+  // set by the game: E, ai() (KataGo b10 or null), humanAI() (the HumanSL brain set to 9 dan, or null), state()
   // ({ n, moves, human, live, myTurn }), play(p), preview(p), marks(list), evalMs(), komi()
   const api = {};
   const LETTERS = "ABCDEFGHJKLMNOPQRST";
@@ -3655,10 +3656,9 @@ const Coach = (function () {
   const CN = [null, "ดำ", "ขาว"];
   const NAME = "ครูฝน", FACE = "chars/fon_face.jpg";
   let E, Board, PASS, BLACK, WHITE;
-  let on = false, auto = true, tok = 0, chain = Promise.resolve(), busy = 0;
+  let on = false, tok = 0, chain = Promise.resolve(), busy = 0;
   let picks = null;      // the choices for the position on the board: { key, list: [{ move, letter, grade, ... }] }
   let phaseTold = {};    // which phase talks were given this game
-  let lastCoachKey = null; // the position the last automatic suggestion was for
 
   // one network job at a time, and the game's own AI waits for it (idle) so the two never share the network's profile
   function queue(fn) { busy++; const p = chain.then(fn); chain = p.catch(e => console.warn("coach", e)).finally(() => { busy--; renderBusy(); }); renderBusy(); return p; }
@@ -3813,10 +3813,17 @@ const Coach = (function () {
     const AI = api.ai(); if (!AI) return null;
     const s0 = st(), n = s0.n, moves = s0.moves.slice(), b = boardOf(n, moves), c = b.toPlay;
     const ms = api.evalMs ? api.evalMs() : 50;
-    const s = await AI.think(n, moves, api.komi(), { visits: 2500, timeMs: ms > 150 ? 2500 : 3500, batch: ms < 40 ? 16 : 8, top: 10, shouldStop: () => my !== tok });
+    // the best move comes from HumanSL at its strongest (9 dan) reading ahead with KataGo's eye for who is winning
+    // (owner 2026-11-01); without it (still loading, or it failed) KataGo b10 reads alone
+    let H = null; try { H = await api.humanAI(); } catch (e) { H = null; }
+    if (my !== tok) return null;
+    const brain = H || AI;
+    let s;
+    try { s = await brain.think(n, moves, api.komi(), { visits: H ? 600 : 2500, timeMs: ms > 150 ? 3000 : 4000, batch: H ? 1 : ms < 40 ? 16 : 8, top: 10, shouldStop: () => my !== tok }); }
+    catch (e) { if (!H) throw e; s = await AI.think(n, moves, api.komi(), { visits: 2500, timeMs: 3000, batch: 8, top: 10, shouldStop: () => my !== tok }); }
     if (my !== tok) return null;
     let hp = null;
-    try { hp = await api.human(moves); } catch (e) { hp = null; }
+    try { hp = H ? (await H.evaluate(n, moves, api.komi())).policy : null; } catch (e) { hp = null; }
     if (my !== tok) return null;
     const maxN = s.top[0].visits;
     const cand = new Map();
@@ -3838,7 +3845,7 @@ const Coach = (function () {
     const by = (arr, f) => arr.slice().sort((a, z) => f(z) - f(a))[0];
     const far = (p, q) => { const [x1, y1] = b.xy(p), [x2, y2] = b.xy(q); return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)) >= 3; };
     const easy = x => x.hp + (x.visits / maxN) * 0.15; // natural for a human, and read well by the engine
-    const A = by(list.filter(x => x.loss <= 1.2), easy) || best;
+    const A = best; // HumanSL's best move is always choice A
     const restGood = list.filter(x => x !== A && x.loss <= 3);
     const B = by(restGood.filter(x => far(x.move, A.move)), easy) || by(restGood, easy);
     let C = null, trap = false;
@@ -4072,43 +4079,34 @@ const Coach = (function () {
   }
 
   // ---------- the game tells the coach what happened ----------
-  // a move was played: comment on it, and when it is the player's turn again, offer the next choices
+  // a move was played: comment on it. The choices come only when the player asks (the แนะนำ button, owner 2026-11-01)
   api.moved = function (moves, mover) {
     if (!on) return;
     const s = st(), prev = picks, before = moves.slice(0, -1), m = moves[moves.length - 1];
     tok++; picks = null; api.marks([]); $("coPicks").innerHTML = ""; setChips();
     if (mover === s.human) judgeMine(prev, before, m);
-    else explainMine(before, m, moves.length > 40 && moves.length % 3 !== 0).then(() => turn());
+    else explainMine(before, m, moves.length > 40 && moves.length % 3 !== 0).then(() => setChips());
   };
-  function turn() {
-    const s = st(); setChips();
-    if (!on || !s.myTurn || !auto) return;
-    if (lastCoachKey === keyOf(s.moves)) return;
-    lastCoachKey = keyOf(s.moves); suggest(false);
-  }
-  api.turn = turn;
+  api.turn = () => { if (on) setChips(); };
+  api.hint = () => { if (!on) return; bubble("แนะนำหน่อยครับ", "me"); suggest(true); };
   api.start = function (o) {
     E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
-    on = !!o; tok++; picks = null; phaseTold = {}; lastCoachKey = null;
+    on = !!o; tok++; picks = null; phaseTold = {};
     document.body.classList.toggle("coaching", on);
     $("coach").hidden = !on; $("coach").classList.remove("open");
     if (!on) { api.marks([]); return; }
     $("coLog").innerHTML = "";
     const s = st();
     if (o.resume) say(`กลับมาเล่นต่อแล้ว ครูจำกระดานได้ เดี๋ยวช่วยดูให้นะ`);
-    else say(`สวัสดีจ้า ครูฝนเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ทุกตาครูจะเลือกตัวเลือก <b>A B C</b> ให้พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
-    renderAuto(); setChips(); renderBusy();
-    turn();
+    else say(`สวัสดีจ้า ครูฝนเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
+    setChips(); renderBusy();
   };
   api.stop = () => { on = false; tok++; document.body.classList.remove("coaching"); $("coach").hidden = true; };
   api.active = () => on;
-  function renderAuto() { $("coAuto").textContent = auto ? "แนะนำทุกตา: เปิด" : "แนะนำทุกตา: ปิด"; $("coAuto").setAttribute("aria-pressed", String(auto)); }
 
   // ---------- wiring ----------
   function wire() {
-    try { auto = localStorage.getItem("gonn.coachAuto") !== "0"; } catch (e) {}
     $("coForm").addEventListener("submit", e => { e.preventDefault(); const v = $("coIn").value; $("coIn").value = ""; ask(v); });
-    $("coAuto").onclick = () => { auto = !auto; try { localStorage.setItem("gonn.coachAuto", auto ? "1" : "0"); } catch (e) {} renderAuto(); if (auto) turn(); };
     $("coOpen").onclick = () => { $("coach").classList.add("open"); $("coLog").scrollTop = $("coLog").scrollHeight; };
     $("coClose").onclick = () => $("coach").classList.remove("open");
     $("coLog").addEventListener("click", e => { if (!e.target.closest("button") && !$("coach").classList.contains("open") && matchMedia("(max-aspect-ratio: 9/8)").matches) $("coOpen").onclick(); });
@@ -4167,11 +4165,12 @@ const Coach = (function () {
       say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
     // beginner coach (owner 2026-11-01, not live yet): plays a gentle 19x19 game with HumanSL at 15 kyu, and during the
     // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
-    // (src/coach.js). The choices are read with KataGo b10 together with HumanSL at 8 kyu (natural, easy to understand moves)
-    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, brain: "human", profile: "rank_15k",
-      search: { temperature: 0.8, local: 3, keepTerritory: true },
-      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
-      say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ครูจะช่วยดูให้ทุกตาเลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
+    // (src/coach.js). Choice A is HumanSL at 9 dan's best move (its search judges positions with KataGo b10); the other
+    // choices are good moves that the same network finds natural, checked with KataGo b10
+    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
+      search: { temperature: 0.8, local: 3, keepTerritory: true }, // used only before a level is set; FON_LV holds each level's settings
+      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
+      say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
@@ -4257,7 +4256,7 @@ const Coach = (function () {
   // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
   const TALK = {
     fon: {
-      hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ครูจะช่วยดูให้ทุกตาเลย",
+      hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย",
       caught: "โอ๊ะ ครูโดนกินไป {n} เม็ด เก่งมาก!|กินได้ {n} เม็ด ดีมาก แบบนี้แหละ",
       capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
       humanPass: "ผ่านแล้วเหรอ ถ้ายังมีที่ได้แต้ม ลองถามครูก่อนนะ|ผ่านได้เมื่อไม่มีจุดได้แต้มแล้วนะ",
@@ -4653,7 +4652,18 @@ const Coach = (function () {
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
+  // Kru Fon's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
+  const FON_LV = {
+    15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
+    10: { name: "10 คิว", search: { profile: "rank_10k", temperature: 0.8, local: 3, keepTerritory: true } },
+    8: { name: "8 คิว", search: { profile: "rank_8k", temperature: 0.8, local: 3, keepTerritory: true } },
+    6: { name: "6 คิว", search: { profile: "rank_6k", temperature: 0.8, local: 3, keepTerritory: true } },
+    3: { name: "3 คิว", search: { profile: "rank_3k", temperature: 0.7, local: 3, keepTerritory: true } },
+    1: { name: "1 ดั้ง", search: { profile: "rank_1d", visits: 12, local: 3 } }
+  };
+  const fonLvOf = v => FON_LV[v] ? +v : 15;
+  let fonLv = 15; // the level of the game on the board
+  const settings = { fonLv: fonLvOf(load("fonLv", 15)), size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
@@ -5085,6 +5095,7 @@ const Coach = (function () {
     handi = 0; KOMI = 7.5;
     if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
     bonus = MATCH || EXAMBOT !== null ? 0 : bonusFor(gameChar, settings.bonus);
+    fonLv = fonLvOf(settings.fonLv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
@@ -5096,7 +5107,7 @@ const Coach = (function () {
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
       $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
@@ -5199,14 +5210,14 @@ const Coach = (function () {
   function saveGame() {
     if (!board || MATCH) return;
     if (over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
+    save("game", { char: CHARS[gameChar].id, lv: fonLv, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
-    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus);
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus); fonLv = fonLvOf(g.lv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
@@ -5218,7 +5229,7 @@ const Coach = (function () {
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
       $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
@@ -5569,7 +5580,7 @@ const Coach = (function () {
   const secretOpen = () => true; // owner 2026-11-01: special characters open to everyone
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
-  const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
+  const searchFor = ch => ch.levels ? FON_LV[fonLv].search : ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
   async function maybeAI() {
     matchTurn();
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
@@ -5763,6 +5774,7 @@ const Coach = (function () {
   };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
+    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Fon answers with her three choices
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
     let res;
     try {
@@ -6040,7 +6052,7 @@ const Coach = (function () {
     }
   }
 
-  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus");
+  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus"); seg("segFon", "fonLv");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
   // special characters (Sai, Takemiya) share one slot: a "Special Character" card that opens a choice between them.
@@ -6082,6 +6094,7 @@ const Coach = (function () {
     $("faces").hidden = examMode;
     // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
     $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
+    $("optFon").hidden = !CHARS[settings.char].levels || examMode;
     $("optBonus").hidden = !bonusFor(settings.char, 10) || examMode || (CHARS[settings.char].special && spView !== "char");
     const spHead = '<button class="cexam sp-head" data-sp="pick">SPECIAL CHARACTER</button>';
     const spCard = sp === "cover"
@@ -6151,17 +6164,17 @@ const Coach = (function () {
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
   // the beginner coach in a game with Kru Fon
   const coachOn = () => !!CHARS[gameChar].coach && !MATCH && EXAMBOT === null;
-  const COACH_PROFILE = "rank_8k"; // the human eye the coach reads the choices with: natural moves of a club player
+  const COACH_PROFILE = "rank_9d"; // the coach's best move: HumanSL at its strongest (owner 2026-11-01)
   Coach.E = E;
   Coach.ai = () => engineReady ? AI : null;
   Coach.evalMs = () => evalMs;
   Coach.komi = () => KOMI;
   Coach.state = () => ({ n, moves: history ? history.slice() : [], human, live: !!board && !over && !scoring,
     myTurn: !!board && engineReady && !over && !scoring && !thinking && reviewAt === null && board.toPlay === human });
-  Coach.human = async moves => {
+  Coach.humanAI = async () => {
     const st = brains.human; if (!st || !st.ai || thinking) return null;
     const a = st.ai; if (a.big.getProfile() !== COACH_PROFILE) { a.big.setProfile(COACH_PROFILE); a.clearCache(); }
-    return (await a.evaluate(n, moves, KOMI)).policy;
+    return a;
   };
   Coach.play = p => { if (!engineReady || over || scoring || thinking || board.toPlay !== human || !board.isLegal(p, human)) return; unlockAudio(); playMove(p); };
   Coach.preview = p => { if (!board || board.toPlay !== human || !board.isLegal(p, human)) return; pending = p; blip(700); render(); };

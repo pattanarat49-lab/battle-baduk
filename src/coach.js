@@ -4,7 +4,7 @@
 // network at a club-kyu profile (how natural the move is for a human), so the suggestions are good moves a beginner can
 // understand and remember, not the engine's most surprising one. Everything runs in the browser: no server, no LLM.
 const Coach = (function () {
-  // set by the game: E, ai() (KataGo b10 or null), human(moves) (HumanSL policy for the position, or null), state()
+  // set by the game: E, ai() (KataGo b10 or null), humanAI() (the HumanSL brain set to 9 dan, or null), state()
   // ({ n, moves, human, live, myTurn }), play(p), preview(p), marks(list), evalMs(), komi()
   const api = {};
   const LETTERS = "ABCDEFGHJKLMNOPQRST";
@@ -14,10 +14,9 @@ const Coach = (function () {
   const CN = [null, "ดำ", "ขาว"];
   const NAME = "ครูฝน", FACE = "chars/fon_face.jpg";
   let E, Board, PASS, BLACK, WHITE;
-  let on = false, auto = true, tok = 0, chain = Promise.resolve(), busy = 0;
+  let on = false, tok = 0, chain = Promise.resolve(), busy = 0;
   let picks = null;      // the choices for the position on the board: { key, list: [{ move, letter, grade, ... }] }
   let phaseTold = {};    // which phase talks were given this game
-  let lastCoachKey = null; // the position the last automatic suggestion was for
 
   // one network job at a time, and the game's own AI waits for it (idle) so the two never share the network's profile
   function queue(fn) { busy++; const p = chain.then(fn); chain = p.catch(e => console.warn("coach", e)).finally(() => { busy--; renderBusy(); }); renderBusy(); return p; }
@@ -172,10 +171,17 @@ const Coach = (function () {
     const AI = api.ai(); if (!AI) return null;
     const s0 = st(), n = s0.n, moves = s0.moves.slice(), b = boardOf(n, moves), c = b.toPlay;
     const ms = api.evalMs ? api.evalMs() : 50;
-    const s = await AI.think(n, moves, api.komi(), { visits: 2500, timeMs: ms > 150 ? 2500 : 3500, batch: ms < 40 ? 16 : 8, top: 10, shouldStop: () => my !== tok });
+    // the best move comes from HumanSL at its strongest (9 dan) reading ahead with KataGo's eye for who is winning
+    // (owner 2026-11-01); without it (still loading, or it failed) KataGo b10 reads alone
+    let H = null; try { H = await api.humanAI(); } catch (e) { H = null; }
+    if (my !== tok) return null;
+    const brain = H || AI;
+    let s;
+    try { s = await brain.think(n, moves, api.komi(), { visits: H ? 600 : 2500, timeMs: ms > 150 ? 3000 : 4000, batch: H ? 1 : ms < 40 ? 16 : 8, top: 10, shouldStop: () => my !== tok }); }
+    catch (e) { if (!H) throw e; s = await AI.think(n, moves, api.komi(), { visits: 2500, timeMs: 3000, batch: 8, top: 10, shouldStop: () => my !== tok }); }
     if (my !== tok) return null;
     let hp = null;
-    try { hp = await api.human(moves); } catch (e) { hp = null; }
+    try { hp = H ? (await H.evaluate(n, moves, api.komi())).policy : null; } catch (e) { hp = null; }
     if (my !== tok) return null;
     const maxN = s.top[0].visits;
     const cand = new Map();
@@ -197,7 +203,7 @@ const Coach = (function () {
     const by = (arr, f) => arr.slice().sort((a, z) => f(z) - f(a))[0];
     const far = (p, q) => { const [x1, y1] = b.xy(p), [x2, y2] = b.xy(q); return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)) >= 3; };
     const easy = x => x.hp + (x.visits / maxN) * 0.15; // natural for a human, and read well by the engine
-    const A = by(list.filter(x => x.loss <= 1.2), easy) || best;
+    const A = best; // HumanSL's best move is always choice A
     const restGood = list.filter(x => x !== A && x.loss <= 3);
     const B = by(restGood.filter(x => far(x.move, A.move)), easy) || by(restGood, easy);
     let C = null, trap = false;
@@ -431,43 +437,34 @@ const Coach = (function () {
   }
 
   // ---------- the game tells the coach what happened ----------
-  // a move was played: comment on it, and when it is the player's turn again, offer the next choices
+  // a move was played: comment on it. The choices come only when the player asks (the แนะนำ button, owner 2026-11-01)
   api.moved = function (moves, mover) {
     if (!on) return;
     const s = st(), prev = picks, before = moves.slice(0, -1), m = moves[moves.length - 1];
     tok++; picks = null; api.marks([]); $("coPicks").innerHTML = ""; setChips();
     if (mover === s.human) judgeMine(prev, before, m);
-    else explainMine(before, m, moves.length > 40 && moves.length % 3 !== 0).then(() => turn());
+    else explainMine(before, m, moves.length > 40 && moves.length % 3 !== 0).then(() => setChips());
   };
-  function turn() {
-    const s = st(); setChips();
-    if (!on || !s.myTurn || !auto) return;
-    if (lastCoachKey === keyOf(s.moves)) return;
-    lastCoachKey = keyOf(s.moves); suggest(false);
-  }
-  api.turn = turn;
+  api.turn = () => { if (on) setChips(); };
+  api.hint = () => { if (!on) return; bubble("แนะนำหน่อยครับ", "me"); suggest(true); };
   api.start = function (o) {
     E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
-    on = !!o; tok++; picks = null; phaseTold = {}; lastCoachKey = null;
+    on = !!o; tok++; picks = null; phaseTold = {};
     document.body.classList.toggle("coaching", on);
     $("coach").hidden = !on; $("coach").classList.remove("open");
     if (!on) { api.marks([]); return; }
     $("coLog").innerHTML = "";
     const s = st();
     if (o.resume) say(`กลับมาเล่นต่อแล้ว ครูจำกระดานได้ เดี๋ยวช่วยดูให้นะ`);
-    else say(`สวัสดีจ้า ครูฝนเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ทุกตาครูจะเลือกตัวเลือก <b>A B C</b> ให้พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
-    renderAuto(); setChips(); renderBusy();
-    turn();
+    else say(`สวัสดีจ้า ครูฝนเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
+    setChips(); renderBusy();
   };
   api.stop = () => { on = false; tok++; document.body.classList.remove("coaching"); $("coach").hidden = true; };
   api.active = () => on;
-  function renderAuto() { $("coAuto").textContent = auto ? "แนะนำทุกตา: เปิด" : "แนะนำทุกตา: ปิด"; $("coAuto").setAttribute("aria-pressed", String(auto)); }
 
   // ---------- wiring ----------
   function wire() {
-    try { auto = localStorage.getItem("gonn.coachAuto") !== "0"; } catch (e) {}
     $("coForm").addEventListener("submit", e => { e.preventDefault(); const v = $("coIn").value; $("coIn").value = ""; ask(v); });
-    $("coAuto").onclick = () => { auto = !auto; try { localStorage.setItem("gonn.coachAuto", auto ? "1" : "0"); } catch (e) {} renderAuto(); if (auto) turn(); };
     $("coOpen").onclick = () => { $("coach").classList.add("open"); $("coLog").scrollTop = $("coLog").scrollHeight; };
     $("coClose").onclick = () => $("coach").classList.remove("open");
     $("coLog").addEventListener("click", e => { if (!e.target.closest("button") && !$("coach").classList.contains("open") && matchMedia("(max-aspect-ratio: 9/8)").matches) $("coOpen").onclick(); });
