@@ -7,7 +7,7 @@ import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
 
 const CHARS = {
-  mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
+  fon: "ครูฝน", mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
   chris: "คริส", jay: "เจ",
   weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", sai: "ไซ", takemiya: "ทาเคมิยะ", changho: "อีชางโฮ", seigen: "โกเซเก็น", hikaru: "ฮิคารุ"
 };

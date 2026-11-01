@@ -621,6 +621,69 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   padding: 6px 14px 8px; margin-bottom: 6px; text-align: center; box-shadow: 0 4px 0 var(--wood-dark); }
 .result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
+/* ---------- beginner coach (Kru Fon) in the game panel ---------- */
+/* portrait: a compact strip (latest message + the choice buttons); 💬 opens the whole chat as a bottom sheet.
+   landscape: the whole chat sits in the side panel */
+body.coaching .app .quote { display: none; }
+.coach { display: flex; flex-direction: column; gap: 6px; min-height: 0; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 6px 8px; }
+.coach[hidden] { display: none; }
+.co-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.co-top img { width: 30px; height: 30px; border: 2px solid var(--wood); flex: none; }
+.co-top b { font-family: var(--f-px); font-size: 12px; letter-spacing: .05em; color: var(--accent); white-space: nowrap; }
+.co-busy { font-size: 12px; color: var(--muted); animation: coBlink 1s steps(2) infinite; }
+@keyframes coBlink { 50% { opacity: .35; } }
+.co-top button { margin-left: auto; min-height: 30px; padding: 2px 10px; font-size: 13px; border-radius: 999px; }
+.co-top button + button { margin-left: 0; }
+#coAuto { font-size: 12px; } #coAuto[aria-pressed="false"] { opacity: .65; }
+#coClose { display: none; }
+.co-log { position: relative; display: grid; gap: 8px; align-content: start; overflow-y: auto; overscroll-behavior: contain; max-height: 4.9em; font-size: 14px; line-height: 1.55; }
+.co-msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 6px; align-items: start; }
+.co-msg img { width: 30px; height: 30px; border: 2px solid var(--wood); }
+.co-msg.me { grid-template-columns: minmax(0, 1fr); justify-items: end; }
+.co-b { background: var(--bg-2); border: 1px solid var(--line); padding: 6px 10px; min-width: 0; }
+.co-msg.me .co-b { border-color: rgba(227, 176, 106, .45); max-width: 85%; }
+.co-b ul { margin: 2px 0 0; padding-left: 18px; }
+.co-dim { color: var(--muted); font-size: 12.5px; } .co-warn { color: var(--warn); }
+.co-idea { margin-top: 4px; font-size: 13px; color: #cfe7c4; }
+.co-pick { margin-top: 8px; padding: 6px 8px 8px; border-left: 4px solid #c4d45a; background: rgba(0, 0, 0, .18); }
+.co-pick.g-best { border-color: #57c26b; } .co-pick.g-normal { border-color: #e0a552; } .co-pick.g-bad { border-color: #e0603e; }
+.co-pick.g-best, .co-pick.g-good, .co-pick.g-normal, .co-pick.g-bad { background-color: rgba(0, 0, 0, .18); }
+.co-l { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #f3ead8; color: #1a1208; font-family: var(--f-mono); }
+.co-rg { color: var(--muted); font-size: 12.5px; }
+.co-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.co-acts button { min-height: 34px; padding: 2px 10px; font-size: 13px; }
+.co-acts .co-go { background: var(--accent); color: var(--accent-fg); border: 0; }
+.co-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.co-picks:empty { display: none; }
+.co-pk { min-height: 40px; padding: 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; font-size: 14px; border-radius: 8px;
+  border: 2px solid #c4d45a; background: var(--bg-2); color: var(--fg); }
+.co-pk b { font-family: var(--f-mono); }
+.co-pk small { font-size: 11px; color: var(--muted); }
+.co-pk.g-best { border-color: #57c26b; } .co-pk.g-normal { border-color: #e0a552; } .co-pk.g-bad { border-color: #e0603e; }
+.co-pk.g-best, .co-pk.g-good, .co-pk.g-normal, .co-pk.g-bad { background: var(--bg-2); }
+.co-chips { display: none; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.co-chip { flex: none; min-height: 32px; padding: 2px 10px; font-size: 13px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); white-space: nowrap; }
+.co-form { display: none; gap: 6px; }
+.co-form input { flex: 1; min-width: 0; min-height: 40px; font: inherit; font-size: 16px; padding: 4px 10px; background: #f6f1e6; color: #1a1208; border: 2px solid var(--wood-dark); border-radius: 8px; }
+.co-form button { min-height: 40px; padding: 0 14px; }
+/* portrait sheet */
+.coach.open { position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; height: min(68vh, 620px); border-radius: 14px 14px 0 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, .55); background: #112b33; }
+.coach.open .co-log { max-height: none; flex: 1; }
+.coach.open .co-chips, .coach.open .co-form { display: flex; }
+.coach.open #coOpen { display: none; } .coach.open #coClose { display: block; }
+@media (min-aspect-ratio: 9/8) {
+  body.coaching .app > .panel { overflow: hidden; }
+  body.coaching .app .settings .note { display: none; }
+  body.coaching .app .ghead { display: none; }
+  body.coaching .app .status { min-height: 0; }
+  .coach { flex: 1; min-height: 0; } .co-log { max-height: none; flex: 1; min-height: 120px; }
+  .co-chips, .co-form { display: flex; } .co-chips { flex-wrap: wrap; overflow: visible; }
+  #coOpen, #coClose { display: none !important; }
+  .coach.open { position: static; height: auto; box-shadow: none; border-radius: 12px; padding: 6px 8px; background: var(--surface); }
+}
+@media (max-aspect-ratio: 9/8) { body.coaching .app .wr { display: none; } }
+@media (prefers-reduced-motion: reduce) { .co-busy { animation: none; } }
 </style>
 
 <section class="menu" id="menu">
@@ -818,6 +881,14 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <p class="sub" id="engine">กำลังโหลดสมอง AI…</p>
     </div>
     <div class="quote" id="quote" hidden></div>
+    <div class="coach" id="coach" hidden>
+      <div class="co-top"><img src="chars/fon_face.jpg" alt="" width="160" height="160"><b>KRU FON · ครูฝน</b><span class="co-busy" id="coBusy" hidden>กำลังคิด…</span>
+        <button type="button" id="coAuto" aria-pressed="true">แนะนำทุกตา: เปิด</button><button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
+      <div class="co-log" id="coLog" aria-live="polite"></div>
+      <div class="co-picks" id="coPicks"></div>
+      <div class="co-chips" id="coChips"></div>
+      <form class="co-form" id="coForm"><input id="coIn" type="text" placeholder="พิมพ์ถามครูฝน เช่น ควรเดินตรงไหน" autocomplete="off" enterkeyhint="send" maxlength="200"><button type="submit">ส่ง</button></form>
+    </div>
     <div class="status" id="status" aria-live="polite"></div>
     <div class="wr" id="wrBox">
       <div class="wr-label"><span id="wrB">ดำ 50%</span><span id="wrMid">โอกาสชนะ</span><span id="wrW">ขาว 50%</span></div>

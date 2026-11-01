@@ -27,6 +27,13 @@
     { id: "tutorial", en: "TUTORIAL", name: "คัมภีร์สอนเล่น", country: "", rank: "มือใหม่เริ่มที่นี่", style: "balance", tutorial: true, search: {},
       bio: "ไม่เคยเล่นโกะมาก่อน? เริ่มที่นี่ ลุงวินสอนกติกาทีละขั้นบนกระดาน 9×9 ตั้งแต่วางหมาก การกิน โค ตา ไปจนถึงการนับแต้ม พร้อมแบบฝึกให้ลองแตะเล่นเอง",
       say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
+    // beginner coach (owner 2026-11-01, not live yet): plays a gentle 19x19 game with HumanSL at 15 kyu, and during the
+    // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
+    // (src/coach.js). The choices are read with KataGo b10 together with HumanSL at 8 kyu (natural, easy to understand moves)
+    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, brain: "human", profile: "rank_15k",
+      search: { temperature: 0.8, local: 3, keepTerritory: true },
+      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
+      say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ครูจะช่วยดูให้ทุกตาเลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
@@ -111,6 +118,22 @@
   // goodMove/badMove: the player's last move moved their winning chance a lot; caught: the player captured
   // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
   const TALK = {
+    fon: {
+      hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ครูจะช่วยดูให้ทุกตาเลย",
+      caught: "โอ๊ะ ครูโดนกินไป {n} เม็ด เก่งมาก!|กินได้ {n} เม็ด ดีมาก แบบนี้แหละ",
+      capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
+      humanPass: "ผ่านแล้วเหรอ ถ้ายังมีที่ได้แต้ม ลองถามครูก่อนนะ|ผ่านได้เมื่อไม่มีจุดได้แต้มแล้วนะ",
+      aiPass: "ครูผ่านนะ ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย",
+      ko: "อันนี้คือโค กินคืนทันทีไม่ได้ ต้องไปเดินที่อื่นก่อนหนึ่งตานะ",
+      slow: "คิดไม่ออกใช่ไหม ลองดูตัวเลือก A B C ที่ครูให้ หรือพิมพ์ถามครูก็ได้นะ",
+      byoyomi: "เข้าเบียวโยมิแล้ว ต้องเดินภายใน 30 วินาทีนะ",
+      ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ",
+      behind: "เก่งขึ้นเยอะเลย! คุณนำครูแล้ว",
+      win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก ลองกดวิเคราะห์เกมดูนะ",
+      lose: "ชนะครูแล้ว! เก่งมากเลย พร้อมไปเจอเมฆแล้วล่ะ",
+      resigned: "ไม่เป็นไรนะ เกมหน้าลองใหม่ ครูอยู่ตรงนี้เสมอ",
+      giveUp: "ครูยอมแล้ว คุณเล่นดีมาก!"
+    },
     mek: {
       hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย|ครูที่โรงเรียนบอกให้มาลองเล่นกับคนเก่งๆ ครับ|ผมจำกติกาได้แล้วนะ น่าจะได้…มั้ง",
       goodMove: "หา? ตานี้เก่งมากเลยพี่|เดินแบบนี้ก็ได้เหรอ จดไว้ก่อน|ว้าว ผมไม่ได้คิดถึงตรงนั้นเลย",
@@ -496,7 +519,7 @@
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
-  if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 2 : 1;
+  if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 3 : 2; // and the coach (inserted at 1)
   if (!CHARS[settings.char]) settings.char = 5;
   // komi 7.5 in an even game; 0.5 with handicap stones (Sai only), set per game by newGame / resumeGame
   let KOMI = 7.5, handi = 0;
@@ -523,7 +546,7 @@
     handiPoints(k).forEach(([x, y], i) => { if (i) out.push(PASS); out.push(b.pt(x, y)); });
     return out;
   }
-  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
+  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse", coachMarks = [];
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0, examBehind = 0;
   // AI test match (?match=black,white, character ids): both sides are characters and the page plays the game by itself,
   // sending it to the stats page as a match (kept apart from players' games). Run by .github/workflows/ai-match.yml
@@ -680,7 +703,7 @@
       })();
       if (MATCH) startMatch();
       else if (EXAMBOT !== null) startExamBot();
-      else if (board) { render(); maybeAI(); startPonder(); }
+      else if (board) { render(); maybeAI(); startPonder(); Coach.turn(); }
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
@@ -704,6 +727,7 @@
     const fresh = all.filter(l => !saidLines.has(l)), list = fresh.length ? fresh : all;
     const line = list[(Math.random() * list.length) | 0];
     saidKinds.add(kind); saidLines.add(line); spokeAt = at; spokePri = pri;
+    if (c.coach && Coach.active()) { Coach.say(line.replace("{n}", o.n)); return true; } // the coach talks in her chat
     const q = $("quote");
     q.hidden = false;
     q.innerHTML = `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
@@ -939,6 +963,7 @@
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
+    Coach.start(coachOn() ? {} : null);
     speak("hello", { force: true }); hopeless = 0; examBehind = 0;
     gameId = rid(); gameReported = false; liveAt = Date.now(); track({ type: "start", size: n, color: human, state: snapshot() });
     saveGame();
@@ -1014,7 +1039,7 @@
     if (p !== PASS) clack();
     const mover = board.toPlay, caps = board.caps[mover];
     clockMoved(mover);
-    board.play(p); history.push(p); hint = null; pending = null;
+    board.play(p); history.push(p); hint = null; pending = null; coachMarks = [];
     liveUpdate();
     const took = board.caps[mover] - caps;
     if (board.passes >= 2) startScoring();
@@ -1022,11 +1047,12 @@
     else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
     render();
     saveGame();
+    if (Coach.active() && !over && !scoring) Coach.moved(history.slice(), mover);
     if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); botHumanMove(); }
   }
   // leaving the game screen: an unfinished game is kept (clocks stopped) and can be continued from the profile page
   function leaveGame() {
-    cancelAI();
+    cancelAI(); Coach.stop();
     if (board && !over && !scoring && history.length && $("game").hidden === false) { gameAway = true; awayAt = Date.now(); saveGame(); }
     else if (!gameAway) save("game", null);
   }
@@ -1062,6 +1088,7 @@
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
     gameId = g.gameId || rid(); gameReported = false; gameAway = false; examMode = !!CHARS[gameChar].exam;
     hideScreens(); $("game").hidden = false; document.body.classList.add("playing");
+    Coach.start(coachOn() ? { resume: true } : null);
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -1414,6 +1441,7 @@
     const minThink = async () => { const w = 1000 - (Date.now() - started); if (w > 0) await new Promise(r => setTimeout(r, w)); };
     await new Promise(r => setTimeout(r, 30));
     await judgeHumanMove();
+    if (Coach.active()) await Coach.idle(); // the coach's reading shares the HumanSL network: let it finish first
     if (my !== gen) return;
     const job = exam ? gradeJob() : null;
     const book = exam ? null : openingMove();
@@ -1858,6 +1886,16 @@
     if (!reviewing && hover !== null && engineReady && !thinking && !over && !scoring && board.toPlay === human && board.isLegal(hover, human)) {
       const [x, y] = board.xy(hover); drawStone(P(x), P(y), r, human, .45);
     }
+    if (!reviewing && coachMarks.length && board.toPlay === human && !over && !scoring) { // the coach's choices A B C
+      const COL = { best: "#57c26b", good: "#c4d45a", normal: "#e0a552", bad: "#e0603e" };
+      for (const m of coachMarks) {
+        if (board.color[m.p] !== EMPTY || m.p === pending) continue;
+        const [x, y] = board.xy(m.p);
+        g.fillStyle = COL[m.cls] || COL.good; g.strokeStyle = "rgba(42,26,11,.75)"; g.lineWidth = Math.max(1, cell / 22);
+        g.beginPath(); g.arc(P(x), P(y), r * .78, 0, 7); g.fill(); g.stroke();
+        g.fillStyle = "#1a1208"; g.font = `700 ${Math.max(9, cell * .52)}px "IBM Plex Mono", monospace`; g.fillText(m.label, P(x), P(y) + cell * .03);
+      }
+    }
     if (!reviewing && pendingOk()) { // stone waiting for confirmation: see-through with a red dot
       const [x, y] = board.xy(pending); drawStone(P(x), P(y), r, human, .7);
       g.fillStyle = "#e0402e"; g.beginPath(); g.arc(P(x), P(y), r * .3, 0, 7); g.fill();
@@ -1973,6 +2011,23 @@
     if (CHARS[settings.char].book) await loadBook(CHARS[settings.char]); // Go Seigen's first move already comes from his games
     $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
+  // the beginner coach in a game with Kru Fon
+  const coachOn = () => !!CHARS[gameChar].coach && !MATCH && EXAMBOT === null;
+  const COACH_PROFILE = "rank_8k"; // the human eye the coach reads the choices with: natural moves of a club player
+  Coach.E = E;
+  Coach.ai = () => engineReady ? AI : null;
+  Coach.evalMs = () => evalMs;
+  Coach.komi = () => KOMI;
+  Coach.state = () => ({ n, moves: history ? history.slice() : [], human, live: !!board && !over && !scoring,
+    myTurn: !!board && engineReady && !over && !scoring && !thinking && reviewAt === null && board.toPlay === human });
+  Coach.human = async moves => {
+    const st = brains.human; if (!st || !st.ai || thinking) return null;
+    const a = st.ai; if (a.big.getProfile() !== COACH_PROFILE) { a.big.setProfile(COACH_PROFILE); a.clearCache(); }
+    return (await a.evaluate(n, moves, KOMI)).policy;
+  };
+  Coach.play = p => { if (!engineReady || over || scoring || thinking || board.toPlay !== human || !board.isLegal(p, human)) return; unlockAudio(); playMove(p); };
+  Coach.preview = p => { if (!board || board.toPlay !== human || !board.isLegal(p, human)) return; pending = p; blip(700); render(); };
+  Coach.marks = list => { coachMarks = list; drawBoard(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
   Analysis.sound = Tutorial.sound = () => { unlockAudio(); clack(); };
