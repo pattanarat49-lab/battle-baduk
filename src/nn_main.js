@@ -77,7 +77,7 @@
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
-      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เมื่อถือดำจะเปิดเกมด้วยฟุเซกิชูซากุ พร้อมหมากโคสุมิอันโด่งดัง และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
+      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เปิดเกมด้วยหมากโคสุมิที่ขึ้นชื่อของชูซากุ และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
