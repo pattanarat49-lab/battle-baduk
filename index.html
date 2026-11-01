@@ -104,7 +104,31 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 @keyframes gSpin { to { transform: rotate(-360deg); } }
 @keyframes gBob { 50% { transform: translateY(-6%) rotate(-6deg); } }
 @keyframes gDrift { 0%, 100% { transform: translateX(0); opacity: .85; } 50% { transform: translateX(8%); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .gfx { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .gfx, .fx-shine, .fx-shine .card::before, .spark { animation: none; } }
+/* Lee Changho: a beam of light runs round the frame, and small stars twinkle on it */
+@property --shA { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.fxwrap.fx-shine { animation: shineGlow 3s ease-in-out infinite; }
+.fxwrap.fx-shine .card { animation-name: shineFrame; overflow: hidden; }
+.fxwrap.fx-shine .card.pop { animation-name: pop, shineFrame; }
+@keyframes shineFrame { 0%, 100% { background: #aeb9cf; } 50% { background: #eef2fb; } }
+.fx-shine .card::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: conic-gradient(from var(--shA), transparent 0 62%, rgba(255,255,255,.35) 72%, #fff 78%, rgba(255,240,190,.9) 80%, transparent 88% 100%);
+  animation: shineRun 3.6s linear infinite; }
+.fx-shine .card-in { position: relative; z-index: 1; }
+@keyframes shineRun { to { --shA: 360deg; } }
+@keyframes shineGlow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(255,255,255,.3)); } 50% { filter: drop-shadow(0 0 14px rgba(255,246,210,.75)); } }
+.spark { position: absolute; z-index: 3; width: 22px; aspect-ratio: 1; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle, #fff 0 12%, rgba(255,250,220,.9) 18%, transparent 46%),
+    linear-gradient(transparent 46%, #fff 46% 54%, transparent 54%), linear-gradient(90deg, transparent 46%, #fff 46% 54%, transparent 54%);
+  filter: drop-shadow(0 0 4px #fff7d6); animation: twinkle 2.4s ease-in-out infinite; }
+.spark:nth-of-type(1) { left: -9px; top: 12%; }
+.spark:nth-of-type(2) { right: -9px; top: 30%; animation-delay: -.6s; width: 16px; }
+.spark:nth-of-type(3) { left: 38%; top: -9px; animation-delay: -1.2s; }
+.spark:nth-of-type(4) { right: -9px; bottom: 18%; animation-delay: -1.8s; width: 28px; }
+.spark:nth-of-type(5) { left: -9px; bottom: 34%; animation-delay: -.9s; width: 16px; }
+.spark:nth-of-type(6) { left: 62%; bottom: -9px; animation-delay: -1.5s; }
+.spark:nth-of-type(7) { right: 14%; top: -9px; animation-delay: -2.1s; width: 14px; }
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: .8; transform: scale(.8) rotate(60deg); } }
 @keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
 .smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
   background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }
@@ -3597,7 +3621,7 @@ const Tsumego = (() => {
     // Lee Changho, three phases. Opening (about 40 moves): a full read with a strong pull to solid shape, so it is slow and
     // a little passive (owner 2026-10-31: still 9 dan, not weak). Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
     // pull to the biggest margin, so every point is collected
-    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, brain: "b18", book: "changho-book.json",
+    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, fx: "shine", brain: "b18", book: "changho-book.json",
       early: { visits: 100000, timeMs: 12000, solid: { margin: 0.05, points: 2, pool: 6 } },
       search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
@@ -5332,7 +5356,7 @@ const Tsumego = (() => {
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
     charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${prev.special ? qMark("") : pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      ${spCard || `${c.fx ? `<div class="fxwrap fx-${c.fx}">` : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx === "gold" ? '<i class="gfx v"></i><i class="gfx s"></i><i class="gfx c1"></i><i class="gfx c2"></i></div>' : c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
+      ${spCard || `${c.fx ? `<div class="fxwrap fx-${c.fx}">` : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx === "shine" ? '<i class="spark"></i>'.repeat(7) + '</div>' : c.fx === "gold" ? '<i class="gfx v"></i><i class="gfx s"></i><i class="gfx c1"></i><i class="gfx c2"></i></div>' : c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${next.special ? qMark("") : pxImg(next, "")}</button>`;
     $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "ตัวละครลึกลับ แตะการ์ดเพื่อดูว่ามีใครบ้าง" : "เลือกตัวละครพิเศษที่จะเล่นด้วย: " + SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
