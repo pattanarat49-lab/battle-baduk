@@ -21,36 +21,38 @@
   };
   // Strength comes from how much the network reads ahead; ranks are estimates, not measured against people.
   const CHARS = [
+    // TEST (not on the live site, owner 2026-10-31): Mek to Jay play with KataGo's HumanSL network set to their rank
+    // (rank_15k ... rank_2d), sampled at about temperature 1 instead of random blunders, keeping their old style flags
     // not an opponent: opens the step-by-step lessons for people who have never played
     { id: "tutorial", en: "TUTORIAL", name: "คัมภีร์สอนเล่น", country: "", rank: "มือใหม่เริ่มที่นี่", style: "balance", tutorial: true, search: {},
       bio: "ไม่เคยเล่นโกะมาก่อน? เริ่มที่นี่ ลุงวินสอนกติกาทีละขั้นบนกระดาน 9×9 ตั้งแต่วางหมาก การกิน โค ตา ไปจนถึงการนับแต้ม พร้อมแบบฝึกให้ลองแตะเล่นเอง",
       say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
-    { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", search: { temperature: 2.0, blunder: 0.3, local: 3, keepTerritory: true },
+    { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
-    { id: "chai", en: "RIDER CHAI", name: "ไรเดอร์ชัย", country: "ไทย", rank: "10 คิว", style: "defend", opening: "corners",
-      search: { temperature: 1.7, blunder: 0.18, follow: 2, soft: true, noFloat: true, keepTerritory: true },
-      early: { temperature: 1.6, blunder: 0.15, local: 3, noFloat: true, keepTerritory: true },
+    { id: "chai", en: "RIDER CHAI", name: "ไรเดอร์ชัย", country: "ไทย", rank: "10 คิว", style: "defend", opening: "corners", brain: "human", profile: "rank_10k",
+      search: { temperature: 0.7, local: 3, soft: true, noFloat: true, keepTerritory: true },
+      early: { temperature: 0.7, local: 3, noFloat: true, keepTerritory: true },
       bio: "ไรเดอร์ส่งอาหาร น้องชายของลุงวิน เพิ่งหัดเล่นโกะเพราะพี่ชายชวน เปิดเกมเหมือนลุงวินเป๊ะ แต่หลังจากนั้นเล่นนิ่มๆ ตั้งรับสุดๆ คุณเดินตรงไหนก็ตามไปรับตรงนั้น",
       say: { hello: "พี่วินชวนมาเล่นครับ ระหว่างรอออเดอร์", ahead: "เอ้า ผมนำเหรอ แค่ตามไปรับเองนะ", behind: "ไม่เป็นไรครับ ผมรับไว้ก่อน", win: "ชนะแล้ว! ต้องไปบอกพี่วิน", lose: "เก่งจังครับ ผมยังต้องหัดอีกเยอะ" } },
-    { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", opening: "corners", search: { temperature: 1.6, blunder: 0.15, local: 3, noFloat: true, keepTerritory: true },
+    { id: "win", en: "UNCLE WIN", name: "ลุงวิน", country: "ไทย", rank: "8 คิว", style: "balance", opening: "corners", brain: "human", profile: "rank_8k", search: { temperature: 1.0, local: 3, noFloat: true, keepTerritory: true },
       bio: "เซียนหมากฮอสประจำวินมอเตอร์ไซค์ เพิ่งมาลองเล่นโกะ",
       say: { hello: "หมากฮอสลุงไม่เคยแพ้ใครนะ มาลองโกะกันหน่อย", ahead: "กินได้กินเลย เหมือนหมากฮอสนั่นแหละ", behind: "เดี๋ยวๆ ขอคิดแป๊บ", win: "เห็นไหม เซียนก็คือเซียน", lose: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่" } },
-    { id: "ek", en: "KRU EK", name: "ครูเอก", country: "ไทย", rank: "6 คิว", style: "balance", opening: "corners",
-      search: { temperature: 1.5, blunder: 0.12, local: 3, noFloat: true, keepTerritory: true },
+    { id: "ek", en: "KRU EK", name: "ครูเอก", country: "ไทย", rank: "6 คิว", style: "balance", opening: "corners", brain: "human", profile: "rank_6k",
+      search: { temperature: 1.0, local: 3, noFloat: true, keepTerritory: true },
       bio: "ครูคณิตศาสตร์หัวดี สนใจหมากล้อมเพราะชอบคิดคำนวณ เดินแนวเดียวกับลุงวินแต่คิดเป็นระบบกว่า",
       say: { hello: "เอาล่ะ มาพิสูจน์กันบนกระดานครับ", ahead: "ผลลัพธ์เป็นไปตามที่คำนวณไว้", behind: "ตัวแปรเยอะกว่าที่คิดแฮะ", win: "Q.E.D. ครับ ขอบคุณที่เล่น", lose: "สมการนี้ผมยังแก้ไม่ออก เก่งมากครับ" } },
-    { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "3 คิว", style: "balance", search: { temperature: 1.0, blunder: 0.03, local: 3, keepTerritory: true }, early: { temperature: 0.25, local: 3, keepTerritory: true },
+    { id: "yuto", en: "YUTO", name: "ยูโตะ", country: "ญี่ปุ่น", rank: "3 คิว", style: "balance", brain: "human", profile: "rank_3k", search: { temperature: 0.9, local: 3, keepTerritory: true }, early: { temperature: 0.5, local: 3, keepTerritory: true },
       bio: "นักเรียนชมรมโกะจากญี่ปุ่น เล่นตามตำราที่ชมรมสอน",
       say: { hello: "โอเนไงชิมัส! ขอคำชี้แนะด้วยครับ", ahead: "ตามที่รุ่นพี่ชมรมสอนเป๊ะเลย", behind: "ต้องตั้งใจกว่านี้แล้ว", win: "ขอบคุณสำหรับเกมครับ", lose: "อาริงาโตะ จะกลับไปซ้อมที่ชมรมครับ" } },
-    { id: "joker", en: "JOKER", name: "โจ๊กเกอร์", country: "ไม่ทราบ", rank: "3 คิว", style: "attack", opening: "raid",
-      search: { temperature: 0.6, blunder: 0.02, keepTerritory: true }, early: { temperature: 1.2, keepTerritory: true },
+    { id: "joker", en: "JOKER", name: "โจ๊กเกอร์", country: "ไม่ทราบ", rank: "3 คิว", style: "attack", opening: "raid", brain: "human", profile: "rank_3k",
+      search: { temperature: 0.8, keepTerritory: true }, early: { temperature: 1.0, keepTerritory: true },
       bio: "นักเล่นนอกตำรา ไม่เคยเปิดมุมของตัวเอง เดินหมากแปลกใหม่ที่ไม่มีใครเดิน แล้วไล่ตีมุมคนอื่นก่อนเสมอ",
       say: { hello: "กฎมีไว้แหก… มาเล่นสนุกกันเถอะ", ahead: "ไม่มีใครอ่านมุกผมออกหรอก", behind: "สนุกขึ้นแล้วสิ", win: "ฮ่าๆ ตำราไม่ได้ช่วยอะไรเลยใช่ไหม", lose: "เก่งนี่… ผมชักชอบคุณแล้วสิ" } },
-    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
+    { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", brain: "human", profile: "rank_1d", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
-    { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
+    { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", brain: "human", profile: "rank_2d", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
       early: { visits: 12, local: 3, temperature: 0.1, pda: 0, scoreWeight: 0 },
       bio: "นักหมากล้อมทีมมหาวิทยาลัย เปิดเกมเรียบร้อยตามแบบ แต่พอพ้นช่วงเปิดเกมจะบุกสุดๆ ชอบตัด ชอบสู้ ไล่ฆ่ากันทั้งกระดาน",
       say: { hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ", ahead: "สู้แบบนี้แหละที่ผมชอบ", behind: "ยังไม่จบ ตัดกลับเลย!", win: "สนุกมาก ชอบเกมที่ได้สู้แบบนี้", lose: "เก่งมาก ขอสู้อีกตาได้ไหม" } },
@@ -75,30 +77,30 @@
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
-      bio: "ตัวละครลับ เทพแห่งหมากล้อม เดินหมากสไตล์ฮงอินโบ ชูซากุยุคโบราณ ช่วงเปิดเกมเดินตามคิฟุจริงของชูซากุ ตาต่อจากนั้นใช้สมอง HumanSL ที่ตั้งเป็นมืออาชีพยุค 1850 ชอบเล่นโจเซกิโบราณที่สมัยนี้ไม่นิยม ไม่เข้ามุม 3-3 ช่วงเปิดเกม เลือกฝั่งดำหรือขาวได้เหมือนตัวอื่น ครั้งแรกต้องโหลดสมองเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เปิดเกมด้วยหมากโคสุมิที่ขึ้นชื่อของชูซากุ และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
-    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
+    { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", book: "takemiya-book.json", no33: true,
       // light and quick: leaves a small local answer for a big point elsewhere (tenuki), and of near-equal moves takes the
       // highest; the margins are tight enough that a real fight is still fought with the best move
       search: { visits: 100000, timeMs: 15000, tenuki: { margin: 0.04, points: 1.5, pool: 8, until: 180 }, cosmic: { margin: 0.05, points: 2.5, pool: 8, until: 200 }, no33: 60 },
-      bio: "ตัวละครพิเศษ เจ้าแห่ง \"หมากจักรวาล\" (Cosmic style) เปิดเกมตามคิฟุจริงของทาเคมิยะหรือซันเร็นเซ เดินหมากเบาและเร็ว ทิ้งมือไปจุดใหญ่บ่อย เดินหมากสูงสร้างโมโยกลางกระดานให้ใหญ่ที่สุด แต่ถ้าต้องสู้ก็สู้เต็มที่ ไม่เข้ามุม 3-3 สมอง KataGo b18 เล่นเต็มกำลังทุกตา ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "มาซากิ ทาเคมิยะ เจ้าของฉายา \"หมากจักรวาล\" แชมป์ฮงอินโบ 6 สมัย ชอบเปิดเกมด้วยซันเร็นเซ (สามดาวเรียงกัน) เดินหมากสูงสร้างอาณาเขตกลางกระดานให้ใหญ่ที่สุด ไม่สนใจเก็บแต้มริมขอบ ใครบุกเข้ามาในโมโยต้องเจอการโจมตีเต็มกำลัง",
       say: { hello: "กลางกระดานกว้างใหญ่เหมือนจักรวาล", ahead: "เขตกลางกระดานเป็นของผมแล้ว", behind: "บุกเข้ามาได้สวยนะ", win: "ขอบคุณสำหรับเกมที่สนุกครับ", lose: "ยอดเยี่ยม คุณทำลายจักรวาลของผมได้" } },
     // Lee Changho, three phases. Opening (about 40 moves): a full read with a strong pull to solid shape, so it is slow and
     // a little passive (owner 2026-10-31: still 9 dan, not weak). Middle game: solid moves preferred. Endgame (from about move 145): the full search, no style, and a
     // pull to the biggest margin, so every point is collected
-    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, brain: "b18", book: "changho-book.json",
+    { id: "changho", en: "LEE CHANGHO", name: "อีชางโฮ", country: "เกาหลีใต้", rank: "9 ดั้งโปร", style: "defend", secret: true, special: true, fx: "shine", brain: "b18", book: "changho-book.json",
       early: { visits: 100000, timeMs: 12000, solid: { margin: 0.05, points: 2, pool: 6 } },
       search: { visits: 100000, timeMs: 12000, solid: { margin: 0.03, points: 1, pool: 5 } },
       late: { from: 0.4, visits: 100000, timeMs: 25000, pda: 0, scoreWeight: 0.5 },
-      bio: "ตัวละครพิเศษ \"หินพุทธะ\" จากเกาหลี สไตล์ป้องกันสุดๆ เล่นหมากแน่นหนา ไม่ยอมมีจุดอ่อน เดินช้าแต่หนักแน่น เลี่ยงการต่อสู้ที่ไม่จำเป็น ช่วงปลายเกมแม่นยำที่สุด ปิดบ้านเก็บแต้มได้ทุกเม็ด ช่วงเปิดเกมเดินตามคิฟุจริงของอีชางโฮเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "อีชางโฮ \"พระพุทธรูปหิน\" แห่งเกาหลี คว้าแชมป์โลกตั้งแต่อายุ 16 และครองวงการหมากล้อมตลอดยุค 90 สีหน้านิ่งไม่เคยเปลี่ยน เล่นหมากแน่นหนาไม่มีจุดอ่อน เลี่ยงการต่อสู้ที่ไม่จำเป็น ชนะด้วยการปิดเกมที่แม่นยำที่สุดในประวัติศาสตร์ บ่อยครั้งชนะเพียงครึ่งแต้ม",
       say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
     // Go Seigen: his own game records first, then a free (weighted random) choice among near-equal moves
-    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "creative", secret: true, special: true, brain: "b18", book: "seigen-book.json", no33: true,
+    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "creative", secret: true, special: true, fx: "mist", brain: "b18", book: "seigen-book.json", no33: true,
       // unusual joseki in the opening (a wider pick among near-equal moves), then creative only where it costs little
       early: { visits: 100000, timeMs: 15000, creative: { margin: 0.05, points: 2, pool: 10 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, creative: { margin: 0.03, points: 1.2, pool: 6 }, no33: 60 },
-      bio: "ตัวละครพิเศษ ปรมาจารย์แห่งศตวรรษ ผู้ให้กำเนิดชินฟุเซกิ (การเปิดเกมแบบใหม่) เดินหมากสร้างสรรค์ไม่ซ้ำแบบ ชอบโจเซกิแปลกๆ ช่วงเปิดเกม ไม่เข้ามุม 3-3 ช่วงเปิดเกมเดินตามคิฟุจริงของโกเซเก็นเมื่อเจอรูปหมากที่เขาเคยเล่น สมอง KataGo b18 ครั้งแรกต้องโหลดเพิ่ม (ราว 53 MB) แนะนำให้ต่อ Wi-Fi",
+      bio: "โกเซเก็น อัจฉริยะเกิดที่จีนแล้วย้ายไปญี่ปุ่นตั้งแต่อายุ 14 ร่วมกับคิตานิ มิโนรุคิดค้นชินฟุเซกิ การเปิดเกมแบบใหม่ที่เปลี่ยนหมากล้อมไปตลอดกาล และชนะการแข่ง 10 กระดานกับยอดฝีมือทุกคนในยุคของเขา เล่นหมากสร้างสรรค์ ไม่ยึดติดแบบแผน",
       say: { hello: "หมากล้อมคือความกลมกลืน", ahead: "ทุกเม็ดอยู่ในที่ของมัน", behind: "น่าสนใจมาก", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "คุณเล่นได้ยอดเยี่ยม" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
@@ -524,6 +526,25 @@
     const m = /[?&]match=([a-z]+),([a-z]+)/.exec(location.search), b = m ? CHARS.findIndex(c => c.id === m[1]) : -1, w = m ? CHARS.findIndex(c => c.id === m[2]) : -1;
     return b >= 0 && w >= 0 && !CHARS[b].tutorial && !CHARS[w].tutorial ? { [BLACK]: b, [WHITE]: w, hope: {} } : null;
   })();
+  // AI placement test (?exambot=id): the character plays the player's side of a rank test against Hikaru, so its exam
+  // rank can be compared with the rank it is meant to have (window.MATCH_RESULT holds the grade at the end)
+  const EXAMBOT = (() => { const m = /[?&]exambot=([a-z]+)/.exec(location.search), i = m ? CHARS.findIndex(c => c.id === m[1]) : -1; return i >= 0 && !CHARS[i].exam && !CHARS[i].tutorial ? i : null; })();
+  let botBusy = false;
+  async function botHumanMove() {
+    if (EXAMBOT === null || !engineReady || !board || over || scoring || board.toPlay !== human || botBusy) return;
+    botBusy = true;
+    const g = gameId, at = history.length, ch = CHARS[EXAMBOT];
+    try {
+      let m = PASS;
+      if (history.length < 450) {
+        const brain = await brainFor(ch), opt = searchFor(ch);
+        const res = await brain.think(n, history.slice(), KOMI, Object.assign({ batch: brain !== AI ? 1 : 8, earlyStop: true }, STYLE[ch.style].opts, opt, { timeMs: Math.min(opt.timeMs || 9000, 9000) }));
+        m = res.move;
+      }
+      if (g === gameId && history.length === at && !over && !scoring && board.toPlay === human) playMove(m);
+    } catch (e) { console.error(e); }
+    finally { botBusy = false; }
+  }
   // the side to move plays as "ai": swap which character that is (and its resign count) whenever the turn changes
   function matchTurn() {
     if (!MATCH || !board || over || scoring || ai === board.toPlay) return;
@@ -549,19 +570,25 @@
   let evalMs = 50, checkEngine = null, engineToWasm = null, engineRetries = 0;
   async function initEngine() {
     const el = { set textContent(t) { $("engine").textContent = t; $("engineHome").textContent = t; $("engineMenu").textContent = t; } };
+    // the opening loading page covers both brains: b10 to 15%, then HumanSL; it lifts when both are ready (or one failed)
+    const splash = p => { $("ldFill").style.width = p + "%"; $("ldPct").textContent = Math.round(p) + "%"; };
+    const splashDone = () => { splash(100); setTimeout(() => { $("splash").classList.add("out"); setTimeout(() => { $("splash").hidden = true; }, 500); }, 250); };
+    if (MATCH || EXAMBOT !== null) $("splash").hidden = true;
+    splash(3);
     try {
       if (typeof tf === "undefined") throw new Error("โหลด TensorFlow.js ไม่สำเร็จ");
       let backend = "cpu";
       try { if (await tf.setBackend("webgl")) backend = "webgl"; } catch (e) {}
       if (backend !== "webgl") await tf.setBackend("cpu");
       await tf.ready();
-      el.textContent = "กำลังดาวน์โหลดสมอง AI (6 MB)…";
+      el.textContent = "กำลังโหลดสมอง AI…";
       const [meta, buf] = await Promise.all([
         fetch(MODEL + ".json").then(r => { if (!r.ok) throw new Error("model json " + r.status); return r.json(); }),
         loadWeights()
       ]);
       let net = GoTFNet(tf).build(meta, buf);
       AI = GoNNAI(E, F, net);
+      splash(10);
       // some phone GPUs compute the network wrongly; after black D16 the reference answer is a corner (Q4/Q16/D4) at ~49%
       const sane = async () => {
         let ev; try { ev = (await AI.evalMany(19, [[new Board(19).pt(3, 3)]], KOMI))[0]; } catch (e) { return false; }
@@ -638,11 +665,21 @@
       engineReady = true;
       label();
       console.log("warmup", Math.round(t1 - t0), "ms; per eval", ms, "ms");
+      // the kyu characters' HumanSL brain downloads now, on the home screen, so picking one needs no loading screen
+      // (owner, 2026-11-01); the chip shows the progress as a percentage only
+      if (!MATCH && EXAMBOT === null) (async () => {
+        const p = loadBrain("human"), st = brains.human;
+        el.textContent = "กำลังโหลดสมอง AI… 15%"; splash(15);
+        const tick = setInterval(() => { if (st.ai) return; const v = st.stage === "dl" ? 15 + st.pct * 78 : 96; el.textContent = `กำลังโหลดสมอง AI… ${Math.round(v)}%`; splash(v); }, 300);
+        try { await p; } catch (e) { console.warn("HumanSL preload failed", e); } finally { clearInterval(tick); label(); splashDone(); }
+      })();
       if (MATCH) startMatch();
+      else if (EXAMBOT !== null) startExamBot();
       else if (board) { render(); maybeAI(); startPonder(); }
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
+      splashDone();
     }
   }
 
@@ -747,7 +784,7 @@
   // ---------- anonymous play statistics, stored by the site's Worker at /api/event ----------
   const host = location.hostname;
   // a test match run from a local copy (GitHub Actions) still reports to the live stats page
-  const STATS_URL = /workers\.dev$/.test(host) ? "/api/event" : /^localhost$|^127\.0\.0\.1$/.test(host) && !MATCH ? "/api/event"
+  const STATS_URL = /[?&]nostats\b/.test(location.search) ? null : /workers\.dev$/.test(host) ? "/api/event" : /^localhost$|^127\.0\.0\.1$/.test(host) && !MATCH ? "/api/event"
     : /github\.io$|^localhost$|^127\.0\.0\.1$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev/api/event" : null;
   const rid = () => (Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).replace(/[^a-z0-9]/g, "");
   let playerId = load("pid", null);
@@ -812,6 +849,7 @@
     const ex = exam, len = history.length;
     grading.then(() => {
       const r = examResult(ex, len);
+      if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
       if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
@@ -884,7 +922,7 @@
     speak("hello", { force: true }); hopeless = 0; examBehind = 0;
     gameId = rid(); gameReported = false; liveAt = Date.now(); track({ type: "start", size: n, color: human, state: snapshot() });
     saveGame();
-    resize(); render(); maybeAI(); startPonder();
+    resize(); render(); maybeAI(); startPonder(); botHumanMove();
   }
   function replay() { board = new Board(n); for (const m of history) board.play(m); }
   // ---------- sound: a short wooden click, synthesised so no audio file is needed ----------
@@ -964,7 +1002,7 @@
     else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
     render();
     saveGame();
-    if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); }
+    if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); botHumanMove(); }
   }
   // leaving the game screen: an unfinished game is kept (clocks stopped) and can be continued from the profile page
   function leaveGame() {
@@ -1178,7 +1216,20 @@
       const meta = await fetch(name + ".json").then(r => { if (!r.ok) throw new Error(name + ".json HTTP " + r.status); return r.json(); });
       const parts = meta.parts || 0;
       let buf;
-      if (!parts) { const r = await fetch(name + ".bin"); if (!r.ok) throw new Error(name + ".bin HTTP " + r.status); buf = await r.arrayBuffer(); }
+      if (meta.b64parts) {
+        // the test copy on claude.ai serves no binary files: the weights come as base64 text parts (name.b64.N.txt)
+        const total = meta.bytes, out = new Uint8Array(total);
+        st.mb = Math.round(total / 1e6);
+        let got = 0;
+        for (let k = 0; k < meta.b64parts; k++) {
+          const r = await fetch(name + ".b64." + k + ".txt");
+          if (!r.ok) throw new Error(name + ".b64." + k + " HTTP " + r.status);
+          const bin = atob((await r.text()).trim());
+          for (let i = 0; i < bin.length; i++) out[got + i] = bin.charCodeAt(i);
+          got += bin.length; st.pct = Math.min(1, got / total); gameStatus(); brainUI(st);
+        }
+        buf = out.buffer;
+      } else if (!parts) { const r = await fetch(name + ".bin"); if (!r.ok) throw new Error(name + ".bin HTTP " + r.status); buf = await r.arrayBuffer(); }
       else {
         const out = new Uint8Array(parts * BRAIN_PART), total = meta.bytes || out.length;
         st.mb = Math.round(total / 1e6);
@@ -1224,6 +1275,15 @@
         step("build"); await new Promise(r => setTimeout(r, 50));
         ai = await make();
       }
+      // mid-game the GPU can stop computing this big network correctly while the small one still works (lost WebGL
+      // context, iPhone memory): rebuild it from the weights already in memory, on WebAssembly, with no new download
+      st.rebuild = async () => {
+        try { ai.big.dispose(); } catch (e) {}
+        st.ai = null;
+        if (tf.getBackend() === "webgl" && engineToWasm && !(await engineToWasm())) return false;
+        ai = await make(); st.ai = ai;
+        try { await ai.evalMany(19, [[E.PASS]], KOMI); return true; } catch (e) { return false; }
+      };
       st.ai = ai; st.error = null; step("done");
       return ai;
     })().catch(e => { st.promise = null; st.error = e; e.stage = e.stage || st.stage; throw e; });
@@ -1256,7 +1316,7 @@
       const p = Math.round(stage === "dl" ? dl * 90 : ({ build: 92, wasm: 93, warm: 97, done: 100 })[stage] || 90);
       $("blFill").style.width = p + "%";
       $("blPct").textContent = p + "%";
-      $("blStep").textContent = stage === "dl" ? (st && st.mb ? `กำลังดาวน์โหลด ${Math.round(dl * st.mb)} / ${st.mb} MB` : "กำลังดาวน์โหลด") : ({
+      $("blStep").textContent = stage === "dl" ? "กำลังดาวน์โหลด" : ({
         build: "กำลังเตรียมสมอง…", wasm: "การ์ดจอรับไม่ไหว กำลังสลับไปใช้ CPU…", warm: "กำลังอุ่นเครื่อง…", done: "พร้อมแล้ว"
       })[stage] || "";
     };
@@ -1312,7 +1372,10 @@
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
       // which fills the board row by row from the top-left corner
       console.warn(e);
-      const state = checkEngine ? await checkEngine() : "broken";
+      let state = checkEngine ? await checkEngine() : "broken";
+      // the small network is fine but the character's big one is not (HumanSL, b18): rebuild that one too
+      const big = CHARS[gameChar].brain && brains[CHARS[gameChar].brain];
+      if (state !== "broken" && big && big.rebuild) state = (await big.rebuild().catch(() => false)) ? "rebuilt" : "broken";
       if (my !== gen) return;
       thinking = false;
       if (state !== "broken" && ++engineRetries <= 2) return maybeAI();
@@ -1788,7 +1851,7 @@
     $("home").querySelector(".timectl").textContent = examMode ? "30 นาที + เบียวโยมิ 30 วิ × 3 · เล่นให้จบกระดานแล้วนับแต้ม ผลจะแม่นที่สุด" : "30 นาที + เบียวโยมิ 30 วิ × 3 · กดลูกศรหรือปัดซ้ายขวาเพื่อเลือกตัว";
     charsEl.innerHTML = examMode ? `<div class="card${anim ? " pop" : ""}"><div class="card-in"><div class="cexam">สอบวัดระดับ</div><div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>` : `<button class="ghost left" data-go="-1" aria-label="ตัวก่อนหน้า">${prev.special ? qMark("") : pxImg(prev, "")}</button>
       <button class="arrow left" data-go="-1" aria-label="ตัวก่อนหน้า"></button>
-      ${spCard || `${c.fx ? '<div class="fxwrap">' : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
+      ${spCard || `${c.fx ? `<div class="fxwrap fx-${c.fx}">` : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx === "mist" ? '<div class="mist t"><i></i></div><div class="mist b"><i></i></div></div>' : c.fx === "shine" ? '<i class="spark"></i>'.repeat(7) + '</div>' : c.fx === "gold" ? '<i class="gfx v"></i><i class="gfx s"></i><i class="gfx c1"></i><i class="gfx c2"></i></div>' : c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${next.special ? qMark("") : pxImg(next, "")}</button>`;
     $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "ตัวละครลึกลับ แตะการ์ดเพื่อดูว่ามีใครบ้าง" : "เลือกตัวละครพิเศษที่จะเล่นด้วย: " + SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
@@ -1827,6 +1890,11 @@
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
+  async function startExamBot() {
+    if (!(await ensureBrain(CHARS[EXAMBOT]))) return;
+    settings.char = CHARS.findIndex(c => c.exam); settings.human = Math.random() < 0.5 ? BLACK : WHITE; settings.size = 19; examMode = true;
+    hideScreens(); $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); newGame();
+  }
   async function startMatch() {
     for (const c of [BLACK, WHITE]) { const ch = CHARS[MATCH[c]]; if (!(await ensureBrain(ch))) return; if (ch.book) await loadBook(ch); }
     settings.char = MATCH[BLACK]; settings.human = WHITE; settings.size = 19; save("size", 19);

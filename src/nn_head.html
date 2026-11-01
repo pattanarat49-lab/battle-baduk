@@ -92,6 +92,54 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 #home { overflow-x: clip; }
 .fxwrap .card { position: relative; z-index: 1; animation: saiGlow 3s ease-in-out infinite; }
 .fxwrap .card.pop { animation: pop .24s steps(3) both, saiGlow 3s ease-in-out .24s infinite; }
+.fxwrap.fx-gold .card { animation-name: goldGlow; }
+.fxwrap.fx-gold .card.pop { animation-name: pop, goldGlow; }
+@keyframes goldGlow { 0%, 100% { background: #a8792a; } 50% { background: #f3d58a; } }
+/* Takemiya: golden cosmic clouds (owner's sheet, cut into chars/tk_*.webp) drift round the card, a vortex turns behind it */
+.gfx { position: absolute; z-index: 2; pointer-events: none; background: center / contain no-repeat; }
+.gfx.v { z-index: 0; width: 62%; aspect-ratio: 1; right: -24%; top: -10%; background-image: url(chars/tk_vortex.webp); animation: gSpin 14s linear infinite; opacity: .9; }
+.gfx.s { width: 50%; aspect-ratio: 300 / 225; left: -22%; top: -4%; background-image: url(chars/tk_swirl.webp); animation: gBob 5s ease-in-out infinite; }
+.gfx.c1 { width: 58%; aspect-ratio: 300 / 143; right: -26%; top: 46%; background-image: url(chars/tk_cloud1.webp); animation: gDrift 7s ease-in-out infinite reverse; }
+.gfx.c2 { width: 62%; aspect-ratio: 300 / 215; left: -26%; bottom: -6%; background-image: url(chars/tk_cloud2.webp); animation: gDrift 6s ease-in-out infinite; }
+@keyframes gSpin { to { transform: rotate(-360deg); } }
+@keyframes gBob { 50% { transform: translateY(-6%) rotate(-6deg); } }
+@keyframes gDrift { 0%, 100% { transform: translateX(0); opacity: .85; } 50% { transform: translateX(8%); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gfx, .fx-shine, .fx-shine .card::before, .spark, .mist i { animation: none; } }
+/* Lee Changho: a beam of light runs round the frame, and small stars twinkle on it */
+@property --shA { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.fxwrap.fx-shine { animation: shineGlow 3s ease-in-out infinite; }
+.fxwrap.fx-shine .card { animation-name: shineFrame; overflow: hidden; }
+.fxwrap.fx-shine .card.pop { animation-name: pop, shineFrame; }
+@keyframes shineFrame { 0%, 100% { background: #aeb9cf; } 50% { background: #eef2fb; } }
+.fx-shine .card::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: conic-gradient(from var(--shA), transparent 0 62%, rgba(255,255,255,.35) 72%, #fff 78%, rgba(255,240,190,.9) 80%, transparent 88% 100%);
+  animation: shineRun 3.6s linear infinite; }
+.fx-shine .card-in { position: relative; z-index: 1; }
+@keyframes shineRun { to { --shA: 360deg; } }
+@keyframes shineGlow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(255,255,255,.3)); } 50% { filter: drop-shadow(0 0 14px rgba(255,246,210,.75)); } }
+.spark { position: absolute; z-index: 3; width: 22px; aspect-ratio: 1; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle, #fff 0 12%, rgba(255,250,220,.9) 18%, transparent 46%),
+    linear-gradient(transparent 46%, #fff 46% 54%, transparent 54%), linear-gradient(90deg, transparent 46%, #fff 46% 54%, transparent 54%);
+  filter: drop-shadow(0 0 4px #fff7d6); animation: twinkle 2.4s ease-in-out infinite; }
+.spark:nth-of-type(1) { left: -9px; top: 12%; }
+.spark:nth-of-type(2) { right: -9px; top: 30%; animation-delay: -.6s; width: 16px; }
+.spark:nth-of-type(3) { left: 38%; top: -9px; animation-delay: -1.2s; }
+.spark:nth-of-type(4) { right: -9px; bottom: 18%; animation-delay: -1.8s; width: 28px; }
+.spark:nth-of-type(5) { left: -9px; bottom: 34%; animation-delay: -.9s; width: 16px; }
+.spark:nth-of-type(6) { left: 62%; bottom: -9px; animation-delay: -1.5s; }
+.spark:nth-of-type(7) { right: 14%; top: -9px; animation-delay: -2.1s; width: 14px; }
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 60% { opacity: .8; transform: scale(.8) rotate(60deg); } }
+/* Go Seigen: lavender mist (seamless texture chars/gs_mist.webp) drifts across the bottom of the card, a thinner veil at the top */
+.fxwrap.fx-mist .card { animation-name: mistGlow; }
+.fxwrap.fx-mist .card.pop { animation-name: pop, mistGlow; }
+@keyframes mistGlow { 0%, 100% { background: #8f86b8; } 50% { background: #d9d2f5; } }
+.mist { position: absolute; z-index: 2; left: -14%; right: -14%; overflow: hidden; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); }
+.mist i { position: absolute; inset: 0 auto 0 0; width: 200%; background: url(chars/gs_mist.webp) 0 0 / 50% 100% repeat-x; animation: mistRun 22s linear infinite; }
+.mist.b { bottom: -4%; height: 36%; opacity: .9; }
+.mist.t { top: -3%; height: 22%; opacity: .55; transform: scaleY(-1); }
+.mist.t i { animation-duration: 34s; animation-direction: reverse; }
+@keyframes mistRun { to { transform: translateX(-50%); } }
 @keyframes saiGlow { 0%, 100% { background: #6a4fd8; } 50% { background: #b9a2ff; } }
 .smoke { position: absolute; z-index: 2; width: 52%; aspect-ratio: 150 / 170; pointer-events: none; mix-blend-mode: screen;
   background: url(chars/sai_fx.jpg) 0 0 / 3600% 100% no-repeat; animation: smoke 3.2s steps(35) infinite; }
@@ -118,15 +166,28 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .home .seg button[aria-pressed="true"]::before { content: ""; position: absolute; left: 2px; top: 50%; margin-top: -9px; border-block: 9px solid transparent; border-left: 12px solid var(--gold); }
 .home .seg button:disabled { opacity: .35; }
 /* full-screen wait while a character's own brain downloads, before its game starts */
-.brainload { position: fixed; inset: 0; z-index: 50; background: #07090d; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; }
+.brainload { position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #1b3d46; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px; }
 .brainload[hidden] { display: none; }
 .bl-t { font-family: var(--f-px), var(--f-body); font-weight: 700; font-size: 20px; color: var(--fg); text-align: center; margin: 0; }
-.bl-bar { width: min(420px, 86vw); height: 18px; border: 3px solid #b9a2ff; background: #14102a; padding: 2px; }
-.bl-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #6a4fd8, #c9b6ff); transition: width .2s; }
-.bl-p { font-family: var(--f-px), var(--f-body); font-size: 28px; color: #c9b6ff; margin: 0; }
-.bl-s { font-size: 14px; color: #e6dcff; margin: 0; text-align: center; }
+.bl-p { font-family: var(--f-px), var(--f-body); font-size: 26px; color: #f8e8c9; margin: 0; }
+.bl-s { font-size: 14px; color: #f8e8c9; margin: 0; text-align: center; }
 .bl-n { font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
 .bl-x { margin-top: 10px; background: none; border: 1px solid var(--line); color: var(--muted); padding: 6px 16px; min-height: 0; }
+/* loading pages (owner's pixel art, 2026-11-01): the two stone friends hop on the board while the bar fills */
+.ld { position: fixed; inset: 0; z-index: 60; overflow: hidden; background: #1b3d46; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 24px 16px; transition: opacity .45s; }
+.ld.out { opacity: 0; pointer-events: none; }
+.ld-art { position: relative; flex: none; width: min(760px, 132vw); aspect-ratio: 1080 / 410; }
+.ld-art > img { position: absolute; image-rendering: pixelated; }
+.ld-bg { inset: 0; width: 100%; height: 100%; }
+.ld-c { top: 4.88%; height: 28.29%; transform-origin: 50% 100%; animation: hop .9s ease-in-out infinite; }
+.ld-c.w { left: 27.59%; width: 14.07%; }
+.ld-c.b { left: 58.15%; width: 14.81%; animation-delay: -.45s; }
+@keyframes hop { 0%, 100% { transform: translateY(0) scale(1.1, .88); } 14% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-38%) scale(.95, 1.07); } 72% { transform: translateY(0) scale(1); } 84% { transform: translateY(0) scale(1.1, .88); } }
+.ld-bar { position: absolute; left: 18.98%; top: 61.46%; width: 60.46%; height: 9.76%; box-sizing: border-box; border: 2px solid #8da792; border-radius: 999px; padding: 3px; }
+.ld-bar i { display: block; height: 100%; width: 0; background: #f8e8c9; border-radius: 999px; transition: width .25s; }
+.ld-p { font-family: var(--f-px), var(--f-body); font-size: 26px; color: #f8e8c9; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .ld-c { animation: none; } }
 .home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
 .home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
 .home .seg button:hover:not(:disabled) { color: var(--gold-hi); }
@@ -590,9 +651,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   </div>
 </section>
 
+<section class="ld" id="splash" aria-live="polite">
+  <div class="ld-art"><img class="ld-bg" src="menu/load_bg.png" alt=""><img class="ld-c w" src="menu/load_w.png" alt=""><img class="ld-c b" src="menu/load_b.png" alt=""><div class="ld-bar"><i id="ldFill"></i></div></div>
+  <p class="ld-p" id="ldPct">0%</p>
+</section>
 <section class="brainload" id="brainLoad" hidden aria-live="polite">
   <p class="bl-t" id="blTitle">กำลังโหลดสมอง AI</p>
-  <div class="bl-bar"><i id="blFill"></i></div>
+  <div class="ld-art"><img class="ld-bg" src="menu/load_bg.png" alt=""><img class="ld-c w" src="menu/load_w.png" alt=""><img class="ld-c b" src="menu/load_b.png" alt=""><div class="ld-bar"><i id="blFill"></i></div></div>
   <p class="bl-p" id="blPct">0%</p>
   <p class="bl-s" id="blStep">กำลังดาวน์โหลด</p>
   <p class="bl-n" id="blNote">โหลดครั้งแรกเท่านั้น ครั้งต่อไปจะเริ่มได้ทันที</p>

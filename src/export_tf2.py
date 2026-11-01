@@ -39,7 +39,8 @@ class Reader:
 # HumanSL profiles baked into the export (see KataGo cpp/neuralnet/sgfmetadata.cpp), for a 19x19 board
 PROFILES = ["proyear_1850", "rank_9d", "proyear_1980"]  # Sai, Lee Changho's opening, Takemiya (stored in the .bin)
 # later profiles go into the .json only, so adding one leaves the 53 MB .bin unchanged and players keep their download
-EXTRA_PROFILES = ["proyear_1995", "proyear_1940"]  # Lee Changho, Go Seigen
+EXTRA_PROFILES = ["proyear_1995", "proyear_1940",  # Lee Changho, Go Seigen
+                  "rank_15k", "rank_10k", "rank_8k", "rank_6k", "rank_3k", "rank_1d", "rank_2d"]  # kyu characters up to Jay (test)
 
 
 def meta_row(prof):
@@ -50,6 +51,7 @@ def meta_row(prof):
         rated = 0.0
     else:
         ranks = {"9d": 1, "8d": 2, "7d": 3, "6d": 4, "5d": 5, "4d": 6, "3d": 7, "2d": 8, "1d": 9}
+        ranks.update({f"{k}k": 9 + k for k in range(1, 21)})  # KataGo's inverse rank: 1 kyu = 10 ... 20 kyu = 29
         inv, date, source, tc = ranks[prof.split("_")[1]], datetime.date(2020, 3, 1), 2, 79  # KGS, byo-yomi 1200s + 5x30s
         rated = 0.5
     row[0] = row[1] = 1.0                         # both players human

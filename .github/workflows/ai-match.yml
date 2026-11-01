@@ -1,13 +1,17 @@
-# AI test matches: every pair of the chosen characters plays one game (or two, swapping colours) in headless Chromium,
-# all pairs at once. Each game is shown live on the stats page (/stats, "AI ทดสอบ") and its result lands in the table
-# there; this run's summary lists the results too. Runners have no GPU, so the networks run on WebAssembly and read far
-# fewer positions per move than on a player's device with a graphics card.
+# AI test games, all at once in headless Chromium:
+# - matches: every pair of the characters in "players" plays one game (or two, swapping colours); shown live on the stats
+#   page (/stats, "AI ทดสอบ") unless "post" is off
+# - exams: each character in "exams" takes Hikaru's rank test, to compare the rank it gets with the rank it is meant to have
+# This run's summary lists every result. Runners have no GPU, so the networks run on WebAssembly and read far fewer
+# positions per move than on a player's device with a graphics card.
 name: AI test matches
 on:
   workflow_dispatch:
     inputs:
-      players: { description: "character ids, comma separated", default: "sai,takemiya,changho,seigen,todo" }
+      players: { description: "matches: character ids, comma separated (empty for none)", default: "sai,takemiya,changho,seigen,todo" }
       both_colors: { description: "play each pair twice, swapping colours", type: boolean, default: false }
+      exams: { description: "rank tests with Hikaru: character ids, comma separated (empty for none)", default: "" }
+      post: { description: "show the matches on the live stats page", type: boolean, default: true }
 jobs:
   pairs:
     runs-on: ubuntu-latest
@@ -15,15 +19,17 @@ jobs:
       matrix: ${{ steps.p.outputs.matrix }}
     steps:
       - id: p
-        env: { PLAYERS: "${{ inputs.players }}", BOTH: "${{ inputs.both_colors }}" }
+        env: { PLAYERS: "${{ inputs.players }}", BOTH: "${{ inputs.both_colors }}", EXAMS: "${{ inputs.exams }}", POST: "${{ inputs.post }}" }
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import itertools, json, os, random
-          ps = [p.strip() for p in os.environ["PLAYERS"].split(",") if p.strip()]
-          games = []
+          ids = lambda v: [p.strip() for p in v.split(",") if p.strip()]
+          ps, games = ids(os.environ["PLAYERS"]), []
+          extra = "" if os.environ["POST"] == "true" else "&nostats"
           for a, b in itertools.combinations(ps, 2):
-              if os.environ["BOTH"] == "true": games += [{"b": a, "w": b}, {"b": b, "w": a}]
-              else: games.append(random.choice([{"b": a, "w": b}, {"b": b, "w": a}]))
+              pairs = [(a, b), (b, a)] if os.environ["BOTH"] == "true" else [random.choice([(a, b), (b, a)])]
+              games += [{"name": f"{x} (black) vs {y} (white)", "q": f"match={x},{y}{extra}", "file": f"match-{x}-{y}"} for x, y in pairs]
+          games += [{"name": f"{x} rank test", "q": f"exambot={x}&nostats", "file": f"exam-{x}"} for x in ids(os.environ["EXAMS"])]
           print("matrix=" + json.dumps({"include": games}))
           PY
   play:
@@ -34,16 +40,22 @@ jobs:
       fail-fast: false
       max-parallel: 20
       matrix: ${{ fromJson(needs.pairs.outputs.matrix) }}
-    name: ${{ matrix.b }} (black) vs ${{ matrix.w }} (white)
+    name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      # the apt step inside this sometimes stalls on the runner's package mirror (two jobs sat here for 95 min on
+      # 2026-11-01 without ever starting their game), so give it 10 minutes and one retry
+      - name: install browser
+        timeout-minutes: 12
+        run: |
+          npm i --no-save playwright@1.48.2
+          timeout 300 npx playwright install --with-deps chromium || timeout 300 npx playwright install --with-deps chromium
       - run: python3 -m http.server 8000 >/dev/null 2>&1 &
-      - run: node src/tools/ai_match.js ${{ matrix.b }} ${{ matrix.w }} http://localhost:8000 result.json
+      - run: node src/tools/ai_match.js "${{ matrix.q }}" http://localhost:8000 result.json
       - uses: actions/upload-artifact@v4
-        with: { name: "result-${{ matrix.b }}-${{ matrix.w }}", path: result.json }
+        with: { name: "result-${{ matrix.file }}", path: result.json }
   summary:
     needs: play
     if: always()
@@ -52,12 +64,15 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { path: results }
       - run: |
-          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import glob, json
+          rows = [json.load(open(f)) for f in sorted(glob.glob("results/*/result.json"))]
           print("| black | white | winner | how | margin | moves |\n|---|---|---|---|---|---|")
-          for f in sorted(glob.glob("results/*/result.json")):
-              r = json.load(open(f))
+          for r in rows:
+              if "bot" in r: continue
               win = r["black"] if r["winner"] == "b" else r["white"]
-              m = ("~" if r.get("estimated") else "") + str(r["margin"])
-              print(f"| {r['black']} | {r['white']} | {win} | {r['how']} | {m} | {r['moves']} |")
+              print(f"| {r['black']} | {r['white']} | {win} | {r['how']} | {('~' if r.get('estimated') else '') + str(r['margin'])} | {r['moves']} |")
+          print("\n| rank test | meant to be | exam rank | score | graded | won | moves |\n|---|---|---|---|---|---|---|")
+          for r in rows:
+              if "bot" in r: print(f"| {r['bot']} | {r['rank']} | {r['est']} | {r['score']} | {r['graded']} | {r['botWon']} | {r['moves']} |")
           PY
