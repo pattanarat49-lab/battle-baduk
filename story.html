@@ -54,10 +54,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 <canvas id="view"></canvas>
 <div class="bar">
   <a class="btn" href="./">← กลับ</a>
-  <div class="title">STORY MODE<small>เมืองโกะ · บทที่ 1</small></div>
+  <div class="title">STORY MODE<small>เมืองกระดานโกะ · บทที่ 1</small></div>
   <button class="btn" id="mapBtn">แผนที่</button>
 </div>
-<div class="where" id="where">จัตุรัสกลางเมือง</div>
+<div class="where" id="where">เทนเง็น · จัตุรัสกลางกระดาน</div>
 <div class="hint" id="hint">เดินด้วยปุ่มลูกศร / WASD หรือแตะที่พื้น</div>
 <div class="card" id="card" hidden>
   <div class="stripe" id="cStripe"></div>
@@ -70,15 +70,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 <script>
 (() => {
 "use strict";
-const T = 16, W = 56, H = 44;
-// terrain codes
-const G = 0, ST = 1, WA = 2, CW = 3, TR = 4, SA = 5, FL = 6, SW = 7, BA = 8, SP = 9, FB = 10, HE = 11, BD = 13, BR = 14, SK = 16;
-const SOLID = new Set([WA, CW, TR, SW, BA, HE, BR, SK]);
-const ter = Array.from({ length: H }, () => new Array(W).fill(G));
+// The whole town is one giant 19x19 go board. Line i sits on tile 2 + 3i; tengen (9,9) is the plaza.
+const T = 16, W = 59, H = 59, L = (i) => 2 + 3 * i;
 const block = Array.from({ length: H }, () => new Array(W).fill(false));
-const set = (x, y, v) => { if (x >= 0 && y >= 0 && x < W && y < H) ter[y][x] = v; };
-const rect = (x0, y0, x1, y1, v) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) set(x, y, v); };
-const frame = (x0, y0, x1, y1, v) => { for (let x = x0; x <= x1; x++) { set(x, y0, v); set(x, y1, v); } for (let y = y0; y <= y1; y++) { set(x0, y, v); set(x1, y, v); } };
 const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
 
 // ---------- schools ----------
@@ -97,221 +91,102 @@ const SCHOOLS = {
             tags: ["ทิ้งมือ", "หมากเบา", "ยอมเสียเพื่อได้"] },
 };
 
-// ---------- city layout ----------
-frame(0, 0, W - 1, H - 1, CW);
-rect(1, 21, W - 2, 22, ST);            // east-west avenue
-rect(27, 1, 28, H - 2, ST);            // north-south avenue
-rect(24, 18, 31, 25, ST);              // central plaza
-
-// NW: Moyo — a huge open hedge garden, stone go-board mosaic, grand hall
-frame(3, 2, 23, 17, HE);
-rect(13, 17, 14, 20, ST);
-rect(13, 8, 14, 16, FL);
-rect(9, 10, 17, 14, BD);
-for (const [x0, y0] of [[5, 4], [19, 4], [5, 12], [19, 12]]) rect(x0, y0, x0 + 2, y0 + 3, FB);
-
-// NE: Attack — red wooden palisade, sand training yard
-frame(32, 2, 52, 17, BR);
-rect(33, 3, 51, 16, SA);
-rect(41, 17, 42, 20, ST);
-
-// SW: Defense — double stone wall, winding way in
-rect(4, 26, 22, 40, FL);
-frame(3, 25, 23, 41, SW);
-frame(6, 28, 20, 38, SW);
-rect(13, 23, 14, 25, ST);              // outer gate (north)
-rect(13, 38, 14, 38, FL);              // inner gate (south): walk round between the walls
-
-// SE: Swift — pond, islands, stepping stones, bamboo
-rect(32, 25, 52, 41, WA);
-rect(41, 23, 42, 24, ST);
-const isl = (x0, y0, x1, y1) => rect(x0, y0, x1, y1, G);
-isl(38, 31, 45, 36); isl(33, 27, 36, 29); isl(48, 27, 51, 30); isl(33, 37, 37, 40); isl(48, 37, 51, 40);
-for (const [x, y] of [[41, 25], [41, 26], [42, 26], [42, 27], [42, 28], [41, 28], [41, 29], [41, 30],
-  [37, 29], [37, 30], [37, 31], [46, 33], [47, 33], [47, 32], [47, 31], [48, 31], [38, 37], [39, 37], [45, 37], [46, 37], [47, 37]])
-  set(x, y, SP);
-for (const [x, y] of [[33, 27], [34, 27], [50, 27], [51, 27], [51, 28], [33, 40], [34, 40], [51, 40], [45, 31], [38, 36], [51, 37]]) set(x, y, BA);
-
-// objects
+// ---------- objects ----------
 const objs = [];
 const obj = (o) => { objs.push(o); if (o.solid !== false) for (let y = o.y; y < o.y + o.h; y++) for (let x = o.x; x < o.x + o.w; x++) block[y][x] = true; };
-obj({ k: "fountain", x: 27, y: 21, w: 2, h: 2 });
 const B = [];
 const bld = (b) => { B.push(b); obj({ k: "bld", ...b }); };
-bld({ id: "moyo", x: 10, y: 4, w: 8, h: 4, style: "hall", roof: "#e9b452", roofD: "#a8722a", roofL: "#f7d58a", wall: "#f3e7cc", door: [13, 8], door2: 14, label: "สำนักโมโย่" });
-bld({ id: "attack", x: 38, y: 4, w: 7, h: 4, style: "dojo", roof: "#d6513d", roofD: "#8a2a1c", roofL: "#ee8a6c", wall: "#efdcbc", door: [41, 8], label: "สำนักโจมตี" });
-bld({ id: "defend", x: 10, y: 30, w: 7, h: 4, style: "fort", roof: "#5b7ea8", roofD: "#33506f", roofL: "#86a6c9", wall: "#c4c6bd", door: [13, 34], label: "สำนักป้องกัน" });
-bld({ id: "swift", x: 40, y: 32, w: 4, h: 3, style: "pav", roof: "#7fcfb2", roofD: "#3f8a70", roofL: "#b6ead7", wall: "#f3ead8", door: [41, 35], label: "สำนักว่องไว" });
-bld({ id: "michio", x: 29, y: 26, w: 3, h: 2, style: "hut", roof: "#9a6a44", roofD: "#5a3a22", roofL: "#bf8d62", wall: "#efe3c8", door: [30, 28], label: "บ้านครูมิชิโอะ" });
-// school props
-for (const [x, y] of [[35, 10], [37, 13], [46, 10], [48, 13], [35, 5], [49, 6]]) obj({ k: "dummy", x, y, w: 1, h: 1 });
-obj({ k: "rack", x: 44, y: 12, w: 2, h: 1 });
-for (const [x, y] of [[33, 3], [51, 3], [33, 16], [51, 16]]) obj({ k: "banner", x, y, w: 1, h: 1, c: "#e2604a" });
-for (const [x, y] of [[11, 9], [16, 9], [11, 15], [16, 15]]) obj({ k: "lantern", x, y, w: 1, h: 1 });
-for (const [x, y] of [[3, 25], [22, 25], [3, 40], [22, 40]]) obj({ k: "tower", x, y, w: 2, h: 2 });
-for (const [x, y] of [[8, 31], [18, 31], [8, 36], [18, 36]]) obj({ k: "banner", x, y, w: 1, h: 1, c: "#7fa6d0" });
-obj({ k: "pavilion", x: 49, y: 28, w: 2, h: 2 }); obj({ k: "pavilion", x: 35, y: 38, w: 2, h: 2 });
-for (const [x, y] of [[25, 19], [30, 19], [25, 24]]) obj({ k: "lamp", x, y, w: 1, h: 1 });
-for (const [x, y] of [[4, 3], [22, 3]]) obj({ k: "banner", x, y, w: 1, h: 1, c: "#f0c060" });
-for (const [x, y] of [[36, 34], [47, 35]]) obj({ k: "lily", x, y, w: 1, h: 1, solid: false });
+// rugs (tatami courtyards) under each school, drawn under everything
+const RUGS = [
+  { id: "moyo", x: 4, y: 3, w: 14, h: 11 }, { id: "attack", x: 41, y: 3, w: 14, h: 11 },
+  { id: "defend", x: 4, y: 43, w: 14, h: 11 }, { id: "swift", x: 41, y: 44, w: 12, h: 10 },
+];
+bld({ id: "moyo", x: 7, y: 5, w: 8, h: 4, style: "hall", roof: "#e9b452", roofD: "#a8722a", roofL: "#f7d58a", wall: "#f3e7cc", door: [10, 9], door2: 11, label: "สำนักโมโย่" });
+bld({ id: "attack", x: 44, y: 5, w: 7, h: 4, style: "dojo", roof: "#d6513d", roofD: "#8a2a1c", roofL: "#ee8a6c", wall: "#efdcbc", door: [47, 9], label: "สำนักโจมตี" });
+bld({ id: "defend", x: 8, y: 45, w: 7, h: 4, style: "fort", roof: "#5b7ea8", roofD: "#33506f", roofL: "#86a6c9", wall: "#c4c6bd", door: [11, 49], label: "สำนักป้องกัน" });
+bld({ id: "swift", x: 45, y: 46, w: 4, h: 3, style: "pav", roof: "#7fcfb2", roofD: "#3f8a70", roofL: "#b6ead7", wall: "#f3ead8", door: [46, 49], label: "สำนักว่องไว" });
+bld({ id: "michio", x: 34, y: 23, w: 3, h: 2, style: "hut", roof: "#9a6a44", roofD: "#5a3a22", roofL: "#bf8d62", wall: "#efe3c8", door: [35, 25], label: "บ้านครูมิชิโอะ" });
+obj({ k: "fountain", x: 28, y: 28, w: 3, h: 3 });
+for (const [x, y] of [[26, 26], [32, 26], [26, 32], [32, 32]]) obj({ k: "lamp", x, y, w: 1, h: 1 });
+for (const r of RUGS) { const c = SCHOOLS[r.id].color;
+  for (const [x, y] of [[r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1]]) obj({ k: "banner", x, y, w: 1, h: 1, c }); }
+for (const [x, y] of [[9, 11], [13, 11], [46, 11], [49, 11], [10, 51], [13, 51], [45, 51], [48, 51]]) obj({ k: "lantern", x, y, w: 1, h: 1 });
+
+// ---------- stones: each corner's shape tells its school's style ----------
+const STONES = [
+  // Moyo: wide framework, lots of empty space it claims
+  ["b", 6, 3], ["b", 3, 6], ["b", 6, 6], ["b", 9, 3], ["b", 3, 9],
+  // Attack: crosscut and a running fight
+  ["b", 12, 5], ["w", 13, 5], ["w", 12, 6], ["b", 13, 6], ["b", 14, 5], ["w", 14, 6], ["w", 11, 5], ["b", 11, 6], ["b", 14, 7], ["w", 15, 7],
+  // Defense: one solid, connected black wall; white can only bounce off
+  ["b", 2, 12], ["b", 3, 12], ["b", 4, 12], ["b", 5, 12], ["b", 6, 12], ["b", 6, 13], ["b", 6, 14], ["b", 6, 15], ["b", 6, 16], ["w", 4, 10], ["w", 8, 13], ["w", 8, 15],
+  // Swift: light one-space jumps and knight moves, plus a stone left behind
+  ["b", 11, 15], ["b", 13, 13], ["b", 15, 11], ["b", 16, 13], ["b", 12, 17], ["w", 10, 12], ["w", 9, 13], ["b", 10, 13],
+];
+for (const [c, i, j] of STONES) obj({ k: "stone", x: L(i) - 1, y: L(j) - 1, w: 3, h: 3, c });
 
 // zones
-const inside = (x, y) => (x >= 3 && x <= 23 && y >= 2 && y <= 17) || (x >= 32 && x <= 52 && y >= 2 && y <= 17) || (x >= 3 && x <= 23 && y >= 25 && y <= 41) || (x >= 32 && x <= 52 && y >= 25 && y <= 41);
 const zoneOf = (x, y) => {
-  if (x >= 3 && x <= 23 && y >= 2 && y <= 17) return "moyo";
-  if (x >= 32 && x <= 52 && y >= 2 && y <= 17) return "attack";
-  if (x >= 3 && x <= 23 && y >= 25 && y <= 41) return "defend";
-  if (x >= 32 && x <= 52 && y >= 25 && y <= 41) return "swift";
-  if (x >= 24 && x <= 31 && y >= 18 && y <= 25) return "plaza";
-  return "town";
+  if (Math.abs(x - 29) <= 5 && Math.abs(y - 29) <= 5) return "plaza";
+  if (x < 29 && y < 29) return "moyo"; if (x >= 29 && y < 29) return "attack";
+  if (x < 29) return "defend"; return "swift";
 };
-const ZONE_NAME = { moyo: "เขตสำนักโมโย่", attack: "เขตสำนักโจมตี", defend: "เขตสำนักป้องกัน", swift: "เขตสำนักว่องไว", plaza: "จัตุรัสกลางเมือง", town: "เมืองโกะ" };
+const ZONE_NAME = { moyo: "มุมสำนักโมโย่", attack: "มุมสำนักโจมตี", defend: "มุมสำนักป้องกัน", swift: "มุมสำนักว่องไว", plaza: "เทนเง็น · จัตุรัสกลางกระดาน" };
 
-// trees: groves along the city wall, cherry blossoms by the plaza, open lawns elsewhere
-const nearDoor = (x, y) => B.some((b) => Math.abs(b.door[0] - x) <= 1 && Math.abs(b.door[1] - y) <= 1);
-const roadDist = (x, y) => { let d = 9; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (ter[y + dy]?.[x + dx] === ST) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dy))); return d; };
-const grove = (x, y) => Math.sin(x * .55 + 1.3) + Math.sin(y * .6 + x * .2) + Math.sin((x - y) * .33);
-for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
-  if (ter[y][x] !== G || inside(x, y) || block[y][x] || nearDoor(x, y) || roadDist(x, y) < 2) continue;
-  const edge = x <= 2 || y <= 1 || x >= W - 3 || y >= H - 2;
-  if (edge ? hash(x, y) < .8 : grove(x, y) > 1.1 && hash(x, y) < .75) set(x, y, TR);
-}
-for (const [x, y] of [[23, 19], [32, 19], [23, 24], [32, 24], [5, 9], [21, 9], [4, 16], [22, 16], [44, 36], [33, 29], [50, 30], [48, 39], [34, 39]]) if (!block[y][x]) set(x, y, SK);
-for (const [x, y] of [[24, 17], [31, 17], [24, 26], [26, 27], [25, 30], [30, 31], [25, 35], [30, 36], [25, 40], [30, 40]]) if (ter[y][x] === G && !block[y][x]) set(x, y, SK);
-
-const solidAt = (x, y) => x < 0 || y < 0 || x >= W || y >= H || SOLID.has(ter[y][x]) || block[y][x];
+const solidAt = (x, y) => x < 1 || y < 1 || x >= W - 1 || y >= H - 1 || block[y][x];
 
 // ---------- painting ----------
-const C = {
-  g: "#6c9d5a", gD: "#5f8f50", gL: "#7dae67", gS: "#4f7c45",
-  p: "#e6cfa0", pD: "#cdb07c", pL: "#f1dfb8",
-  w: "#3f88a6", wD: "#336f8c", wL: "#7cc0d4", foam: "#d6eef2", bank: "#8b6a43",
-  stone: "#a9aba3", stoneD: "#93958d", stoneL: "#bdbfb7",
-  wall: "#8d8a84", wallD: "#6b6863", wallL: "#aaa7a0",
-  tree: "#3e7a4a", treeD: "#2e6040", treeL: "#5a9a5c",
-  sak: "#f2b6c6", sakD: "#de8ea6", sakL: "#fde0e8",
-  sand: "#e8cc94", sandD: "#d6b67c",
-  wood: "#6b4026", woodD: "#4a2a18",
-};
-const isPath = (t) => t === ST || t === FL || t === BD || t === SA;
-const isWater = (t) => t === WA || t === SP;
-const tAt = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? CW : ter[y][x];
-
+const C = { wood: "#deb06e", woodL: "#e8bf80", woodD: "#cf9f5e", line: "#6b4426", frame: "#5a331a", frameL: "#7a4a28",
+  stone: "#a9aba3", stoneD: "#93958d", stoneL: "#bdbfb7", w: "#3f88a6", wL: "#7cc0d4", foam: "#d6eef2", woodK: "#4a2a18" };
+let curM = null;
 function paint(m, phase) {
+  curM = m;
   const px = (c, x, y, w = 1, h = 1) => { m.fillStyle = c; m.fillRect(x, y, w, h); };
-  const grass = (X, Y, x, y) => {
-    px(C.g, X, Y, T, T);
-    const r = hash(x, y), r2 = hash(y, x);
-    px(C.gD, X + (r * 13 | 0), Y + (r2 * 13 | 0), 3, 2);
-    if (r > .55) { px(C.gL, X + (r2 * 12 | 0) + 2, Y + (r * 11 | 0) + 3, 1, 2); px(C.gL, X + (r2 * 12 | 0) + 3, Y + (r * 11 | 0) + 2, 1, 2); }
-    if (r > .93) { px("#f6f0dc", X + 6, Y + 8, 2, 2); px("#f0c060", X + 6, Y + 8, 1, 1); }
-    if (r < .05) { px("#f3a8b8", X + 9, Y + 4, 2, 2); }
-  };
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const t = ter[y][x], X = x * T, Y = y * T, r = hash(x, y);
-    const up = tAt(x, y - 1), dn = tAt(x, y + 1), lf = tAt(x - 1, y), rt = tAt(x + 1, y);
-    switch (t) {
-      case G: case TR: case SK: case BA: case FB:
-        grass(X, Y, x, y);
-        if (isWater(dn)) { px(C.bank, X, Y + 13, T, 3); px(C.gS, X, Y + 12, T, 1); }
-        if (t === FB) for (let i = 0; i < 6; i++) { const a = hash(x * 7 + i, y * 3 - i); px(["#f0c060", "#fbf3e0", "#f3a8b8", "#f0c060", "#fbf3e0", "#e27a8f"][i], X + 2 + (i % 3) * 5, Y + 3 + (i / 3 | 0) * 6 + (a * 2 | 0), 2, 2); }
-        break;
-      case ST: {
-        px(C.p, X, Y, T, T);
-        if (r < .5) px(C.pD, X + (r * 25 | 0) % 13 + 1, Y + (r * 77 | 0) % 13 + 1, 2, 1);
-        if (r > .8) px(C.pL, X + (r * 41 | 0) % 12 + 2, Y + (r * 13 | 0) % 12 + 2, 2, 1);
-        const e = (n) => !isPath(n) && !isWater(n);
-        if (e(up)) { px(C.pD, X, Y, T, 1); px(C.g, X, Y, T, 1); px(C.gD, X + 3, Y + 1, 2, 1); }
-        if (e(dn)) { px(C.pD, X, Y + 15, T, 1); }
-        if (e(lf)) { px(C.pD, X, Y, 1, T); }
-        if (e(rt)) { px(C.pD, X + 15, Y, 1, T); }
-        if (e(up) && e(lf)) px(C.g, X, Y, 2, 2);
-        if (e(up) && e(rt)) px(C.g, X + 14, Y, 2, 2);
-        if (e(dn) && e(lf)) px(C.g, X, Y + 14, 2, 2);
-        if (e(dn) && e(rt)) px(C.g, X + 14, Y + 14, 2, 2);
-        break; }
-      case WA: case SP: {
-        px(C.w, X, Y, T, T);
-        if (r > .6) px(C.wD, X + (r * 9 | 0), Y + 9, 6, 2);
-        const o = (phase * 3 + x * 5 + y * 3) % 12; px(C.wL, X + o, Y + 5, 3, 1); if (phase) px(C.wL, X + ((o + 6) % 12), Y + 11, 2, 1);
-        if (!isWater(up)) { px(C.wD, X, Y, T, 3); px(C.foam, X, Y + 3, T, 1); }
-        if (!isWater(lf)) px(C.foam, X, Y, 1, T);
-        if (!isWater(rt)) px(C.foam, X + 15, Y, 1, T);
-        if (!isWater(dn)) px(C.foam, X, Y + 15, T, 1);
-        if (t === SP) { px(C.wD, X + 3, Y + 7, 10, 6); px(C.stone, X + 3, Y + 4, 10, 8); px(C.stoneL, X + 4, Y + 4, 6, 2); px(C.stoneD, X + 3, Y + 11, 10, 1); }
-        break; }
-      case CW:
-        px(C.wall, X, Y, T, T); px(C.wallL, X, Y, T, 4); px(C.wallD, X, Y + 15, T, 1);
-        px(C.wallD, X, Y + 9, T, 1); px(C.wallD, X + ((x + y) & 1 ? 4 : 11), Y + 4, 1, 5); px(C.wallD, X + ((x + y) & 1 ? 11 : 4), Y + 10, 1, 5);
-        if (y === 0 || y === H - 1) { px(C.wallL, X + 1, Y - 0, 5, 2); px(C.wallL, X + 9, Y, 5, 2); }
-        break;
-      case SA:
-        px(C.sand, X, Y, T, T); if (r < .6) px(C.sandD, X + (r * 97 | 0) % 13 + 1, Y + (r * 57 | 0) % 13 + 1, 2, 1);
-        if (tAt(x, y - 1) === BR) px(C.sandD, X, Y, T, 2);
-        break;
-      case FL:
-        px(C.stone, X, Y, T, T); px(C.stoneD, X, Y + 15, T, 1); px(C.stoneD, X + 15, Y, 1, T); px(C.stoneL, X, Y, 15, 1);
-        if (r < .15) px(C.stoneD, X + 4, Y + 6, 4, 1);
-        if (tAt(x, y - 1) === SW) px("#00000022", X, Y, T, 3);
-        break;
-      case SW:
-        px(C.wall, X, Y, T, T); px(C.wallL, X, Y, T, 5); px(C.wallD, X, Y + 14, T, 2);
-        px(C.wallD, X, Y + 9, T, 1); px(C.wallD, X + ((x + y) & 1 ? 4 : 11), Y + 5, 1, 4);
-        break;
-      case HE:
-        grass(X, Y, x, y);
-        px(C.treeD, X, Y + 3, T, 12); px(C.tree, X, Y + 2, T, 9); px(C.treeL, X + 2, Y + 3, 4, 2); px(C.treeL, X + 9, Y + 4, 3, 2); px("#00000022", X, Y + 15, T, 1);
-        break;
-      case BD:
-        px("#d39a5a", X, Y, T, T); px("#9a6532", X + 7, Y, 1, T); px("#9a6532", X, Y + 7, T, 1);
-        if (x === 9 || x === 17 || y === 10 || y === 14) { if (x === 9) px("#9a6532", X, Y, 2, T); if (x === 17) px("#9a6532", X + 14, Y, 2, T); if (y === 10) px("#9a6532", X, Y, T, 2); if (y === 14) px("#9a6532", X, Y + 14, T, 2); }
-        if ((x === 11 || x === 15) && (y === 11 || y === 13) || (x === 13 && y === 12)) px("#4a2a18", X + 6, Y + 6, 3, 3);
-        break;
-      case BR:
-        grass(X, Y, x, y);
-        px("#00000026", X, Y + 13, T, 3);
-        px("#8a3a2a", X, Y + 3, T, 10); px("#a84a36", X, Y + 3, T, 2);
-        for (const sx of [1, 6, 11]) { px("#9a4433", X + sx, Y + 1, 4, 12); px("#b85a44", X + sx, Y + 1, 1, 12); px("#6a2a1e", X + sx + 3, Y + 1, 1, 12); }
-        break;
-    }
-  }
-  // soft shadows + trees + objects, top to bottom
-  const draws = [];
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const t = ter[y][x]; if (t === TR || t === SK || t === BA) draws.push({ y: y + .5, f: () => plant(px, x, y, t) }); }
-  for (const o of objs) draws.push({ y: o.y + o.h - .01, f: () => drawObj(px, o, phase) });
-  draws.sort((a, b) => a.y - b.y).forEach((d) => d.f());
-  // south gate
-  const gx = 27 * T, gy = (H - 1) * T;
-  px(C.woodD, gx, gy + 2, 2 * T, T - 2); px("#2a1a10", gx + 4, gy + 4, 2 * T - 8, T - 4);
-  px("#c4483a", gx - 10, gy - 6, 2 * T + 20, 4); px("#8a2a1c", gx - 10, gy - 2, 2 * T + 20, 2); px("#c4483a", gx - 6, gy - 2, 3, T + 2); px("#c4483a", gx + 2 * T + 3, gy - 2, 3, T + 2);
-}
-function plant(px, x, y, t) {
-  const X = x * T, Y = y * T;
-  if (t === BA) { for (const [sx, h] of [[2, 18], [6, 21], [10, 17], [13, 19]]) { px("#5a8a42", X + sx, Y + T - h, 2, h); px("#8cc06a", X + sx, Y + T - h, 1, h); px("#4b7337", X + sx, Y + T - h + 6, 2, 1); } px("#9bd07a", X + 8, Y - 4, 5, 2); px("#9bd07a", X, Y - 1, 5, 2); px("#7fb85e", X + 11, Y + 1, 4, 2); return; }
-  const [a, d, l] = t === SK ? [C.sak, C.sakD, C.sakL] : [C.tree, C.treeD, C.treeL];
-  px("#00000030", X + 2, Y + 12, 12, 4);
-  px(C.wood, X + 7, Y + 9, 2, 6);
-  px(d, X + 1, Y - 2, 14, 13); px(d, X + 3, Y - 4, 10, 2); px(d, X + 2, Y + 11, 12, 1);
-  px(a, X + 2, Y - 3, 11, 11); px(a, X + 1, Y, 1, 6);
-  px(l, X + 4, Y - 2, 5, 3); px(l, X + 3, Y + 1, 2, 2);
-  if (t === SK) { px("#fff4f7", X + 6, Y - 1, 1, 1); px("#fff4f7", X + 10, Y + 3, 1, 1); px(C.sakD, X + 4, Y + 15, 2, 1); px(C.sakD, X + 11, Y + 14, 1, 1); }
+  // board wood with soft grain
+  px(C.wood, 0, 0, W * T, H * T);
+  for (let y = 0; y < H * T; y += 2) { const r = hash(7, y); if (r > .72) px(r > .9 ? C.woodD : C.woodL, 0, y, W * T, 1); }
+  for (let i = 0; i < 260; i++) { const x = hash(i, 3) * W * T | 0, y = hash(3, i) * H * T | 0; px(C.woodD, x, y, 6 + (hash(i, i) * 14 | 0), 1); }
+  // grid lines + star points
+  const a = L(0) * T + 7, b = L(18) * T + 8;
+  for (let i = 0; i < 19; i++) { const p = L(i) * T + 7; const lw = i === 0 || i === 18 ? 2 : 1;
+    m.globalAlpha = .85; px(C.line, a, p, b - a + 1, lw); px(C.line, p, a, lw, b - a + 1); m.globalAlpha = 1; }
+  for (const i of [3, 9, 15]) for (const j of [3, 9, 15]) px(C.line, L(i) * T + 5, L(j) * T + 5, 5, 5);
+  // rugs
+  for (const r of RUGS) { const c = SCHOOLS[r.id].color, X = r.x * T, Y = r.y * T, w = r.w * T, h = r.h * T;
+    px("#00000018", X + 2, Y + 3, w, h); px("#efe0b8", X, Y, w, h); px(c, X, Y, w, 3); px(c, X, Y + h - 3, w, 3); px(c, X, Y, 3, h); px(c, X + w - 3, Y, 3, h);
+    for (let yy = Y + 8; yy < Y + h - 4; yy += 16) px("#e2d0a2", X + 4, yy, w - 8, 1); }
+  // coordinates on the frame margin
+  // board frame
+  px(C.frame, 0, 0, W * T, T); px(C.frame, 0, (H - 1) * T, W * T, T); px(C.frame, 0, 0, T, H * T); px(C.frame, (W - 1) * T, 0, T, H * T);
+  px(C.frameL, T - 2, T - 2, (W - 2) * T + 4, 2); px(C.frameL, T - 2, T - 2, 2, (H - 2) * T + 4);
+  px("#00000030", T, T, (W - 2) * T, 3); px("#00000030", T, T, 3, (H - 2) * T);
+  for (const r of RUGS) { const c = SCHOOLS[r.id].color; const cx = r.x < 29 ? 0 : (W - 1) * T, cy = r.y < 29 ? 0 : (H - 1) * T;
+    px(c, cx + 3, cy + 3, T - 6, T - 6); px(c, r.x < 29 ? T : (W - 7) * T, cy + 6, 6 * T, 4); px(c, cx + 6, r.y < 29 ? T : (H - 7) * T, 4, 6 * T); }
+  // objects, top to bottom
+  objs.slice().sort((p, q) => (p.y + p.h) - (q.y + q.h)).forEach((o) => drawObj(px, o, phase));
 }
 function drawObj(px, o, phase) {
-  const X = o.x * T, Y = o.y * T;
+  const X = o.x * T, Y = o.y * T, m_ = curM;
   switch (o.k) {
+    case "stone": {
+      // a big stone that nearly fills the gap between lines, like on a real board
+      const black = o.c === "b", cx = X + T + 8, cy = Y + T + 8, R = 21;
+      const [base, dark, hi] = black ? ["#2a2b31", "#141518", "#62656f"] : ["#f3eee2", "#c9c2b2", "#ffffff"];
+      const disc = (ox, oy, r, col) => { m_.fillStyle = col; for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r * r - dy * dy)); m_.fillRect(cx + ox - hw, cy + oy + dy, hw * 2, 1); } };
+      disc(2, 4, R, "#00000040"); disc(0, 1, R, dark); disc(0, 0, R - 1, base);
+      disc(-7, -8, 6, hi); if (black) disc(-6, -7, 4, "#7a7e88"); else disc(-6, -7, 4, "#ffffff");
+      break; }
     case "bld": {
       const w = o.w * T, h = o.h * T, light = o.style === "pav";
       const roofH = Math.round(h * (o.style === "hall" ? .62 : light ? .55 : .58));
       px("#00000030", X + 3, Y + h - 2, w, 5);
-      // walls
       if (o.style === "fort") { px("#8d8f86", X + 1, Y + h - 6, w - 2, 6); px("#a9aba3", X + 1, Y + h - 6, w - 2, 1); }
       px(o.wall, X + 2, Y + roofH, w - 4, h - roofH - (o.style === "fort" ? 6 : 0));
       px("#00000033", X + 2, Y + roofH, w - 4, 3);
-      for (let i = 0; i <= o.w; i++) { const cx = X + 2 + Math.min(w - 6, i * T - (i ? 2 : 0)); px(light ? C.woodD : "#8a5a36", cx, Y + roofH, 2, h - roofH); }
+      for (let i = 0; i <= o.w; i++) { const cx = X + 2 + Math.min(w - 6, i * T - (i ? 2 : 0)); px(light ? C.woodK : "#8a5a36", cx, Y + roofH, 2, h - roofH); }
       if (!light) for (let i = 0; i < o.w; i++) { const tx = o.x + i; if (tx !== o.door[0] && tx !== o.door2) { px("#5a3a22", X + i * T + 5, Y + roofH + 5, 6, 5); px("#f0c888", X + i * T + 6, Y + roofH + 6, 4, 3); px("#5a3a22", X + i * T + 7, Y + roofH + 6, 1, 3); } }
       const dx = (o.door[0] - o.x) * T, dw = o.door2 ? 2 * T : T;
       px("#3a2414", X + dx + 3, Y + h - 12, dw - 6, 12); px("#5a3a22", X + dx + 3, Y + h - 12, dw - 6, 1); px("#c9b48a", X + dx + 1, Y + h, dw - 2, 2);
-      // roof with upturned eaves
       const ry = Y + 1, rh = roofH - 1;
       px(o.roofD, X - 3, ry + rh - 4, w + 6, 4);
       px(o.roofD, X - 5, ry + rh - 7, 3, 3); px(o.roofD, X + w + 2, ry + rh - 7, 3, 3);
@@ -321,42 +196,28 @@ function drawObj(px, o, phase) {
       px(o.roofL, X + 2, ry + 3, w - 4, 2);
       px(o.roofD, X + 1, ry, w - 2, 1);
       if (o.style === "hall") { px(o.roofD, X - 3, ry + ((rh - 4) >> 1), w + 6, 2); px(o.roofL, X, ry + ((rh - 4) >> 1) + 2, w, 1); px("#f7d58a", X + (w >> 1) - 2, ry - 4, 4, 4); }
-      if (o.style === "dojo") { px(o.roofD, X + (w >> 1) - 1, ry - 3, 2, 3); }
-      if (o.style === "fort") { for (let i = 0; i < o.w; i++) px(o.roofD, X + i * T + 6, ry - 2, 4, 2); }
-      // name sign over the door
-      if (o.id !== "house") { px("#3a2414", X + dx + (dw >> 1) - 5, Y + roofH + 1, 10, 4); px(SCHOOLS[o.id]?.color || "#f0c888", X + dx + (dw >> 1) - 4, Y + roofH + 2, 8, 2); }
+      if (o.style === "dojo") px(o.roofD, X + (w >> 1) - 1, ry - 3, 2, 3);
+      if (o.style === "fort") for (let i = 0; i < o.w; i++) px(o.roofD, X + i * T + 6, ry - 2, 4, 2);
+      px("#3a2414", X + dx + (dw >> 1) - 5, Y + roofH + 1, 10, 4); px(SCHOOLS[o.id]?.color || "#f0c888", X + dx + (dw >> 1) - 4, Y + roofH + 2, 8, 2);
       break; }
-    case "fountain":
-      px("#00000030", X + 1, Y + 26, 32, 5);
-      px(C.wallD, X, Y + 4, 32, 26); px(C.stoneL, X + 1, Y + 2, 30, 26); px(C.stone, X + 1, Y + 24, 30, 4);
-      px(C.w, X + 4, Y + 6, 24, 17); px(C.wL, X + 6, Y + 8, 4, 1); px(C.wL, X + 20, Y + 18, 5, 1);
-      px(C.stoneD, X + 13, Y + 10, 6, 10); px(C.stoneL, X + 14, Y + 9, 4, 2);
-      px(C.foam, X + 15, Y + 1 + phase, 2, 8); px(C.wL, X + 12, Y + 6, 2, 3); px(C.wL, X + 18, Y + 6, 2, 3);
-      break;
-    case "dummy": px("#00000030", X + 3, Y + 13, 10, 3); px(C.wood, X + 7, Y + 6, 2, 9); px("#dcb878", X + 4, Y + 1, 8, 8); px("#c09a58", X + 4, Y + 7, 8, 2); px("#a8392a", X + 2, Y + 6, 12, 2); px("#f0d39a", X + 5, Y + 2, 3, 2); break;
-    case "rack": px("#00000030", X + 2, Y + 13, 28, 3); px(C.wood, X + 2, Y + 4, 28, 2); px(C.wood, X + 2, Y + 11, 28, 2); px(C.woodD, X + 2, Y + 4, 2, 10); px(C.woodD, X + 28, Y + 4, 2, 10); for (let i = 0; i < 5; i++) px("#d8cfbb", X + 6 + i * 5, Y + 1, 1, 13); break;
-    case "banner": { const f = phase; px("#00000030", X + 2, Y + 14, 6, 2); px(C.woodD, X + 3, Y - 2, 2, 17); px(o.c, X + 5, Y - 1, 8, 9); px("#00000026", X + 5, Y + 6, 8, 2); px(o.c, X + 5, Y + 8, 3 + f, 2); px(o.c, X + 10 - f, Y + 8, 3, 2); px("#ffffff40", X + 5, Y - 1, 8, 1); break; }
+    case "fountain": {
+      // a giant go-stone bowl that is also the town fountain
+      px("#00000030", X + 2, Y + 40, 46, 7);
+      px("#6b4026", X + 2, Y + 6, 44, 38); px("#8a5a36", X, Y + 8, 48, 32); px("#a8734a", X + 4, Y + 4, 40, 36);
+      px(C.w, X + 7, Y + 7, 34, 26); px(C.wL, X + 10, Y + 10, 6, 1); px(C.wL, X + 30, Y + 26, 6, 1);
+      px("#26272c", X + 13, Y + 15, 8, 7); px("#f1ece0", X + 26, Y + 18, 8, 7); px("#5a5d66", X + 14, Y + 16, 3, 1);
+      px(C.foam, X + 23, Y + 2 + phase, 2, 14); px(C.wL, X + 20, Y + 8, 2, 4); px(C.wL, X + 26, Y + 8, 2, 4);
+      break; }
+    case "banner": { const f = phase; px("#00000030", X + 2, Y + 14, 6, 2); px(C.woodK, X + 3, Y - 2, 2, 17); px(o.c, X + 5, Y - 1, 8, 9); px("#00000026", X + 5, Y + 6, 8, 2); px(o.c, X + 5, Y + 8, 3 + f, 2); px(o.c, X + 10 - f, Y + 8, 3, 2); px("#ffffff40", X + 5, Y - 1, 8, 1); break; }
     case "lantern": px("#00000030", X + 3, Y + 13, 10, 3); px(C.stoneD, X + 5, Y + 11, 6, 4); px(C.stone, X + 6, Y + 6, 4, 6); px("#f7d58a", X + 7, Y + 7, 2, 3); px(C.stoneD, X + 3, Y + 3, 10, 3); px(C.stoneL, X + 4, Y + 3, 8, 1); px(C.stoneD, X + 7, Y + 1, 2, 2); break;
-    case "lamp": px("#00000030", X + 5, Y + 14, 6, 2); px(C.woodD, X + 7, Y + 3, 2, 12); px("#fbe3a6", X + 5, Y, 6, 4); px("#f0c060", X + 5, Y + 3, 6, 1); px(C.woodD, X + 4, Y - 1, 8, 1); break;
-    case "tower":
-      px("#00000030", X + 2, Y + 28, 30, 5);
-      px(C.wallD, X, Y, 32, 32); px(C.wall, X + 1, Y + 1, 30, 29); px(C.wallL, X + 1, Y + 1, 30, 5);
-      for (let i = 0; i < 4; i++) px(C.wallL, X + 1 + i * 8, Y - 3, 5, 4);
-      px("#3a3a3a", X + 13, Y + 12, 6, 8); px(C.wallD, X + 1, Y + 20, 30, 1);
-      break;
-    case "pavilion":
-      px("#00000030", X + 2, Y + 26, 30, 4);
-      px(C.woodD, X + 4, Y + 8, 2, 19); px(C.woodD, X + 26, Y + 8, 2, 19); px("#c09a58", X + 2, Y + 24, 28, 3);
-      px("#3f8a70", X - 2, Y + 5, 36, 4); px("#3f8a70", X - 4, Y + 3, 3, 3); px("#3f8a70", X + 33, Y + 3, 3, 3); px("#7fcfb2", X + 1, Y, 30, 6); px("#b6ead7", X + 3, Y + 1, 26, 1);
-      break;
-    case "lily": px("#4f8f4a", X + 3, Y + 6, 6, 4); px("#6fb062", X + 4, Y + 6, 3, 2); px("#f3a8b8", X + 10, Y + 9, 3, 3); px("#4f8f4a", X + 9, Y + 12, 4, 2); break;
+    case "lamp": px("#00000030", X + 5, Y + 14, 6, 2); px(C.woodK, X + 7, Y + 3, 2, 12); px("#fbe3a6", X + 5, Y, 6, 4); px("#f0c060", X + 5, Y + 3, 6, 1); px(C.woodK, X + 4, Y - 1, 8, 1); break;
   }
 }
 const mapFrames = [0, 1].map((ph) => { const c = document.createElement("canvas"); c.width = W * T; c.height = H * T; paint(c.getContext("2d"), ph); return c; });
 let mapC = mapFrames[0];
 
 // ---------- player ----------
-const P = { x: 27, y: 26, fx: 27, fy: 26, dir: "down", step: 0, path: [] };
+const P = { x: 29, y: 33, fx: 29, fy: 33, dir: "down", step: 0, path: [] };
 function drawHero(c, sx, sy, s) {
   const p = (col, x, y, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(sx + x * s, sy + y * s, w * s, h * s); };
   const bob = P.moving && (P.step & 1) ? 1 : 0;
@@ -396,7 +257,7 @@ function frameDraw() {
   camX = W * T > tw ? clamp(tx, 0, W * T - tw) : (W * T - tw) / 2;
   camY = H * T > th ? clamp(ty, 0, H * T - th) : (H * T - th) / 2;
   ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = "#2b4a3a"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = "#3a2414"; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.drawImage(mapC, -Math.round(camX * S), -Math.round(camY * S), W * T * S, H * T * S);
   // target marker
   if (P.path.length) { const g = P.path[P.path.length - 1]; ctx.strokeStyle = "#f3ead8aa"; ctx.lineWidth = S; ctx.strokeRect(Math.round((g[0] * T - camX) * S) + S, Math.round((g[1] * T - camY) * S) + S, (T - 2) * S, (T - 2) * S); }
