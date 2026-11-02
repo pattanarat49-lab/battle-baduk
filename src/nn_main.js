@@ -2065,7 +2065,7 @@
   // ---------- main menu and profile ----------
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
-    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 12 ตัวละคร" },
+    { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
