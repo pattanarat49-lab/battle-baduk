@@ -311,7 +311,15 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เกมยาวอย่างน้อย 100 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>
 ${s.examRanks.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ระดับที่ได้</th><th>จำนวน</th></tr></thead><tbody>${s.examRanks.map(r => `<tr><th>${rankName(r.r)}</th><td>${r.n}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">ยังไม่มีใครสอบจบ</p>`}
 ${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ล่าสุด</th><th>ผล</th><th>คะแนน</th><th>ไม่ใช่ Best</th><th>ตาที่ให้คะแนน</th><th>จบด้วย</th></tr></thead><tbody>${s.examRecent.map(r => `<tr><th>${ago(r.ended)}</th><td>${r.rank === null ? "ไม่พอประเมิน" : rankName(r.rank)}</td><td>${r.score === null ? "–" : r.score.toFixed(2)}</td><td>${r.not_best === null ? "–" : Math.round(r.not_best) + "%"}</td><td>${r.graded}</td><td>${HOW_TH[r.how] || r.how}</td></tr>`).join("")}</tbody></table></div>` : ""}
-<p class="muted">แนะนำให้ผู้สอบเล่นจนจบกระดานและนับแต้ม ผลจะใกล้เคียงที่สุด</p></section>
+<p class="muted">แนะนำให้ผู้สอบเล่นจนจบกระดานและนับแต้ม ผลจะใกล้เคียงที่สุด</p>
+<details open style="margin-top:10px"><summary style="cursor:pointer;color:var(--accent)">ตารางให้คะแนนที่ใช้อยู่ตอนนี้</summary>
+<p class="muted">เกรดแต่ละตา (แต้มที่เสียเทียบกับตาที่ดีที่สุด): Best ≤ 0.5 = 0 คะแนน · Good ≤ 2 = 1 · Normal ≤ 5 = 2 · Bad มากกว่า 5 = 3 ·
+คะแนนเฉลี่ย = ผลรวม ÷ จำนวนตาที่ได้เกรด (ยิ่งน้อยยิ่งเก่ง) · ต้องได้เกรดอย่างน้อย 20 ตา และเกมยาวอย่างน้อย 100 ตา</p>
+<div class="wrap"><table style="min-width:0"><thead><tr><th style="text-align:left">คะแนนเฉลี่ย</th><th>ระดับ</th></tr></thead><tbody>${EXAM_BANDS.map(([under, r], i) => {
+  const lo = i ? EXAM_BANDS[i - 1][0] : 0;
+  return `<tr><th>${under === Infinity ? lo.toFixed(2) + " ขึ้นไป" : i ? lo.toFixed(2) + "–" + under.toFixed(2) : "ต่ำกว่า " + under.toFixed(2)}</th><td>${rankName(r)}</td></tr>`;
+}).join("")}</tbody></table></div>
+<p class="muted">โบนัส (บวกกันได้ สูงสุด 5 ดั้ง): ชนะฮิคารุ +1 (ชนะ 10 แต้มขึ้นไป +2) · Bad ไม่เกิน 2% และ Normal ไม่เกิน 10% +1 · Best เกิน 80% +1</p></details></section>
 <section><h2>แยกตามตัวละคร</h2><div class="wrap"><table>
 <thead><tr><th style="text-align:left">ตัวละคร</th><th>เกม</th><th>ผู้เล่น</th><th>เล่นจบ</th><th>คนชนะ</th><th>AI ชนะ</th><th>คนชนะ %</th><th>ตาเฉลี่ย</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
