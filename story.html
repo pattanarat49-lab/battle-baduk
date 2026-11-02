@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Baduk Battle · Story</title>
+<link rel="icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@700&family=IBM+Plex+Sans+Thai:wght@500;700&display=swap">
+<style>
+:root {
+  --bg: #15333a; --surface: #20474f; --fg: #f3ead8; --muted: #b3c8c5; --line: rgba(243, 234, 216, .14);
+  --accent: #e3b06a; --accent-fg: #2a1a0b; --wood: #c8894a; --wood-dark: #5a331a;
+  --f-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --f-px: "Pixelify Sans", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--f-body);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+#view { position: fixed; inset: 0; display: block; touch-action: none; image-rendering: pixelated; }
+.bar { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px;
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+  background: linear-gradient(#0e272dee, #0e272d00); pointer-events: none; }
+.bar > * { pointer-events: auto; }
+.btn { font: 700 14px var(--f-body); color: var(--fg); background: #0e272dcc; border: 2px solid var(--wood); padding: 6px 12px;
+  box-shadow: 0 3px 0 var(--wood-dark); cursor: pointer; text-decoration: none; line-height: 1.2; }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--wood-dark); }
+.title { flex: 1; text-align: center; font: 700 15px var(--f-px); letter-spacing: 1px; color: var(--accent); text-shadow: 0 2px 0 #000; }
+.title small { display: block; font: 500 12px var(--f-body); color: var(--muted); letter-spacing: 0; }
+.where { position: fixed; left: 50%; transform: translateX(-50%); top: calc(max(10px, env(safe-area-inset-top)) + 52px);
+  font: 700 13px var(--f-body); background: #0e272dcc; border: 1px solid var(--line); padding: 3px 12px; white-space: nowrap; transition: opacity .3s; }
+.card { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: min(440px, calc(100% - 24px)); background: #0e272df2; border: 3px solid var(--wood); box-shadow: 0 5px 0 var(--wood-dark);
+  padding: 12px 14px 14px; }
+.card .stripe { height: 6px; margin: -12px -14px 10px; }
+.card h2 { margin: 0; font-size: 19px; line-height: 1.3; }
+.card h2 span { font: 700 12px var(--f-px); color: var(--muted); letter-spacing: 1px; margin-left: 6px; }
+.card p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #e4dccb; }
+.card .row { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+.card .row .btn { flex: 1; text-align: center; }
+.card .btn[disabled] { opacity: .55; cursor: default; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tags i { font-style: normal; font-size: 12px; border: 1px solid var(--line); padding: 1px 8px; color: var(--muted); }
+.hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(14px, env(safe-area-inset-bottom));
+  font-size: 13px; color: var(--muted); background: #0e272dcc; padding: 4px 12px; white-space: nowrap; transition: opacity .4s; }
+#mini { position: fixed; inset: 0; background: #0b1f24f0; display: flex; align-items: center; justify-content: center; padding: 70px 16px 16px; }
+#mini canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; border: 3px solid var(--wood); box-shadow: 0 5px 0 var(--wood-dark); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div class="bar">
+  <a class="btn" href="./">← กลับ</a>
+  <div class="title">STORY MODE<small>เมืองกระดานโกะ · บทที่ 1</small></div>
+  <button class="btn" id="mapBtn">แผนที่</button>
+</div>
+<div class="where" id="where">เทนเง็น · จัตุรัสกลางกระดาน</div>
+<div class="hint" id="hint">เดินด้วยปุ่มลูกศร / WASD หรือแตะที่พื้น</div>
+<div class="card" id="card" hidden>
+  <div class="stripe" id="cStripe"></div>
+  <h2 id="cName"></h2>
+  <p id="cDesc"></p>
+  <div class="tags" id="cTags"></div>
+  <div class="row"><button class="btn" id="cEnter" disabled>เข้าสำนัก · เร็วๆ นี้</button><button class="btn" id="cClose">ปิด</button></div>
+</div>
+<div id="mini" hidden><canvas id="miniC"></canvas></div>
+<script>
+(() => {
+"use strict";
+// The whole town is one giant 19x19 go board. Line i sits on tile 2 + 3i; tengen (9,9) is the plaza.
+const T = 16, W = 59, H = 59, L = (i) => 2 + 3 * i;
+const block = Array.from({ length: H }, () => new Array(W).fill(false));
+const hash = (x, y) => { let h = (x * 374761393 + y * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+
+// ---------- schools ----------
+const SCHOOLS = {
+  moyo:   { name: "สำนักโมโย่", en: "MOYO", color: "#f0c060",
+            desc: "สายสร้างอิทธิพล วางกรอบกว้างใหญ่ทั้งกระดาน ค่อยๆ ขยายพลังให้แข็งแรงและยิ่งใหญ่",
+            tags: ["อิทธิพล", "กรอบใหญ่", "ซันเรนเซ"] },
+  attack: { name: "สำนักโจมตี", en: "ATTACK", color: "#e2604a",
+            desc: "ต่อสู้เก่ง เน้นหมากต่อสู้อย่างรุนแรงและรวดเร็ว ตัด จู่โจม ไล่ฆ่ากลุ่มไม่ให้ตั้งตัว",
+            tags: ["ตัด", "ไล่ฆ่า", "เร็วและแรง"] },
+  defend: { name: "สำนักป้องกัน", en: "DEFENSE", color: "#7fa6d0",
+            desc: "ค่อยๆ เล่น ช้าแต่แข็งแรง ทุกกลุ่มมั่นคง ไม่มีจุดอ่อนให้ใครเจาะเข้ามาได้",
+            tags: ["หนักแน่น", "ต่อให้แน่น", "อดทน"] },
+  swift:  { name: "สำนักว่องไว", en: "SWIFT", color: "#8fdcc0",
+            desc: "หมากพลิ้ว ทิ้งมือบ่อย เล่นให้หมากเบาไม่มีน้ำหนัก พร้อมทิ้งกลุ่มที่ไม่จำเป็นเพื่อชิงจังหวะ",
+            tags: ["ทิ้งมือ", "หมากเบา", "ยอมเสียเพื่อได้"] },
+};
+
+// ---------- objects ----------
+const objs = [];
+const obj = (o) => { objs.push(o); if (o.solid !== false) for (let y = o.y; y < o.y + o.h; y++) for (let x = o.x; x < o.x + o.w; x++) block[y][x] = true; };
+const B = [];
+const bld = (b) => { B.push(b); obj({ k: "bld", ...b }); };
+// rugs (tatami courtyards) under each school, drawn under everything
+const RUGS = [
+  { id: "moyo", x: 4, y: 3, w: 14, h: 11 }, { id: "attack", x: 41, y: 3, w: 14, h: 11 },
+  { id: "defend", x: 4, y: 43, w: 14, h: 11 }, { id: "swift", x: 41, y: 44, w: 12, h: 10 },
+];
+bld({ id: "moyo", x: 7, y: 5, w: 8, h: 4, style: "hall", roof: "#e9b452", roofD: "#a8722a", roofL: "#f7d58a", wall: "#f3e7cc", door: [10, 9], door2: 11, label: "สำนักโมโย่" });
+bld({ id: "attack", x: 44, y: 5, w: 7, h: 4, style: "dojo", roof: "#d6513d", roofD: "#8a2a1c", roofL: "#ee8a6c", wall: "#efdcbc", door: [47, 9], label: "สำนักโจมตี" });
+bld({ id: "defend", x: 8, y: 45, w: 7, h: 4, style: "fort", roof: "#5b7ea8", roofD: "#33506f", roofL: "#86a6c9", wall: "#c4c6bd", door: [11, 49], label: "สำนักป้องกัน" });
+bld({ id: "swift", x: 45, y: 46, w: 4, h: 3, style: "pav", roof: "#7fcfb2", roofD: "#3f8a70", roofL: "#b6ead7", wall: "#f3ead8", door: [46, 49], label: "สำนักว่องไว" });
+bld({ id: "michio", x: 34, y: 23, w: 3, h: 2, style: "hut", roof: "#9a6a44", roofD: "#5a3a22", roofL: "#bf8d62", wall: "#efe3c8", door: [35, 25], label: "บ้านครูมิชิโอะ" });
+obj({ k: "fountain", x: 28, y: 28, w: 3, h: 3 });
+for (const [x, y] of [[26, 26], [32, 26], [26, 32], [32, 32]]) obj({ k: "lamp", x, y, w: 1, h: 1 });
+for (const r of RUGS) { const c = SCHOOLS[r.id].color;
+  for (const [x, y] of [[r.x, r.y], [r.x + r.w - 1, r.y], [r.x, r.y + r.h - 1], [r.x + r.w - 1, r.y + r.h - 1]]) obj({ k: "banner", x, y, w: 1, h: 1, c }); }
+for (const [x, y] of [[9, 11], [13, 11], [46, 11], [49, 11], [10, 51], [13, 51], [45, 51], [48, 51]]) obj({ k: "lantern", x, y, w: 1, h: 1 });
+
+// ---------- stones: each corner's shape tells its school's style ----------
+const STONES = [
+  // Moyo: wide framework, lots of empty space it claims
+  ["b", 6, 3], ["b", 3, 6], ["b", 6, 6], ["b", 9, 3], ["b", 3, 9],
+  // Attack: crosscut and a running fight
+  ["b", 12, 5], ["w", 13, 5], ["w", 12, 6], ["b", 13, 6], ["b", 14, 5], ["w", 14, 6], ["w", 11, 5], ["b", 11, 6], ["b", 14, 7], ["w", 15, 7],
+  // Defense: one solid, connected black wall; white can only bounce off
+  ["b", 2, 12], ["b", 3, 12], ["b", 4, 12], ["b", 5, 12], ["b", 6, 12], ["b", 6, 13], ["b", 6, 14], ["b", 6, 15], ["b", 6, 16], ["w", 4, 10], ["w", 8, 13], ["w", 8, 15],
+  // Swift: light one-space jumps and knight moves, plus a stone left behind
+  ["b", 11, 15], ["b", 13, 13], ["b", 15, 11], ["b", 16, 13], ["b", 12, 17], ["w", 10, 12], ["w", 9, 13], ["b", 10, 13],
+];
+for (const [c, i, j] of STONES) obj({ k: "stone", x: L(i) - 1, y: L(j) - 1, w: 3, h: 3, c });
+
+// zones
+const zoneOf = (x, y) => {
+  if (Math.abs(x - 29) <= 5 && Math.abs(y - 29) <= 5) return "plaza";
+  if (x < 29 && y < 29) return "moyo"; if (x >= 29 && y < 29) return "attack";
+  if (x < 29) return "defend"; return "swift";
+};
+const ZONE_NAME = { moyo: "มุมสำนักโมโย่", attack: "มุมสำนักโจมตี", defend: "มุมสำนักป้องกัน", swift: "มุมสำนักว่องไว", plaza: "เทนเง็น · จัตุรัสกลางกระดาน" };
+
+const solidAt = (x, y) => x < 1 || y < 1 || x >= W - 1 || y >= H - 1 || block[y][x];
+
+// ---------- painting ----------
+const C = { wood: "#deb06e", woodL: "#e8bf80", woodD: "#cf9f5e", line: "#6b4426", frame: "#5a331a", frameL: "#7a4a28",
+  stone: "#a9aba3", stoneD: "#93958d", stoneL: "#bdbfb7", w: "#3f88a6", wL: "#7cc0d4", foam: "#d6eef2", woodK: "#4a2a18" };
+let curM = null;
+function paint(m, phase) {
+  curM = m;
+  const px = (c, x, y, w = 1, h = 1) => { m.fillStyle = c; m.fillRect(x, y, w, h); };
+  // board wood with soft grain
+  px(C.wood, 0, 0, W * T, H * T);
+  for (let y = 0; y < H * T; y += 2) { const r = hash(7, y); if (r > .72) px(r > .9 ? C.woodD : C.woodL, 0, y, W * T, 1); }
+  for (let i = 0; i < 260; i++) { const x = hash(i, 3) * W * T | 0, y = hash(3, i) * H * T | 0; px(C.woodD, x, y, 6 + (hash(i, i) * 14 | 0), 1); }
+  // grid lines + star points
+  const a = L(0) * T + 7, b = L(18) * T + 8;
+  for (let i = 0; i < 19; i++) { const p = L(i) * T + 7; const lw = i === 0 || i === 18 ? 2 : 1;
+    m.globalAlpha = .85; px(C.line, a, p, b - a + 1, lw); px(C.line, p, a, lw, b - a + 1); m.globalAlpha = 1; }
+  for (const i of [3, 9, 15]) for (const j of [3, 9, 15]) px(C.line, L(i) * T + 5, L(j) * T + 5, 5, 5);
+  // rugs
+  for (const r of RUGS) { const c = SCHOOLS[r.id].color, X = r.x * T, Y = r.y * T, w = r.w * T, h = r.h * T;
+    px("#00000018", X + 2, Y + 3, w, h); px("#efe0b8", X, Y, w, h); px(c, X, Y, w, 3); px(c, X, Y + h - 3, w, 3); px(c, X, Y, 3, h); px(c, X + w - 3, Y, 3, h);
+    for (let yy = Y + 8; yy < Y + h - 4; yy += 16) px("#e2d0a2", X + 4, yy, w - 8, 1); }
+  // coordinates on the frame margin
+  // board frame
+  px(C.frame, 0, 0, W * T, T); px(C.frame, 0, (H - 1) * T, W * T, T); px(C.frame, 0, 0, T, H * T); px(C.frame, (W - 1) * T, 0, T, H * T);
+  px(C.frameL, T - 2, T - 2, (W - 2) * T + 4, 2); px(C.frameL, T - 2, T - 2, 2, (H - 2) * T + 4);
+  px("#00000030", T, T, (W - 2) * T, 3); px("#00000030", T, T, 3, (H - 2) * T);
+  for (const r of RUGS) { const c = SCHOOLS[r.id].color; const cx = r.x < 29 ? 0 : (W - 1) * T, cy = r.y < 29 ? 0 : (H - 1) * T;
+    px(c, cx + 3, cy + 3, T - 6, T - 6); px(c, r.x < 29 ? T : (W - 7) * T, cy + 6, 6 * T, 4); px(c, cx + 6, r.y < 29 ? T : (H - 7) * T, 4, 6 * T); }
+  // objects, top to bottom
+  objs.slice().sort((p, q) => (p.y + p.h) - (q.y + q.h)).forEach((o) => drawObj(px, o, phase));
+}
+function drawObj(px, o, phase) {
+  const X = o.x * T, Y = o.y * T, m_ = curM;
+  switch (o.k) {
+    case "stone": {
+      // a big stone that nearly fills the gap between lines, like on a real board
+      const black = o.c === "b", cx = X + T + 8, cy = Y + T + 8, R = 21;
+      const [base, dark, hi] = black ? ["#2a2b31", "#141518", "#62656f"] : ["#f3eee2", "#c9c2b2", "#ffffff"];
+      const disc = (ox, oy, r, col) => { m_.fillStyle = col; for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r * r - dy * dy)); m_.fillRect(cx + ox - hw, cy + oy + dy, hw * 2, 1); } };
+      disc(2, 4, R, "#00000040"); disc(0, 1, R, dark); disc(0, 0, R - 1, base);
+      disc(-7, -8, 6, hi); if (black) disc(-6, -7, 4, "#7a7e88"); else disc(-6, -7, 4, "#ffffff");
+      break; }
+    case "bld": {
+      const w = o.w * T, h = o.h * T, light = o.style === "pav";
+      const roofH = Math.round(h * (o.style === "hall" ? .62 : light ? .55 : .58));
+      px("#00000030", X + 3, Y + h - 2, w, 5);
+      if (o.style === "fort") { px("#8d8f86", X + 1, Y + h - 6, w - 2, 6); px("#a9aba3", X + 1, Y + h - 6, w - 2, 1); }
+      px(o.wall, X + 2, Y + roofH, w - 4, h - roofH - (o.style === "fort" ? 6 : 0));
+      px("#00000033", X + 2, Y + roofH, w - 4, 3);
+      for (let i = 0; i <= o.w; i++) { const cx = X + 2 + Math.min(w - 6, i * T - (i ? 2 : 0)); px(light ? C.woodK : "#8a5a36", cx, Y + roofH, 2, h - roofH); }
+      if (!light) for (let i = 0; i < o.w; i++) { const tx = o.x + i; if (tx !== o.door[0] && tx !== o.door2) { px("#5a3a22", X + i * T + 5, Y + roofH + 5, 6, 5); px("#f0c888", X + i * T + 6, Y + roofH + 6, 4, 3); px("#5a3a22", X + i * T + 7, Y + roofH + 6, 1, 3); } }
+      const dx = (o.door[0] - o.x) * T, dw = o.door2 ? 2 * T : T;
+      px("#3a2414", X + dx + 3, Y + h - 12, dw - 6, 12); px("#5a3a22", X + dx + 3, Y + h - 12, dw - 6, 1); px("#c9b48a", X + dx + 1, Y + h, dw - 2, 2);
+      const ry = Y + 1, rh = roofH - 1;
+      px(o.roofD, X - 3, ry + rh - 4, w + 6, 4);
+      px(o.roofD, X - 5, ry + rh - 7, 3, 3); px(o.roofD, X + w + 2, ry + rh - 7, 3, 3);
+      px(o.roof, X - 1, ry + 3, w + 2, rh - 7);
+      px(o.roof, X + 2, ry, w - 4, 3);
+      for (let i = 4; i < w - 2; i += 4) px(o.roofD, X + i, ry + 4, 1, rh - 9);
+      px(o.roofL, X + 2, ry + 3, w - 4, 2);
+      px(o.roofD, X + 1, ry, w - 2, 1);
+      if (o.style === "hall") { px(o.roofD, X - 3, ry + ((rh - 4) >> 1), w + 6, 2); px(o.roofL, X, ry + ((rh - 4) >> 1) + 2, w, 1); px("#f7d58a", X + (w >> 1) - 2, ry - 4, 4, 4); }
+      if (o.style === "dojo") px(o.roofD, X + (w >> 1) - 1, ry - 3, 2, 3);
+      if (o.style === "fort") for (let i = 0; i < o.w; i++) px(o.roofD, X + i * T + 6, ry - 2, 4, 2);
+      px("#3a2414", X + dx + (dw >> 1) - 5, Y + roofH + 1, 10, 4); px(SCHOOLS[o.id]?.color || "#f0c888", X + dx + (dw >> 1) - 4, Y + roofH + 2, 8, 2);
+      break; }
+    case "fountain": {
+      // a giant go-stone bowl that is also the town fountain
+      px("#00000030", X + 2, Y + 40, 46, 7);
+      px("#6b4026", X + 2, Y + 6, 44, 38); px("#8a5a36", X, Y + 8, 48, 32); px("#a8734a", X + 4, Y + 4, 40, 36);
+      px(C.w, X + 7, Y + 7, 34, 26); px(C.wL, X + 10, Y + 10, 6, 1); px(C.wL, X + 30, Y + 26, 6, 1);
+      px("#26272c", X + 13, Y + 15, 8, 7); px("#f1ece0", X + 26, Y + 18, 8, 7); px("#5a5d66", X + 14, Y + 16, 3, 1);
+      px(C.foam, X + 23, Y + 2 + phase, 2, 14); px(C.wL, X + 20, Y + 8, 2, 4); px(C.wL, X + 26, Y + 8, 2, 4);
+      break; }
+    case "banner": { const f = phase; px("#00000030", X + 2, Y + 14, 6, 2); px(C.woodK, X + 3, Y - 2, 2, 17); px(o.c, X + 5, Y - 1, 8, 9); px("#00000026", X + 5, Y + 6, 8, 2); px(o.c, X + 5, Y + 8, 3 + f, 2); px(o.c, X + 10 - f, Y + 8, 3, 2); px("#ffffff40", X + 5, Y - 1, 8, 1); break; }
+    case "lantern": px("#00000030", X + 3, Y + 13, 10, 3); px(C.stoneD, X + 5, Y + 11, 6, 4); px(C.stone, X + 6, Y + 6, 4, 6); px("#f7d58a", X + 7, Y + 7, 2, 3); px(C.stoneD, X + 3, Y + 3, 10, 3); px(C.stoneL, X + 4, Y + 3, 8, 1); px(C.stoneD, X + 7, Y + 1, 2, 2); break;
+    case "lamp": px("#00000030", X + 5, Y + 14, 6, 2); px(C.woodK, X + 7, Y + 3, 2, 12); px("#fbe3a6", X + 5, Y, 6, 4); px("#f0c060", X + 5, Y + 3, 6, 1); px(C.woodK, X + 4, Y - 1, 8, 1); break;
+  }
+}
+const mapFrames = [0, 1].map((ph) => { const c = document.createElement("canvas"); c.width = W * T; c.height = H * T; paint(c.getContext("2d"), ph); return c; });
+let mapC = mapFrames[0];
+
+// ---------- player ----------
+const P = { x: 29, y: 33, fx: 29, fy: 33, dir: "down", step: 0, path: [] };
+function drawHero(c, sx, sy, s) {
+  const p = (col, x, y, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(sx + x * s, sy + y * s, w * s, h * s); };
+  const bob = P.moving && (P.step & 1) ? 1 : 0;
+  p("#00000044", 3, 14, 10, 2);
+  p("#2a2a33", 4, 10 + bob, 3, 4 - bob); p("#2a2a33", 9, 10, 3, 4);   // legs
+  p("#3b6fb0", 3, 7, 10, 5);                      // shirt
+  p("#f3ead8", 3, 7, 10, 1);                      // collar
+  p("#f0c8a0", 4, 1, 8, 7);                       // face
+  p("#1c1c22", 3, 0, 10, 3); p("#1c1c22", 3, 3, 1, 3); p("#1c1c22", 12, 3, 1, 3);  // hair
+  p("#f3ead8", 3, 2, 10, 1);                      // headband
+  if (P.dir === "down") { p("#1c1c22", 6, 4, 1, 2); p("#1c1c22", 9, 4, 1, 2); }
+  else if (P.dir === "left") { p("#1c1c22", 5, 4, 1, 2); p("#1c1c22", 12, 1, 1, 5); }
+  else if (P.dir === "right") { p("#1c1c22", 10, 4, 1, 2); p("#1c1c22", 3, 1, 1, 5); }
+  else { p("#1c1c22", 4, 1, 8, 6); }
+  p("#e3b06a", 12, 8, 2, 3);                       // go-stone bowl strap
+}
+
+// ---------- view ----------
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const cv = document.getElementById("view"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 3;
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  VW = innerWidth; VH = innerHeight;
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR); cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  S = Math.max(2, Math.round(DPR * clamp(Math.min(VW, VH) / (14 * T), 2, 2.5)));   // ~12 tiles on a phone, ~20 on a desktop
+}
+addEventListener("resize", resize); resize();
+let camX = 0, camY = 0;
+const petals = Array.from({ length: 22 }, (_, i) => ({ x: Math.random(), y: Math.random(), vy: .03 + Math.random() * .04, vx: .01, p: i * 1.7, s: i % 3 ? 1 : 2, c: ["#f7c6d3", "#fde0e8", "#efa8bc"][i % 3] }));
+let vg = null, vgKey = "";
+function vignette() { const k = cv.width + "x" + cv.height; if (k !== vgKey) { vgKey = k; vg = ctx.createRadialGradient(cv.width / 2, cv.height / 2, Math.min(cv.width, cv.height) * .35, cv.width / 2, cv.height / 2, Math.max(cv.width, cv.height) * .75); vg.addColorStop(0, "rgba(10,30,36,0)"); vg.addColorStop(1, "rgba(10,30,36,.45)"); } return vg; }
+
+function frameDraw() {
+  const tw = cv.width / S, th = cv.height / S;
+  const tx = P.fx * T + 8 - tw / 2, ty = P.fy * T + 8 - th / 2;
+  camX = W * T > tw ? clamp(tx, 0, W * T - tw) : (W * T - tw) / 2;
+  camY = H * T > th ? clamp(ty, 0, H * T - th) : (H * T - th) / 2;
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#3a2414"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(mapC, -Math.round(camX * S), -Math.round(camY * S), W * T * S, H * T * S);
+  // target marker
+  if (P.path.length) { const g = P.path[P.path.length - 1]; ctx.strokeStyle = "#f3ead8aa"; ctx.lineWidth = S; ctx.strokeRect(Math.round((g[0] * T - camX) * S) + S, Math.round((g[1] * T - camY) * S) + S, (T - 2) * S, (T - 2) * S); }
+  drawHero(ctx, Math.round((P.fx * T - camX) * S), Math.round((P.fy * T - camY) * S), S);
+  // drifting petals + soft vignette
+  for (const f of petals) { ctx.fillStyle = f.c; ctx.fillRect(Math.round(f.x * cv.width), Math.round(f.y * cv.height), S * f.s, S * f.s); }
+  ctx.fillStyle = vignette(); ctx.fillRect(0, 0, cv.width, cv.height);
+  // school name plates
+  ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+  const fs = Math.round(Math.max(12 * DPR, S * 4.2));
+  for (const b of B) if (b.label) {
+    const cx = ((b.x + b.w / 2) * T - camX) * S, cy = (b.y * T - camY) * S - 3 * S;
+    if (cx < -200 || cy < -50 || cx > cv.width + 200 || cy > cv.height + 80) continue;
+    ctx.font = `700 ${b.id === "michio" ? Math.round(fs * .8) : fs}px "IBM Plex Sans Thai", sans-serif`;
+    const tw2 = ctx.measureText(b.label).width + fs;
+    const sc = SCHOOLS[b.id];
+    ctx.fillStyle = "#0e272de6"; ctx.fillRect(cx - tw2 / 2, cy - fs * 1.45, tw2, fs * 1.45);
+    ctx.fillStyle = sc ? sc.color : "#c8894a"; ctx.fillRect(cx - tw2 / 2, cy - 2 * DPR, tw2, 2 * DPR);
+    ctx.fillStyle = "#f3ead8"; ctx.fillText(b.label, cx, cy - fs * .2);
+  }
+}
+
+// ---------- movement ----------
+const keys = new Set();
+const DIRS = { ArrowUp: [0, -1, "up"], KeyW: [0, -1, "up"], ArrowDown: [0, 1, "down"], KeyS: [0, 1, "down"], ArrowLeft: [-1, 0, "left"], KeyA: [-1, 0, "left"], ArrowRight: [1, 0, "right"], KeyD: [1, 0, "right"] };
+addEventListener("keydown", (e) => { if (DIRS[e.code]) { keys.add(e.code); P.path = []; e.preventDefault(); hideHint(); }
+  if ((e.code === "Enter" || e.code === "Space") && !cardEl.hidden) e.preventDefault();
+  if (e.code === "KeyM") toggleMini(); if (e.code === "Escape") { closeCard(); mini.hidden = true; } });
+addEventListener("keyup", (e) => keys.delete(e.code));
+
+function bfs(sx, sy, gx, gy) {
+  const prev = new Map(), k = (x, y) => y * W + x, q = [[sx, sy]]; prev.set(k(sx, sy), null);
+  while (q.length) { const [x, y] = q.shift(); if (x === gx && y === gy) break;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (solidAt(nx, ny) || prev.has(k(nx, ny))) continue; prev.set(k(nx, ny), [x, y]); q.push([nx, ny]); } }
+  if (!prev.has(k(gx, gy))) return null;
+  const path = []; let c = [gx, gy]; while (c && !(c[0] === sx && c[1] === sy)) { path.unshift(c); c = prev.get(k(c[0], c[1])); }
+  return path;
+}
+function nearestOpen(gx, gy) {
+  // tap on a building = walk to its door; tap on a wall/tree = closest open tile
+  for (const b of B) if (gx >= b.x && gx < b.x + b.w && gy >= b.y - 1 && gy < b.y + b.h) return b.door;
+  if (!solidAt(gx, gy)) return [gx, gy];
+  for (let r = 1; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (!solidAt(gx + dx, gy + dy)) return [gx + dx, gy + dy];
+  return null;
+}
+cv.addEventListener("pointerdown", (e) => {
+  hideHint();
+  const gx = Math.floor((e.clientX * DPR / S + camX) / T), gy = Math.floor((e.clientY * DPR / S + camY) / T);
+  const g = nearestOpen(gx, gy); if (!g) return;
+  const path = bfs(P.x, P.y, g[0], g[1]); if (path) P.path = path;
+});
+
+const SPEED = 7.5; // tiles per second
+let last = performance.now(), waterT = 0, phase = 0;
+function tick(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (P.x === P.fx && P.y === P.fy) {
+    let mv = null;
+    for (const c of keys) { mv = DIRS[c]; }
+    if (mv) { P.dir = mv[2]; if (!solidAt(P.x + mv[0], P.y + mv[1])) { P.x += mv[0]; P.y += mv[1]; P.step++; } }
+    else if (P.path.length) { const [nx, ny] = P.path.shift(); P.dir = nx > P.x ? "right" : nx < P.x ? "left" : ny > P.y ? "down" : "up"; if (!solidAt(nx, ny)) { P.x = nx; P.y = ny; P.step++; } else P.path = []; }
+  }
+  const d = SPEED * dt;
+  P.fx += clamp(P.x - P.fx, -d, d); P.fy += clamp(P.y - P.fy, -d, d);
+  P.moving = P.x !== P.fx || P.y !== P.fy;
+  if (!P.moving) arrived();
+  waterT += dt; if (waterT > .6) { waterT = 0; phase ^= 1; mapC = mapFrames[phase]; }
+  for (const f of petals) { f.y += f.vy * dt; f.x += Math.sin(now / 900 + f.p) * 12 * dt + f.vx * dt; if (f.y > 1.05) { f.y = -.05; f.x = Math.random(); } }
+  frameDraw();
+  requestAnimationFrame(tick);
+}
+
+// ---------- UI ----------
+const whereEl = document.getElementById("where"), cardEl = document.getElementById("card"), hint = document.getElementById("hint");
+let lastZone = "", lastDoor = "";
+function hideHint() { hint.style.opacity = 0; }
+function arrived() {
+  const z = zoneOf(P.x, P.y); if (z !== lastZone) { lastZone = z; whereEl.textContent = ZONE_NAME[z]; }
+  const b = B.find((b) => b.door[0] === P.x && b.door[1] === P.y || (b.door2 === P.x && b.door[1] === P.y));
+  const id = b ? b.id : "";
+  if (id === lastDoor) return; lastDoor = id;
+  if (!b || b.id === "house") { closeCard(); return; }
+  openCard(b);
+}
+function openCard(b) {
+  const s = SCHOOLS[b.id];
+  hint.hidden = true;
+  document.getElementById("cStripe").style.background = s ? s.color : "#c8894a";
+  document.getElementById("cName").innerHTML = s ? `${s.name}<span>${s.en} SCHOOL</span>` : "บ้านครูมิชิโอะ<span>HOME</span>";
+  document.getElementById("cDesc").textContent = s ? s.desc + " · เจ้าสำนัก: ยังไม่เปิดเผย" : "ครูมิชิโอะคอยอยู่ที่นี่ แวะมาถามได้ทุกเมื่อว่าควรไปท้าสำนักไหนก่อน";
+  document.getElementById("cTags").innerHTML = s ? s.tags.map((t) => `<i>${t}</i>`).join("") : "";
+  document.getElementById("cEnter").textContent = s ? "เข้าสำนัก · เร็วๆ นี้" : "คุยกับครู · เร็วๆ นี้";
+  cardEl.hidden = false;
+}
+function closeCard() { cardEl.hidden = true; }
+document.getElementById("cClose").onclick = closeCard;
+
+const mini = document.getElementById("mini"), miniC = document.getElementById("miniC");
+function toggleMini() {
+  if (!mini.hidden) { mini.hidden = true; return; }
+  const s = 2; miniC.width = W * T / s * 2; miniC.height = H * T / s * 2;
+  const c = miniC.getContext("2d"); c.imageSmoothingEnabled = false; c.drawImage(mapC, 0, 0, miniC.width, miniC.height);
+  const k = miniC.width / (W * T);
+  c.textAlign = "center"; c.textBaseline = "middle"; c.font = `700 ${Math.round(17 * k)}px "IBM Plex Sans Thai", sans-serif`;
+  for (const id of Object.keys(SCHOOLS)) { const b = B.find((b) => b.id === id); const cx = (b.x + b.w / 2) * T * k, cy = (b.y - .9) * T * k;
+    const tw = c.measureText(SCHOOLS[id].name).width + 14; c.fillStyle = "#0e272de6"; c.fillRect(cx - tw / 2, cy - 13 * k, tw, 26 * k);
+    c.fillStyle = SCHOOLS[id].color; c.fillText(SCHOOLS[id].name, cx, cy); }
+  c.fillStyle = "#ff5a3c"; c.beginPath(); c.arc((P.x + .5) * T * k, (P.y + .5) * T * k, 6 * k, 0, 7); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 2; c.stroke();
+  mini.hidden = false;
+}
+document.getElementById("mapBtn").onclick = toggleMini;
+mini.addEventListener("pointerdown", () => (mini.hidden = true));
+
+// test hook: ?at=x,y places the hero (used for screenshots)
+const at = new URLSearchParams(location.search).get("at");
+if (at) { const [ax, ay] = at.split(",").map(Number); if (!solidAt(ax, ay)) { P.x = P.fx = ax; P.y = P.fy = ay; } }
+window.__story = { P, B, toggleMini, bfs };
+document.fonts?.ready.then(() => frameDraw());
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
