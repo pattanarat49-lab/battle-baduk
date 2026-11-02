@@ -1718,21 +1718,24 @@
     const notBest = 100 * (gs.length - cnt.best) / gs.length, score = (cnt.good + 2 * cnt.normal + 3 * cnt.bad) / gs.length;
     // beating Hikaru adds a rank, two when the player won by 10 points or more on the count or when Hikaru resigned 30+
     // behind (site owner's choice, 2026-10-29)
-    const bonus = ex.won ? (ex.margin >= 10 ? 2 : 1) : 0;
+    const winBonus = ex.won ? (ex.margin >= 10 ? 2 : 1) : 0;
+    // very few Normal and Bad moves (3% or less of graded moves) adds one more (site owner, 2026-11-02): on the test
+    // characters only dan players stay that clean (Chris, Weiqi, Kan, Todo mostly under 3%, kyu characters 7.6% and up)
+    const clean = 100 * (cnt.normal + cnt.bad) / gs.length <= 3 ? 1 : 0, bonus = winBonus + clean;
     const top = EXAM_BANDS[0][1];
-    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus,
+    return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus, winBonus, clean,
       est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(top, estimateRank(score) + bonus) : null };
   }
   function examReport() {
     if (!exam) return "";
     const R = examResult(), gs = exam.grades.filter(Boolean);
     if (R.graded < 20 || history.length < EXAM_MIN_MOVES) return `<div class="exam"><b>ผลสอบ</b><p class="note">เกมนี้เดินไป ${history.length} ตา ยังน้อยเกินไปที่จะประเมินระดับ (ต้องเดินรวมกันอย่างน้อย ${EXAM_MIN_MOVES} ตา) แนะนำให้เล่นจนจบกระดานและนับแต้ม</p></div>`;
-    const { cnt, avg, notBest, score, bonus, est } = R;
+    const { cnt, avg, notBest, score, bonus, winBonus, clean, est } = R;
     const bar = Object.keys(cnt).map(k => `<i class="g-${k}" style="flex:${cnt[k]}"></i>`).join("");
     const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
     const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - score) < Math.abs(a.avg - score) ? b : a) : null;
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
-      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${bonus ? `รวมโบนัสชนะฮิคารุ +${bonus} ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" && !exam.won ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
+      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${winBonus ? `รวมโบนัสชนะฮิคารุ +${winBonus} ระดับ · ` : ""}${clean ? `รวมโบนัสเดินพลาดน้อยมาก (Normal + Bad ไม่เกิน 3%) +1 ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" && !exam.won ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
       <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${rankName(estimateRank(near.avg))})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
