@@ -150,6 +150,9 @@ export class Stats extends DurableObject {
     }
   }
   // one answer serves every visitor for a minute
+  charTally() {
+    return Object.fromEntries(this.sql.exec("SELECT char, human_wins, ai_wins FROM tally WHERE char != ''").toArray().map(r => [r.char, { hw: r.human_wins || 0, aw: r.ai_wins || 0 }]));
+  }
   summary() {
     if (!(this.sumCache && Date.now() - this.sumCache.at < 6e4)) this.sumCache = { at: Date.now(), s: this.summaryNow() };
     return { ...this.sumCache.s, online: this.onlineNow() };
@@ -354,6 +357,14 @@ async function handle(req, env) {
     return new Response(null, { status: 204, headers: CORS });
   }
   const html = body => new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  if (url.pathname === "/api/chars") {
+    // finished games per character for the character cards: cached at the edge for 5 minutes, so page loads rarely reach the Durable Object
+    const key = new Request(url.origin + "/api/chars"), hit = await caches.default.match(key);
+    if (hit) return hit;
+    const res = Response.json(await stub().charTally(), { headers: { ...CORS, "cache-control": "public, max-age=300" } });
+    await caches.default.put(key, res.clone());
+    return res;
+  }
   if (url.pathname === "/api/stats") return Response.json(await stub().summary(), { headers: CORS });
   if (url.pathname === "/stats" || url.pathname === "/stats/") return html(page({ ...(await stub().summary()), now: Date.now() }));
   if (url.pathname === "/api/game") {

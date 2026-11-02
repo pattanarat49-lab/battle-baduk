@@ -10,6 +10,14 @@
   function load(k, d) { try { const v = localStorage.getItem("gonn." + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} }
 
+  // finished games per character on the whole site (from the stats Worker), shown on the character card
+  let charStats = null;
+  const charStatLine = c => {
+    const r = charStats && charStats[c.id];
+    if (!r || c.tutorial) return "";
+    const fin = r.hw + r.aw;
+    return `<p class="cstat">สถิติทั้งเว็บ: เล่นจบ ${fin.toLocaleString()} เกม${fin ? ` · คนชนะ ${r.hw.toLocaleString()} (${Math.round(100 * r.hw / fin)}%) · AI ชนะ ${r.aw.toLocaleString()}` : ""}</p>`;
+  };
   const STYLE = {
     balance: { label: "สมดุล", opts: {} },
     attack: { label: "บุกสุดๆ", opts: { pda: 1.5, scoreWeight: 0.5 } },
@@ -830,6 +838,16 @@
   // a test match run from a local copy (GitHub Actions) still reports to the live stats page
   const STATS_URL = /[?&]nostats\b/.test(location.search) ? null : /workers\.dev$/.test(host) ? "/api/event" : /^localhost$|^127\.0\.0\.1$/.test(host) && !MATCH ? "/api/event"
     : /github\.io$|^localhost$|^127\.0\.0\.1$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev/api/event" : null;
+  // one read per page load; the Worker serves it from Cloudflare's cache (5 minutes), so it costs no stats quota
+  {
+    const base = STATS_URL ? STATS_URL.replace("/api/event", "") : "https://battle-baduk.battlebaduk.workers.dev";
+    const got = j => { if (j) { charStats = j; if (!$("home").hidden) syncChars(); } };
+    // a Worker without /api/chars yet (a preview of this page) falls back to the full stats summary
+    fetch(base + "/api/chars").then(r => r.ok ? r.json() : Promise.reject())
+      .catch(() => fetch(base + "/api/stats").then(r => r.ok ? r.json() : null)
+        .then(s => s && Object.fromEntries(s.chars.map(r => [r.char, { hw: r.human_wins || 0, aw: r.ai_wins || 0 }]))))
+      .then(got).catch(() => {});
+  }
   const rid = () => (Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).replace(/[^a-z0-9]/g, "");
   let playerId = load("pid", null);
   if (!playerId) { playerId = rid(); save("pid", playerId); }
@@ -1980,7 +1998,7 @@
       ${spCard || `${c.fx ? `<div class="fxwrap fx-${c.fx}">` : ""}<div class="card${anim ? " pop" : ""}"><div class="card-in">${c.exam ? '<div class="cexam">สอบวัดระดับ</div>' : c.tutorial ? '<div class="cexam">โหมดสอนเล่น</div>' : c.special ? spHead : c.secret ? '<div class="cexam">ตัวละครลับ</div>' : ""}<div class="cname">${c.en}</div><div class="cthai">${c.name}</div>${pxImg(c, "pxp")}<div class="crank">${c.rank}</div></div></div>${c.fx === "mist" ? '<div class="mist t"><i></i></div><div class="mist b"><i></i></div></div>' : c.fx === "shine" ? '<i class="spark"></i>'.repeat(7) + '</div>' : c.fx === "gold" ? '<i class="gfx v"></i><i class="gfx s"></i><i class="gfx c1"></i><i class="gfx c2"></i></div>' : c.fx ? '<i class="smoke l"></i><i class="smoke r"></i></div>' : ""}`}
       <button class="arrow right" data-go="1" aria-label="ตัวถัดไป"></button>
       <button class="ghost right" data-go="1" aria-label="ตัวถัดไป">${next.special ? qMark("") : pxImg(next, "")}</button>`;
-    $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "ตัวละครลึกลับ แตะการ์ดเพื่อดูว่ามีใครบ้าง" : "เลือกตัวละครพิเศษที่จะเล่นด้วย: " + SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div><p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
+    $("pick").innerHTML = sp && sp !== "char" ? `<div class="cmeta">SPECIAL CHARACTER</div><p class="cbio">${sp === "cover" ? "ตัวละครลึกลับ แตะการ์ดเพื่อดูว่ามีใครบ้าง" : "เลือกตัวละครพิเศษที่จะเล่นด้วย: " + SPECIAL.map(j => CHARS[j].name).join(" หรือ ")}</p>` : `<div class="cmeta">${c.tutorial ? "กระดาน 9×9 · 6 บท 23 ขั้น" : c.country + " · " + STYLE[c.style].label}</div>${charStatLine(c)}<p class="cbio">${c.bio}</p><p class="csay">"${c.say.hello}"</p>`;
     $("faces").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.i === slotOf(i))));
     syncSize();
     $("home").querySelector(".opts").hidden = !!c.tutorial || (sp && sp !== "char");
