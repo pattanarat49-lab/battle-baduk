@@ -1,4 +1,4 @@
-// Beginner coach ("ครูฝน"): a teacher character who plays the player on 19x19 and, during the game, offers three choices
+// Beginner coach ("ครูมิชิโอะ", Kru Michio): a teacher character who plays the player on 19x19 and, during the game, offers three choices
 // for the player's move with the idea behind each, comments on the player's moves and her own, and answers typed
 // questions in Thai. The choices are read with KataGo b10 (how good each move really is) together with the HumanSL
 // network at a club-kyu profile (how natural the move is for a human), so the suggestions are good moves a beginner can
@@ -12,7 +12,7 @@ const Coach = (function () {
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const REGION = [["มุมซ้ายบน", "ด้านบน", "มุมขวาบน"], ["ด้านซ้าย", "กลางกระดาน", "ด้านขวา"], ["มุมซ้ายล่าง", "ด้านล่าง", "มุมขวาล่าง"]];
   const CN = [null, "ดำ", "ขาว"];
-  const NAME = "ครูฝน", FACE = "chars/fon_face.jpg";
+  const NAME = "ครูมิชิโอะ", FACE = "chars/michio_face.jpg";
   let E, Board, PASS, BLACK, WHITE;
   let on = false, tok = 0, chain = Promise.resolve(), busy = 0;
   let picks = null;      // the choices for the position on the board: { key, list: [{ move, letter, grade, ... }] }
@@ -103,13 +103,13 @@ const Coach = (function () {
     [/พื้นที่|เขต|อาณาเขต|territory/i, "<b>พื้นที่</b> คือจุดว่างที่หมากเราล้อมไว้จนอีกฝ่ายเข้ามาสร้างกลุ่มที่รอดไม่ได้ ตอนจบเกมทุกจุดนับเป็นแต้ม มุมล้อมง่ายที่สุด รองลงมาคือด้าน กลางกระดานยากที่สุด"],
     [/อิทธิพล|กำแพง|influence/i, "<b>กำแพง (อิทธิพล)</b> คือหมากแถวยาวที่หันหน้าออกไปพื้นที่กว้าง ยังไม่ใช่แต้มทันที แต่ใช้บุกหรือสร้างพื้นที่ใหญ่ตรงที่มันหันไปได้ อย่าเอากำแพงไปล้อมพื้นที่ใกล้ๆ ตัวเอง ให้ใช้มันไล่บุก"],
     [/กิน|จับ|capture/i, "<b>การกิน</b> คือปิดลมหายใจของหมากอีกฝ่ายจนหมด แล้วเอาหมากนั้นออก แต่ในเกมจริง การกินไม่ใช่เป้าหมายหลัก <b>พื้นที่</b>ต่างหากที่ตัดสินแพ้ชนะ"],
-    [/หมากต่อ|แฮนดิแคป|handicap/i, "<b>หมากต่อ</b> คือให้ฝ่ายที่อ่อนกว่าวางหมากดำไว้ก่อนหลายเม็ดที่จุดดาว เกมกับครูฝนเป็นเกมเสมอกัน ไม่มีหมากต่อ"]
+    [/หมากต่อ|แฮนดิแคป|handicap/i, "<b>หมากต่อ</b> คือให้ฝ่ายที่อ่อนกว่าวางหมากดำไว้ก่อนหลายเม็ดที่จุดดาว เกมกับครูมิชิโอะเป็นเกมเสมอกัน ไม่มีหมากต่อ"]
   ];
 
   // ---------- chat ----------
   function bubble(html, who) {
     const el = document.createElement("div");
-    el.className = "co-msg " + (who === "me" ? "me" : "fon");
+    el.className = "co-msg " + (who === "me" ? "me" : "coach");
     el.innerHTML = who === "me" ? `<div class="co-b">${html}</div>` : `<img src="${FACE}" alt="" width="160" height="160"><div class="co-b">${html}</div>`;
     const log = $("coLog"); log.appendChild(el);
     while (log.children.length > 80) log.removeChild(log.firstChild);
@@ -117,7 +117,7 @@ const Coach = (function () {
     log.scrollTop = $("coach").classList.contains("open") || !matchMedia("(max-aspect-ratio: 9/8)").matches ? log.scrollHeight : el.offsetTop;
     return el;
   }
-  const say = html => bubble(html, "fon");
+  const say = html => bubble(html, "coach");
   api.say = line => { if (on) say(esc(line)); }; // the character's own talk (hello, captures...) goes into the chat
   function setChips() {
     const s = st(), list = [["ควรเดินตรงไหน?", "ควรเดินตรงไหน"], ["ภาพรวมตอนนี้", "ภาพรวมตอนนี้ควรทำอะไร"]];
@@ -239,7 +239,7 @@ const Coach = (function () {
     $("coPicks").innerHTML = r ? r.list.map(x => `<button type="button" class="co-pk g-${x.trap ? "bad" : x.grade.cls}" data-see="${x.move}"><b>${x.letter}</b> ${name(r.n, x.move)}<small>${x.trap ? "ระวัง" : x.grade.t}</small></button>`).join("") : "";
   }
   async function suggest(asked) {
-    const s = st(); if (!s.myTurn) { say(s.live ? "รอครูเดินก่อนนะ เดี๋ยวครูช่วยดูให้" : "เกมจบแล้วจ้า กด ANALYSIS เพื่อทบทวนทั้งเกมได้นะ"); return; }
+    const s = st(); if (!s.myTurn) { say(s.live ? "รอครูเดินก่อนนะ เดี๋ยวครูช่วยดูให้" : "เกมจบแล้วครับ กด ANALYSIS เพื่อทบทวนทั้งเกมได้นะ"); return; }
     const my = tok;
     if (picks && picks.key === keyOf(s.moves)) { if (asked) explainPicks(picks); return; }
     const wait = say("ขอครูดูกระดานแป๊บนึงนะ… 🤔");
@@ -418,8 +418,8 @@ const Coach = (function () {
     const t = text.trim(); if (!t) return;
     bubble(esc(t), "me");
     const s = st(), p = parsePoint(s.n, t);
-    if (/^(สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi)/i.test(t)) { say("สวัสดีจ้า ครูฝนเอง ถามได้ทุกเรื่องเลยนะ เช่น “ควรเดินตรงไหน” “ทำไมครูเดินตานั้น” “ใครนำอยู่” หรือพิมพ์จุดเช่น “D4 ดีไหม”"); return; }
-    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีจ้า เล่นต่อเลย เดี๋ยวครูช่วยดูให้ทุกตา 😊"); return; }
+    if (/^(สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi)/i.test(t)) { say("สวัสดีครับ ครูมิชิโอะเอง ถามได้ทุกเรื่องเลยนะ เช่น “ควรเดินตรงไหน” “ทำไมครูเดินตานั้น” “ใครนำอยู่” หรือพิมพ์จุดเช่น “D4 ดีไหม”"); return; }
+    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีครับ เล่นต่อเลย เดี๋ยวครูช่วยดูให้ทุกตา 😊"); return; }
     if (p !== null && /ครู|เขา|ทำไม/.test(t)) {
       const b = boardOf(s.n, s.moves);
       if (b.color[p] && b.color[p] !== s.human) { const i = s.moves.lastIndexOf(p); if (i >= 0) { await explainMine(s.moves.slice(0, i), p, false); return; } }
@@ -456,7 +456,7 @@ const Coach = (function () {
     $("coLog").innerHTML = "";
     const s = st();
     if (o.resume) say(`กลับมาเล่นต่อแล้ว ครูจำกระดานได้ เดี๋ยวช่วยดูให้นะ`);
-    else say(`สวัสดีจ้า ครูฝนเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
+    else say(`สวัสดีครับ ครูมิชิโอะเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
     setChips(); renderBusy();
   };
   api.stop = () => { on = false; tok++; document.body.classList.remove("coaching"); $("coach").hidden = true; };

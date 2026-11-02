@@ -31,9 +31,9 @@
     // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
     // (src/coach.js). Choice A is HumanSL at 9 dan's best move (its search judges positions with KataGo b10); the other
     // choices are good moves that the same network finds natural, checked with KataGo b10
-    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
+    { id: "michio", en: "KRU MICHIO", name: "ครูมิชิโอะ", country: "ญี่ปุ่น", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
       search: { temperature: 0.8, local: 3, keepTerritory: true }, // used only before a level is set; FON_LV holds each level's settings
-      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
+      bio: "ครูสอนหมากล้อมใจดีชาวญี่ปุ่น สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
       say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
@@ -119,7 +119,7 @@
   // goodMove/badMove: the player's last move moved their winning chance a lot; caught: the player captured
   // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
   const TALK = {
-    fon: {
+    michio: {
       hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย",
       caught: "โอ๊ะ ครูโดนกินไป {n} เม็ด เก่งมาก!|กินได้ {n} เม็ด ดีมาก แบบนี้แหละ",
       capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
@@ -516,7 +516,7 @@
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  // Kru Fon's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
+  // Kru Michio's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
   const FON_LV = {
     15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
     10: { name: "10 คิว", search: { profile: "rank_10k", temperature: 0.8, local: 3, keepTerritory: true } },
@@ -1638,7 +1638,7 @@
   };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
-    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Fon answers with her three choices
+    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Michio answers with his three choices
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
     let res;
     try {
@@ -2026,7 +2026,7 @@
     if (CHARS[settings.char].book) await loadBook(CHARS[settings.char]); // Go Seigen's first move already comes from his games
     $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
-  // the beginner coach in a game with Kru Fon
+  // the beginner coach in a game with Kru Michio
   const coachOn = () => !!CHARS[gameChar].coach && !MATCH && EXAMBOT === null;
   const COACH_PROFILE = "rank_9d"; // the coach's best move: HumanSL at its strongest (owner 2026-11-01)
   Coach.E = E;

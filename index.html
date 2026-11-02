@@ -621,7 +621,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   padding: 6px 14px 8px; margin-bottom: 6px; text-align: center; box-shadow: 0 4px 0 var(--wood-dark); }
 .result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
-/* ---------- beginner coach (Kru Fon) in the game panel ---------- */
+/* ---------- beginner coach (Kru Michio) in the game panel ---------- */
 /* portrait: a compact strip (latest message + the choice buttons); 💬 opens the whole chat as a bottom sheet.
    landscape: the whole chat sits in the side panel */
 body.coaching .app .quote { display: none; }
@@ -747,7 +747,7 @@ body.coaching .app .quote { display: none; }
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
     <div class="opt" id="optHandi" hidden><span class="opt-l">หมากต่อ (คุณถือดำ · โคมิ 0.5)</span>
       <div class="seg seg9" id="segHandi"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="7">7</button><button data-v="8">8</button><button data-v="9">9</button></div></div>
-    <div class="opt" id="optFon" hidden><span class="opt-l">ระดับฝีมือครูฝน</span>
+    <div class="opt" id="optFon" hidden><span class="opt-l">ระดับฝีมือครูมิชิโอะ</span>
       <div class="seg seg9" id="segFon"><button data-v="15">15 คิว</button><button data-v="10">10 คิว</button><button data-v="8">8 คิว</button><button data-v="6">6 คิว</button><button data-v="3">3 คิว</button><button data-v="1">1 ดั้ง</button></div></div>
     <div class="opt" id="optBonus" hidden><span class="opt-l">ต่อแต้มให้คุณ (บวกตอนนับแต้ม)</span>
       <div class="seg seg9" id="segBonus"><button data-v="0">0</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="40">40</button><button data-v="50">50</button><button data-v="60">60</button><button data-v="70">70</button><button data-v="80">80</button><button data-v="90">90</button><button data-v="100">100</button></div></div>
@@ -883,12 +883,12 @@ body.coaching .app .quote { display: none; }
     </div>
     <div class="quote" id="quote" hidden></div>
     <div class="coach" id="coach" hidden>
-      <div class="co-top"><img src="chars/fon_face.jpg" alt="" width="160" height="160"><b>KRU FON · ครูฝน</b><span class="co-busy" id="coBusy" hidden>กำลังคิด…</span>
+      <div class="co-top"><img src="chars/michio_face.jpg" alt="" width="160" height="160"><b>KRU MICHIO · ครูมิชิโอะ</b><span class="co-busy" id="coBusy" hidden>กำลังคิด…</span>
         <button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
       <div class="co-log" id="coLog" aria-live="polite"></div>
       <div class="co-picks" id="coPicks"></div>
       <div class="co-chips" id="coChips"></div>
-      <form class="co-form" id="coForm"><input id="coIn" type="text" placeholder="พิมพ์ถามครูฝน เช่น ควรเดินตรงไหน" autocomplete="off" enterkeyhint="send" maxlength="200"><button type="submit">ส่ง</button></form>
+      <form class="co-form" id="coForm"><input id="coIn" type="text" placeholder="พิมพ์ถามครูมิชิโอะ เช่น ควรเดินตรงไหน" autocomplete="off" enterkeyhint="send" maxlength="200"><button type="submit">ส่ง</button></form>
     </div>
     <div class="status" id="status" aria-live="polite"></div>
     <div class="wr" id="wrBox">
@@ -3640,7 +3640,7 @@ const Tsumego = (() => {
   return api;
 })();
 
-// Beginner coach ("ครูฝน"): a teacher character who plays the player on 19x19 and, during the game, offers three choices
+// Beginner coach ("ครูมิชิโอะ", Kru Michio): a teacher character who plays the player on 19x19 and, during the game, offers three choices
 // for the player's move with the idea behind each, comments on the player's moves and her own, and answers typed
 // questions in Thai. The choices are read with KataGo b10 (how good each move really is) together with the HumanSL
 // network at a club-kyu profile (how natural the move is for a human), so the suggestions are good moves a beginner can
@@ -3654,7 +3654,7 @@ const Coach = (function () {
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const REGION = [["มุมซ้ายบน", "ด้านบน", "มุมขวาบน"], ["ด้านซ้าย", "กลางกระดาน", "ด้านขวา"], ["มุมซ้ายล่าง", "ด้านล่าง", "มุมขวาล่าง"]];
   const CN = [null, "ดำ", "ขาว"];
-  const NAME = "ครูฝน", FACE = "chars/fon_face.jpg";
+  const NAME = "ครูมิชิโอะ", FACE = "chars/michio_face.jpg";
   let E, Board, PASS, BLACK, WHITE;
   let on = false, tok = 0, chain = Promise.resolve(), busy = 0;
   let picks = null;      // the choices for the position on the board: { key, list: [{ move, letter, grade, ... }] }
@@ -3745,13 +3745,13 @@ const Coach = (function () {
     [/พื้นที่|เขต|อาณาเขต|territory/i, "<b>พื้นที่</b> คือจุดว่างที่หมากเราล้อมไว้จนอีกฝ่ายเข้ามาสร้างกลุ่มที่รอดไม่ได้ ตอนจบเกมทุกจุดนับเป็นแต้ม มุมล้อมง่ายที่สุด รองลงมาคือด้าน กลางกระดานยากที่สุด"],
     [/อิทธิพล|กำแพง|influence/i, "<b>กำแพง (อิทธิพล)</b> คือหมากแถวยาวที่หันหน้าออกไปพื้นที่กว้าง ยังไม่ใช่แต้มทันที แต่ใช้บุกหรือสร้างพื้นที่ใหญ่ตรงที่มันหันไปได้ อย่าเอากำแพงไปล้อมพื้นที่ใกล้ๆ ตัวเอง ให้ใช้มันไล่บุก"],
     [/กิน|จับ|capture/i, "<b>การกิน</b> คือปิดลมหายใจของหมากอีกฝ่ายจนหมด แล้วเอาหมากนั้นออก แต่ในเกมจริง การกินไม่ใช่เป้าหมายหลัก <b>พื้นที่</b>ต่างหากที่ตัดสินแพ้ชนะ"],
-    [/หมากต่อ|แฮนดิแคป|handicap/i, "<b>หมากต่อ</b> คือให้ฝ่ายที่อ่อนกว่าวางหมากดำไว้ก่อนหลายเม็ดที่จุดดาว เกมกับครูฝนเป็นเกมเสมอกัน ไม่มีหมากต่อ"]
+    [/หมากต่อ|แฮนดิแคป|handicap/i, "<b>หมากต่อ</b> คือให้ฝ่ายที่อ่อนกว่าวางหมากดำไว้ก่อนหลายเม็ดที่จุดดาว เกมกับครูมิชิโอะเป็นเกมเสมอกัน ไม่มีหมากต่อ"]
   ];
 
   // ---------- chat ----------
   function bubble(html, who) {
     const el = document.createElement("div");
-    el.className = "co-msg " + (who === "me" ? "me" : "fon");
+    el.className = "co-msg " + (who === "me" ? "me" : "coach");
     el.innerHTML = who === "me" ? `<div class="co-b">${html}</div>` : `<img src="${FACE}" alt="" width="160" height="160"><div class="co-b">${html}</div>`;
     const log = $("coLog"); log.appendChild(el);
     while (log.children.length > 80) log.removeChild(log.firstChild);
@@ -3759,7 +3759,7 @@ const Coach = (function () {
     log.scrollTop = $("coach").classList.contains("open") || !matchMedia("(max-aspect-ratio: 9/8)").matches ? log.scrollHeight : el.offsetTop;
     return el;
   }
-  const say = html => bubble(html, "fon");
+  const say = html => bubble(html, "coach");
   api.say = line => { if (on) say(esc(line)); }; // the character's own talk (hello, captures...) goes into the chat
   function setChips() {
     const s = st(), list = [["ควรเดินตรงไหน?", "ควรเดินตรงไหน"], ["ภาพรวมตอนนี้", "ภาพรวมตอนนี้ควรทำอะไร"]];
@@ -3881,7 +3881,7 @@ const Coach = (function () {
     $("coPicks").innerHTML = r ? r.list.map(x => `<button type="button" class="co-pk g-${x.trap ? "bad" : x.grade.cls}" data-see="${x.move}"><b>${x.letter}</b> ${name(r.n, x.move)}<small>${x.trap ? "ระวัง" : x.grade.t}</small></button>`).join("") : "";
   }
   async function suggest(asked) {
-    const s = st(); if (!s.myTurn) { say(s.live ? "รอครูเดินก่อนนะ เดี๋ยวครูช่วยดูให้" : "เกมจบแล้วจ้า กด ANALYSIS เพื่อทบทวนทั้งเกมได้นะ"); return; }
+    const s = st(); if (!s.myTurn) { say(s.live ? "รอครูเดินก่อนนะ เดี๋ยวครูช่วยดูให้" : "เกมจบแล้วครับ กด ANALYSIS เพื่อทบทวนทั้งเกมได้นะ"); return; }
     const my = tok;
     if (picks && picks.key === keyOf(s.moves)) { if (asked) explainPicks(picks); return; }
     const wait = say("ขอครูดูกระดานแป๊บนึงนะ… 🤔");
@@ -4060,8 +4060,8 @@ const Coach = (function () {
     const t = text.trim(); if (!t) return;
     bubble(esc(t), "me");
     const s = st(), p = parsePoint(s.n, t);
-    if (/^(สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi)/i.test(t)) { say("สวัสดีจ้า ครูฝนเอง ถามได้ทุกเรื่องเลยนะ เช่น “ควรเดินตรงไหน” “ทำไมครูเดินตานั้น” “ใครนำอยู่” หรือพิมพ์จุดเช่น “D4 ดีไหม”"); return; }
-    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีจ้า เล่นต่อเลย เดี๋ยวครูช่วยดูให้ทุกตา 😊"); return; }
+    if (/^(สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi)/i.test(t)) { say("สวัสดีครับ ครูมิชิโอะเอง ถามได้ทุกเรื่องเลยนะ เช่น “ควรเดินตรงไหน” “ทำไมครูเดินตานั้น” “ใครนำอยู่” หรือพิมพ์จุดเช่น “D4 ดีไหม”"); return; }
+    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีครับ เล่นต่อเลย เดี๋ยวครูช่วยดูให้ทุกตา 😊"); return; }
     if (p !== null && /ครู|เขา|ทำไม/.test(t)) {
       const b = boardOf(s.n, s.moves);
       if (b.color[p] && b.color[p] !== s.human) { const i = s.moves.lastIndexOf(p); if (i >= 0) { await explainMine(s.moves.slice(0, i), p, false); return; } }
@@ -4098,7 +4098,7 @@ const Coach = (function () {
     $("coLog").innerHTML = "";
     const s = st();
     if (o.resume) say(`กลับมาเล่นต่อแล้ว ครูจำกระดานได้ เดี๋ยวช่วยดูให้นะ`);
-    else say(`สวัสดีจ้า ครูฝนเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
+    else say(`สวัสดีครับ ครูมิชิโอะเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
     setChips(); renderBusy();
   };
   api.stop = () => { on = false; tok++; document.body.classList.remove("coaching"); $("coach").hidden = true; };
@@ -4167,9 +4167,9 @@ const Coach = (function () {
     // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
     // (src/coach.js). Choice A is HumanSL at 9 dan's best move (its search judges positions with KataGo b10); the other
     // choices are good moves that the same network finds natural, checked with KataGo b10
-    { id: "fon", en: "KRU FON", name: "ครูฝน", country: "ไทย", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
+    { id: "michio", en: "KRU MICHIO", name: "ครูมิชิโอะ", country: "ญี่ปุ่น", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
       search: { temperature: 0.8, local: 3, keepTerritory: true }, // used only before a level is set; FON_LV holds each level's settings
-      bio: "ครูสอนหมากล้อมใจดี สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
+      bio: "ครูสอนหมากล้อมใจดีชาวญี่ปุ่น สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
       say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
@@ -4255,7 +4255,7 @@ const Coach = (function () {
   // goodMove/badMove: the player's last move moved their winning chance a lot; caught: the player captured
   // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
   const TALK = {
-    fon: {
+    michio: {
       hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย",
       caught: "โอ๊ะ ครูโดนกินไป {n} เม็ด เก่งมาก!|กินได้ {n} เม็ด ดีมาก แบบนี้แหละ",
       capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
@@ -4652,7 +4652,7 @@ const Coach = (function () {
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  // Kru Fon's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
+  // Kru Michio's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
   const FON_LV = {
     15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
     10: { name: "10 คิว", search: { profile: "rank_10k", temperature: 0.8, local: 3, keepTerritory: true } },
@@ -5774,7 +5774,7 @@ const Coach = (function () {
   };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
-    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Fon answers with her three choices
+    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Michio answers with his three choices
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
     let res;
     try {
@@ -6162,7 +6162,7 @@ const Coach = (function () {
     if (CHARS[settings.char].book) await loadBook(CHARS[settings.char]); // Go Seigen's first move already comes from his games
     $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
-  // the beginner coach in a game with Kru Fon
+  // the beginner coach in a game with Kru Michio
   const coachOn = () => !!CHARS[gameChar].coach && !MATCH && EXAMBOT === null;
   const COACH_PROFILE = "rank_9d"; // the coach's best move: HumanSL at its strongest (owner 2026-11-01)
   Coach.E = E;
