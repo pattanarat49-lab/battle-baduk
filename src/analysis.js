@@ -53,8 +53,8 @@ const Analysis = (function () {
   // evA: after m (player to move = opponent), evP / evPm: after a pass, and after the opponent then takes m themselves.
   // Returns reasons strongest first: { w, t, neg }.
   function reasons(moves, m, evB, evA, evP, evPm) {
-    const out = [], add = (w, t, neg) => out.push({ w, t, neg: !!neg });
-    if (m === PASS) { add(1, "ไม่มีจุดไหนที่ให้แต้มเพิ่มแล้ว ผ่านได้เลย"); return out; }
+    const out = [], add = (w, t, neg, k) => out.push({ w, t, neg: !!neg, k: k || "" }); // k: the idea, for the beginner coach
+    if (m === PASS) { add(1, "ไม่มีจุดไหนที่ให้แต้มเพิ่มแล้ว ผ่านได้เลย", false, "pass"); return out; }
     const B = boardOf(moves), c = B.toPlay, o = 3 - c, n = ST.n;
     if (!B.isLegal(m, c)) return [{ w: 0, t: "จุดนี้วางไม่ได้", neg: true }];
     const A = new Board(n); A.copyFrom(B); A.play(m);
@@ -63,20 +63,20 @@ const Analysis = (function () {
     const myB = nb(c), opB = nb(o);
     // tactics
     const capt = A.caps[c] - B.caps[c];
-    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโค อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`);
+    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโค อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`, false, "capture");
     const hm = A.head[m], myLibs = A.libs(hm, 4);
     const saved = myB.filter(h => B.libs(h, 2) === 1).reduce((s, h) => s + B.gsize[h], 0);
-    if (saved && myLibs >= 2) add(9 + saved, `พาหมาก${cn} ${saved} เม็ดที่โดนขู่กิน (อะตาริ) หนีออกมา${myLibs === 2 ? " แต่ยังเหลือลมหายใจแค่ 2 ต้องระวังต่อ" : ""}`);
-    else if (myB.some(h => B.libs(h, 3) === 2) && myLibs >= 3) add(4, `เพิ่มลมหายใจให้กลุ่ม${cn}ที่เหลือลมหายใจแค่ 2`);
+    if (saved && myLibs >= 2) add(9 + saved, `พาหมาก${cn} ${saved} เม็ดที่โดนขู่กิน (อะตาริ) หนีออกมา${myLibs === 2 ? " แต่ยังเหลือลมหายใจแค่ 2 ต้องระวังต่อ" : ""}`, false, "escape");
+    else if (myB.some(h => B.libs(h, 3) === 2) && myLibs >= 3) add(4, `เพิ่มลมหายใจให้กลุ่ม${cn}ที่เหลือลมหายใจแค่ 2`, false, "libs");
     const opA = new Set(); for (const d of A.dirs) { const q = m + d; if (A.color[q] === o) opA.add(A.head[q]); }
     for (const h of opA) {
       const l = A.libs(h, 3), s = A.gsize[h];
-      if (l === 1) add(6 + s, `ขู่กิน (อะตาริ) หมาก${on} ${s} เม็ด ${on}ต้องรีบหนีหรือยอมเสีย`);
-      else if (l === 2 && s >= 3 && B.libs(B.head[h], 3) >= 3) add(4, `บีบกลุ่ม${on} ${s} เม็ดให้เหลือลมหายใจแค่ 2`);
+      if (l === 1) add(6 + s, `ขู่กิน (อะตาริ) หมาก${on} ${s} เม็ด ${on}ต้องรีบหนีหรือยอมเสีย`, false, "atari");
+      else if (l === 2 && s >= 3 && B.libs(B.head[h], 3) >= 3) add(4, `บีบกลุ่ม${on} ${s} เม็ดให้เหลือลมหายใจแค่ 2`, false, "squeeze");
     }
-    if (myB.length >= 2) add(5, `เชื่อมหมาก${cn} ${myB.length} กลุ่มเข้าเป็นกลุ่มเดียว ไม่ให้${on}ตัดขาด`);
-    if (opB.length >= 2) add(5, `ตัดหมาก${on}ให้แยกเป็น ${opB.length} กลุ่ม ต้องดูแลหลายทาง`);
-    if (myLibs === 1 && !capt) add(8, `หมากที่ลงเหลือลมหายใจเดียว ${on}กินได้ทันที`, true);
+    if (myB.length >= 2) add(5, `เชื่อมหมาก${cn} ${myB.length} กลุ่มเข้าเป็นกลุ่มเดียว ไม่ให้${on}ตัดขาด`, false, "connect");
+    if (opB.length >= 2) add(5, `ตัดหมาก${on}ให้แยกเป็น ${opB.length} กลุ่ม ต้องดูแลหลายทาง`, false, "cut");
+    if (myLibs === 1 && !capt) add(8, `หมากที่ลงเหลือลมหายใจเดียว ${on}กินได้ทันที`, true, "selfatari");
     // groups: ownership of their stones before and after, from the mover's side (-1 = the opponent's, +1 = ours)
     const before = evB.own, after = evA.own; // evA is from the opponent's side, so its signs flip
     for (const [h, g] of chains(A)) {
@@ -84,29 +84,29 @@ const Analysis = (function () {
       const old = g.stones.filter(p => p !== m && B.color[p] === c);
       if (!old.length) continue;
       const ob = avgOwn(B, before, old, 1), oa = avgOwn(A, after, g.stones, -1), s = g.stones.length;
-      if (ob < -0.4 && oa > 0.3) add(9 + s / 2, `ช่วยกลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่เกือบตายให้รอด`);
-      else if (ob < 0.15 && oa > 0.55) add(6 + s / 3, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่ยังไม่แข็งแรง ปลอดภัยขึ้นมาก`);
-      else if (ob > 0.3 && oa < -0.3) add(7 + s / 2, `กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}จะตกอยู่ในอันตราย`, true);
-      else if (oa - ob >= 0.35) add(4 + s / 4, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}แข็งแรงขึ้น`);
+      if (ob < -0.4 && oa > 0.3) add(9 + s / 2, `ช่วยกลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่เกือบตายให้รอด`, false, "save");
+      else if (ob < 0.15 && oa > 0.55) add(6 + s / 3, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่ยังไม่แข็งแรง ปลอดภัยขึ้นมาก`, false, "safe");
+      else if (ob > 0.3 && oa < -0.3) add(7 + s / 2, `กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}จะตกอยู่ในอันตราย`, true, "danger");
+      else if (oa - ob >= 0.35) add(4 + s / 4, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}แข็งแรงขึ้น`, false, "strong");
     }
     for (const [h, g] of chains(B)) {
       if (g.c !== o) continue;
       const left = g.stones.filter(p => A.color[p] === o); if (!left.length) continue; // captured: said above
       const lb = avgOwn(B, before, left, -1), la = avgOwn(A, after, left, 1), s = left.length; // the opponent's view of its own stones
-      if (lb > 0.2 && la < -0.45) add(9 + s / 2, `ทำให้กลุ่ม${on} ${s} เม็ดที่${centre(left)}แทบไม่มีทางรอด`);
-      else if (lb > 0.5 && la < 0.15 && s >= 2) add(6 + s / 3, `โจมตีกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนแอ ต้องเหนื่อยหาทางรอด`);
-      else if (lb - la >= 0.35 && s >= 2) add(4 + s / 4, `กดดันกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนลง`);
+      if (lb > 0.2 && la < -0.45) add(9 + s / 2, `ทำให้กลุ่ม${on} ${s} เม็ดที่${centre(left)}แทบไม่มีทางรอด`, false, "kill");
+      else if (lb > 0.5 && la < 0.15 && s >= 2) add(6 + s / 3, `โจมตีกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนแอ ต้องเหนื่อยหาทางรอด`, false, "attack");
+      else if (lb - la >= 0.35 && s >= 2) add(4 + s / 4, `กดดันกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนลง`, false, "press");
     }
     // what happens if we don't: the opponent takes this point instead (evPm is from our side again)
     if (evPm) {
       const P = new Board(n); P.copyFrom(B); P.play(PASS); P.play(m);
       const lost = P.caps[o] - B.caps[o];
-      if (lost > 0) add(8 + lost, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ หมาก${cn} ${lost} เม็ดจะโดนกิน`);
+      if (lost > 0) add(8 + lost, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ หมาก${cn} ${lost} เม็ดจะโดนกิน`, false, "ifcapt");
       for (const [h, g] of chains(B)) {
         const left = g.stones.filter(p => P.color[p] === g.c); if (left.length < 2) continue;
         const sg = g.c === c ? 1 : -1, lb = avgOwn(B, before, left, sg), lp = avgOwn(P, evPm.own, left, sg), s = left.length;
-        if (g.c === c && lb > -0.1 && lp < -0.45) add(8 + s / 2, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${cn} ${s} เม็ดที่${centre(left)}จะเสี่ยงตาย`);
-        else if (g.c === o && lb < 0.1 && lp > 0.45) add(6 + s / 3, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${on} ${s} เม็ดที่${centre(left)}ที่กำลังอ่อนแอจะรอดไปได้`);
+        if (g.c === c && lb > -0.1 && lp < -0.45) add(8 + s / 2, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${cn} ${s} เม็ดที่${centre(left)}จะเสี่ยงตาย`, false, "ifdanger");
+        else if (g.c === o && lb < 0.1 && lp > 0.45) add(6 + s / 3, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${on} ${s} เม็ดที่${centre(left)}ที่กำลังอ่อนแอจะรอดไปได้`, false, "ifescape");
       }
     }
     // territory: empty points that turn ours (build) or stop being theirs (reduce), per region
@@ -120,8 +120,8 @@ const Analysis = (function () {
     }
     const top = o2 => Object.entries(o2).sort((a, b) => b[1] - a[1])[0];
     const tb = top(build), tr = top(reduce);
-    if (tb && tb[1] >= 2) add(3 + Math.min(4, tb[1] / 3), `สร้างพื้นที่${cn}ที่${tb[0]}เพิ่มราว ${Math.round(tb[1])} แต้ม`);
-    if (tr && tr[1] >= 2) add(3 + Math.min(4, tr[1] / 3), `ลดพื้นที่${on}ที่${tr[0]}ไปราว ${Math.round(tr[1])} แต้ม`);
+    if (tb && tb[1] >= 2) add(3 + Math.min(4, tb[1] / 3), `สร้างพื้นที่${cn}ที่${tb[0]}เพิ่มราว ${Math.round(tb[1])} แต้ม`, false, "build");
+    if (tr && tr[1] >= 2) add(3 + Math.min(4, tr[1] / 3), `ลดพื้นที่${on}ที่${tr[0]}ไปราว ${Math.round(tr[1])} แต้ม`, false, "reduce");
     // the opening: corners first, then the sides
     const [x, y] = A.xy(m), dx = Math.min(x, n - 1 - x), dy = Math.min(y, n - 1 - y), z = n >= 19 ? 6 : n >= 13 ? 5 : 4;
     let stones = 0; for (const p of B.pts) if (B.color[p] === BLACK || B.color[p] === WHITE) stones++;
@@ -130,21 +130,21 @@ const Analysis = (function () {
         let mine = 0, theirs = 0;
         for (const p of B.pts) { const [px, py] = B.xy(p); if ((x < n / 2 ? px < z : px >= n - z) && (y < n / 2 ? py < z : py >= n - z)) { if (B.color[p] === c) mine++; else if (B.color[p] === o) theirs++; } }
         const where = regionOf(x, y);
-        if (!mine && !theirs) add(6, `จับจอง${where}ที่ยังว่าง มุมล้อมพื้นที่ได้ง่ายที่สุดเพราะมีขอบกระดานช่วยกั้นสองด้าน`);
-        else if (!mine && theirs && dx === 2 && dy === 2) add(6, `บุก 3-3 เข้าไปแย่งพื้นที่${where}ของ${on}`);
-        else if (!mine && theirs === 1) add(5, `ประชิดมุม (คาคาริ) ไม่ปล่อยให้${on}ยึด${where}ไว้ง่ายๆ`);
-        else if (mine && !theirs) add(5, `ปิดมุม (ชิมาริ) ทำให้${where}เป็นของ${cn}แน่นขึ้น`);
+        if (!mine && !theirs) add(6, `จับจอง${where}ที่ยังว่าง มุมล้อมพื้นที่ได้ง่ายที่สุดเพราะมีขอบกระดานช่วยกั้นสองด้าน`, false, "corner");
+        else if (!mine && theirs && dx === 2 && dy === 2) add(6, `บุก 3-3 เข้าไปแย่งพื้นที่${where}ของ${on}`, false, "33");
+        else if (!mine && theirs === 1) add(5, `ประชิดมุม (คาคาริ) ไม่ปล่อยให้${on}ยึด${where}ไว้ง่ายๆ`, false, "kakari");
+        else if (mine && !theirs) add(5, `ปิดมุม (ชิมาริ) ทำให้${where}เป็นของ${cn}แน่นขึ้น`, false, "shimari");
       } else if (Math.min(dx, dy) >= 2 && Math.min(dx, dy) <= 3) {
         let near = false; for (const p of B.pts) { if (B.color[p] !== BLACK && B.color[p] !== WHITE) continue; const [px, py] = B.xy(p); if (Math.max(Math.abs(px - x), Math.abs(py - y)) <= 2) near = true; }
-        if (!near) add(4, `จุดใหญ่ที่${regionOf(x, y)} ขยายตามขอบที่ยังว่างอยู่`);
+        if (!near) add(4, `จุดใหญ่ที่${regionOf(x, y)} ขยายตามขอบที่ยังว่างอยู่`, false, "side");
       }
     }
     // the last move: answer it, or play elsewhere because something else is bigger
     const last = moves[moves.length - 1];
     if (last !== undefined && last !== PASS) {
       const [lx, ly] = B.xy(last), dist = Math.max(Math.abs(lx - x), Math.abs(ly - y));
-      if (dist <= 2) add(2.5, `ตอบโต้หมาก${on}ที่เพิ่งลง ${name(last)}`);
-      else if (dist >= 6 && moves.length > 12) add(3, `ยังไม่ต้องตอบ ${name(last)} ตอนนี้มีจุดที่ใหญ่กว่า (เทนูกิ)`);
+      if (dist <= 2) add(2.5, `ตอบโต้หมาก${on}ที่เพิ่งลง ${name(last)}`, false, "answer");
+      else if (dist >= 6 && moves.length > 12) add(3, `ยังไม่ต้องตอบ ${name(last)} ตอนนี้มีจุดที่ใหญ่กว่า (เทนูกิ)`, false, "tenuki");
     }
     // a point both sides want. swing: our lead if we take the point against our lead if the opponent takes it; any move is
     // worth about two tempos that way (a lot in the opening, little in the endgame), so only the part above that is "big"
@@ -152,16 +152,16 @@ const Analysis = (function () {
       const i = oi(B, m), want = evP.policy[i];
       let topI = 0; for (let k = 1; k < 361; k++) if (evP.policy[k] > evP.policy[topI]) topI = k;
       const swing = -evA.lead - evPm.lead, tempo = Math.max(0, evB.lead + evP.lead), extra = swing - 2 * tempo;
-      if (want >= 0.2 || topI === i) add(5.5, `ถ้า${cn}ไม่เล่นตรงนี้ ${on}ก็อยากเล่นจุดนี้เหมือนกัน (จุดสำคัญของทั้งสองฝ่าย)${extra >= 3 ? ` ได้-เสียต่างกันราว ${Math.round(swing)} แต้ม` : ""}`);
-      else if (extra >= 4) add(4 + Math.min(4, extra / 4), `ตานี้รีบกว่าตาทั่วไป ถ้าปล่อยให้${on}ได้เล่นตรงนี้แทน จะต่างกันราว ${Math.round(swing)} แต้ม`);
+      if (want >= 0.2 || topI === i) add(5.5, `ถ้า${cn}ไม่เล่นตรงนี้ ${on}ก็อยากเล่นจุดนี้เหมือนกัน (จุดสำคัญของทั้งสองฝ่าย)${extra >= 3 ? ` ได้-เสียต่างกันราว ${Math.round(swing)} แต้ม` : ""}`, false, "vital");
+      else if (extra >= 4) add(4 + Math.min(4, extra / 4), `ตานี้รีบกว่าตาทั่วไป ถ้าปล่อยให้${on}ได้เล่นตรงนี้แทน จะต่างกันราว ${Math.round(swing)} แต้ม`, false, "urgent");
     }
     out.sort((a, b) => b.w - a.w);
-    if (!out.some(r => !r.neg)) out.push({ w: 1, t: "ไม่ได้กินหรือตัดอะไรชัดๆ แต่ AI อ่านแล้วว่าทำให้รูปหมากแข็งแรงและคุ้มที่สุด", fb: true });
+    if (!out.some(r => !r.neg)) out.push({ w: 1, t: "ไม่ได้กินหรือตัดอะไรชัดๆ แต่ AI อ่านแล้วว่าทำให้รูปหมากแข็งแรงและคุ้มที่สุด", fb: true, k: "shape" });
     return out;
   }
   // the network's evaluations a reasons() call needs, for several moves of one position at once
-  async function evalsFor(AI, moves, list) {
-    const n = ST.n, B = boardOf(moves);
+  async function evalsFor(AI, moves, list, n = ST.n) {
+    const B = new Board(n); for (const m of moves) B.play(m);
     const [evB, evP, ...evAs] = await AI.evalMany(n, [moves, moves.concat([PASS]), ...list.map(m => moves.concat([m]))], KOMI);
     const okAfterPass = list.map(m => { if (m === PASS) return false; const b = new Board(n); b.copyFrom(B); b.play(PASS); return b.isLegal(m, b.toPlay); });
     const pm = list.filter((m, i) => okAfterPass[i]);
@@ -593,6 +593,15 @@ const Analysis = (function () {
         `<div class="an-list"><button class="an-chip" data-act="new19">กระดาน 19×19</button><button class="an-chip" data-act="new13">13×13</button><button class="an-chip" data-act="new9">9×9</button><button class="an-chip" data-act="photo">📷 อัปโหลดรูปกระดาน</button>${api.lastGame && api.lastGame() ? '<button class="an-chip" data-act="last">เปิดเกมล่าสุดที่เล่น</button>' : ""}</div>`);
     tok++; ST.b = null; setPos();
   }
+  // for the beginner coach in a game (Coach): why each of several moves is good, from a position not on this board.
+  // The reasons are worked out against a borrowed board state and the analysis board's own state is put back after
+  api.explainFor = async function (AI, n, moves, list) {
+    E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
+    const evs = await evalsFor(AI, moves, list, n), saved = ST;
+    ST = { n, b0: new Board(n) };
+    try { return list.map((m, i) => ({ ev: evs[i], why: reasons(moves, m, evs[i].evB, evs[i].evA, evs[i].evP, evs[i].evPm) })); }
+    finally { ST = saved; }
+  };
   api.open = function (g) {
     E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
     if (!wired) wire();

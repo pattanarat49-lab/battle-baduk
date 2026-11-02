@@ -621,6 +621,68 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
   padding: 6px 14px 8px; margin-bottom: 6px; text-align: center; box-shadow: 0 4px 0 var(--wood-dark); }
 .result .nums { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .wr-fill, .char { transition: none; } .quote.say { animation: none; } }
+/* ---------- beginner coach (Kru Michio) in the game panel ---------- */
+/* portrait: a compact strip (latest message + the choice buttons); 💬 opens the whole chat as a bottom sheet.
+   landscape: the whole chat sits in the side panel */
+body.coaching .app .quote { display: none; }
+.coach { display: flex; flex-direction: column; gap: 6px; min-height: 0; background: var(--surface); border: 1px solid var(--accent); border-radius: 12px; padding: 6px 8px; }
+.coach[hidden] { display: none; }
+.co-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.co-top img { width: 30px; height: 30px; border: 2px solid var(--wood); flex: none; }
+.co-top b { font-family: var(--f-px); font-size: 12px; letter-spacing: .05em; color: var(--accent); white-space: nowrap; }
+.co-busy { font-size: 12px; color: var(--muted); animation: coBlink 1s steps(2) infinite; }
+@keyframes coBlink { 50% { opacity: .35; } }
+.co-top button { margin-left: auto; min-height: 30px; padding: 2px 10px; font-size: 13px; border-radius: 999px; }
+.co-top button + button { margin-left: 0; }
+#coClose { display: none; }
+.co-log { position: relative; display: grid; gap: 8px; align-content: start; overflow-y: auto; overscroll-behavior: contain; max-height: 4.9em; font-size: 14px; line-height: 1.55; }
+.co-msg { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 6px; align-items: start; }
+.co-msg img { width: 30px; height: 30px; border: 2px solid var(--wood); }
+.co-msg.me { grid-template-columns: minmax(0, 1fr); justify-items: end; }
+.co-b { background: var(--bg-2); border: 1px solid var(--line); padding: 6px 10px; min-width: 0; }
+.co-msg.me .co-b { border-color: rgba(227, 176, 106, .45); max-width: 85%; }
+.co-b ul { margin: 2px 0 0; padding-left: 18px; }
+.co-dim { color: var(--muted); font-size: 12.5px; } .co-warn { color: var(--warn); }
+.co-idea { margin-top: 4px; font-size: 13px; color: #cfe7c4; }
+.co-pick { margin-top: 8px; padding: 6px 8px 8px; border-left: 4px solid #c4d45a; background: rgba(0, 0, 0, .18); }
+.co-pick.g-best { border-color: #57c26b; } .co-pick.g-normal { border-color: #e0a552; } .co-pick.g-bad { border-color: #e0603e; }
+.co-pick.g-best, .co-pick.g-good, .co-pick.g-normal, .co-pick.g-bad { background-color: rgba(0, 0, 0, .18); }
+.co-l { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #f3ead8; color: #1a1208; font-family: var(--f-mono); }
+.co-rg { color: var(--muted); font-size: 12.5px; }
+.co-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.co-acts button { min-height: 34px; padding: 2px 10px; font-size: 13px; }
+.co-acts .co-go { background: var(--accent); color: var(--accent-fg); border: 0; }
+.co-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.co-picks:empty { display: none; }
+.co-pk { min-height: 40px; padding: 2px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; font-size: 14px; border-radius: 8px;
+  border: 2px solid #c4d45a; background: var(--bg-2); color: var(--fg); }
+.co-pk b { font-family: var(--f-mono); }
+.co-pk small { font-size: 11px; color: var(--muted); }
+.co-pk.g-best { border-color: #57c26b; } .co-pk.g-normal { border-color: #e0a552; } .co-pk.g-bad { border-color: #e0603e; }
+.co-pk.g-best, .co-pk.g-good, .co-pk.g-normal, .co-pk.g-bad { background: var(--bg-2); }
+.co-chips { display: none; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.co-chip { flex: none; min-height: 32px; padding: 2px 10px; font-size: 13px; border-radius: 999px; background: var(--bg-2); border: 1px solid rgba(227, 176, 106, .45); white-space: nowrap; }
+.co-form { display: none; gap: 6px; }
+.co-form input { flex: 1; min-width: 0; min-height: 40px; font: inherit; font-size: 16px; padding: 4px 10px; background: #f6f1e6; color: #1a1208; border: 2px solid var(--wood-dark); border-radius: 8px; }
+.co-form button { min-height: 40px; padding: 0 14px; }
+/* portrait sheet */
+.coach.open { position: fixed; left: 0; right: 0; bottom: 0; z-index: 35; height: min(68vh, 620px); border-radius: 14px 14px 0 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, .55); background: #112b33; }
+.coach.open .co-log { max-height: none; flex: 1; }
+.coach.open .co-chips, .coach.open .co-form { display: flex; }
+.coach.open #coOpen { display: none; } .coach.open #coClose { display: block; }
+@media (min-aspect-ratio: 9/8) {
+  body.coaching .app > .panel { overflow: hidden; }
+  body.coaching .app .settings .note { display: none; }
+  body.coaching .app .ghead { display: none; }
+  body.coaching .app .status { min-height: 0; }
+  .coach { flex: 1; min-height: 0; } .co-log { max-height: none; flex: 1; min-height: 120px; }
+  .co-chips, .co-form { display: flex; } .co-chips { flex-wrap: wrap; overflow: visible; }
+  #coOpen, #coClose { display: none !important; }
+  .coach.open { position: static; height: auto; box-shadow: none; border-radius: 12px; padding: 6px 8px; background: var(--surface); }
+}
+@media (max-aspect-ratio: 9/8) { body.coaching .app .wr { display: none; } }
+@media (prefers-reduced-motion: reduce) { .co-busy { animation: none; } }
 </style>
 
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "6bfc9cd078034a8e8210ba1709db59c8"}'></script></head><body><section class="menu" id="menu">
@@ -685,6 +747,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <div class="seg" id="segColor"><button data-v="1">ดำ</button><button data-v="2">ขาว</button></div></div>
     <div class="opt" id="optHandi" hidden><span class="opt-l">หมากต่อ (คุณถือดำ · โคมิ 0.5)</span>
       <div class="seg seg9" id="segHandi"><button data-v="1">1</button><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button><button data-v="7">7</button><button data-v="8">8</button><button data-v="9">9</button></div></div>
+    <div class="opt" id="optFon" hidden><span class="opt-l">ระดับฝีมือครูมิชิโอะ</span>
+      <div class="seg seg9" id="segFon"><button data-v="15">15 คิว</button><button data-v="10">10 คิว</button><button data-v="8">8 คิว</button><button data-v="6">6 คิว</button><button data-v="3">3 คิว</button><button data-v="1">1 ดั้ง</button></div></div>
     <div class="opt" id="optBonus" hidden><span class="opt-l">ต่อแต้มให้คุณ (บวกตอนนับแต้ม)</span>
       <div class="seg seg9" id="segBonus"><button data-v="0">0</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="40">40</button><button data-v="50">50</button><button data-v="60">60</button><button data-v="70">70</button><button data-v="80">80</button><button data-v="90">90</button><button data-v="100">100</button></div></div>
   </div>
@@ -818,6 +882,14 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
       <p class="sub" id="engine">กำลังโหลดสมอง AI…</p>
     </div>
     <div class="quote" id="quote" hidden></div>
+    <div class="coach" id="coach" hidden>
+      <div class="co-top"><img src="chars/michio_face.jpg" alt="" width="160" height="160"><b>KRU MICHIO · ครูมิชิโอะ</b><span class="co-busy" id="coBusy" hidden>กำลังคิด…</span>
+        <button type="button" id="coOpen">💬 แชท</button><button type="button" id="coClose" aria-label="ปิดแชท">✕</button></div>
+      <div class="co-log" id="coLog" aria-live="polite"></div>
+      <div class="co-picks" id="coPicks"></div>
+      <div class="co-chips" id="coChips"></div>
+      <form class="co-form" id="coForm"><input id="coIn" type="text" placeholder="พิมพ์ถามครูมิชิโอะ เช่น ควรเดินตรงไหน" autocomplete="off" enterkeyhint="send" maxlength="200"><button type="submit">ส่ง</button></form>
+    </div>
     <div class="status" id="status" aria-live="polite"></div>
     <div class="wr" id="wrBox">
       <div class="wr-label"><span id="wrB">ดำ 50%</span><span id="wrMid">โอกาสชนะ</span><span id="wrW">ขาว 50%</span></div>
@@ -2726,8 +2798,8 @@ const Analysis = (function () {
   // evA: after m (player to move = opponent), evP / evPm: after a pass, and after the opponent then takes m themselves.
   // Returns reasons strongest first: { w, t, neg }.
   function reasons(moves, m, evB, evA, evP, evPm) {
-    const out = [], add = (w, t, neg) => out.push({ w, t, neg: !!neg });
-    if (m === PASS) { add(1, "ไม่มีจุดไหนที่ให้แต้มเพิ่มแล้ว ผ่านได้เลย"); return out; }
+    const out = [], add = (w, t, neg, k) => out.push({ w, t, neg: !!neg, k: k || "" }); // k: the idea, for the beginner coach
+    if (m === PASS) { add(1, "ไม่มีจุดไหนที่ให้แต้มเพิ่มแล้ว ผ่านได้เลย", false, "pass"); return out; }
     const B = boardOf(moves), c = B.toPlay, o = 3 - c, n = ST.n;
     if (!B.isLegal(m, c)) return [{ w: 0, t: "จุดนี้วางไม่ได้", neg: true }];
     const A = new Board(n); A.copyFrom(B); A.play(m);
@@ -2736,20 +2808,20 @@ const Analysis = (function () {
     const myB = nb(c), opB = nb(o);
     // tactics
     const capt = A.caps[c] - B.caps[c];
-    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโค อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`);
+    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโค อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`, false, "capture");
     const hm = A.head[m], myLibs = A.libs(hm, 4);
     const saved = myB.filter(h => B.libs(h, 2) === 1).reduce((s, h) => s + B.gsize[h], 0);
-    if (saved && myLibs >= 2) add(9 + saved, `พาหมาก${cn} ${saved} เม็ดที่โดนขู่กิน (อะตาริ) หนีออกมา${myLibs === 2 ? " แต่ยังเหลือลมหายใจแค่ 2 ต้องระวังต่อ" : ""}`);
-    else if (myB.some(h => B.libs(h, 3) === 2) && myLibs >= 3) add(4, `เพิ่มลมหายใจให้กลุ่ม${cn}ที่เหลือลมหายใจแค่ 2`);
+    if (saved && myLibs >= 2) add(9 + saved, `พาหมาก${cn} ${saved} เม็ดที่โดนขู่กิน (อะตาริ) หนีออกมา${myLibs === 2 ? " แต่ยังเหลือลมหายใจแค่ 2 ต้องระวังต่อ" : ""}`, false, "escape");
+    else if (myB.some(h => B.libs(h, 3) === 2) && myLibs >= 3) add(4, `เพิ่มลมหายใจให้กลุ่ม${cn}ที่เหลือลมหายใจแค่ 2`, false, "libs");
     const opA = new Set(); for (const d of A.dirs) { const q = m + d; if (A.color[q] === o) opA.add(A.head[q]); }
     for (const h of opA) {
       const l = A.libs(h, 3), s = A.gsize[h];
-      if (l === 1) add(6 + s, `ขู่กิน (อะตาริ) หมาก${on} ${s} เม็ด ${on}ต้องรีบหนีหรือยอมเสีย`);
-      else if (l === 2 && s >= 3 && B.libs(B.head[h], 3) >= 3) add(4, `บีบกลุ่ม${on} ${s} เม็ดให้เหลือลมหายใจแค่ 2`);
+      if (l === 1) add(6 + s, `ขู่กิน (อะตาริ) หมาก${on} ${s} เม็ด ${on}ต้องรีบหนีหรือยอมเสีย`, false, "atari");
+      else if (l === 2 && s >= 3 && B.libs(B.head[h], 3) >= 3) add(4, `บีบกลุ่ม${on} ${s} เม็ดให้เหลือลมหายใจแค่ 2`, false, "squeeze");
     }
-    if (myB.length >= 2) add(5, `เชื่อมหมาก${cn} ${myB.length} กลุ่มเข้าเป็นกลุ่มเดียว ไม่ให้${on}ตัดขาด`);
-    if (opB.length >= 2) add(5, `ตัดหมาก${on}ให้แยกเป็น ${opB.length} กลุ่ม ต้องดูแลหลายทาง`);
-    if (myLibs === 1 && !capt) add(8, `หมากที่ลงเหลือลมหายใจเดียว ${on}กินได้ทันที`, true);
+    if (myB.length >= 2) add(5, `เชื่อมหมาก${cn} ${myB.length} กลุ่มเข้าเป็นกลุ่มเดียว ไม่ให้${on}ตัดขาด`, false, "connect");
+    if (opB.length >= 2) add(5, `ตัดหมาก${on}ให้แยกเป็น ${opB.length} กลุ่ม ต้องดูแลหลายทาง`, false, "cut");
+    if (myLibs === 1 && !capt) add(8, `หมากที่ลงเหลือลมหายใจเดียว ${on}กินได้ทันที`, true, "selfatari");
     // groups: ownership of their stones before and after, from the mover's side (-1 = the opponent's, +1 = ours)
     const before = evB.own, after = evA.own; // evA is from the opponent's side, so its signs flip
     for (const [h, g] of chains(A)) {
@@ -2757,29 +2829,29 @@ const Analysis = (function () {
       const old = g.stones.filter(p => p !== m && B.color[p] === c);
       if (!old.length) continue;
       const ob = avgOwn(B, before, old, 1), oa = avgOwn(A, after, g.stones, -1), s = g.stones.length;
-      if (ob < -0.4 && oa > 0.3) add(9 + s / 2, `ช่วยกลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่เกือบตายให้รอด`);
-      else if (ob < 0.15 && oa > 0.55) add(6 + s / 3, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่ยังไม่แข็งแรง ปลอดภัยขึ้นมาก`);
-      else if (ob > 0.3 && oa < -0.3) add(7 + s / 2, `กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}จะตกอยู่ในอันตราย`, true);
-      else if (oa - ob >= 0.35) add(4 + s / 4, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}แข็งแรงขึ้น`);
+      if (ob < -0.4 && oa > 0.3) add(9 + s / 2, `ช่วยกลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่เกือบตายให้รอด`, false, "save");
+      else if (ob < 0.15 && oa > 0.55) add(6 + s / 3, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}ที่ยังไม่แข็งแรง ปลอดภัยขึ้นมาก`, false, "safe");
+      else if (ob > 0.3 && oa < -0.3) add(7 + s / 2, `กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}จะตกอยู่ในอันตราย`, true, "danger");
+      else if (oa - ob >= 0.35) add(4 + s / 4, `ทำให้กลุ่ม${cn} ${s} เม็ดที่${centre(g.stones)}แข็งแรงขึ้น`, false, "strong");
     }
     for (const [h, g] of chains(B)) {
       if (g.c !== o) continue;
       const left = g.stones.filter(p => A.color[p] === o); if (!left.length) continue; // captured: said above
       const lb = avgOwn(B, before, left, -1), la = avgOwn(A, after, left, 1), s = left.length; // the opponent's view of its own stones
-      if (lb > 0.2 && la < -0.45) add(9 + s / 2, `ทำให้กลุ่ม${on} ${s} เม็ดที่${centre(left)}แทบไม่มีทางรอด`);
-      else if (lb > 0.5 && la < 0.15 && s >= 2) add(6 + s / 3, `โจมตีกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนแอ ต้องเหนื่อยหาทางรอด`);
-      else if (lb - la >= 0.35 && s >= 2) add(4 + s / 4, `กดดันกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนลง`);
+      if (lb > 0.2 && la < -0.45) add(9 + s / 2, `ทำให้กลุ่ม${on} ${s} เม็ดที่${centre(left)}แทบไม่มีทางรอด`, false, "kill");
+      else if (lb > 0.5 && la < 0.15 && s >= 2) add(6 + s / 3, `โจมตีกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนแอ ต้องเหนื่อยหาทางรอด`, false, "attack");
+      else if (lb - la >= 0.35 && s >= 2) add(4 + s / 4, `กดดันกลุ่ม${on} ${s} เม็ดที่${centre(left)}ให้อ่อนลง`, false, "press");
     }
     // what happens if we don't: the opponent takes this point instead (evPm is from our side again)
     if (evPm) {
       const P = new Board(n); P.copyFrom(B); P.play(PASS); P.play(m);
       const lost = P.caps[o] - B.caps[o];
-      if (lost > 0) add(8 + lost, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ หมาก${cn} ${lost} เม็ดจะโดนกิน`);
+      if (lost > 0) add(8 + lost, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ หมาก${cn} ${lost} เม็ดจะโดนกิน`, false, "ifcapt");
       for (const [h, g] of chains(B)) {
         const left = g.stones.filter(p => P.color[p] === g.c); if (left.length < 2) continue;
         const sg = g.c === c ? 1 : -1, lb = avgOwn(B, before, left, sg), lp = avgOwn(P, evPm.own, left, sg), s = left.length;
-        if (g.c === c && lb > -0.1 && lp < -0.45) add(8 + s / 2, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${cn} ${s} เม็ดที่${centre(left)}จะเสี่ยงตาย`);
-        else if (g.c === o && lb < 0.1 && lp > 0.45) add(6 + s / 3, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${on} ${s} เม็ดที่${centre(left)}ที่กำลังอ่อนแอจะรอดไปได้`);
+        if (g.c === c && lb > -0.1 && lp < -0.45) add(8 + s / 2, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${cn} ${s} เม็ดที่${centre(left)}จะเสี่ยงตาย`, false, "ifdanger");
+        else if (g.c === o && lb < 0.1 && lp > 0.45) add(6 + s / 3, `ถ้าปล่อยให้${on}ได้ลงตรงนี้ กลุ่ม${on} ${s} เม็ดที่${centre(left)}ที่กำลังอ่อนแอจะรอดไปได้`, false, "ifescape");
       }
     }
     // territory: empty points that turn ours (build) or stop being theirs (reduce), per region
@@ -2793,8 +2865,8 @@ const Analysis = (function () {
     }
     const top = o2 => Object.entries(o2).sort((a, b) => b[1] - a[1])[0];
     const tb = top(build), tr = top(reduce);
-    if (tb && tb[1] >= 2) add(3 + Math.min(4, tb[1] / 3), `สร้างพื้นที่${cn}ที่${tb[0]}เพิ่มราว ${Math.round(tb[1])} แต้ม`);
-    if (tr && tr[1] >= 2) add(3 + Math.min(4, tr[1] / 3), `ลดพื้นที่${on}ที่${tr[0]}ไปราว ${Math.round(tr[1])} แต้ม`);
+    if (tb && tb[1] >= 2) add(3 + Math.min(4, tb[1] / 3), `สร้างพื้นที่${cn}ที่${tb[0]}เพิ่มราว ${Math.round(tb[1])} แต้ม`, false, "build");
+    if (tr && tr[1] >= 2) add(3 + Math.min(4, tr[1] / 3), `ลดพื้นที่${on}ที่${tr[0]}ไปราว ${Math.round(tr[1])} แต้ม`, false, "reduce");
     // the opening: corners first, then the sides
     const [x, y] = A.xy(m), dx = Math.min(x, n - 1 - x), dy = Math.min(y, n - 1 - y), z = n >= 19 ? 6 : n >= 13 ? 5 : 4;
     let stones = 0; for (const p of B.pts) if (B.color[p] === BLACK || B.color[p] === WHITE) stones++;
@@ -2803,21 +2875,21 @@ const Analysis = (function () {
         let mine = 0, theirs = 0;
         for (const p of B.pts) { const [px, py] = B.xy(p); if ((x < n / 2 ? px < z : px >= n - z) && (y < n / 2 ? py < z : py >= n - z)) { if (B.color[p] === c) mine++; else if (B.color[p] === o) theirs++; } }
         const where = regionOf(x, y);
-        if (!mine && !theirs) add(6, `จับจอง${where}ที่ยังว่าง มุมล้อมพื้นที่ได้ง่ายที่สุดเพราะมีขอบกระดานช่วยกั้นสองด้าน`);
-        else if (!mine && theirs && dx === 2 && dy === 2) add(6, `บุก 3-3 เข้าไปแย่งพื้นที่${where}ของ${on}`);
-        else if (!mine && theirs === 1) add(5, `ประชิดมุม (คาคาริ) ไม่ปล่อยให้${on}ยึด${where}ไว้ง่ายๆ`);
-        else if (mine && !theirs) add(5, `ปิดมุม (ชิมาริ) ทำให้${where}เป็นของ${cn}แน่นขึ้น`);
+        if (!mine && !theirs) add(6, `จับจอง${where}ที่ยังว่าง มุมล้อมพื้นที่ได้ง่ายที่สุดเพราะมีขอบกระดานช่วยกั้นสองด้าน`, false, "corner");
+        else if (!mine && theirs && dx === 2 && dy === 2) add(6, `บุก 3-3 เข้าไปแย่งพื้นที่${where}ของ${on}`, false, "33");
+        else if (!mine && theirs === 1) add(5, `ประชิดมุม (คาคาริ) ไม่ปล่อยให้${on}ยึด${where}ไว้ง่ายๆ`, false, "kakari");
+        else if (mine && !theirs) add(5, `ปิดมุม (ชิมาริ) ทำให้${where}เป็นของ${cn}แน่นขึ้น`, false, "shimari");
       } else if (Math.min(dx, dy) >= 2 && Math.min(dx, dy) <= 3) {
         let near = false; for (const p of B.pts) { if (B.color[p] !== BLACK && B.color[p] !== WHITE) continue; const [px, py] = B.xy(p); if (Math.max(Math.abs(px - x), Math.abs(py - y)) <= 2) near = true; }
-        if (!near) add(4, `จุดใหญ่ที่${regionOf(x, y)} ขยายตามขอบที่ยังว่างอยู่`);
+        if (!near) add(4, `จุดใหญ่ที่${regionOf(x, y)} ขยายตามขอบที่ยังว่างอยู่`, false, "side");
       }
     }
     // the last move: answer it, or play elsewhere because something else is bigger
     const last = moves[moves.length - 1];
     if (last !== undefined && last !== PASS) {
       const [lx, ly] = B.xy(last), dist = Math.max(Math.abs(lx - x), Math.abs(ly - y));
-      if (dist <= 2) add(2.5, `ตอบโต้หมาก${on}ที่เพิ่งลง ${name(last)}`);
-      else if (dist >= 6 && moves.length > 12) add(3, `ยังไม่ต้องตอบ ${name(last)} ตอนนี้มีจุดที่ใหญ่กว่า (เทนูกิ)`);
+      if (dist <= 2) add(2.5, `ตอบโต้หมาก${on}ที่เพิ่งลง ${name(last)}`, false, "answer");
+      else if (dist >= 6 && moves.length > 12) add(3, `ยังไม่ต้องตอบ ${name(last)} ตอนนี้มีจุดที่ใหญ่กว่า (เทนูกิ)`, false, "tenuki");
     }
     // a point both sides want. swing: our lead if we take the point against our lead if the opponent takes it; any move is
     // worth about two tempos that way (a lot in the opening, little in the endgame), so only the part above that is "big"
@@ -2825,16 +2897,16 @@ const Analysis = (function () {
       const i = oi(B, m), want = evP.policy[i];
       let topI = 0; for (let k = 1; k < 361; k++) if (evP.policy[k] > evP.policy[topI]) topI = k;
       const swing = -evA.lead - evPm.lead, tempo = Math.max(0, evB.lead + evP.lead), extra = swing - 2 * tempo;
-      if (want >= 0.2 || topI === i) add(5.5, `ถ้า${cn}ไม่เล่นตรงนี้ ${on}ก็อยากเล่นจุดนี้เหมือนกัน (จุดสำคัญของทั้งสองฝ่าย)${extra >= 3 ? ` ได้-เสียต่างกันราว ${Math.round(swing)} แต้ม` : ""}`);
-      else if (extra >= 4) add(4 + Math.min(4, extra / 4), `ตานี้รีบกว่าตาทั่วไป ถ้าปล่อยให้${on}ได้เล่นตรงนี้แทน จะต่างกันราว ${Math.round(swing)} แต้ม`);
+      if (want >= 0.2 || topI === i) add(5.5, `ถ้า${cn}ไม่เล่นตรงนี้ ${on}ก็อยากเล่นจุดนี้เหมือนกัน (จุดสำคัญของทั้งสองฝ่าย)${extra >= 3 ? ` ได้-เสียต่างกันราว ${Math.round(swing)} แต้ม` : ""}`, false, "vital");
+      else if (extra >= 4) add(4 + Math.min(4, extra / 4), `ตานี้รีบกว่าตาทั่วไป ถ้าปล่อยให้${on}ได้เล่นตรงนี้แทน จะต่างกันราว ${Math.round(swing)} แต้ม`, false, "urgent");
     }
     out.sort((a, b) => b.w - a.w);
-    if (!out.some(r => !r.neg)) out.push({ w: 1, t: "ไม่ได้กินหรือตัดอะไรชัดๆ แต่ AI อ่านแล้วว่าทำให้รูปหมากแข็งแรงและคุ้มที่สุด", fb: true });
+    if (!out.some(r => !r.neg)) out.push({ w: 1, t: "ไม่ได้กินหรือตัดอะไรชัดๆ แต่ AI อ่านแล้วว่าทำให้รูปหมากแข็งแรงและคุ้มที่สุด", fb: true, k: "shape" });
     return out;
   }
   // the network's evaluations a reasons() call needs, for several moves of one position at once
-  async function evalsFor(AI, moves, list) {
-    const n = ST.n, B = boardOf(moves);
+  async function evalsFor(AI, moves, list, n = ST.n) {
+    const B = new Board(n); for (const m of moves) B.play(m);
     const [evB, evP, ...evAs] = await AI.evalMany(n, [moves, moves.concat([PASS]), ...list.map(m => moves.concat([m]))], KOMI);
     const okAfterPass = list.map(m => { if (m === PASS) return false; const b = new Board(n); b.copyFrom(B); b.play(PASS); return b.isLegal(m, b.toPlay); });
     const pm = list.filter((m, i) => okAfterPass[i]);
@@ -3266,6 +3338,15 @@ const Analysis = (function () {
         `<div class="an-list"><button class="an-chip" data-act="new19">กระดาน 19×19</button><button class="an-chip" data-act="new13">13×13</button><button class="an-chip" data-act="new9">9×9</button><button class="an-chip" data-act="photo">📷 อัปโหลดรูปกระดาน</button>${api.lastGame && api.lastGame() ? '<button class="an-chip" data-act="last">เปิดเกมล่าสุดที่เล่น</button>' : ""}</div>`);
     tok++; ST.b = null; setPos();
   }
+  // for the beginner coach in a game (Coach): why each of several moves is good, from a position not on this board.
+  // The reasons are worked out against a borrowed board state and the analysis board's own state is put back after
+  api.explainFor = async function (AI, n, moves, list) {
+    E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
+    const evs = await evalsFor(AI, moves, list, n), saved = ST;
+    ST = { n, b0: new Board(n) };
+    try { return list.map((m, i) => ({ ev: evs[i], why: reasons(moves, m, evs[i].evB, evs[i].evA, evs[i].evP, evs[i].evPm) })); }
+    finally { ST = saved; }
+  };
   api.open = function (g) {
     E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
     if (!wired) wire();
@@ -3559,6 +3640,529 @@ const Tsumego = (() => {
   return api;
 })();
 
+// Beginner coach ("ครูมิชิโอะ", Kru Michio): a teacher character who plays the player on 19x19 and, during the game, offers three choices
+// for the player's move with the idea behind each, comments on the player's moves and her own, and answers typed
+// questions in Thai. The choices are read with KataGo b10 (how good each move really is) together with the HumanSL
+// network at a club-kyu profile (how natural the move is for a human), so the suggestions are good moves a beginner can
+// understand and remember, not the engine's most surprising one. Everything runs in the browser: no server, no LLM.
+const Coach = (function () {
+  // set by the game: E, ai() (KataGo b10 or null), humanAI() (the HumanSL brain set to 9 dan, or null), state()
+  // ({ n, moves, human, live, myTurn }), play(p), preview(p), marks(list), evalMs(), komi()
+  const api = {};
+  const LETTERS = "ABCDEFGHJKLMNOPQRST";
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const REGION = [["มุมซ้ายบน", "ด้านบน", "มุมขวาบน"], ["ด้านซ้าย", "กลางกระดาน", "ด้านขวา"], ["มุมซ้ายล่าง", "ด้านล่าง", "มุมขวาล่าง"]];
+  const CN = [null, "ดำ", "ขาว"];
+  const NAME = "ครูมิชิโอะ", FACE = "chars/michio_face.jpg";
+  let E, Board, PASS, BLACK, WHITE;
+  let on = false, tok = 0, chain = Promise.resolve(), busy = 0;
+  let picks = null;      // the choices for the position on the board: { key, list: [{ move, letter, grade, ... }] }
+  let phaseTold = {};    // which phase talks were given this game
+
+  // one network job at a time, and the game's own AI waits for it (idle) so the two never share the network's profile
+  function queue(fn) { busy++; const p = chain.then(fn); chain = p.catch(e => console.warn("coach", e)).finally(() => { busy--; renderBusy(); }); renderBusy(); return p; }
+  api.idle = () => chain;
+
+  // ---------- board helpers ----------
+  const st = () => api.state();
+  const keyOf = ms => ms.join(",");
+  function boardOf(n, ms) { const b = new Board(n); for (const m of ms) b.play(m); return b; }
+  const oi = (b, p) => { const [x, y] = b.xy(p); return y * 19 + x; };
+  function name(n, p) { if (p === PASS) return "ผ่าน"; const b = new Board(n), [x, y] = b.xy(p); return LETTERS[x] + (n - y); }
+  function regionOf(n, x, y) { const t = v => v < n / 3 ? 0 : v < 2 * n / 3 ? 1 : 2; return REGION[t(y)][t(x)]; }
+  const regionAt = (b, p) => { const [x, y] = b.xy(p); return regionOf(st().n, x, y); };
+  function parsePoint(n, text) {
+    const m = /(?:^|[^A-Za-z])([A-HJ-Ta-hj-t])\s?-?\s?(1[0-9]|[1-9])(?![0-9])/.exec(text);
+    if (!m) return null;
+    const x = LETTERS.indexOf(m[1].toUpperCase()), y = n - +m[2];
+    if (x < 0 || x >= n || y < 0 || y >= n) return null;
+    return new Board(n).pt(x, y);
+  }
+  function chains(b) {
+    const m = new Map();
+    for (const p of b.pts) { const c = b.color[p]; if (c !== BLACK && c !== WHITE) continue; const h = b.head[p]; if (!m.has(h)) m.set(h, { c, stones: [] }); m.get(h).stones.push(p); }
+    return m;
+  }
+  function centre(b, n, stones) { let sx = 0, sy = 0; for (const p of stones) { const [x, y] = b.xy(p); sx += x; sy += y; } return regionOf(n, Math.round(sx / stones.length), Math.round(sy / stones.length)); }
+  const pts = v => (Math.round(Math.abs(v) * 10) / 10).toFixed(1);
+
+  // ---------- what a beginner should know ----------
+  // the idea behind a reason (Analysis reasons carry a kind), in plain words
+  const IDEA = {
+    capture: "กินหมากได้ทั้งได้แต้ม และทำให้หมากเรารอบๆ ปลอดภัยขึ้น",
+    escape: "หมากที่โดนอะตาริ (เหลือลมหายใจเดียว) ต้องรีบหนีให้ลมหายใจเพิ่ม หรือถ้าหนีไม่รอดก็ยอมทิ้งแล้วไปเล่นที่อื่น",
+    libs: "กลุ่มที่ลมหายใจน้อยเสี่ยงโดนกิน เติมลมหายใจไว้ก่อนจะปลอดภัย",
+    atari: "อะตาริคือทำให้หมากอีกฝ่ายเหลือลมหายใจเดียว เขาต้องรีบแก้ เราได้เป็นฝ่ายคุมเกม",
+    squeeze: "ลดลมหายใจกลุ่มอีกฝ่าย ให้เขาต้องคอยระวังตลอด",
+    connect: "หมากที่ต่อกันเป็นกลุ่มเดียวแข็งแรงกว่าหมากที่แยกกัน อีกฝ่ายตัดไม่ได้ก็ไม่ต้องห่วง",
+    cut: "ตัดหมากอีกฝ่ายให้แยกกัน เขาจะมีกลุ่มอ่อนหลายกลุ่มที่ต้องดูแลพร้อมกัน",
+    save: "ดูแลกลุ่มที่อ่อนก่อนเสมอ กลุ่มที่ตายจะเสียทั้งหมากและพื้นที่รอบๆ",
+    safe: "กลุ่มที่ปลอดภัยแล้วไม่ต้องห่วง เราจะไปบุกหรือสร้างพื้นที่ที่อื่นได้เต็มที่",
+    strong: "กลุ่มที่แข็งแรงคือกลุ่มที่มีที่ว่างพอจะสร้างสองห้อง หรือเชื่อมกับเพื่อนได้",
+    kill: "กลุ่มอีกฝ่ายที่ไม่มีที่สร้างสองห้องจะตาย หมากทั้งกลุ่มกลายเป็นแต้มของเรา",
+    attack: "บุกกลุ่มที่อ่อนของอีกฝ่าย ระหว่างที่เขาหนี เราได้กำแพงหรือพื้นที่ไปฟรีๆ",
+    press: "กดดันกลุ่มอีกฝ่ายจากด้านนอก เขาต้องหนีเข้าที่แคบ ส่วนเราได้หันหน้าเข้าพื้นที่กว้าง",
+    ifcapt: "ถ้าอีกฝ่ายได้เล่นจุดนี้ก่อนเราจะโดนกิน จุดแบบนี้รีบกว่าการสร้างพื้นที่",
+    ifdanger: "ถ้าอีกฝ่ายได้เล่นจุดนี้ก่อน กลุ่มเราจะลำบาก ดูแลก่อนเสียหาย",
+    ifescape: "ถ้าเราไม่เล่น กลุ่มอ่อนของอีกฝ่ายจะรอด จุดนี้ปิดทางหนีของเขา",
+    vital: "จุดที่ทั้งสองฝ่ายอยากได้คือจุดสำคัญ ใครได้ก่อนได้เปรียบ",
+    urgent: "ตาเร่งด่วน (ถ้าไม่เล่นจะเสียหาย) สำคัญกว่าตาที่แค่ใหญ่",
+    build: "สร้างพื้นที่คือการล้อมจุดว่างไว้ให้เป็นของเรา ตอนจบเกมนับจุดเหล่านี้เป็นแต้ม",
+    reduce: "ลดพื้นที่อีกฝ่ายก่อนที่มันจะปิดสนิทกลายเป็นแต้มของเขา",
+    corner: "หลัก มุม → ด้าน → กลาง: มุมใช้หมากน้อยที่สุดในการล้อมพื้นที่ เพราะมีขอบกระดานช่วยกั้นสองด้าน",
+    "33": "จุด 3-3 คือทางบุกเข้าไปใต้หมากอีกฝ่ายที่มุม เพื่อแย่งพื้นที่มุมมาเป็นของเรา",
+    kakari: "คาคาริคือเข้าไปประชิดมุมที่อีกฝ่ายจองไว้เม็ดเดียว ก่อนเขาจะปิดมุมได้แน่น",
+    shimari: "ชิมาริคือวางเม็ดที่สองปิดมุมของเรา มุมจะแน่นจนบุกยาก",
+    side: "มุมจองครบแล้ว ต่อไปคือขยายไปตามด้าน ที่ยังกว้างและว่าง",
+    answer: "อีกฝ่ายเพิ่งมาคุกคามหมากเรา ตอบรับให้กลุ่มเราไม่เสียหายก่อน",
+    tenuki: "ไม่ต้องตอบทุกตาที่อีกฝ่ายเดิน ถ้าที่อื่นใหญ่กว่า ไปเล่นที่ใหญ่กว่า (เรียกว่าเทนูกิ)",
+    pass: "เกมใกล้จบแล้ว ถ้าไม่มีจุดไหนได้แต้มเพิ่ม ผ่านได้เลย",
+    shape: "บางตาไม่ได้กินหรือตัดอะไร แต่ทำให้หมากเรามีรูปทรงแข็งแรง เชื่อมกันดี และไปต่อได้หลายทาง"
+  };
+  // answers to typed words: [pattern, answer]; the first match wins
+  const GLOSSARY = [
+    [/ลมหายใจ|ลิเบอร์ตี้|liberty/i, "<b>ลมหายใจ</b> คือจุดว่างที่อยู่ติดหมาก (บน ล่าง ซ้าย ขวา ไม่นับแนวทแยง) หมากที่ติดกันใช้ลมหายใจร่วมกัน ถ้าลมหายใจหมด หมากทั้งกลุ่มโดนกินออกจากกระดาน"],
+    [/อะตาริ|atari/i, "<b>อะตาริ</b> คือตอนที่หมากเหลือลมหายใจแค่เดียว ถ้าเป็นหมากเรา ต้องรีบหนี (ต่อให้ลมหายใจเพิ่ม) หรือยอมทิ้ง ถ้าเป็นหมากเขา ตาหน้าเราก็กินได้เลย"],
+    [/บันได|ลาดเดอร์|ladder|shicho|ชิโจ/i, "<b>บันได (ชิโจ)</b> คือการไล่อะตาริซ้ำๆ เป็นแนวทแยงจนหมากชนขอบแล้วโดนกิน ก่อนหนีให้ดูก่อนว่าบนเส้นทางทแยงนั้นมีหมากเราช่วยไหม ถ้าไม่มี อย่าหนี จะยิ่งเสียเยอะ"],
+    [/ห้อง|สองห้อง|eye/i, "<b>ห้อง</b> คือจุดว่างที่ล้อมด้วยหมากเราทั้งหมด กลุ่มที่มี <b>สองห้องแยกกัน</b> จะไม่มีวันโดนกิน เพราะอีกฝ่ายลงในห้องไม่ได้ทั้งสองห้องพร้อมกัน นี่คือหัวใจของการทำให้กลุ่มรอด"],
+    [/(^|[^ก-๙])โค([^ก-๙]|$)|\bko\b/i, "<b>โค</b> คือรูปที่กินกันไปกินกันมาได้ไม่จบ กติกาจึงห้ามกินคืนทันที ต้องไปเล่นที่อื่นก่อนหนึ่งตา (เรียกว่าหาตาขู่) แล้วค่อยกลับมากินคืน"],
+    [/ชิมาริ|shimari|ปิดมุม/i, "<b>ชิมาริ (ปิดมุม)</b> คือเล่นเม็ดที่สองที่มุมของเราเอง เช่นจาก 4-4 ไปที่ 3-6 หรือ 4-6 ทำให้มุมแน่นจนอีกฝ่ายบุกยาก"],
+    [/คาคาริ|kakari|ประชิดมุม/i, "<b>คาคาริ</b> คือเข้าไปประชิดมุมที่อีกฝ่ายจองไว้เม็ดเดียว ไม่ให้เขาปิดมุมได้ง่ายๆ ปกติเล่นห่างจากหมากเขาสองสามช่อง"],
+    [/3-3|สามสาม|ซันซัง|san-san/i, "<b>จุด 3-3</b> คือจุดที่ห่างขอบ 3 เส้นทั้งสองด้าน ใช้จองมุมแบบแน่นๆ หรือบุกเข้าใต้หมาก 4-4 ของอีกฝ่ายเพื่อแย่งพื้นที่มุม"],
+    [/4-4|ดาว|ฮอชิ|hoshi|star/i, "<b>จุดดาว (4-4)</b> คือจุดที่ห่างขอบ 4 เส้น จองมุมได้เร็วด้วยเม็ดเดียวและหันออกไปทางด้านได้ดี แต่มุมยังโดนบุกที่ 3-3 ได้"],
+    [/โจเซกิ|joseki/i, "<b>โจเซกิ</b> คือลำดับการเล่นที่มุมที่นักเล่นยุคก่อนๆ ศึกษามาแล้วว่ายุติธรรมกับทั้งสองฝ่าย มือใหม่ไม่ต้องจำ แค่ตอบให้หมากเราไม่โดนตัดและยังมีที่สร้างห้องก็พอ"],
+    [/ฟุเซกิ|fuseki|เปิดเกม/i, "<b>ช่วงเปิดเกม</b> บนกระดาน 19×19 ให้จำหลักเดียว <b>มุม → ด้าน → กลาง</b> จองมุมก่อน (มีขอบช่วยกั้นสองด้าน) แล้วขยายตามด้าน (มีขอบช่วยด้านเดียว) กลางกระดานเก็บไว้ทีหลังเพราะล้อมยากที่สุด"],
+    [/เทนูกิ|tenuki/i, "<b>เทนูกิ</b> คือไม่ตอบหมากที่อีกฝ่ายเพิ่งเดิน แล้วไปเล่นจุดที่ใหญ่กว่าที่อื่น ทำได้เมื่อหมากเราตรงนั้นยังไม่เสียหายหนักถ้าไม่ตอบ"],
+    [/เซนเต|sente|โกเต|gote|จังหวะ/i, "<b>เซนเต</b> คือตาที่อีกฝ่ายต้องตอบ แล้วเราได้เล่นต่อ (เราคุมจังหวะ) <b>โกเต</b> คือตาที่จบแล้วอีกฝ่ายได้เลือกเล่นที่ไหนก็ได้ ตาเซนเตจึงมีค่ากว่าตาโกเตที่ได้แต้มเท่ากัน"],
+    [/โยเซ|yose|ปลายเกม|ท้ายเกม/i, "<b>ช่วงปลายเกม</b> เขตแดนเกือบชัดแล้ว ให้ปิดชายแดนของเรา เก็บจุดที่ได้แต้มมากที่สุดก่อน และเล่นตาที่อีกฝ่ายต้องตอบ (เซนเต) ก่อนตาที่ไม่ต้องตอบ"],
+    [/กลางเกม|ต่อสู้/i, "<b>ช่วงกลางเกม</b> ดูว่ากลุ่มไหนยังไม่มีสองห้อง (กลุ่มอ่อน) ดูแลกลุ่มอ่อนของเราก่อน แล้วค่อยบุกกลุ่มอ่อนของอีกฝ่าย ระหว่างไล่บุก เราจะได้พื้นที่หรือกำแพงเพิ่มเอง"],
+    [/โคมิ|komi/i, "<b>โคมิ</b> คือแต้มที่ขาวได้เพิ่มตอนนับ (ที่นี่ 7.5 แต้ม) เพราะดำได้เดินก่อนซึ่งได้เปรียบ ครึ่งแต้มทำให้ไม่มีเสมอ"],
+    [/นับแต้ม|นับคะแนน|ชนะยังไง|ชนะได้ยังไง|แพ้ชนะ|กติกา/i, "เกมนี้นับแบบ<b>พื้นที่ (กติกาจีน)</b> แต้ม = หมากเราที่ยังอยู่บนกระดาน + จุดว่างที่หมากเราล้อมไว้ ขาวได้โคมิเพิ่ม 7.5 ใครแต้มมากกว่าชนะ เกมจบเมื่อทั้งสองฝ่ายผ่านติดกัน"],
+    [/ผ่าน|pass/i, "<b>ผ่าน</b> คือไม่วางหมากตานี้ ใช้ตอนท้ายเกมที่ไม่มีจุดไหนได้แต้มเพิ่มแล้ว ถ้าผ่านติดกันทั้งสองฝ่าย เกมจะจบและนับแต้ม ช่วงต้นเกมอย่าผ่านนะ เสียจังหวะเปล่าๆ"],
+    [/ตัด|cut/i, "<b>การตัด</b> คือวางหมากแทรกระหว่างหมากอีกฝ่ายสองเม็ดที่ยังไม่ต่อกัน ให้แยกเป็นสองกลุ่ม ส่วนตอนอีกฝ่ายจะตัดเรา ให้<b>ต่อ</b>หรือ<b>เชื่อม</b>ไว้ก่อนถ้าจุดตัดนั้นอันตราย"],
+    [/เชื่อม|ต่อ(หมาก|กัน)|connect/i, "<b>การเชื่อม</b> ทำให้หมากหลายเม็ดกลายเป็นกลุ่มเดียว ใช้ลมหายใจร่วมกัน แข็งแรงกว่าและไม่ต้องห่วงโดนตัด"],
+    [/พื้นที่|เขต|อาณาเขต|territory/i, "<b>พื้นที่</b> คือจุดว่างที่หมากเราล้อมไว้จนอีกฝ่ายเข้ามาสร้างกลุ่มที่รอดไม่ได้ ตอนจบเกมทุกจุดนับเป็นแต้ม มุมล้อมง่ายที่สุด รองลงมาคือด้าน กลางกระดานยากที่สุด"],
+    [/อิทธิพล|กำแพง|influence/i, "<b>กำแพง (อิทธิพล)</b> คือหมากแถวยาวที่หันหน้าออกไปพื้นที่กว้าง ยังไม่ใช่แต้มทันที แต่ใช้บุกหรือสร้างพื้นที่ใหญ่ตรงที่มันหันไปได้ อย่าเอากำแพงไปล้อมพื้นที่ใกล้ๆ ตัวเอง ให้ใช้มันไล่บุก"],
+    [/กิน|จับ|capture/i, "<b>การกิน</b> คือปิดลมหายใจของหมากอีกฝ่ายจนหมด แล้วเอาหมากนั้นออก แต่ในเกมจริง การกินไม่ใช่เป้าหมายหลัก <b>พื้นที่</b>ต่างหากที่ตัดสินแพ้ชนะ"],
+    [/หมากต่อ|แฮนดิแคป|handicap/i, "<b>หมากต่อ</b> คือให้ฝ่ายที่อ่อนกว่าวางหมากดำไว้ก่อนหลายเม็ดที่จุดดาว เกมกับครูมิชิโอะเป็นเกมเสมอกัน ไม่มีหมากต่อ"]
+  ];
+
+  // ---------- chat ----------
+  function bubble(html, who) {
+    const el = document.createElement("div");
+    el.className = "co-msg " + (who === "me" ? "me" : "coach");
+    el.innerHTML = who === "me" ? `<div class="co-b">${html}</div>` : `<img src="${FACE}" alt="" width="160" height="160"><div class="co-b">${html}</div>`;
+    const log = $("coLog"); log.appendChild(el);
+    while (log.children.length > 80) log.removeChild(log.firstChild);
+    // the compact strip (portrait) shows the start of the newest message; the open chat follows the bottom
+    log.scrollTop = $("coach").classList.contains("open") || !matchMedia("(max-aspect-ratio: 9/8)").matches ? log.scrollHeight : el.offsetTop;
+    return el;
+  }
+  const say = html => bubble(html, "coach");
+  api.say = line => { if (on) say(esc(line)); }; // the character's own talk (hello, captures...) goes into the chat
+  function setChips() {
+    const s = st(), list = [["ควรเดินตรงไหน?", "ควรเดินตรงไหน"], ["ภาพรวมตอนนี้", "ภาพรวมตอนนี้ควรทำอะไร"]];
+    if (s.moves.length && s.moves[s.moves.length - 1] !== PASS && s.moves.length % 2 === (s.human === BLACK ? 0 : 1)) list.push(["ทำไมครูเดินตานั้น?", "ทำไมครูเดินตานั้น"]);
+    if (myLast(s) !== null) list.push(["ตาที่ฉันเดินดีไหม?", "ตาที่ฉันเดินเมื่อกี้ดีไหม"]);
+    list.push(["ใครนำอยู่?", "ใครนำอยู่"], ["กลุ่มไหนอันตราย?", "กลุ่มไหนอันตราย"]);
+    $("coChips").innerHTML = list.map(([t, q]) => `<button type="button" class="co-chip" data-q="${esc(q)}">${esc(t)}</button>`).join("");
+  }
+  function myLast(s) {
+    for (let i = s.moves.length - 1; i >= 0; i--) if ((i % 2 === 0 ? BLACK : WHITE) === s.human) return s.moves[i] === PASS ? null : i;
+    return null;
+  }
+  function renderBusy() { const el = $("coBusy"); if (el) el.hidden = !(on && busy > 0); }
+
+  // ---------- phase of the game (19x19) ----------
+  function emptyCorners(b, n) {
+    const out = [], z = n >= 19 ? 6 : 4;
+    for (const [cx, cy, nm] of [[0, 0, "มุมซ้ายบน"], [1, 0, "มุมขวาบน"], [0, 1, "มุมซ้ายล่าง"], [1, 1, "มุมขวาล่าง"]]) {
+      let any = false;
+      for (const p of b.pts) { if (!b.color[p] || b.color[p] > 2) continue; const [x, y] = b.xy(p); if ((cx ? x >= n - z : x < z) && (cy ? y >= n - z : y < z)) { any = true; break; } }
+      if (!any) out.push(nm);
+    }
+    return out;
+  }
+  function phaseOf(b, n, len, ev) {
+    if (len < 50 && (emptyCorners(b, n).length || len < 24)) return "open";
+    if (ev) {
+      let open = 0, all = 0;
+      for (const p of b.pts) if (b.color[p] === 0) { all++; if (Math.abs(ev.own[oi(b, p)]) < 0.5) open++; }
+      if (len >= 120 && open < all * 0.18) return "end";
+    }
+    return len >= 190 ? "end" : "mid";
+  }
+  const PHASE_TALK = {
+    open: "<b>ช่วงเปิดเกม</b> กระดาน 19×19 กว้างมาก หลักที่ครูอยากให้จำคือ <b>มุม → ด้าน → กลาง</b> มุมล้อมพื้นที่ง่ายที่สุดเพราะมีขอบช่วยกั้นสองด้าน รองลงมาคือด้าน กลางกระดานยากที่สุด ยังไม่ต้องรีบกินหมากใคร จองที่ใหญ่ๆ ก่อน",
+    mid: "<b>เข้าสู่กลางเกม</b> ตอนนี้ให้มองหา<b>กลุ่มอ่อน</b> คือกลุ่มที่ยังไม่มีที่สร้างสองห้อง ดูแลกลุ่มอ่อนของเราก่อน แล้วค่อยบุกกลุ่มอ่อนของอีกฝ่าย ระหว่างไล่บุก เราจะได้พื้นที่เพิ่มเอง",
+    end: "<b>ใกล้ปลายเกมแล้ว</b> เขตแดนส่วนใหญ่ชัดแล้ว ตอนนี้ให้ปิดชายแดนพื้นที่ของเรา เก็บจุดที่ได้แต้มมากก่อน และเลือกตาที่อีกฝ่ายต้องตอบก่อน (เซนเต) เมื่อไม่มีจุดได้แต้มแล้วค่อยผ่าน"
+  };
+
+  // ---------- reading a position ----------
+  function gradeOf(loss) {
+    if (loss <= 0.8) return { cls: "best", t: "ดีที่สุด" };
+    if (loss <= 2) return { cls: "good", t: "ดีมาก" };
+    if (loss <= 4) return { cls: "normal", t: "พอใช้" };
+    return { cls: "bad", t: "ไม่แนะนำ" };
+  }
+  // the three choices: KataGo's reading of every candidate (from the search, or one look after the move) and HumanSL's
+  // view of how natural each one is; choice A is the most natural of the near-best moves, B a good move with another idea,
+  // C either a third good move or the tempting one a beginner would play that reads clearly worse (a lesson)
+  async function readChoices(my) {
+    const AI = api.ai(); if (!AI) return null;
+    const s0 = st(), n = s0.n, moves = s0.moves.slice(), b = boardOf(n, moves), c = b.toPlay;
+    const ms = api.evalMs ? api.evalMs() : 50;
+    // the best move comes from HumanSL at its strongest (9 dan) reading ahead with KataGo's eye for who is winning
+    // (owner 2026-11-01); without it (still loading, or it failed) KataGo b10 reads alone
+    let H = null; try { H = await api.humanAI(); } catch (e) { H = null; }
+    if (my !== tok) return null;
+    const brain = H || AI;
+    let s;
+    try { s = await brain.think(n, moves, api.komi(), { visits: H ? 600 : 2500, timeMs: ms > 150 ? 3000 : 4000, batch: H ? 1 : ms < 40 ? 16 : 8, top: 10, shouldStop: () => my !== tok }); }
+    catch (e) { if (!H) throw e; s = await AI.think(n, moves, api.komi(), { visits: 2500, timeMs: 3000, batch: 8, top: 10, shouldStop: () => my !== tok }); }
+    if (my !== tok) return null;
+    let hp = null;
+    try { hp = H ? (await H.evaluate(n, moves, api.komi())).policy : null; } catch (e) { hp = null; }
+    if (my !== tok) return null;
+    const maxN = s.top[0].visits;
+    const cand = new Map();
+    for (const t of s.top) if (t.move !== PASS && (t.visits >= Math.max(3, maxN * 0.03) || cand.size < 3)) cand.set(t.move, { move: t.move, visits: t.visits, sLead: t.lead, win: t.winrate });
+    if (hp) {
+      const order = []; for (let i = 0; i < 361; i++) order.push(i);
+      order.sort((a, z) => hp[z] - hp[a]);
+      for (const i of order.slice(0, 6)) { const p = b.pt(i % 19, (i / 19) | 0); if (p !== undefined && b.isLegal(p, c) && !cand.has(p)) cand.set(p, { move: p, visits: 0 }); }
+    }
+    const list = [...cand.values()];
+    if (!list.length) return { pass: true, s, n, moves };
+    // one look after every candidate, so moves the search skipped compare fairly with the rest
+    const evs = await AI.evalMany(n, list.map(x => moves.concat([x.move])), api.komi());
+    if (my !== tok) return null;
+    list.forEach((x, i) => { x.one = -evs[i].lead; x.hp = hp ? hp[oi(b, x.move)] : 0; });
+    const best = cand.get(s.top[0].move) || list[0];
+    for (const x of list) x.loss = x.visits >= 40 && best.visits >= 40 ? Math.max(0, best.sLead - x.sLead) : Math.max(0, best.one - x.one);
+    best.loss = 0;
+    const by = (arr, f) => arr.slice().sort((a, z) => f(z) - f(a))[0];
+    const far = (p, q) => { const [x1, y1] = b.xy(p), [x2, y2] = b.xy(q); return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)) >= 3; };
+    const easy = x => x.hp + (x.visits / maxN) * 0.15; // natural for a human, and read well by the engine
+    const A = best; // HumanSL's best move is always choice A
+    const restGood = list.filter(x => x !== A && x.loss <= 3);
+    const B = by(restGood.filter(x => far(x.move, A.move)), easy) || by(restGood, easy);
+    let C = null, trap = false;
+    const tempt = by(list.filter(x => x !== A && x !== B && x.loss >= 3 && x.hp >= 0.04), x => x.hp);
+    if (tempt) { C = tempt; trap = true; }
+    else { const rest = list.filter(x => x !== A && x !== B && x.loss <= 5); C = by(rest.filter(x => far(x.move, A.move) && (!B || far(x.move, B.move))), easy) || by(rest, easy); }
+    const chosen = [A, B, C].filter(Boolean);
+    const why = await Analysis.explainFor(AI, n, moves, chosen.map(x => x.move));
+    if (my !== tok) return null;
+    chosen.forEach((x, i) => { x.why = why[i].why; x.letter = "ABC"[i]; x.grade = gradeOf(x.loss); x.trap = x === C && trap; x.region = regionAt(b, x.move); });
+    // the side to move's chance and lead, for the summary
+    return { key: keyOf(moves), n, moves, b, c, s, list: chosen, best };
+  }
+  function ideaOf(why) { const r = why.find(x => !x.neg && IDEA[x.k]); return r ? IDEA[r.k] : IDEA.shape; }
+  function pickHtml(x, n, told) {
+    const good = x.why.filter(r => !r.neg && !r.fb).slice(0, 2), bad = x.why.filter(r => r.neg).slice(0, 1);
+    let h = `<div class="co-pick g-${x.grade.cls}"><div class="co-ph"><b class="co-l">${x.letter}</b> <b>${name(n, x.move)}</b> <span class="co-rg">${x.region}</span> <span class="g-t g-${x.grade.cls}">${x.trap ? "ระวัง!" : x.grade.t}</span></div>`;
+    if (x.trap) {
+      h += `<div>ตานี้ดูน่าเดินและมือใหม่เลือกกันบ่อย${good.length ? ` (${esc(good[0].t)})` : ""} แต่อ่านลึกแล้ว<b>เสียราว ${pts(x.loss)} แต้ม</b>${bad.length ? ` เพราะ${esc(bad[0].t)}` : " เพราะมีจุดที่ใหญ่หรือรีบกว่านี้"}</div>`;
+    } else {
+      h += good.length ? `<ul>${good.map(r => `<li>${esc(r.t)}</li>`).join("")}</ul>` : `<div>${esc(x.why[0].t)}</div>`;
+      if (bad.length) h += `<div class="co-warn">ข้อควรระวัง: ${esc(bad[0].t)}</div>`;
+      const idea = ideaOf(x.why);
+      if (!told.has(idea)) { told.add(idea); h += `<div class="co-idea">💡 ${idea}</div>`; }
+      if (x.hp >= 0.15 && !told.has("common")) { told.add("common"); h += `<div class="co-dim">เป็นตาที่คนเล่นกันเป็นปกติ จำรูปนี้ไว้ใช้ได้บ่อย</div>`; }
+    }
+    h += `<div class="co-acts"><button type="button" data-see="${x.move}">👀 ดูบนกระดาน</button><button type="button" class="co-go" data-play="${x.move}">เดิน ${x.letter} (${name(n, x.move)})</button></div></div>`;
+    return h;
+  }
+  function showPicks(r) {
+    picks = r;
+    api.marks(r ? r.list.map(x => ({ p: x.move, label: x.letter, cls: x.trap ? "bad" : x.grade.cls })) : []);
+    $("coPicks").innerHTML = r ? r.list.map(x => `<button type="button" class="co-pk g-${x.trap ? "bad" : x.grade.cls}" data-see="${x.move}"><b>${x.letter}</b> ${name(r.n, x.move)}<small>${x.trap ? "ระวัง" : x.grade.t}</small></button>`).join("") : "";
+  }
+  async function suggest(asked) {
+    const s = st(); if (!s.myTurn) { say(s.live ? "รอครูเดินก่อนนะ เดี๋ยวครูช่วยดูให้" : "เกมจบแล้วครับ กด ANALYSIS เพื่อทบทวนทั้งเกมได้นะ"); return; }
+    const my = tok;
+    if (picks && picks.key === keyOf(s.moves)) { if (asked) explainPicks(picks); return; }
+    const wait = say("ขอครูดูกระดานแป๊บนึงนะ… 🤔");
+    const r = await queue(() => my !== tok ? null : readChoices(my));
+    if (my !== tok) { wait.remove(); return; }
+    if (!r) { wait.querySelector(".co-b").textContent = "ตอนนี้ครูยังอ่านกระดานไม่ได้ รอสมอง AI โหลดเสร็จก่อนนะ"; return; }
+    wait.remove();
+    if (r.pass) { say("ตอนนี้ไม่มีจุดไหนได้แต้มเพิ่มแล้ว กด<b>ผ่าน</b>ได้เลย"); return; }
+    // the phase talk, once per phase
+    const ph = phaseOf(r.b, r.n, r.moves.length, null);
+    if (!phaseTold[ph]) { phaseTold[ph] = true; say(PHASE_TALK[ph] + (ph === "open" ? cornerHint(r.b, r.n) : "")); }
+    showPicks(r);
+    explainPicks(r);
+  }
+  function cornerHint(b, n) { const e = emptyCorners(b, n); return e.length ? `<br>ตอนนี้ยังมี<b>มุมว่าง ${e.length} มุม</b> (${e.join(", ")})` : ""; }
+  function explainPicks(r) {
+    const c = r.c, win = r.s.winrate, lead = r.s.searchLead;
+    let h = `<b>ตาคุณ (${CN[c]})</b> ครูเลือกมาให้ ${r.list.length} ทาง วงตัวอักษรบนกระดาน แตะ 👀 เพื่อดู หรือกดเดินได้เลย`;
+    h += `<span class="co-dim"> · ตอนนี้${Math.abs(lead) < 1 ? "สูสีกัน" : lead > 0 ? `คุณนำ ~${pts(lead)} แต้ม` : `คุณตาม ~${pts(lead)} แต้ม`} (โอกาสชนะ ${Math.round(win * 100)}%)</span>`;
+    const told = new Set();
+    h += r.list.map(x => pickHtml(x, r.n, told)).join("");
+    say(h);
+  }
+
+  // ---------- comments on moves ----------
+  // The coach stays quiet move by move (owner 2026-11-02): it speaks only when the player made a clear mistake,
+  // or when the teacher's move threatens something the player must answer. The same warning is never repeated.
+  const BLUNDER = 5;            // points lost by the player's move before the coach steps in
+  const warned = new Map();     // warning key -> move number it was given at
+  function fresh(key, gap, at) { const w = warned.get(key); if (w !== undefined && at - w < gap) return false; warned.set(key, at); return true; }
+  // after the player's move (runs as one queued step): silent unless it was a trap they were warned about, or it lost a lot of points
+  async function judgeMine(prevPicks, moves, m) {
+    const AI = api.ai(), s = st(), my = tok; if (!AI || m === PASS) return;
+    const asked = prevPicks && prevPicks.key === keyOf(moves) ? prevPicks : null;
+    const hit = asked ? asked.list.find(x => x.move === m) : null;
+    if (hit && hit.trap) { say(`เลือก ${hit.letter} ${name(s.n, m)} ทั้งที่ครูเตือนแล้วนะ 😅 ลองดูว่าครูจะตอบยังไง แล้วจะเห็นว่าทำไมมันเสีย`); return; }
+    if (hit) return; // a good choice: nothing to add
+    // a quick look: how much the move lost compared with the position before it (both seen from the player)
+    const [ev0, ev1] = await (my !== tok ? null : AI.evalMany(s.n, [moves, moves.concat([m])], api.komi())) || [];
+    if (!ev0 || my !== tok) return;
+    if (ev0.lead + ev1.lead < BLUNDER) return; // ev0 is from the player to move, ev1 from the teacher
+    // a real mistake: find the better move (the choice A the player was shown, or a short b10 reading)
+    let better = asked ? asked.list[0].move : null;
+    if (better === null) {
+      const r = await (my !== tok ? null : AI.think(s.n, moves, api.komi(), { visits: 400, timeMs: 1500, batch: 8, top: 3, shouldStop: () => my !== tok }));
+      if (!r || my !== tok || !r.top.length) return;
+      better = r.top[0].move;
+    }
+    if (better === PASS || better === m) return;
+    const [evB, evM] = await (my !== tok ? null : AI.evalMany(s.n, [moves.concat([better]), moves.concat([m])], api.komi())) || [];
+    if (!evB || my !== tok) return;
+    const loss = evM.lead - evB.lead; // both from the teacher's side after the move
+    if (loss < BLUNDER) return;
+    const ex = await (my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m, better])) || [];
+    if (my !== tok || !ex.length) return;
+    const wM = ex[0] ? ex[0].why : [], wB = ex[1] ? ex[1].why : [];
+    const bad = wM.find(x => x.neg), good = wB.find(x => !x.neg && !x.fb) || wB.find(x => !x.neg);
+    const b = boardOf(s.n, moves);
+    let h = `<span class="co-warn">ตาเมื่อกี้ <b>${name(s.n, m)}</b> เสียไปราว ${pts(loss)} แต้มนะ</span>`;
+    const [mx, my2] = b.xy(m), line = Math.min(mx, my2, s.n - 1 - mx, s.n - 1 - my2) + 1;
+    h += bad ? `<br>เพราะ${esc(bad.t)}` : line <= 2 && moves.length < 80 ? `<br>เพราะหมากบนเส้นที่ ${line} ติดขอบเกินไป ล้อมพื้นที่ได้น้อยมาก ช่วงนี้ควรเล่นเส้นที่ 3–4 ก่อน` : `<br>เพราะตรงนั้นเล็กไป ยังมีจุดที่ใหญ่กว่า หรือเร่งด่วนกว่านี้อยู่`;
+    h += `<br>ตรงนี้ดีกว่า: <b>${name(s.n, better)}</b> (${regionAt(b, better)})${good ? ` เพราะ${esc(good.t)}` : ""}`;
+    const tip = good && IDEA[good.k];
+    if (tip) h += `<br><span class="co-idea">💡 ${tip}</span>`;
+    say(h);
+  }
+  // after the teacher's move: a warning only when it threatens the player's stones or corner
+  const THREAT = { atari: "หมากของคุณเหลือลมหายใจเดียวแล้ว ถ้าไม่หนีหรือต่อ จะโดนกินนะ", kill: "ครูกำลังจะทำให้หมากกลุ่มนั้นของคุณไม่มีห้อง ระวังนะ",
+    attack: "ครูกำลังไล่โจมตีหมากที่ยังอ่อนของคุณ ลองหาทางทำห้องหรือหนีออกที่กว้าง", cut: "ครูตัดหมากของคุณให้ขาดจากกัน ลองดูว่าฝั่งไหนสำคัญกว่าแล้วดูแลฝั่งนั้น",
+    squeeze: "ครูกำลังบีบหมากของคุณ ลมหายใจเหลือน้อยแล้ว", "33": "ครูบุกเข้าจุด 3-3 ในมุมของคุณ มุมนี้จะเป็นของใครตัดสินกันตอนนี้",
+    kakari: "ครูเข้ามาแย่งมุมที่คุณจับไว้ ลองตอบให้มุมยังเป็นของคุณ" };
+  async function explainMine(moves, m) {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    if (m === PASS) { if (fresh("pass", 99, moves.length)) say("ครูขอผ่านนะ ไม่มีจุดไหนได้แต้มเพิ่มแล้ว ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย เกมจะจบและนับแต้ม"); return; }
+    const [ex] = await queue(() => my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m])) || [];
+    if (!ex || my !== tok) return;
+    const t = ex.why.find(x => THREAT[x.k]);
+    if (!t) return;
+    const rg = regionAt(boardOf(s.n, moves), m);
+    if (!fresh(t.k + "|" + rg, t.k === "atari" ? 4 : 12, moves.length)) return;
+    say(`<span class="co-warn">ระวัง! ครูเดิน <b>${name(s.n, m)}</b> (${rg})</span><br>${THREAT[t.k]}`);
+  }
+
+  // when the player asks why the teacher played a move: always answer
+  async function whyTeacher(moves, m) {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    if (m === PASS) { say("ครูผ่านเพราะไม่มีจุดไหนได้แต้มเพิ่มแล้ว"); return; }
+    const [ex] = await queue(() => my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m])) || [];
+    if (!ex || my !== tok) return;
+    const r = ex.why.filter(x => !x.neg)[0], t = ex.why.find(x => THREAT[x.k]);
+    let h = `ครูเดิน <b>${name(s.n, m)}</b> (${regionAt(boardOf(s.n, moves), m)}): ${esc(r ? r.t : "ทำให้รูปหมากครูแข็งแรง")}`;
+    if (t) h += `<br><span class="co-warn">${THREAT[t.k]}</span>`;
+    say(h);
+  }
+
+  // ---------- typed questions ----------
+  async function status() {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    const ev = await queue(() => my !== tok ? null : AI.evaluate(s.n, s.moves, api.komi()));
+    if (!ev || my !== tok) return;
+    const b = boardOf(s.n, s.moves), meSign = b.toPlay === s.human ? 1 : -1;
+    const myLead = meSign * ev.lead;
+    let h = `<b>ตอนนี้</b> ${Math.abs(myLead) < 1 ? "สูสีกันมาก" : myLead > 0 ? `คุณนำ ~${pts(myLead)} แต้ม` : `ครูนำ ~${pts(myLead)} แต้ม`} (รวมโคมิแล้ว)`;
+    h += overview(b, s.n, ev, s.human);
+    say(h);
+  }
+  // the whole board: territory by region, weak groups, and big empty areas
+  function overview(b, n, ev, me) {
+    const sideOf = c => c === me ? "ของคุณ" : "ของครู";
+    const sign = ev.pla === BLACK ? 1 : -1; // own is from the player to move
+    const area = {}, open = {};
+    for (const p of b.pts) {
+      const rg = regionAt(b, p), v = ev.own[oi(b, p)] * sign;
+      area[rg] = (area[rg] || 0) + v;
+      if (b.color[p] === 0 && Math.abs(v) < 0.3) open[rg] = (open[rg] || 0) + 1;
+    }
+    let h = "";
+    const mine = [], theirs = [];
+    for (const [rg, v] of Object.entries(area)) if (Math.abs(v) >= 8) ((v > 0) === (me === BLACK) ? mine : theirs).push(rg);
+    if (mine.length) h += `<br>🟢 พื้นที่${sideOf(me)}: ${mine.join(", ")}`;
+    if (theirs.length) h += `<br>🔴 พื้นที่${sideOf(3 - me)}: ${theirs.join(", ")}`;
+    const wide = Object.entries(open).filter(([, k]) => k >= 14).sort((a, z) => z[1] - a[1]).map(([rg]) => rg).slice(0, 3);
+    if (wide.length) h += `<br>⬜ ที่ว่างใหญ่ที่ยังไม่มีใครจอง: ${wide.join(", ")}`;
+    const weak = weakGroups(b, n, ev);
+    if (weak.length) h += `<br>⚠️ กลุ่มที่ยังไม่ปลอดภัย: ${weak.slice(0, 3).map(w => `กลุ่ม${w.c === me ? "ของคุณ" : "ของครู"} ${w.size} เม็ดที่${w.where}`).join(", ")}`;
+    return h;
+  }
+  function weakGroups(b, n, ev) {
+    const sign = ev.pla === BLACK ? 1 : -1, out = [];
+    for (const [, g] of chains(b)) {
+      if (g.stones.length < 2) continue;
+      const life = g.stones.reduce((s, p) => s + ev.own[oi(b, p)] * sign, 0) / g.stones.length * (g.c === BLACK ? 1 : -1);
+      if (life < 0.45 && life > -0.75) out.push({ c: g.c, size: g.stones.length, where: centre(b, n, g.stones), life });
+    }
+    return out.sort((a, z) => z.size - a.size);
+  }
+  async function dangers() {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    const ev = await queue(() => my !== tok ? null : AI.evaluate(s.n, s.moves, api.komi()));
+    if (!ev || my !== tok) return;
+    const b = boardOf(s.n, s.moves), w = weakGroups(b, s.n, ev);
+    if (!w.length) { say("ตอนนี้ยังไม่มีกลุ่มไหนน่าห่วงเลย ทุกกลุ่มมีที่สร้างห้องพอ ไปจองที่ใหญ่ๆ ได้สบายใจ"); return; }
+    const mine = w.filter(x => x.c === s.human), theirs = w.filter(x => x.c !== s.human);
+    let h = "";
+    if (mine.length) h += `<b>กลุ่มของคุณที่ต้องดูแล:</b> ${mine.slice(0, 3).map(x => `${x.size} เม็ดที่${x.where}`).join(", ")}<br>ทางแก้คือขยายออกไปที่ว่าง เชื่อมกับกลุ่มที่แข็งแรง หรือสร้างสองห้อง`;
+    if (theirs.length) h += `${h ? "<br>" : ""}<b>กลุ่มของครูที่ยังอ่อน:</b> ${theirs.slice(0, 3).map(x => `${x.size} เม็ดที่${x.where}`).join(", ")}<br>ลองบุกจากด้านนอก ปิดทางหนี แต่อย่าเข้าไปใกล้จนหมากเราเองโดนตัด`;
+    say(h);
+  }
+  async function bigPicture() {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    const ev = await queue(() => my !== tok ? null : AI.evaluate(s.n, s.moves, api.komi()));
+    if (!ev || my !== tok) return;
+    const b = boardOf(s.n, s.moves), ph = phaseOf(b, s.n, s.moves.length, ev);
+    phaseTold[ph] = true;
+    say(PHASE_TALK[ph] + (ph === "open" ? cornerHint(b, s.n) : "") + overview(b, s.n, ev, s.human));
+  }
+  async function aboutPoint(p) {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    const b = boardOf(s.n, s.moves);
+    if (b.color[p] === BLACK || b.color[p] === WHITE) { say(`${name(s.n, p)} มีหมาก${CN[b.color[p]]}อยู่แล้วนะ`); return; }
+    if (!s.myTurn) { say("รอครูเดินก่อนนะ แล้วถามครูใหม่อีกที"); return; }
+    if (!b.isLegal(p, b.toPlay)) { say(`${name(s.n, p)} วางไม่ได้นะ (เป็นจุดห้ามเดิน เช่นโค หรือวางแล้วไม่มีลมหายใจเลย)`); return; }
+    const wait = say(`ขอครูอ่าน ${name(s.n, p)} แป๊บนึงนะ…`);
+    const out = await queue(async () => {
+      if (my !== tok) return null;
+      const r = picks && picks.key === keyOf(s.moves) ? picks : null;
+      const ref = r ? r.list[0].move : (await AI.think(s.n, s.moves, api.komi(), { visits: 600, timeMs: 2000, batch: 8, shouldStop: () => my !== tok })).move;
+      const [evR, evP] = await AI.evalMany(s.n, [s.moves.concat([ref]), s.moves.concat([p])], api.komi());
+      const [ex] = await Analysis.explainFor(AI, s.n, s.moves, [p]);
+      return { ref, loss: ref === p ? 0 : Math.max(0, evP.lead - evR.lead), ex };
+    });
+    if (!out || my !== tok) { wait.remove(); return; }
+    const g = gradeOf(out.loss), good = out.ex.why.filter(x => !x.neg && !x.fb).slice(0, 2), bad = out.ex.why.filter(x => x.neg);
+    let h = `ถ้าเดิน <b>${name(s.n, p)}</b> · <span class="g-t g-${g.cls}">${g.t}</span>${out.loss > 0.8 ? ` (เสียราว ${pts(out.loss)} แต้มเทียบกับ ${name(s.n, out.ref)})` : ""}`;
+    if (good.length) h += `<ul>${good.map(x => `<li>${esc(x.t)}</li>`).join("")}</ul>`;
+    if (bad.length) h += `<div class="co-warn">ข้อเสีย: ${esc(bad[0].t)}</div>`;
+    h += `<div class="co-acts"><button type="button" data-see="${p}">👀 ดูบนกระดาน</button><button type="button" class="co-go" data-play="${p}">เดิน ${name(s.n, p)}</button></div>`;
+    wait.querySelector(".co-b").innerHTML = h;
+  }
+  async function aboutMyLast() {
+    const s = st(), i = myLast(s);
+    if (i === null) { say("คุณยังไม่ได้เดินเลยนะ ลองเลือกจากตัวเลือกที่ครูให้ดูก่อนก็ได้"); return; }
+    const AI = api.ai(), my = tok, moves = s.moves.slice(0, i), m = s.moves[i];
+    const out = await queue(async () => {
+      if (my !== tok) return null;
+      const t = await AI.think(s.n, moves, api.komi(), { visits: 600, timeMs: 2000, batch: 8, shouldStop: () => my !== tok });
+      const [evR, evP] = await AI.evalMany(s.n, [moves.concat([t.move]), moves.concat([m])], api.komi());
+      const ex = (await Analysis.explainFor(AI, s.n, moves, [m]))[0];
+      const ex2 = t.move === m ? ex : (await Analysis.explainFor(AI, s.n, moves, [t.move]))[0];
+      return { ref: t.move, loss: t.move === m ? 0 : Math.max(0, evP.lead - evR.lead), ex, ex2 };
+    });
+    if (!out || my !== tok) return;
+    const g = gradeOf(out.loss), good = out.ex.why.filter(x => !x.neg && !x.fb), bad = out.ex.why.filter(x => x.neg);
+    let h = `ตาที่คุณเดิน <b>${name(s.n, m)}</b> · <span class="g-t g-${g.cls}">${g.t}</span>${out.loss > 0.8 ? ` (เสียราว ${pts(out.loss)} แต้ม)` : ""}`;
+    if (good.length) h += `<br>ข้อดี: ${esc(good[0].t)}`;
+    if (bad.length) h += `<br><span class="co-warn">ข้อเสีย: ${esc(bad[0].t)}</span>`;
+    if (out.loss > 0.8) { const w = out.ex2.why.find(x => !x.neg); h += `<br>ตาที่ดีกว่าคือ <b>${name(s.n, out.ref)}</b>${w ? `: ${esc(w.t)}` : ""}<div class="co-idea">💡 ${ideaOf(out.ex2.why)}</div>`; }
+    say(h);
+  }
+  async function aboutTeacherLast() {
+    const s = st();
+    let i = -1; for (let k = s.moves.length - 1; k >= 0; k--) if ((k % 2 === 0 ? BLACK : WHITE) !== s.human) { i = k; break; }
+    if (i < 0) { say("ครูยังไม่ได้เดินเลยนะ"); return; }
+    await whyTeacher(s.moves.slice(0, i), s.moves[i]);
+  }
+  async function ask(text) {
+    const t = text.trim(); if (!t) return;
+    bubble(esc(t), "me");
+    const s = st(), p = parsePoint(s.n, t);
+    if (/^(สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi)/i.test(t)) { say("สวัสดีครับ ครูมิชิโอะเอง ถามได้ทุกเรื่องเลยนะ เช่น “ควรเดินตรงไหน” “ทำไมครูเดินตานั้น” “ใครนำอยู่” หรือพิมพ์จุดเช่น “D4 ดีไหม”"); return; }
+    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีครับ เล่นต่อเลย ตาไหนคิดไม่ออกกดแนะนำได้ ถ้าเดินพลาดหนักครูจะบอกเอง 😊"); return; }
+    if (p !== null && /ครู|เขา|ทำไม/.test(t)) {
+      const b = boardOf(s.n, s.moves);
+      if (b.color[p] && b.color[p] !== s.human) { const i = s.moves.lastIndexOf(p); if (i >= 0) { await whyTeacher(s.moves.slice(0, i), p); return; } }
+    }
+    if (p !== null) { await aboutPoint(p); return; }
+    if (/ทำไม.*ครู|ครู.*(เดิน|ลง|วาง)|ตา(ของ)?ครู|ครูกำลัง|เขาเดิน|บอท|AI เดิน/i.test(t)) { await aboutTeacherLast(); return; }
+    if (/(ตา|หมาก)(ที่)?(ฉัน|ผม|หนู|เรา|ของฉัน|ของผม)|(ฉัน|ผม|หนู|เรา)(เดิน|ลง|วาง)|ตา(ที่)?(แล้ว|เมื่อกี้|ก่อน)|เมื่อกี้.*(ดี|พลาด)|พลาดไหม|ดีไหม/.test(t)) { await aboutMyLast(); return; }
+    if (/ภาพรวม|แผน|ควรทำอะไร|ต้องทำอะไร|แนวคิด|มุมมอง|ช่วงนี้|เป้าหมาย|กลยุทธ์/.test(t)) { await bigPicture(); return; }
+    if (/ควร|เดินไหน|เดินตรงไหน|ลงตรงไหน|วางตรงไหน|แนะนำ|ช่วยด้วย|ช่วยหน่อย|ไม่รู้|ทางเลือก|ตัวเลือก|ช้อย|ต่อไป|hint|เดินอะไร/i.test(t)) { await suggest(true); return; }
+    if (/ใคร.*(นำ|ชนะ|เปรียบ)|สถานการณ์|นำกี่|ตามกี่|แต้มตอนนี้|คะแนนตอนนี้|สกอร์/.test(t)) { await status(); return; }
+    if (/อันตราย|กลุ่ม|ตายไหม|รอดไหม|จะตาย|อ่อน/.test(t)) { await dangers(); return; }
+    if (/ทำอะไร|หลักการ|19/.test(t)) { await bigPicture(); return; }
+    for (const [re, ans] of GLOSSARY) if (re.test(t)) { say(ans); return; }
+    say("ครูยังไม่เข้าใจคำถามนี้ 😅 ลองถามแบบนี้ดูนะ: “ควรเดินตรงไหน” · “ภาพรวมตอนนี้” · “ทำไมครูเดินตานั้น” · “ตาที่ฉันเดินดีไหม” · “ใครนำอยู่” · พิมพ์จุดเช่น “Q16 ดีไหม” · หรือถามคำศัพท์ เช่น “ห้องคืออะไร” “อะตาริ” “โค” “เซนเต”");
+  }
+
+  // ---------- the game tells the coach what happened ----------
+  // a move was played: comment on it. The choices come only when the player asks (the แนะนำ button, owner 2026-11-01)
+  api.moved = function (moves, mover) {
+    if (!on) return;
+    const s = st(), prev = picks, before = moves.slice(0, -1), m = moves[moves.length - 1];
+    tok++; picks = null; api.marks([]); $("coPicks").innerHTML = ""; setChips();
+    if (mover === s.human) queue(() => judgeMine(prev, before, m)); // one queued step, so the teacher waits for the whole review
+    else explainMine(before, m).then(() => setChips());
+  };
+  api.turn = () => { if (on) setChips(); };
+  api.hint = () => { if (!on) return; bubble("แนะนำหน่อยครับ", "me"); suggest(true); };
+  api.start = function (o) {
+    E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
+    on = !!o; tok++; picks = null; phaseTold = {}; warned.clear();
+    document.body.classList.toggle("coaching", on);
+    $("coach").hidden = !on; $("coach").classList.remove("open");
+    if (!on) { api.marks([]); return; }
+    $("coLog").innerHTML = "";
+    const s = st();
+    if (o.resume) say(`กลับมาเล่นต่อแล้ว ครูจำกระดานได้ เดี๋ยวช่วยดูให้นะ`);
+    else say(`สวัสดีครับ ครูมิชิโอะเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ ระหว่างเกมครูจะพูดเฉพาะตอนสำคัญ เช่น ตอนต้องระวัง หรือตอนที่เดินพลาดหนัก แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
+    setChips(); renderBusy();
+  };
+  api.stop = () => { on = false; tok++; document.body.classList.remove("coaching"); $("coach").hidden = true; };
+  api.active = () => on;
+
+  // ---------- wiring ----------
+  function wire() {
+    $("coForm").addEventListener("submit", e => { e.preventDefault(); const v = $("coIn").value; $("coIn").value = ""; ask(v); });
+    $("coOpen").onclick = () => { $("coach").classList.add("open"); $("coLog").scrollTop = $("coLog").scrollHeight; };
+    $("coClose").onclick = () => $("coach").classList.remove("open");
+    $("coLog").addEventListener("click", e => { if (!e.target.closest("button") && !$("coach").classList.contains("open") && matchMedia("(max-aspect-ratio: 9/8)").matches) $("coOpen").onclick(); });
+    $("coach").addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.q) { ask(b.dataset.q); return; }
+      if (b.dataset.see !== undefined) {
+        const p = +b.dataset.see; api.preview(p);
+        const x = picks && picks.list.find(y => y.move === p);
+        if (x && b.classList.contains("co-pk")) { // a choice button under the board: say why in a line
+          const r = x.why.find(y => !y.neg);
+          say(`${x.letter} <b>${name(picks.n, p)}</b> ${x.trap ? `ระวัง! เสียราว ${pts(x.loss)} แต้ม` : esc(r ? r.t : "")} · กด<b>วางหมาก</b>เพื่อเดินตานี้`);
+        }
+        $("coach").classList.remove("open");
+        return;
+      }
+      if (b.dataset.play !== undefined) { $("coach").classList.remove("open"); api.play(+b.dataset.play); }
+    });
+  }
+  let wired = false;
+  const _start = api.start;
+  api.start = o => { if (!wired) { wired = true; wire(); } _start(o); };
+  return api;
+})();
+
 </script>
 <script>
 (function () {
@@ -3590,6 +4194,14 @@ const Tsumego = (() => {
     { id: "tutorial", en: "TUTORIAL", name: "คัมภีร์สอนเล่น", country: "", rank: "มือใหม่เริ่มที่นี่", style: "balance", tutorial: true, search: {},
       bio: "ไม่เคยเล่นโกะมาก่อน? เริ่มที่นี่ ลุงวินสอนกติกาทีละขั้นบนกระดาน 9×9 ตั้งแต่วางหมาก การกิน โค ตา ไปจนถึงการนับแต้ม พร้อมแบบฝึกให้ลองแตะเล่นเอง",
       say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
+    // beginner coach (owner 2026-11-01, not live yet): plays a gentle 19x19 game with HumanSL at 15 kyu, and during the
+    // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
+    // (src/coach.js). Choice A is HumanSL at 9 dan's best move (its search judges positions with KataGo b10); the other
+    // choices are good moves that the same network finds natural, checked with KataGo b10
+    { id: "michio", en: "KRU MICHIO", name: "ครูมิชิโอะ", country: "ญี่ปุ่น", rank: "โค้ชมือใหม่ 19×19", style: "balance", coach: true, levels: true, brain: "human", profile: "rank_15k",
+      search: { temperature: 0.8, local: 3, keepTerritory: true }, // used only before a level is set; FON_LV holds each level's settings
+      bio: "ครูสอนหมากล้อมใจดีชาวญี่ปุ่น สำหรับคนที่เพิ่งเล่นกระดานใหญ่ 19×19 ครั้งแรก เลือกระดับฝีมือครูได้ตั้งแต่ 15 คิวถึง 1 ดั้ง ระหว่างเล่นครูจะเลือกตาให้ 3 ทาง (A B C) พร้อมบอกเหตุผลและแนวคิดของแต่ละตา เลือกตามหรือเดินเองก็ได้ และพิมพ์แชทถามครูได้ตลอดเกม",
+      say: { hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย", ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ", behind: "เก่งขึ้นเยอะเลย!", win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก", lose: "ชนะครูแล้ว! เก่งมากเลย" } },
     { id: "mek", en: "MEK", name: "เมฆ", country: "ไทย", rank: "15 คิว", style: "balance", brain: "human", profile: "rank_15k", search: { temperature: 1.0, local: 3, keepTerritory: true },
       bio: "เด็ก ม.6 เพิ่งหัดเล่นโกะ เดินตามความรู้สึก",
       say: { hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย", ahead: "เอ๊ะ ผมนำอยู่เหรอ", behind: "โห พี่เล่นเก่งจัง", win: "ชนะแล้ว! ไม่อยากเชื่อเลย", lose: "สอนผมบ้างได้ไหมครับ" } },
@@ -3674,6 +4286,22 @@ const Tsumego = (() => {
   // goodMove/badMove: the player's last move moved their winning chance a lot; caught: the player captured
   // the character's stones; capture: the character captured; comeback: the character turned a lost game around.
   const TALK = {
+    michio: {
+      hello: "มาเล่นกระดานใหญ่ด้วยกันนะ ตาไหนคิดไม่ออก กดแนะนำได้เลย",
+      caught: "โอ๊ะ ครูโดนกินไป {n} เม็ด เก่งมาก!|กินได้ {n} เม็ด ดีมาก แบบนี้แหละ",
+      capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
+      humanPass: "ผ่านแล้วเหรอ ถ้ายังมีที่ได้แต้ม ลองถามครูก่อนนะ|ผ่านได้เมื่อไม่มีจุดได้แต้มแล้วนะ",
+      aiPass: "ครูผ่านนะ ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย",
+      ko: "อันนี้คือโค กินคืนทันทีไม่ได้ ต้องไปเดินที่อื่นก่อนหนึ่งตานะ",
+      slow: "คิดไม่ออกใช่ไหม ลองดูตัวเลือก A B C ที่ครูให้ หรือพิมพ์ถามครูก็ได้นะ",
+      byoyomi: "เข้าเบียวโยมิแล้ว ต้องเดินภายใน 30 วินาทีนะ",
+      ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ",
+      behind: "เก่งขึ้นเยอะเลย! คุณนำครูแล้ว",
+      win: "เกมนี้ครูชนะ แต่คุณเรียนรู้ไปเยอะมาก ลองกดวิเคราะห์เกมดูนะ",
+      lose: "ชนะครูแล้ว! เก่งมากเลย พร้อมไปเจอเมฆแล้วล่ะ",
+      resigned: "ไม่เป็นไรนะ เกมหน้าลองใหม่ ครูอยู่ตรงนี้เสมอ",
+      giveUp: "ครูยอมแล้ว คุณเล่นดีมาก!"
+    },
     mek: {
       hello: "เพิ่งหัดเล่นนะครับ เบามือหน่อย|ครูที่โรงเรียนบอกให้มาลองเล่นกับคนเก่งๆ ครับ|ผมจำกติกาได้แล้วนะ น่าจะได้…มั้ง",
       goodMove: "หา? ตานี้เก่งมากเลยพี่|เดินแบบนี้ก็ได้เหรอ จดไว้ก่อน|ว้าว ผมไม่ได้คิดถึงตรงนั้นเลย",
@@ -4055,11 +4683,22 @@ const Tsumego = (() => {
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
-  const settings = { size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
+  // Kru Michio's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
+  const FON_LV = {
+    15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
+    10: { name: "10 คิว", search: { profile: "rank_10k", temperature: 0.8, local: 3, keepTerritory: true } },
+    8: { name: "8 คิว", search: { profile: "rank_8k", temperature: 0.8, local: 3, keepTerritory: true } },
+    6: { name: "6 คิว", search: { profile: "rank_6k", temperature: 0.8, local: 3, keepTerritory: true } },
+    3: { name: "3 คิว", search: { profile: "rank_3k", temperature: 0.7, local: 3, keepTerritory: true } },
+    1: { name: "1 ดั้ง", search: { profile: "rank_1d", visits: 12, local: 3 } }
+  };
+  const fonLvOf = v => FON_LV[v] ? +v : 15;
+  let fonLv = 15; // the level of the game on the board
+  const settings = { fonLv: fonLvOf(load("fonLv", 15)), size: load("size", 19), human: load("human", BLACK), char: load("char8", 4), handi: load("handi", 1), bonus: load("bonus", 0) };
   // the pick is saved by id so adding a character doesn't move anyone's choice
   const savedId = load("charId", null), byId = CHARS.findIndex(c => c.id === savedId);
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
-  if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 2 : 1;
+  if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 3 : 2; // and the coach (inserted at 1)
   if (!CHARS[settings.char]) settings.char = 5;
   // komi 7.5 in an even game; 0.5 with handicap stones (Sai only), set per game by newGame / resumeGame
   let KOMI = 7.5, handi = 0;
@@ -4086,7 +4725,7 @@ const Tsumego = (() => {
     handiPoints(k).forEach(([x, y], i) => { if (i) out.push(PASS); out.push(b.pt(x, y)); });
     return out;
   }
-  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse";
+  let n, board, history, human, ai, thinking = false, think = null, hint = null, hover = null, pending = null, lastPtr = "mouse", coachMarks = [];
   let winBlack = 0.5, leadBlack = 0, over = null, scoring = null, gameChar = 6, hopeless = 0, examBehind = 0;
   // AI test match (?match=black,white, character ids): both sides are characters and the page plays the game by itself,
   // sending it to the stats page as a match (kept apart from players' games). Run by .github/workflows/ai-match.yml
@@ -4243,7 +4882,7 @@ const Tsumego = (() => {
       })();
       if (MATCH) startMatch();
       else if (EXAMBOT !== null) startExamBot();
-      else if (board) { render(); maybeAI(); startPonder(); }
+      else if (board) { render(); maybeAI(); startPonder(); Coach.turn(); }
     } catch (e) {
       console.error(e);
       el.textContent = "โหลดสมอง AI ไม่สำเร็จ: " + e.message;
@@ -4255,6 +4894,7 @@ const Tsumego = (() => {
   // pri: a line about this move only replaces one said on the same move if it matters as much;
   // gap: skip unless the character has been quiet for that many moves; once: a kind is used once a game
   let saidKinds = new Set(), saidLines = new Set(), spokeAt = -99, spokePri = 0;
+  const COACH_TALK = new Set(["hello", "capture", "humanPass", "ko", "slow", "byoyomi", "lastPeriod", "win", "lose", "timeoutWin", "resigned", "giveUp"]);
   function speak(kind, o = {}) {
     const at = history.length, pri = o.pri || 0;
     if (!o.force) {
@@ -4265,8 +4905,11 @@ const Tsumego = (() => {
     const c = CHARS[gameChar], all = (TALK[c.id][kind] || c.say[kind] || "").split("|").filter(Boolean);
     if (!all.length) return false;
     const fresh = all.filter(l => !saidLines.has(l)), list = fresh.length ? fresh : all;
+    // the coach speaks only at moments that teach or need care, and never says the same sentence twice (owner 2026-11-02)
+    if (c.coach && Coach.active() && (!COACH_TALK.has(kind) || !fresh.length)) return false;
     const line = list[(Math.random() * list.length) | 0];
     saidKinds.add(kind); saidLines.add(line); spokeAt = at; spokePri = pri;
+    if (c.coach && Coach.active()) { Coach.say(line.replace("{n}", o.n)); return true; } // the coach talks in her chat
     const q = $("quote");
     q.hidden = false;
     q.innerHTML = `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
@@ -4486,6 +5129,7 @@ const Tsumego = (() => {
     handi = 0; KOMI = 7.5;
     if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
     bonus = MATCH || EXAMBOT !== null ? 0 : bonusFor(gameChar, settings.bonus);
+    fonLv = fonLvOf(settings.fonLv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     exam = CHARS[gameChar].exam ? { grades: [] } : null; ponder = null;
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
@@ -4497,11 +5141,12 @@ const Tsumego = (() => {
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
       $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
+    Coach.start(coachOn() ? {} : null);
     speak("hello", { force: true }); hopeless = 0; examBehind = 0;
     gameId = rid(); gameReported = false; liveAt = Date.now(); track({ type: "start", size: n, color: human, state: snapshot() });
     saveGame();
@@ -4577,7 +5222,7 @@ const Tsumego = (() => {
     if (p !== PASS) clack();
     const mover = board.toPlay, caps = board.caps[mover];
     clockMoved(mover);
-    board.play(p); history.push(p); hint = null; pending = null;
+    board.play(p); history.push(p); hint = null; pending = null; coachMarks = [];
     liveUpdate();
     const took = board.caps[mover] - caps;
     if (board.passes >= 2) startScoring();
@@ -4585,11 +5230,12 @@ const Tsumego = (() => {
     else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
     render();
     saveGame();
+    if (Coach.active() && !over && !scoring) Coach.moved(history.slice(), mover);
     if (!over && !scoring) { if (board.toPlay === human) { humanSince = performance.now(); slowTold = false; } maybeAI(); startPonder(); botHumanMove(); }
   }
   // leaving the game screen: an unfinished game is kept (clocks stopped) and can be continued from the profile page
   function leaveGame() {
-    cancelAI();
+    cancelAI(); Coach.stop();
     if (board && !over && !scoring && history.length && $("game").hidden === false) { gameAway = true; awayAt = Date.now(); saveGame(); }
     else if (!gameAway) save("game", null);
   }
@@ -4598,14 +5244,14 @@ const Tsumego = (() => {
   function saveGame() {
     if (!board || MATCH) return;
     if (over || scoring) { save("game", null); return; }
-    save("game", { char: CHARS[gameChar].id, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
+    save("game", { char: CHARS[gameChar].id, lv: fonLv, n, human, handi, bonus, history, clocks, gameId, grades: exam ? exam.grades : null, at: gameAway ? awayAt : Date.now(), away: gameAway });
   }
   function resumeGame(g) {
     const i = CHARS.findIndex(c => c.id === g.char);
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
-    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus);
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus); fonLv = fonLvOf(g.lv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
@@ -4617,7 +5263,7 @@ const Tsumego = (() => {
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
       $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : `${ch.rank} · ${ch.country}`;
+      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
@@ -4625,6 +5271,7 @@ const Tsumego = (() => {
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
     gameId = g.gameId || rid(); gameReported = false; gameAway = false; examMode = !!CHARS[gameChar].exam;
     hideScreens(); $("game").hidden = false; document.body.classList.add("playing");
+    Coach.start(coachOn() ? { resume: true } : null);
     resize(); render(); maybeAI(); startPonder();
     return true;
   }
@@ -4967,7 +5614,7 @@ const Tsumego = (() => {
   const secretOpen = () => true; // owner 2026-11-01: special characters open to everyone
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
-  const searchFor = ch => ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
+  const searchFor = ch => ch.levels ? FON_LV[fonLv].search : ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
   async function maybeAI() {
     matchTurn();
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
@@ -4977,6 +5624,7 @@ const Tsumego = (() => {
     const minThink = async () => { const w = 1000 - (Date.now() - started); if (w > 0) await new Promise(r => setTimeout(r, w)); };
     await new Promise(r => setTimeout(r, 30));
     await judgeHumanMove();
+    if (Coach.active()) await Coach.idle(); // the coach's reading shares the HumanSL network: let it finish first
     if (my !== gen) return;
     const job = exam ? gradeJob() : null;
     const book = exam ? null : openingMove();
@@ -5160,6 +5808,7 @@ const Tsumego = (() => {
   };
   $("btnHint").onclick = async () => {
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
+    if (Coach.active()) { unlockAudio(); blip(700); Coach.hint(); return; } // Kru Michio answers with his three choices
     const my = ++gen; thinking = true; think = null; speak("hint", { gap: 6 }); render();
     let res;
     try {
@@ -5425,13 +6074,23 @@ const Tsumego = (() => {
     if (!reviewing && hover !== null && engineReady && !thinking && !over && !scoring && board.toPlay === human && board.isLegal(hover, human)) {
       const [x, y] = board.xy(hover); drawStone(P(x), P(y), r, human, .45);
     }
+    if (!reviewing && coachMarks.length && board.toPlay === human && !over && !scoring) { // the coach's choices A B C
+      const COL = { best: "#57c26b", good: "#c4d45a", normal: "#e0a552", bad: "#e0603e" };
+      for (const m of coachMarks) {
+        if (board.color[m.p] !== EMPTY || m.p === pending) continue;
+        const [x, y] = board.xy(m.p);
+        g.fillStyle = COL[m.cls] || COL.good; g.strokeStyle = "rgba(42,26,11,.75)"; g.lineWidth = Math.max(1, cell / 22);
+        g.beginPath(); g.arc(P(x), P(y), r * .78, 0, 7); g.fill(); g.stroke();
+        g.fillStyle = "#1a1208"; g.font = `700 ${Math.max(9, cell * .52)}px "IBM Plex Mono", monospace`; g.fillText(m.label, P(x), P(y) + cell * .03);
+      }
+    }
     if (!reviewing && pendingOk()) { // stone waiting for confirmation: see-through with a red dot
       const [x, y] = board.xy(pending); drawStone(P(x), P(y), r, human, .7);
       g.fillStyle = "#e0402e"; g.beginPath(); g.arc(P(x), P(y), r * .3, 0, 7); g.fill();
     }
   }
 
-  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus");
+  const syncSize = seg("segSize", "size"); seg("segColor", "human"); seg("segHandi", "handi"); seg("segBonus", "bonus"); seg("segFon", "fonLv");
   // home screen: arcade-style character select, one featured card with its neighbours either side
   // the opponents only: the tutorial book and the placement test have their own rows on the main menu
   // special characters (Sai, Takemiya) share one slot: a "Special Character" card that opens a choice between them.
@@ -5473,6 +6132,7 @@ const Tsumego = (() => {
     $("faces").hidden = examMode;
     // Sai: the player always holds black and picks 1-9 handicap stones instead of a colour
     $("segColor").closest(".opt").hidden = !!CHARS[settings.char].handicap; $("optHandi").hidden = !CHARS[settings.char].handicap;
+    $("optFon").hidden = !CHARS[settings.char].levels || examMode;
     $("optBonus").hidden = !bonusFor(settings.char, 10) || examMode || (CHARS[settings.char].special && spView !== "char");
     const spHead = '<button class="cexam sp-head" data-sp="pick">SPECIAL CHARACTER</button>';
     const spCard = sp === "cover"
@@ -5540,6 +6200,23 @@ const Tsumego = (() => {
     if (CHARS[settings.char].book) await loadBook(CHARS[settings.char]); // Go Seigen's first move already comes from his games
     $("home").hidden = true; $("game").hidden = false; document.body.classList.remove("arcade"); document.body.classList.add("playing"); window.scrollTo(0, 0); newGame(); }
   $("btnNew").onclick = () => { unlockAudio(); startGame(); };
+  // the beginner coach in a game with Kru Michio
+  const coachOn = () => !!CHARS[gameChar].coach && !MATCH && EXAMBOT === null;
+  const COACH_PROFILE = "rank_9d"; // the coach's best move: HumanSL at its strongest (owner 2026-11-01)
+  Coach.E = E;
+  Coach.ai = () => engineReady ? AI : null;
+  Coach.evalMs = () => evalMs;
+  Coach.komi = () => KOMI;
+  Coach.state = () => ({ n, moves: history ? history.slice() : [], human, live: !!board && !over && !scoring,
+    myTurn: !!board && engineReady && !over && !scoring && !thinking && reviewAt === null && board.toPlay === human });
+  Coach.humanAI = async () => {
+    const st = brains.human; if (!st || !st.ai || thinking) return null;
+    const a = st.ai; if (a.big.getProfile() !== COACH_PROFILE) { a.big.setProfile(COACH_PROFILE); a.clearCache(); }
+    return a;
+  };
+  Coach.play = p => { if (!engineReady || over || scoring || thinking || board.toPlay !== human || !board.isLegal(p, human)) return; unlockAudio(); playMove(p); };
+  Coach.preview = p => { if (!board || board.toPlay !== human || !board.isLegal(p, human)) return; pending = p; blip(700); render(); };
+  Coach.marks = list => { coachMarks = list; drawBoard(); };
   // analysis board: from the home screen (a free board, or the last finished game) or from a finished game
   Analysis.E = E;
   Analysis.sound = Tutorial.sound = () => { unlockAudio(); clack(); };
@@ -5559,7 +6236,7 @@ const Tsumego = (() => {
   // ---------- main menu and profile ----------
   const MENU = [
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
-    { id: "play", t: "PLAY WITH AI", s: "เลือกคู่แข่ง 12 ตัวละคร" },
+    { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
