@@ -1721,8 +1721,8 @@
     const winBonus = ex.won ? (ex.margin >= 10 ? 2 : 1) : 0;
     // few mistakes adds one more: Bad moves 2% or less and Normal moves 10% or less of graded moves (site owner, 2026-11-02)
     const clean = 100 * cnt.bad / gs.length <= 2 && 100 * cnt.normal / gs.length <= 10 ? 1 : 0;
-    // and Best moves over 80% of graded moves add one, over 90% two (site owner, 2026-11-02)
-    const bestPct = 100 * cnt.best / gs.length, sharp = bestPct > 90 ? 2 : bestPct > 80 ? 1 : 0, bonus = winBonus + clean + sharp;
+    // and Best moves over 80% of graded moves add one (site owner, 2026-11-02)
+    const sharp = 100 * cnt.best / gs.length > 80 ? 1 : 0, bonus = winBonus + clean + sharp;
     const top = EXAM_BANDS[0][1];
     return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus, winBonus, clean, sharp,
       est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(top, estimateRank(score) + bonus) : null };
@@ -1736,7 +1736,7 @@
     const legend = Object.keys(cnt).map(k => `<span><i class="dot g-${k}"></i>${GRADE_LABEL[k]} ${cnt[k]} (${Math.round(cnt[k] / gs.length * 100)}%)</span>`).join("");
     const near = EXAM_CALIB.length ? EXAM_CALIB.reduce((a, b) => Math.abs(b.avg - score) < Math.abs(a.avg - score) ? b : a) : null;
     return `<div class="exam"><b>ผลสอบวัดระดับ</b>
-      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${winBonus ? `รวมโบนัสชนะฮิคารุ +${winBonus} ระดับ · ` : ""}${clean ? `รวมโบนัสเดินพลาดน้อย (Bad ไม่เกิน 2% และ Normal ไม่เกิน 10%) +1 ระดับ · ` : ""}${sharp ? `รวมโบนัส Best เกิน ${sharp > 1 ? 90 : 80}% +${sharp} ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" && !exam.won ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
+      <div class="exam-rank">${est === null ? "ยังไม่มีตารางเทียบ" : "ประมาณ " + rankName(est)}</div><div class="note">${winBonus ? `รวมโบนัสชนะฮิคารุ +${winBonus} ระดับ · ` : ""}${clean ? `รวมโบนัสเดินพลาดน้อย (Bad ไม่เกิน 2% และ Normal ไม่เกิน 10%) +1 ระดับ · ` : ""}${sharp ? `รวมโบนัส Best เกิน 80% +1 ระดับ · ` : ""}ผลประมาณการ คลาดได้ราว ±2 ระดับ${exam.how && exam.how !== "score" && !exam.won ? " · เกมนี้จบก่อนนับแต้ม ผลอาจคลาดมากกว่าปกติ ครั้งหน้าลองเล่นจนจบกระดานนะ" : ""}</div>
       <div class="gbar">${bar}</div><div class="glegend">${legend}</div>
       <p class="note">คะแนนเฉลี่ย ${score.toFixed(2)} ต่อตา (Best 0 · Good 1 · Normal 2 · Bad 3 ยิ่งน้อยยิ่งดี) · ไม่ใช่ Best ${Math.round(notBest)}% · เสียเฉลี่ย ${avg.toFixed(2)} แต้มต่อตา จาก ${gs.length} ตา${near ? ` · ใกล้เคียง${CHARS.find(c => c.id === near.id).name} (${rankName(estimateRank(near.avg))})` : ""} · กด ◀ ▶ เพื่อดูแต่ละตาและตาที่ดีกว่า</p></div>`;
   }
