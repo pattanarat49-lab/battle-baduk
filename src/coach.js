@@ -109,7 +109,7 @@ const Coach = (function () {
   // ---------- chat ----------
   function bubble(html, who) {
     const el = document.createElement("div");
-    el.className = "co-msg " + (who === "me" ? "me" : "coach");
+    el.className = "co-msg " + (who === "me" ? "me" : "bot"); // not "coach": that is the panel's own class
     el.innerHTML = who === "me" ? `<div class="co-b">${html}</div>` : `<img src="${FACE}" alt="" width="160" height="160"><div class="co-b">${html}</div>`;
     const log = $("coLog"); log.appendChild(el);
     while (log.children.length > 80) log.removeChild(log.firstChild);
