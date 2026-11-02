@@ -884,6 +884,26 @@
     } catch (e) {}
   }
   ping(); setInterval(ping, 12e4);
+  // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
+  const BUILD = "__BUILD__";
+  let verAt = 0, newBuild = false;
+  function checkVersion() {
+    if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
+    verAt = Date.now();
+    fetch("version.json?t=" + Date.now(), { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(j => {
+      if (!j || !j.v || j.v === BUILD) return;
+      newBuild = true;
+      if ($("game").hidden) { location.reload(); return; } // not in a game: just load the new one
+      if (!$("updBar")) {
+        const b = document.createElement("button");
+        b.id = "updBar"; b.textContent = "มีเวอร์ชันใหม่ · แตะเพื่ออัปเดต";
+        b.onclick = () => { try { saveGame(); } catch (e) {} location.reload(); };
+        document.body.appendChild(b);
+      }
+    }).catch(() => {});
+  }
+  setInterval(checkVersion, 5 * 6e4);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkVersion(); });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) ping(); });
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
   const LIVE_EVERY = MATCH ? 20000 : 60000; // a test match has no player to wait on: every 20 s
@@ -2115,7 +2135,7 @@
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
-  function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); }
+  function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
