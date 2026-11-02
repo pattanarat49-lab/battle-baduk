@@ -265,42 +265,73 @@ const Coach = (function () {
   }
 
   // ---------- comments on moves ----------
-  // after the player's move: which choice it was, or how it compares with them
+  // The coach stays quiet move by move (owner 2026-11-02): it speaks only when the player made a clear mistake,
+  // or when the teacher's move threatens something the player must answer. The same warning is never repeated.
+  const BLUNDER = 5;            // points lost by the player's move before the coach steps in
+  const warned = new Map();     // warning key -> move number it was given at
+  function fresh(key, gap, at) { const w = warned.get(key); if (w !== undefined && at - w < gap) return false; warned.set(key, at); return true; }
+  // after the player's move (runs as one queued step): silent unless it was a trap they were warned about, or it lost a lot of points
   async function judgeMine(prevPicks, moves, m) {
     const AI = api.ai(), s = st(), my = tok; if (!AI || m === PASS) return;
-    const hit = prevPicks && prevPicks.key === keyOf(moves) ? prevPicks.list.find(x => x.move === m) : null;
-    if (hit) {
-      say(hit.trap ? `เลือก ${hit.letter} ${name(s.n, m)} ทั้งที่ครูเตือนแล้วนะ 😅 ไม่เป็นไร ลองดูว่าครูจะตอบยังไง แล้วจะเห็นว่าทำไมมันเสีย` :
-        hit.grade.cls === "best" || hit.grade.cls === "good" ? `${["เยี่ยมเลย!", "ดีมาก!", "ถูกต้อง!"][(Math.random() * 3) | 0]} ${hit.letter} ${name(s.n, m)} ${hit.grade.t} 👍` : `เลือก ${hit.letter} ${name(s.n, m)} ก็ใช้ได้ แต่ ${prevPicks.list[0].letter} ดีกว่านิดนึงนะ`);
-      return;
+    const asked = prevPicks && prevPicks.key === keyOf(moves) ? prevPicks : null;
+    const hit = asked ? asked.list.find(x => x.move === m) : null;
+    if (hit && hit.trap) { say(`เลือก ${hit.letter} ${name(s.n, m)} ทั้งที่ครูเตือนแล้วนะ 😅 ลองดูว่าครูจะตอบยังไง แล้วจะเห็นว่าทำไมมันเสีย`); return; }
+    if (hit) return; // a good choice: nothing to add
+    // a quick look: how much the move lost compared with the position before it (both seen from the player)
+    const [ev0, ev1] = await (my !== tok ? null : AI.evalMany(s.n, [moves, moves.concat([m])], api.komi())) || [];
+    if (!ev0 || my !== tok) return;
+    if (ev0.lead + ev1.lead < BLUNDER) return; // ev0 is from the player to move, ev1 from the teacher
+    // a real mistake: find the better move (the choice A the player was shown, or a short b10 reading)
+    let better = asked ? asked.list[0].move : null;
+    if (better === null) {
+      const r = await (my !== tok ? null : AI.think(s.n, moves, api.komi(), { visits: 400, timeMs: 1500, batch: 8, top: 3, shouldStop: () => my !== tok }));
+      if (!r || my !== tok || !r.top.length) return;
+      better = r.top[0].move;
     }
-    if (!prevPicks || prevPicks.key !== keyOf(moves)) return; // no choices were shown for that position: nothing to compare
-    const A = prevPicks.list[0];
-    const [evA, evM] = await queue(() => my !== tok ? null : AI.evalMany(s.n, [moves.concat([A.move]), moves.concat([m])], api.komi())) || [];
-    if (!evA || my !== tok) return;
-    const loss = Math.max(0, evM.lead - evA.lead); // both from the opponent's side after the move
-    if (loss <= 1.5) { say(`${name(s.n, m)} เลือกเองก็ดีเหมือนกัน 👍 พอๆ กับที่ครูแนะนำเลย`); return; }
-    const [ex] = await queue(() => my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m])) || [];
-    if (!ex || my !== tok) return;
-    const bad = ex.why.filter(x => x.neg), good = ex.why.filter(x => !x.neg && !x.fb);
-    let h = `${name(s.n, m)} ${loss <= 4 ? "พอใช้ได้" : "เสียไปหน่อยนะ"} (ราว ${pts(loss)} แต้มเทียบกับ ${A.letter} ${name(s.n, A.move)})`;
-    if (good.length) h += `<br>ข้อดี: ${esc(good[0].t)}`;
-    if (bad.length) h += `<br><span class="co-warn">ข้อเสีย: ${esc(bad[0].t)}</span>`;
-    const aw = A.why.find(x => !x.neg);
-    if (aw) h += `<br>ส่วน ${name(s.n, A.move)} ดีกว่าเพราะ${esc(aw.t)}`;
+    if (better === PASS || better === m) return;
+    const [evB, evM] = await (my !== tok ? null : AI.evalMany(s.n, [moves.concat([better]), moves.concat([m])], api.komi())) || [];
+    if (!evB || my !== tok) return;
+    const loss = evM.lead - evB.lead; // both from the teacher's side after the move
+    if (loss < BLUNDER) return;
+    const ex = await (my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m, better])) || [];
+    if (my !== tok || !ex.length) return;
+    const wM = ex[0] ? ex[0].why : [], wB = ex[1] ? ex[1].why : [];
+    const bad = wM.find(x => x.neg), good = wB.find(x => !x.neg && !x.fb) || wB.find(x => !x.neg);
+    const b = boardOf(s.n, moves);
+    let h = `<span class="co-warn">ตาเมื่อกี้ <b>${name(s.n, m)}</b> เสียไปราว ${pts(loss)} แต้มนะ</span>`;
+    const [mx, my2] = b.xy(m), line = Math.min(mx, my2, s.n - 1 - mx, s.n - 1 - my2) + 1;
+    h += bad ? `<br>เพราะ${esc(bad.t)}` : line <= 2 && moves.length < 80 ? `<br>เพราะหมากบนเส้นที่ ${line} ติดขอบเกินไป ล้อมพื้นที่ได้น้อยมาก ช่วงนี้ควรเล่นเส้นที่ 3–4 ก่อน` : `<br>เพราะตรงนั้นเล็กไป ยังมีจุดที่ใหญ่กว่า หรือเร่งด่วนกว่านี้อยู่`;
+    h += `<br>ตรงนี้ดีกว่า: <b>${name(s.n, better)}</b> (${regionAt(b, better)})${good ? ` เพราะ${esc(good.t)}` : ""}`;
+    const tip = good && IDEA[good.k];
+    if (tip) h += `<br><span class="co-idea">💡 ${tip}</span>`;
     say(h);
   }
-  // after the teacher's move: what it was for, in a line
-  async function explainMine(moves, m, quiet) {
+  // after the teacher's move: a warning only when it threatens the player's stones or corner
+  const THREAT = { atari: "หมากของคุณเหลือลมหายใจเดียวแล้ว ถ้าไม่หนีหรือต่อ จะโดนกินนะ", kill: "ครูกำลังจะทำให้หมากกลุ่มนั้นของคุณไม่มีห้อง ระวังนะ",
+    attack: "ครูกำลังไล่โจมตีหมากที่ยังอ่อนของคุณ ลองหาทางทำห้องหรือหนีออกที่กว้าง", cut: "ครูตัดหมากของคุณให้ขาดจากกัน ลองดูว่าฝั่งไหนสำคัญกว่าแล้วดูแลฝั่งนั้น",
+    squeeze: "ครูกำลังบีบหมากของคุณ ลมหายใจเหลือน้อยแล้ว", "33": "ครูบุกเข้าจุด 3-3 ในมุมของคุณ มุมนี้จะเป็นของใครตัดสินกันตอนนี้",
+    kakari: "ครูเข้ามาแย่งมุมที่คุณจับไว้ ลองตอบให้มุมยังเป็นของคุณ" };
+  async function explainMine(moves, m) {
     const AI = api.ai(), s = st(), my = tok; if (!AI) return;
-    if (m === PASS) { say("ครูขอผ่านนะ ไม่มีจุดไหนได้แต้มเพิ่มแล้ว ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย เกมจะจบและนับแต้ม"); return; }
+    if (m === PASS) { if (fresh("pass", 99, moves.length)) say("ครูขอผ่านนะ ไม่มีจุดไหนได้แต้มเพิ่มแล้ว ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย เกมจะจบและนับแต้ม"); return; }
     const [ex] = await queue(() => my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m])) || [];
     if (!ex || my !== tok) return;
-    const r = ex.why.filter(x => !x.neg)[0];
-    const threat = ex.why.find(x => ["atari", "squeeze", "cut", "kill", "attack", "press", "33", "kakari", "reduce", "capture"].includes(x.k));
-    if (quiet && !threat) return;
+    const t = ex.why.find(x => THREAT[x.k]);
+    if (!t) return;
+    const rg = regionAt(boardOf(s.n, moves), m);
+    if (!fresh(t.k + "|" + rg, t.k === "atari" ? 4 : 12, moves.length)) return;
+    say(`<span class="co-warn">ระวัง! ครูเดิน <b>${name(s.n, m)}</b> (${rg})</span><br>${THREAT[t.k]}`);
+  }
+
+  // when the player asks why the teacher played a move: always answer
+  async function whyTeacher(moves, m) {
+    const AI = api.ai(), s = st(), my = tok; if (!AI) return;
+    if (m === PASS) { say("ครูผ่านเพราะไม่มีจุดไหนได้แต้มเพิ่มแล้ว"); return; }
+    const [ex] = await queue(() => my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m])) || [];
+    if (!ex || my !== tok) return;
+    const r = ex.why.filter(x => !x.neg)[0], t = ex.why.find(x => THREAT[x.k]);
     let h = `ครูเดิน <b>${name(s.n, m)}</b> (${regionAt(boardOf(s.n, moves), m)}): ${esc(r ? r.t : "ทำให้รูปหมากครูแข็งแรง")}`;
-    if (threat && threat.k !== "capture") h += `<br><span class="co-warn">ระวังนะ ตานี้ครูกำลัง${threat.k === "33" || threat.k === "kakari" ? "แย่งพื้นที่มุมของคุณ" : threat.k === "reduce" ? "ลดพื้นที่ของคุณ" : "บุกหมากของคุณ"} ลองคิดว่าจะตอบยังไง</span>`;
+    if (t) h += `<br><span class="co-warn">${THREAT[t.k]}</span>`;
     say(h);
   }
 
@@ -412,17 +443,17 @@ const Coach = (function () {
     const s = st();
     let i = -1; for (let k = s.moves.length - 1; k >= 0; k--) if ((k % 2 === 0 ? BLACK : WHITE) !== s.human) { i = k; break; }
     if (i < 0) { say("ครูยังไม่ได้เดินเลยนะ"); return; }
-    await explainMine(s.moves.slice(0, i), s.moves[i], false);
+    await whyTeacher(s.moves.slice(0, i), s.moves[i]);
   }
   async function ask(text) {
     const t = text.trim(); if (!t) return;
     bubble(esc(t), "me");
     const s = st(), p = parsePoint(s.n, t);
     if (/^(สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi)/i.test(t)) { say("สวัสดีครับ ครูมิชิโอะเอง ถามได้ทุกเรื่องเลยนะ เช่น “ควรเดินตรงไหน” “ทำไมครูเดินตานั้น” “ใครนำอยู่” หรือพิมพ์จุดเช่น “D4 ดีไหม”"); return; }
-    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีครับ เล่นต่อเลย เดี๋ยวครูช่วยดูให้ทุกตา 😊"); return; }
+    if (/ขอบคุณ|ขอบใจ|thank/i.test(t)) { say("ยินดีครับ เล่นต่อเลย ตาไหนคิดไม่ออกกดแนะนำได้ ถ้าเดินพลาดหนักครูจะบอกเอง 😊"); return; }
     if (p !== null && /ครู|เขา|ทำไม/.test(t)) {
       const b = boardOf(s.n, s.moves);
-      if (b.color[p] && b.color[p] !== s.human) { const i = s.moves.lastIndexOf(p); if (i >= 0) { await explainMine(s.moves.slice(0, i), p, false); return; } }
+      if (b.color[p] && b.color[p] !== s.human) { const i = s.moves.lastIndexOf(p); if (i >= 0) { await whyTeacher(s.moves.slice(0, i), p); return; } }
     }
     if (p !== null) { await aboutPoint(p); return; }
     if (/ทำไม.*ครู|ครู.*(เดิน|ลง|วาง)|ตา(ของ)?ครู|ครูกำลัง|เขาเดิน|บอท|AI เดิน/i.test(t)) { await aboutTeacherLast(); return; }
@@ -442,21 +473,21 @@ const Coach = (function () {
     if (!on) return;
     const s = st(), prev = picks, before = moves.slice(0, -1), m = moves[moves.length - 1];
     tok++; picks = null; api.marks([]); $("coPicks").innerHTML = ""; setChips();
-    if (mover === s.human) judgeMine(prev, before, m);
-    else explainMine(before, m, moves.length > 40 && moves.length % 3 !== 0).then(() => setChips());
+    if (mover === s.human) queue(() => judgeMine(prev, before, m)); // one queued step, so the teacher waits for the whole review
+    else explainMine(before, m).then(() => setChips());
   };
   api.turn = () => { if (on) setChips(); };
   api.hint = () => { if (!on) return; bubble("แนะนำหน่อยครับ", "me"); suggest(true); };
   api.start = function (o) {
     E = api.E; Board = E.Board; PASS = E.PASS; BLACK = E.BLACK; WHITE = E.WHITE;
-    on = !!o; tok++; picks = null; phaseTold = {};
+    on = !!o; tok++; picks = null; phaseTold = {}; warned.clear();
     document.body.classList.toggle("coaching", on);
     $("coach").hidden = !on; $("coach").classList.remove("open");
     if (!on) { api.marks([]); return; }
     $("coLog").innerHTML = "";
     const s = st();
     if (o.resume) say(`กลับมาเล่นต่อแล้ว ครูจำกระดานได้ เดี๋ยวช่วยดูให้นะ`);
-    else say(`สวัสดีครับ ครูมิชิโอะเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
+    else say(`สวัสดีครับ ครูมิชิโอะเอง วันนี้เรามาเล่นกระดานจริง 19×19 กัน คุณเป็น<b>${CN[s.human]}</b> ตาไหนคิดไม่ออก กดปุ่ม<b>แนะนำ</b> ครูจะเลือกตาให้ 3 ทาง <b>A B C</b> พร้อมเหตุผล จะเลือกตามครูหรือเดินเองก็ได้ ระหว่างเกมครูจะพูดเฉพาะตอนสำคัญ เช่น ตอนต้องระวัง หรือตอนที่เดินพลาดหนัก แล้วพิมพ์ถามครูได้ตลอดเลยนะ`);
     setChips(); renderBusy();
   };
   api.stop = () => { on = false; tok++; document.body.classList.remove("coaching"); $("coach").hidden = true; };

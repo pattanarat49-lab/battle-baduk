@@ -727,6 +727,7 @@
   // pri: a line about this move only replaces one said on the same move if it matters as much;
   // gap: skip unless the character has been quiet for that many moves; once: a kind is used once a game
   let saidKinds = new Set(), saidLines = new Set(), spokeAt = -99, spokePri = 0;
+  const COACH_TALK = new Set(["hello", "capture", "humanPass", "ko", "slow", "byoyomi", "lastPeriod", "win", "lose", "timeoutWin", "resigned", "giveUp"]);
   function speak(kind, o = {}) {
     const at = history.length, pri = o.pri || 0;
     if (!o.force) {
@@ -737,6 +738,8 @@
     const c = CHARS[gameChar], all = (TALK[c.id][kind] || c.say[kind] || "").split("|").filter(Boolean);
     if (!all.length) return false;
     const fresh = all.filter(l => !saidLines.has(l)), list = fresh.length ? fresh : all;
+    // the coach speaks only at moments that teach or need care, and never says the same sentence twice (owner 2026-11-02)
+    if (c.coach && Coach.active() && (!COACH_TALK.has(kind) || !fresh.length)) return false;
     const line = list[(Math.random() * list.length) | 0];
     saidKinds.add(kind); saidLines.add(line); spokeAt = at; spokePri = pri;
     if (c.coach && Coach.active()) { Coach.say(line.replace("{n}", o.n)); return true; } // the coach talks in her chat
