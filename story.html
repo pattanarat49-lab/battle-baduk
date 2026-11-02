@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Baduk Battle · Story</title>
+<link rel="icon" href="favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@700&family=IBM+Plex+Sans+Thai:wght@500;700&display=swap">
+<style>
+:root {
+  --bg: #15333a; --surface: #20474f; --fg: #f3ead8; --muted: #b3c8c5; --line: rgba(243, 234, 216, .14);
+  --accent: #e3b06a; --accent-fg: #2a1a0b; --wood: #c8894a; --wood-dark: #5a331a;
+  --f-body: "IBM Plex Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --f-px: "Pixelify Sans", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--f-body);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+#view { position: fixed; inset: 0; display: block; touch-action: none; image-rendering: pixelated; }
+.bar { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px;
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+  background: linear-gradient(#0e272dee, #0e272d00); pointer-events: none; }
+.bar > * { pointer-events: auto; }
+.btn { font: 700 14px var(--f-body); color: var(--fg); background: #0e272dcc; border: 2px solid var(--wood); padding: 6px 12px;
+  box-shadow: 0 3px 0 var(--wood-dark); cursor: pointer; text-decoration: none; line-height: 1.2; }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--wood-dark); }
+.title { flex: 1; text-align: center; font: 700 15px var(--f-px); letter-spacing: 1px; color: var(--accent); text-shadow: 0 2px 0 #000; }
+.title small { display: block; font: 500 12px var(--f-body); color: var(--muted); letter-spacing: 0; }
+.where { position: fixed; left: 50%; transform: translateX(-50%); top: calc(max(10px, env(safe-area-inset-top)) + 52px);
+  font: 700 13px var(--f-body); background: #0e272dcc; border: 1px solid var(--line); padding: 3px 12px; white-space: nowrap; transition: opacity .3s; }
+.card { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  width: min(440px, calc(100% - 24px)); background: #0e272df2; border: 3px solid var(--wood); box-shadow: 0 5px 0 var(--wood-dark);
+  padding: 12px 14px 14px; }
+.card .stripe { height: 6px; margin: -12px -14px 10px; }
+.card h2 { margin: 0; font-size: 19px; line-height: 1.3; }
+.card h2 span { font: 700 12px var(--f-px); color: var(--muted); letter-spacing: 1px; margin-left: 6px; }
+.card p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #e4dccb; }
+.card .row { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+.card .row .btn { flex: 1; text-align: center; }
+.card .btn[disabled] { opacity: .55; cursor: default; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tags i { font-style: normal; font-size: 12px; border: 1px solid var(--line); padding: 1px 8px; color: var(--muted); }
+.hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(14px, env(safe-area-inset-bottom));
+  font-size: 13px; color: var(--muted); background: #0e272dcc; padding: 4px 12px; white-space: nowrap; transition: opacity .4s; }
+#mini { position: fixed; inset: 0; background: #0b1f24f0; display: flex; align-items: center; justify-content: center; padding: 70px 16px 16px; }
+#mini canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; border: 3px solid var(--wood); box-shadow: 0 5px 0 var(--wood-dark); }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div class="bar">
+  <a class="btn" href="./">← กลับ</a>
+  <div class="title">STORY MODE<small>เมืองโกะ · บทที่ 1</small></div>
+  <button class="btn" id="mapBtn">แผนที่</button>
+</div>
+<div class="where" id="where">จัตุรัสกลางเมือง</div>
+<div class="hint" id="hint">เดินด้วยปุ่มลูกศร / WASD หรือแตะที่พื้น</div>
+<div class="card" id="card" hidden>
+  <div class="stripe" id="cStripe"></div>
+  <h2 id="cName"></h2>
+  <p id="cDesc"></p>
+  <div class="tags" id="cTags"></div>
+  <div class="row"><button class="btn" id="cEnter" disabled>เข้าสำนัก · เร็วๆ นี้</button><button class="btn" id="cClose">ปิด</button></div>
+</div>
+<div id="mini" hidden><canvas id="miniC"></canvas></div>
+<script>
+(() => {
+"use strict";
+const T = 16, W = 56, H = 44;
+// terrain codes
+const G = 0, ST = 1, WA = 2, CW = 3, TR = 4, SA = 5, FL = 6, SW = 7, BA = 8, SP = 9, FB = 10, HE = 11, RF = 12, BD = 13, BR = 14, LA = 15;
+const SOLID = new Set([WA, CW, TR, SW, BA, HE, RF]);
+const ter = Array.from({ length: H }, () => new Array(W).fill(G));
+const block = Array.from({ length: H }, () => new Array(W).fill(false));
+let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const set = (x, y, v) => { if (x >= 0 && y >= 0 && x < W && y < H) ter[y][x] = v; };
+const rect = (x0, y0, x1, y1, v) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) set(x, y, v); };
+const frame = (x0, y0, x1, y1, v) => { for (let x = x0; x <= x1; x++) { set(x, y0, v); set(x, y1, v); } for (let y = y0; y <= y1; y++) { set(x0, y, v); set(x1, y, v); } };
+
+// ---------- schools ----------
+const SCHOOLS = {
+  moyo:   { name: "สำนักโมโย่", en: "MOYO", color: "#e3b06a", dark: "#8a5a22",
+            desc: "สายสร้างอิทธิพล วางกรอบกว้างใหญ่ทั้งกระดาน ค่อยๆ ขยายพลังให้แข็งแรงและยิ่งใหญ่",
+            tags: ["อิทธิพล", "กรอบใหญ่", "ซันเรนเซ"] },
+  attack: { name: "สำนักโจมตี", en: "ATTACK", color: "#d9573f", dark: "#7a2618",
+            desc: "ต่อสู้เก่ง เน้นหมากต่อสู้อย่างรุนแรงและรวดเร็ว ตัด จู่โจม ไล่ฆ่ากลุ่มไม่ให้ตั้งตัว",
+            tags: ["ตัด", "ไล่ฆ่า", "เร็วและแรง"] },
+  defend: { name: "สำนักป้องกัน", en: "DEFENSE", color: "#7d9fc4", dark: "#34506e",
+            desc: "ค่อยๆ เล่น ช้าแต่แข็งแรง ทุกกลุ่มมั่นคง ไม่มีจุดอ่อนให้ใครเจาะเข้ามาได้",
+            tags: ["หนักแน่น", "ต่อให้แน่น", "อดทน"] },
+  swift:  { name: "สำนักว่องไว", en: "SWIFT", color: "#9fd8c0", dark: "#3d7a64",
+            desc: "หมากพลิ้ว ทิ้งมือบ่อย เล่นให้หมากเบาไม่มีน้ำหนัก พร้อมทิ้งกลุ่มที่ไม่จำเป็นเพื่อชิงจังหวะ",
+            tags: ["ทิ้งมือ", "หมากเบา", "ยอมเสียเพื่อได้"] },
+};
+
+// ---------- city layout ----------
+frame(0, 0, W - 1, H - 1, CW);
+rect(1, 21, W - 2, 22, ST);            // east-west avenue
+rect(27, 1, 28, H - 2, ST);            // north-south avenue
+rect(24, 18, 31, 25, ST);              // central plaza
+rect(27, H - 1, 28, H - 1, ST);        // south gate opening (drawn as gate)
+
+// NW: Moyo — a huge open hedge garden, wide stone board mosaic, grand hall
+frame(3, 2, 23, 17, HE);
+rect(4, 3, 22, 16, G);
+rect(13, 17, 14, 20, ST);
+rect(13, 8, 14, 16, FL);
+rect(9, 10, 17, 14, BD);               // stone go-board mosaic (walkable)
+rect(13, 10, 14, 14, BD);
+for (const [x0, y0] of [[5, 4], [19, 4], [5, 12], [19, 12]]) rect(x0, y0, x0 + 2, y0 + 3, FB);
+
+// NE: Attack — red wooden palisade, sand training yard, dummies
+frame(32, 2, 52, 17, BR);
+rect(33, 3, 51, 16, SA);
+rect(41, 17, 42, 20, ST);
+
+// SW: Defense — double stone wall, winding way in, fortress
+frame(3, 25, 23, 41, SW);
+frame(6, 28, 20, 38, SW);
+rect(4, 26, 22, 40, FL); frame(6, 28, 20, 38, SW); rect(7, 29, 19, 37, FL);
+rect(13, 23, 14, 25, ST);              // outer gate (north)
+rect(13, 38, 14, 38, FL);              // inner gate (south): walk round between the walls
+
+// SE: Swift — pond, islands, stepping stones, bamboo
+rect(32, 25, 52, 41, WA);
+rect(41, 23, 42, 24, ST);
+const isl = (x0, y0, x1, y1) => rect(x0, y0, x1, y1, G);
+isl(38, 31, 45, 36); isl(33, 27, 36, 29); isl(48, 27, 51, 30); isl(33, 37, 37, 40); isl(48, 37, 51, 40);
+for (const [x, y] of [[41, 25], [41, 26], [42, 26], [42, 27], [42, 28], [41, 28], [41, 29], [41, 30],
+  [37, 29], [37, 30], [37, 31], [46, 33], [47, 33], [47, 32], [47, 31], [48, 31], [38, 37], [39, 37], [45, 37], [46, 37], [47, 37]])
+  set(x, y, SP);
+for (const [x, y] of [[33, 27], [34, 27], [50, 27], [51, 27], [51, 28], [33, 40], [34, 40], [51, 40], [45, 31], [38, 36]]) set(x, y, BA);
+
+// fountain + lanterns in the plaza
+const objs = [];
+const obj = (o) => { objs.push(o); for (let y = o.y; y < o.y + (o.bh || o.h); y++) for (let x = o.x; x < o.x + o.w; x++) if (o.solid !== false) block[y + (o.h - (o.bh || o.h))][x] = true; };
+obj({ k: "fountain", x: 27, y: 21, w: 2, h: 2 });
+
+// buildings: {x,y,w,h} footprint in tiles; door tile is just below the bottom row
+const B = [];
+const bld = (b) => { B.push(b); obj({ k: "bld", ...b }); };
+bld({ id: "moyo", x: 10, y: 4, w: 8, h: 4, roof: "#e3b06a", roofD: "#a8752e", wall: "#efe2c4", door: [13, 8], door2: 14, label: "สำนักโมโย่" });
+bld({ id: "attack", x: 38, y: 4, w: 7, h: 4, roof: "#d9573f", roofD: "#8f2f1f", wall: "#e9d6b8", door: [41, 8], label: "สำนักโจมตี" });
+bld({ id: "defend", x: 10, y: 30, w: 7, h: 4, roof: "#5d7fa6", roofD: "#34506e", wall: "#b7bcb4", door: [13, 34], label: "สำนักป้องกัน" });
+bld({ id: "swift", x: 40, y: 32, w: 4, h: 3, roof: "#9fd8c0", roofD: "#4f8f78", wall: "#f3ead8", door: [41, 35], label: "สำนักว่องไว", light: true });
+bld({ id: "michio", x: 29, y: 26, w: 3, h: 2, roof: "#8a5a3a", roofD: "#5a331a", wall: "#e8dcc4", door: [30, 28], label: "บ้านครูมิชิโอะ" });
+// town houses along the avenues
+const HOUSE_ROOFS = [["#a0603e", "#6b3a22"], ["#6f8a5a", "#465a38"], ["#8a6a9a", "#59426a"], ["#b8864a", "#7a5428"]];
+let hi = 0; const house = (x, y) => { const [r, d] = HOUSE_ROOFS[hi++ % 4]; bld({ id: "house", x, y, w: 3, h: 2, roof: r, roofD: d, wall: "#e8dcc4", door: [x + 1, y + 2] }); };
+for (const y of [3, 8, 13]) { house(24, y); house(29, y); }
+for (const y of [31, 36]) { house(24, y); house(29, y); }
+for (const x of [5, 9, 17, 34, 46]) house(x, 18);
+// school props
+for (const [x, y] of [[35, 10], [37, 13], [46, 10], [48, 13], [35, 5], [49, 6]]) obj({ k: "dummy", x, y, w: 1, h: 1 });
+obj({ k: "rack", x: 44, y: 12, w: 2, h: 1 });
+for (const [x, y] of [[33, 3], [51, 3], [33, 16], [51, 16]]) obj({ k: "banner", x, y, w: 1, h: 1, c: "#d9573f" });
+for (const [x, y] of [[11, 9], [16, 9], [11, 15], [16, 15]]) obj({ k: "lantern", x, y, w: 1, h: 1 });
+for (const [x, y] of [[3, 25], [22, 25], [3, 40], [22, 40]]) obj({ k: "tower", x, y, w: 2, h: 2, solid: true });
+for (const [x, y] of [[8, 31], [18, 31], [8, 36], [18, 36]]) obj({ k: "banner", x, y, w: 1, h: 1, c: "#7d9fc4" });
+obj({ k: "pavilion", x: 49, y: 28, w: 2, h: 2 }); obj({ k: "pavilion", x: 35, y: 38, w: 2, h: 2 });
+for (const [x, y] of [[25, 19], [30, 19], [25, 24], [30, 24]]) obj({ k: "lamp", x, y, w: 1, h: 1 });
+for (const [x, y] of [[4, 3], [22, 3]]) obj({ k: "banner", x, y, w: 1, h: 1, c: "#e3b06a" });
+
+const nearDoor = (x, y) => B.some((b) => Math.abs(b.door[0] - x) <= 1 && Math.abs(b.door[1] - y) <= 1);
+// trees on leftover grass outside the compounds
+const inside = (x, y) => (x >= 3 && x <= 23 && y >= 2 && y <= 17) || (x >= 32 && x <= 52 && y >= 2 && y <= 17) || (x >= 3 && x <= 23 && y >= 25 && y <= 41) || (x >= 32 && x <= 52 && y >= 25 && y <= 41);
+const nearRoad = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const t = ter[y + dy]?.[x + dx]; if (t === ST) return true; } return false; };
+for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++)
+  if (ter[y][x] === G && !inside(x, y) && !nearDoor(x, y) && !block[y][x] && !block[y + 1]?.[x] && !nearRoad(x, y) && rnd() < 0.55) set(x, y, TR);
+// a few trees inside the moyo garden edge and the swift islands
+for (const [x, y] of [[4, 8], [22, 8], [4, 16], [22, 16], [44, 36], [33, 29], [50, 30], [48, 39]]) if (!block[y][x]) set(x, y, TR);
+
+const solidAt = (x, y) => x < 0 || y < 0 || x >= W || y >= H || SOLID.has(ter[y][x]) || block[y][x];
+
+// zones for the location banner
+const zoneOf = (x, y) => {
+  if (x >= 3 && x <= 23 && y >= 2 && y <= 17) return "moyo";
+  if (x >= 32 && x <= 52 && y >= 2 && y <= 17) return "attack";
+  if (x >= 3 && x <= 23 && y >= 25 && y <= 41) return "defend";
+  if (x >= 32 && x <= 52 && y >= 25 && y <= 41) return "swift";
+  if (x >= 24 && x <= 31 && y >= 18 && y <= 25) return "plaza";
+  return "town";
+};
+const ZONE_NAME = { moyo: "เขตสำนักโมโย่", attack: "เขตสำนักโจมตี", defend: "เขตสำนักป้องกัน", swift: "เขตสำนักว่องไว", plaza: "จัตุรัสกลางเมือง", town: "เมืองโกะ" };
+
+// ---------- drawing the static map ----------
+const mapC = document.createElement("canvas"); mapC.width = W * T; mapC.height = H * T;
+const m = mapC.getContext("2d");
+const px = (c, x, y, w = 1, h = 1) => { m.fillStyle = c; m.fillRect(x, y, w, h); };
+const hash = (x, y) => { let h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967296; };
+
+function tile(x, y, t, phase = 0) {
+  const X = x * T, Y = y * T, r = hash(x, y);
+  const grass = () => { px("#3f6f55", X, Y, T, T); if (r < .5) { px("#4a7c5f", X + (r * 97 | 0) % 12 + 2, Y + (r * 53 | 0) % 12 + 2, 2, 1); } if (r > .7) px("#36624b", X + (r * 31 | 0) % 12 + 1, Y + (r * 71 | 0) % 12 + 2, 1, 2); };
+  switch (t) {
+    case G: grass(); break;
+    case ST: px("#b9a27a", X, Y, T, T); px("#a68e66", X, Y + 7, T, 1); px("#a68e66", X, Y + 15, T, 1);
+      px("#a68e66", X + ((y & 1) ? 4 : 11), Y, 1, 7); px("#a68e66", X + ((y & 1) ? 11 : 4), Y + 8, 1, 7); break;
+    case WA: case SP: {
+      px("#2c6178", X, Y, T, T);
+      const o = (phase + (x * 3 + y * 5)) % 16; px("#3f7f99", X + o % 12, Y + 4 + (o & 3), 4, 1); px("#3f7f99", X + (o * 7) % 12, Y + 11, 3, 1);
+      if (t === SP) { px("#22495a", X + 3, Y + 5, 10, 8); px("#a3aba3", X + 3, Y + 4, 10, 8); px("#c3c9c1", X + 4, Y + 4, 6, 2); }
+      break; }
+    case CW: px("#5c5048", X, Y, T, T); px("#786a5f", X, Y, T, 3); px("#4a3f38", X, Y + 9, T, 1); px("#4a3f38", X + ((x & 1) ? 5 : 11), Y + 3, 1, 6); px("#4a3f38", X + ((x & 1) ? 11 : 5), Y + 10, 1, 6); break;
+    case TR: grass(); px("#24493a", X + 2, Y + 4, 12, 10); px("#2b5640", X + 1, Y + 2, 14, 10); px("#376a4e", X + 3, Y + 3, 6, 4); px("#5a331a", X + 7, Y + 12, 2, 3); break;
+    case SA: px("#d2b07a", X, Y, T, T); if (r < .6) px("#c09a62", X + (r * 97 | 0) % 13 + 1, Y + (r * 57 | 0) % 13 + 1, 2, 1); break;
+    case FL: px("#8d8f86", X, Y, T, T); px("#7b7d74", X, Y + 15, T, 1); px("#7b7d74", X + 15, Y, 1, T); break;
+    case SW: px("#6d7577", X, Y, T, T); px("#8b9496", X, Y, T, 4); px("#575e60", X, Y + 10, T, 1); px("#575e60", X + ((x + y) & 1 ? 4 : 10), Y + 4, 1, 6); px("#3f4547", X, Y + 15, T, 1); break;
+    case BA: grass(); for (const [sx, h] of [[3, 13], [7, 15], [11, 12]]) { px("#5d8a45", X + sx, Y + T - h, 2, h); px("#79a85a", X + sx, Y + T - h, 1, h); px("#4b7337", X + sx, Y + T - h + 5, 2, 1); } px("#8cc06a", X + 9, Y + 2, 4, 2); px("#8cc06a", X + 1, Y + 4, 4, 2); break;
+    case FB: grass(); for (let i = 0; i < 5; i++) { const a = hash(x * 7 + i, y * 3 - i); px(["#e3b06a", "#f3ead8", "#ff9e80", "#e3b06a", "#c9e3a0"][i], X + (a * 13 | 0) + 1, Y + ((a * 977) % 13 | 0) + 1, 2, 2); } break;
+    case HE: px("#2a5440", X, Y, T, T); px("#346650", X, Y, T, 5); px("#22453a", X, Y + 14, T, 2); px("#3d7359", X + 3, Y + 1, 3, 2); break;
+    case BD: px("#c8894a", X, Y, T, T); px("#8f5a2c", X + 7, Y, 1, T); px("#8f5a2c", X, Y + 7, T, 1);
+      if ((x === 11 || x === 15) && (y === 11 || y === 13) || (x === 13 && y === 12)) px("#5a331a", X + 6, Y + 6, 3, 3); break;
+    case BR: px("#3f6f55", X, Y, T, T); px("#7a3b2e", X, Y + 2, T, 12); px("#9a4c3a", X, Y + 2, T, 2); px("#5e2c22", X + 3, Y + 2, 1, 12); px("#5e2c22", X + 9, Y + 2, 1, 12); px("#5e2c22", X + 15, Y + 2, 1, 12); break;
+  }
+}
+function drawObj(o) {
+  const X = o.x * T, Y = o.y * T;
+  switch (o.k) {
+    case "bld": {
+      const w = o.w * T, h = o.h * T, roofH = Math.round(h * (o.light ? .55 : .6));
+      px("#00000033", X + 2, Y + h, w, 3);
+      px(o.wall, X + 2, Y + roofH, w - 4, h - roofH);
+      px("#00000022", X + 2, Y + roofH, w - 4, 2);
+      if (o.light) { px("#5a331a", X + 3, Y + roofH, 2, h - roofH); px("#5a331a", X + w - 5, Y + roofH, 2, h - roofH); }
+      // roof with eaves
+      px(o.roofD, X, Y + roofH - 4, w, 4);
+      px(o.roof, X + 1, Y + 2, w - 2, roofH - 6);
+      px(o.roofD, X + 1, Y + 2 + ((roofH - 6) >> 1), w - 2, 1);
+      px("#ffffff22", X + 3, Y + 3, w - 6, 2);
+      px(o.roofD, X + (w >> 1) - 1, Y, 2, 3);
+      // doors + windows
+      const dx = (o.door[0] - o.x) * T;
+      px("#3a2414", X + dx + 4, Y + h - 11, (o.door2 ? 2 * T : T) - 8, 11);
+      if (o.w >= 3 && !o.light) for (let i = 0; i < o.w; i++) { const tx = o.x + i; if (tx !== o.door[0] && tx !== o.door2) { px("#3a2414", X + i * T + 5, Y + roofH + 4, 6, 5); px("#e3b06a", X + i * T + 6, Y + roofH + 5, 4, 3); } }
+      break; }
+    case "fountain": px("#6d7577", X, Y + 2, 32, 28); px("#8b9496", X + 1, Y + 1, 30, 26); px("#2c6178", X + 4, Y + 5, 24, 18); px("#9fd8c0", X + 14, Y + 4, 4, 14); px("#c8eadb", X + 15, Y + 2, 2, 6); break;
+    case "dummy": px("#5a331a", X + 7, Y + 6, 2, 10); px("#d9b26a", X + 4, Y + 2, 8, 8); px("#b98f48", X + 4, Y + 8, 8, 2); px("#7a2618", X + 2, Y + 6, 12, 2); break;
+    case "rack": px("#5a331a", X + 2, Y + 4, 28, 3); px("#5a331a", X + 2, Y + 12, 28, 2); for (let i = 0; i < 5; i++) px("#c9c2b0", X + 5 + i * 5, Y + 1, 1, 13); break;
+    case "banner": px("#3a2414", X + 3, Y, 2, 16); px(o.c, X + 5, Y + 1, 8, 8); px("#00000033", X + 5, Y + 7, 8, 2); px(o.c, X + 5, Y + 9, 4, 2); break;
+    case "lantern": px("#6d7577", X + 5, Y + 11, 6, 4); px("#8b9496", X + 6, Y + 6, 4, 6); px("#e3b06a", X + 7, Y + 7, 2, 3); px("#6d7577", X + 3, Y + 3, 10, 3); break;
+    case "lamp": px("#3a2414", X + 7, Y + 4, 2, 12); px("#f0c888", X + 5, Y + 1, 6, 4); px("#5a331a", X + 5, Y, 6, 1); break;
+    case "tower": px("#575e60", X, Y, 32, 32); px("#8b9496", X + 1, Y + 1, 30, 6); px("#3f4547", X + 4, Y + 10, 24, 18); px("#6d7577", X + 6, Y + 12, 20, 14); for (let i = 0; i < 4; i++) px("#3f4547", X + 2 + i * 8, Y, 4, 3); break;
+    case "pavilion": px("#4f8f78", X, Y + 4, 32, 4); px("#9fd8c0", X + 2, Y, 28, 6); px("#5a331a", X + 4, Y + 8, 2, 20); px("#5a331a", X + 26, Y + 8, 2, 20); px("#b98f48", X + 2, Y + 24, 28, 3); break;
+  }
+}
+function paintMap(phase) {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) tile(x, y, ter[y][x], phase);
+  // south gate
+  px("#3a2414", 27 * T, (H - 1) * T, 2 * T, T); px("#5c5048", 26 * T, (H - 1) * T - 6, 4 * T, 6); px("#d9573f", 26 * T, (H - 1) * T - 8, 4 * T, 3);
+  for (const o of objs) drawObj(o);
+}
+paintMap(0);
+const waterTiles = []; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (ter[y][x] === WA || ter[y][x] === SP) waterTiles.push([x, y]);
+
+// ---------- player ----------
+const P = { x: 27, y: 26, fx: 27, fy: 26, dir: "down", step: 0, path: [] };
+function drawHero(c, sx, sy, s) {
+  const p = (col, x, y, w = 1, h = 1) => { c.fillStyle = col; c.fillRect(sx + x * s, sy + y * s, w * s, h * s); };
+  const bob = P.moving && (P.step & 1) ? 1 : 0;
+  p("#00000044", 3, 14, 10, 2);
+  p("#2a2a33", 4, 10 + bob, 3, 4 - bob); p("#2a2a33", 9, 10, 3, 4);   // legs
+  p("#3b6fb0", 3, 7, 10, 5);                      // shirt
+  p("#f3ead8", 3, 7, 10, 1);                      // collar
+  p("#f0c8a0", 4, 1, 8, 7);                       // face
+  p("#1c1c22", 3, 0, 10, 3); p("#1c1c22", 3, 3, 1, 3); p("#1c1c22", 12, 3, 1, 3);  // hair
+  p("#f3ead8", 3, 2, 10, 1);                      // headband
+  if (P.dir === "down") { p("#1c1c22", 6, 4, 1, 2); p("#1c1c22", 9, 4, 1, 2); }
+  else if (P.dir === "left") { p("#1c1c22", 5, 4, 1, 2); p("#1c1c22", 12, 1, 1, 5); }
+  else if (P.dir === "right") { p("#1c1c22", 10, 4, 1, 2); p("#1c1c22", 3, 1, 1, 5); }
+  else { p("#1c1c22", 4, 1, 8, 6); }
+  p("#e3b06a", 12, 8, 2, 3);                       // go-stone bowl strap
+}
+
+// ---------- view ----------
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const cv = document.getElementById("view"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 3;
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  VW = innerWidth; VH = innerHeight;
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR); cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  S = Math.max(2, Math.round(DPR * clamp(Math.min(VW, VH) / (14 * T), 2, 2.5)));   // ~12 tiles on a phone, ~20 on a desktop
+}
+addEventListener("resize", resize); resize();
+let camX = 0, camY = 0;
+
+function frameDraw() {
+  const tw = cv.width / S, th = cv.height / S;
+  const tx = P.fx * T + 8 - tw / 2, ty = P.fy * T + 8 - th / 2;
+  camX = W * T > tw ? clamp(tx, 0, W * T - tw) : (W * T - tw) / 2;
+  camY = H * T > th ? clamp(ty, 0, H * T - th) : (H * T - th) / 2;
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#15333a"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(mapC, -Math.round(camX * S), -Math.round(camY * S), W * T * S, H * T * S);
+  // target marker
+  if (P.path.length) { const g = P.path[P.path.length - 1]; ctx.strokeStyle = "#f3ead8aa"; ctx.lineWidth = S; ctx.strokeRect(Math.round((g[0] * T - camX) * S) + S, Math.round((g[1] * T - camY) * S) + S, (T - 2) * S, (T - 2) * S); }
+  drawHero(ctx, Math.round((P.fx * T - camX) * S), Math.round((P.fy * T - camY) * S), S);
+  // school name plates
+  ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+  const fs = Math.round(Math.max(12 * DPR, S * 4.2));
+  for (const b of B) if (b.label) {
+    const cx = ((b.x + b.w / 2) * T - camX) * S, cy = (b.y * T - camY) * S - 3 * S;
+    if (cx < -200 || cy < -50 || cx > cv.width + 200 || cy > cv.height + 80) continue;
+    ctx.font = `700 ${b.id === "michio" ? Math.round(fs * .8) : fs}px "IBM Plex Sans Thai", sans-serif`;
+    const tw2 = ctx.measureText(b.label).width + fs;
+    const sc = SCHOOLS[b.id];
+    ctx.fillStyle = "#0e272de6"; ctx.fillRect(cx - tw2 / 2, cy - fs * 1.45, tw2, fs * 1.45);
+    ctx.fillStyle = sc ? sc.color : "#c8894a"; ctx.fillRect(cx - tw2 / 2, cy - 2 * DPR, tw2, 2 * DPR);
+    ctx.fillStyle = "#f3ead8"; ctx.fillText(b.label, cx, cy - fs * .2);
+  }
+}
+
+// ---------- movement ----------
+const keys = new Set();
+const DIRS = { ArrowUp: [0, -1, "up"], KeyW: [0, -1, "up"], ArrowDown: [0, 1, "down"], KeyS: [0, 1, "down"], ArrowLeft: [-1, 0, "left"], KeyA: [-1, 0, "left"], ArrowRight: [1, 0, "right"], KeyD: [1, 0, "right"] };
+addEventListener("keydown", (e) => { if (DIRS[e.code]) { keys.add(e.code); P.path = []; e.preventDefault(); hideHint(); }
+  if ((e.code === "Enter" || e.code === "Space") && !cardEl.hidden) e.preventDefault();
+  if (e.code === "KeyM") toggleMini(); if (e.code === "Escape") { closeCard(); mini.hidden = true; } });
+addEventListener("keyup", (e) => keys.delete(e.code));
+
+function bfs(sx, sy, gx, gy) {
+  const prev = new Map(), k = (x, y) => y * W + x, q = [[sx, sy]]; prev.set(k(sx, sy), null);
+  while (q.length) { const [x, y] = q.shift(); if (x === gx && y === gy) break;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (solidAt(nx, ny) || prev.has(k(nx, ny))) continue; prev.set(k(nx, ny), [x, y]); q.push([nx, ny]); } }
+  if (!prev.has(k(gx, gy))) return null;
+  const path = []; let c = [gx, gy]; while (c && !(c[0] === sx && c[1] === sy)) { path.unshift(c); c = prev.get(k(c[0], c[1])); }
+  return path;
+}
+function nearestOpen(gx, gy) {
+  // tap on a building = walk to its door; tap on a wall/tree = closest open tile
+  for (const b of B) if (gx >= b.x && gx < b.x + b.w && gy >= b.y - 1 && gy < b.y + b.h) return b.door;
+  if (!solidAt(gx, gy)) return [gx, gy];
+  for (let r = 1; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (!solidAt(gx + dx, gy + dy)) return [gx + dx, gy + dy];
+  return null;
+}
+cv.addEventListener("pointerdown", (e) => {
+  hideHint();
+  const gx = Math.floor((e.clientX * DPR / S + camX) / T), gy = Math.floor((e.clientY * DPR / S + camY) / T);
+  const g = nearestOpen(gx, gy); if (!g) return;
+  const path = bfs(P.x, P.y, g[0], g[1]); if (path) P.path = path;
+});
+
+const SPEED = 7.5; // tiles per second
+let last = performance.now(), waterT = 0, phase = 0;
+function tick(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (P.x === P.fx && P.y === P.fy) {
+    let mv = null;
+    for (const c of keys) { mv = DIRS[c]; }
+    if (mv) { P.dir = mv[2]; if (!solidAt(P.x + mv[0], P.y + mv[1])) { P.x += mv[0]; P.y += mv[1]; P.step++; } }
+    else if (P.path.length) { const [nx, ny] = P.path.shift(); P.dir = nx > P.x ? "right" : nx < P.x ? "left" : ny > P.y ? "down" : "up"; if (!solidAt(nx, ny)) { P.x = nx; P.y = ny; P.step++; } else P.path = []; }
+  }
+  const d = SPEED * dt;
+  P.fx += clamp(P.x - P.fx, -d, d); P.fy += clamp(P.y - P.fy, -d, d);
+  P.moving = P.x !== P.fx || P.y !== P.fy;
+  if (!P.moving) arrived();
+  waterT += dt; if (waterT > .35) { waterT = 0; phase = (phase + 1) % 16; for (const [x, y] of waterTiles) tile(x, y, ter[y][x], phase); }
+  frameDraw();
+  requestAnimationFrame(tick);
+}
+
+// ---------- UI ----------
+const whereEl = document.getElementById("where"), cardEl = document.getElementById("card"), hint = document.getElementById("hint");
+let lastZone = "", lastDoor = "";
+function hideHint() { hint.style.opacity = 0; }
+function arrived() {
+  const z = zoneOf(P.x, P.y); if (z !== lastZone) { lastZone = z; whereEl.textContent = ZONE_NAME[z]; }
+  const b = B.find((b) => b.door[0] === P.x && b.door[1] === P.y || (b.door2 === P.x && b.door[1] === P.y));
+  const id = b ? b.id : "";
+  if (id === lastDoor) return; lastDoor = id;
+  if (!b || b.id === "house") { closeCard(); return; }
+  openCard(b);
+}
+function openCard(b) {
+  const s = SCHOOLS[b.id];
+  hint.hidden = true;
+  document.getElementById("cStripe").style.background = s ? s.color : "#c8894a";
+  document.getElementById("cName").innerHTML = s ? `${s.name}<span>${s.en} SCHOOL</span>` : "บ้านครูมิชิโอะ<span>HOME</span>";
+  document.getElementById("cDesc").textContent = s ? s.desc + " · เจ้าสำนัก: ยังไม่เปิดเผย" : "ครูมิชิโอะคอยอยู่ที่นี่ แวะมาถามได้ทุกเมื่อว่าควรไปท้าสำนักไหนก่อน";
+  document.getElementById("cTags").innerHTML = s ? s.tags.map((t) => `<i>${t}</i>`).join("") : "";
+  document.getElementById("cEnter").textContent = s ? "เข้าสำนัก · เร็วๆ นี้" : "คุยกับครู · เร็วๆ นี้";
+  cardEl.hidden = false;
+}
+function closeCard() { cardEl.hidden = true; }
+document.getElementById("cClose").onclick = closeCard;
+
+const mini = document.getElementById("mini"), miniC = document.getElementById("miniC");
+function toggleMini() {
+  if (!mini.hidden) { mini.hidden = true; return; }
+  const s = 2; miniC.width = W * T / s * 2; miniC.height = H * T / s * 2;
+  const c = miniC.getContext("2d"); c.imageSmoothingEnabled = false; c.drawImage(mapC, 0, 0, miniC.width, miniC.height);
+  const k = miniC.width / (W * T);
+  c.textAlign = "center"; c.textBaseline = "middle"; c.font = `700 ${Math.round(17 * k)}px "IBM Plex Sans Thai", sans-serif`;
+  for (const id of Object.keys(SCHOOLS)) { const b = B.find((b) => b.id === id); const cx = (b.x + b.w / 2) * T * k, cy = (b.y - .9) * T * k;
+    const tw = c.measureText(SCHOOLS[id].name).width + 14; c.fillStyle = "#0e272de6"; c.fillRect(cx - tw / 2, cy - 13 * k, tw, 26 * k);
+    c.fillStyle = SCHOOLS[id].color; c.fillText(SCHOOLS[id].name, cx, cy); }
+  c.fillStyle = "#ff5a3c"; c.beginPath(); c.arc((P.x + .5) * T * k, (P.y + .5) * T * k, 6 * k, 0, 7); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 2; c.stroke();
+  mini.hidden = false;
+}
+document.getElementById("mapBtn").onclick = toggleMini;
+mini.addEventListener("pointerdown", () => (mini.hidden = true));
+
+// test hook: ?at=x,y places the hero (used for screenshots)
+const at = new URLSearchParams(location.search).get("at");
+if (at) { const [ax, ay] = at.split(",").map(Number); if (!solidAt(ax, ay)) { P.x = P.fx = ax; P.y = P.fy = ay; } }
+window.__story = { P, B, toggleMini, bfs };
+document.fonts?.ready.then(() => frameDraw());
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
