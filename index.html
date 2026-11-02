@@ -4281,11 +4281,11 @@ const Coach = (function () {
       bio: "อีชางโฮ \"พระพุทธรูปหิน\" แห่งเกาหลี คว้าแชมป์โลกตั้งแต่อายุ 16 และครองวงการหมากล้อมตลอดยุค 90 สีหน้านิ่งไม่เคยเปลี่ยน เล่นหมากแน่นหนาไม่มีจุดอ่อน เลี่ยงการต่อสู้ที่ไม่จำเป็น ชนะด้วยการปิดเกมที่แม่นยำที่สุดในประวัติศาสตร์ บ่อยครั้งชนะเพียงครึ่งแต้ม",
       say: { hello: "...", ahead: "ครึ่งแต้มก็คือชนะ", behind: "ยังไม่ถึงปลายเกม", win: "ขอบคุณสำหรับเกมครับ", lose: "คุณเล่นได้ดีมากครับ" } },
     // Go Seigen: his own game records first, then a free (weighted random) choice among near-equal moves
-    { id: "seigen", en: "GO SEIGEN", name: "โกเซเก็น", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "creative", secret: true, special: true, fx: "mist", brain: "b18", book: "seigen-book.json", no33: true,
+    { id: "seigen", en: "GO SEIGEN", name: "อู๋ ชิงหยวน", country: "จีน / ญี่ปุ่น", rank: "9 ดั้งโปร", style: "creative", secret: true, special: true, fx: "mist", brain: "b18", book: "seigen-book.json", no33: true,
       // unusual joseki in the opening (a wider pick among near-equal moves), then creative only where it costs little
       early: { visits: 100000, timeMs: 15000, creative: { margin: 0.05, points: 2, pool: 10 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, creative: { margin: 0.03, points: 1.2, pool: 6 }, no33: 60 },
-      bio: "โกเซเก็น อัจฉริยะเกิดที่จีนแล้วย้ายไปญี่ปุ่นตั้งแต่อายุ 14 ร่วมกับคิตานิ มิโนรุคิดค้นชินฟุเซกิ การเปิดเกมแบบใหม่ที่เปลี่ยนหมากล้อมไปตลอดกาล และชนะการแข่ง 10 กระดานกับยอดฝีมือทุกคนในยุคของเขา เล่นหมากสร้างสรรค์ ไม่ยึดติดแบบแผน",
+      bio: "อู๋ ชิงหยวน อัจฉริยะเกิดที่จีนแล้วย้ายไปญี่ปุ่นตั้งแต่อายุ 14 ร่วมกับคิตานิ มิโนรุคิดค้นชินฟุเซกิ การเปิดเกมแบบใหม่ที่เปลี่ยนหมากล้อมไปตลอดกาล และชนะการแข่ง 10 กระดานกับยอดฝีมือทุกคนในยุคของเขา เล่นหมากสร้างสรรค์ ไม่ยึดติดแบบแผน",
       say: { hello: "หมากล้อมคือความกลมกลืน", ahead: "ทุกเม็ดอยู่ในที่ของมัน", behind: "น่าสนใจมาก", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "คุณเล่นได้ยอดเยี่ยม" } },
     // placement test: reads like Todo but keeps the game close, and grades every move the player makes
     { id: "hikaru", en: "HIKARU", name: "ฮิคารุ", country: "ญี่ปุ่น", rank: "Teaching Game", style: "balance", exam: true, search: { visits: 2500, timeMs: 6500 },
@@ -5054,7 +5054,7 @@ const Coach = (function () {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "b43d5d02c0";
+  const BUILD = "9d22635e97";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
