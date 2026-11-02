@@ -230,8 +230,8 @@ function clean(b) {
 
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "–";
 // same bands as EXAM_BANDS in src/nn_main.js: an average move score (Best 0, Good 1, Normal 2, Bad 3) below "under" reads as "rank"
-const EXAM_BANDS = [[0.10, 5], [0.18, 4], [0.24, 3], [0.30, 2], [0.35, 1], [0.45, 0], [0.49, -1], [0.54, -2], [0.70, -3], [0.88, -4],
-  [1.04, -5], [1.08, -6], [1.12, -7], [1.16, -8], [1.20, -9], [1.24, -10], [1.28, -11], [Infinity, -12]];
+const EXAM_BANDS = [[0.11, 5], [0.22, 4], [0.33, 3], [0.44, 2], [0.55, 1], [0.66, 0], [0.77, -1], [0.88, -2], [0.99, -3], [1.10, -4],
+  [1.14, -5], [1.18, -6], [1.22, -7], [1.36, -8], [1.50, -9], [1.65, -10], [1.80, -11], [Infinity, -12]];
 // the table before 2026-10-29, by share of non-Best moves, for results sent without a score
 const EXAM_CALIB_OLD = [{ rank: -14, avg: 60 }, { rank: -7, avg: 50.5 }, { rank: -4, avg: 30 }, { rank: 1, avg: 18.25 }, { rank: 4, avg: 10.3 }, { rank: 5, avg: 4.35 }];
 function rankFrom(T, avg) {
