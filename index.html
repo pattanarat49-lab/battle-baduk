@@ -1,9 +1,4 @@
 <!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Baduk Battle</title>
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#15333a">
-<meta name="apple-mobile-web-app-title" content="Baduk Battle">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3756,7 +3751,7 @@ const Coach = (function () {
   // ---------- chat ----------
   function bubble(html, who) {
     const el = document.createElement("div");
-    el.className = "co-msg " + (who === "me" ? "me" : "coach");
+    el.className = "co-msg " + (who === "me" ? "me" : "bot"); // not "coach": that is the panel's own class
     el.innerHTML = who === "me" ? `<div class="co-b">${html}</div>` : `<img src="${FACE}" alt="" width="160" height="160"><div class="co-b">${html}</div>`;
     const log = $("coLog"); log.appendChild(el);
     while (log.children.length > 80) log.removeChild(log.firstChild);
@@ -3958,15 +3953,20 @@ const Coach = (function () {
     attack: "ครูกำลังไล่โจมตีหมากที่ยังอ่อนของคุณ ลองหาทางทำห้องหรือหนีออกที่กว้าง", cut: "ครูตัดหมากของคุณให้ขาดจากกัน ลองดูว่าฝั่งไหนสำคัญกว่าแล้วดูแลฝั่งนั้น",
     squeeze: "ครูกำลังบีบหมากของคุณ ลมหายใจเหลือน้อยแล้ว", "33": "ครูบุกเข้าจุด 3-3 ในมุมของคุณ มุมนี้จะเป็นของใครตัดสินกันตอนนี้",
     kakari: "ครูเข้ามาแย่งมุมที่คุณจับไว้ ลองตอบให้มุมยังเป็นของคุณ" };
+  const WARN = { atari: 6, kill: 20, "33": 999, kakari: 999 }; // kind -> moves before the same warning in the same area again
   async function explainMine(moves, m) {
     const AI = api.ai(), s = st(), my = tok; if (!AI) return;
     if (m === PASS) { if (fresh("pass", 99, moves.length)) say("ครูขอผ่านนะ ไม่มีจุดไหนได้แต้มเพิ่มแล้ว ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย เกมจะจบและนับแต้ม"); return; }
     const [ex] = await queue(() => my !== tok ? null : Analysis.explainFor(AI, s.n, moves, [m])) || [];
     if (!ex || my !== tok) return;
-    const t = ex.why.find(x => THREAT[x.k]);
+    // unprompted warnings only for what a beginner must not miss: a group in atari, a group about to die,
+    // and the teacher entering the player's corner (once per corner). Fights in general stay quiet (owner 2026-11-02).
+    const t = ex.why.find(x => WARN[x.k] !== undefined);
     if (!t) return;
-    const rg = regionAt(boardOf(s.n, moves), m);
-    if (!fresh(t.k + "|" + rg, t.k === "atari" ? 4 : 12, moves.length)) return;
+    const rg = regionAt(boardOf(s.n, moves), m), at = moves.length, last = warned.get("any");
+    if (last !== undefined && at - last < (t.k === "atari" ? 4 : 10)) return;
+    if (!fresh(t.k + "|" + rg, WARN[t.k], at)) return;
+    warned.set("any", at);
     say(`<span class="co-warn">ระวัง! ครูเดิน <b>${name(s.n, m)}</b> (${rg})</span><br>${THREAT[t.k]}`);
   }
 
