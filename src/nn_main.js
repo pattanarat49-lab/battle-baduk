@@ -2036,7 +2036,7 @@
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
+    if (!$("tutor").hidden || !$("learn").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
@@ -2053,6 +2053,10 @@
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
+  Learn.onHome = () => showMenu();
+  Learn.onBook = () => { tutorFrom = "menu"; Tutorial.open(); };
+  Learn.muted = () => !soundOn;
+  Learn.onPlay = () => Tutorial.onPlay();
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
   async function startExamBot() {
     if (!(await ensureBrain(CHARS[EXAMBOT]))) return;
@@ -2106,15 +2110,15 @@
   Analysis.onPhoto = () => trackMode("photo", true);
   // ---------- main menu and profile ----------
   const MENU = [
+    { id: "learn", t: "LEARN", img: "learn/hikaru_wave.png", s: "เรียนหมากล้อมจากศูนย์ มีเสียงพูด เหมาะกับเด็กและมือใหม่" },
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
     { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
-    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
     { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
-  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="${m.img || `menu/${m.id}.png`}" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
   // the best rank from all of the player's exams with Hikaru (kept apart from the history, which holds only 100 games)
   function bestRank(hist) {
@@ -2132,7 +2136,14 @@
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
-    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
+    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU.find(m => m.id === "profile").s;
+    // LEARN: progress line, and the (RECOMMEND) tag sits there until a new player has started the course or played a game
+    $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
+    const fresh = !hist.length && !Learn.started();
+    for (const [id, on] of [["learn", fresh], ["exam", !fresh]]) {
+      const b = $("mnList").querySelector(`[data-mn="${id}"] b`); let tag = b.querySelector(".mn-rec");
+      if (on && !tag) b.insertAdjacentHTML("beforeend", ' <i class="mn-rec">(RECOMMEND)</i>'); else if (!on && tag) tag.remove();
+    }
   }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
@@ -2149,6 +2160,7 @@
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+    else if (go === "learn") { hideScreens(); trackMode("learn"); Learn.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
