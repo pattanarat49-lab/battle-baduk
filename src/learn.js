@@ -1,6 +1,6 @@
 // LEARN: a Duolingo-style course for beginners and young children.
 // A path of lessons (small tasks on 5x5 / 7x7 boards) and boss stages (capture-go against a character),
-// spoken by Kru Michio from pre-recorded voice files (learn/voice/<hash>.mp3), with happy / sad sound effects,
+// spoken by Hikaru from pre-recorded voice files (learn/voice/<hash>.mp3), with happy / sad sound effects,
 // hearts per lesson, stars, XP and a daily streak. Self-contained: its own rules board, no AI network.
 const Learn = (function () {
   // ---------- rules ----------
@@ -224,7 +224,7 @@ const Learn = (function () {
     fire() { tone(220, 0, 0.35, "sawtooth", 0.05, 880); }
   };
   function stopVoice() { if (audio) { try { audio.pause(); } catch (e) {} audio = null; } try { speechSynthesis.cancel(); } catch (e) {} }
-  // the device's own Thai voice sounds much more natural than the pre-made files, so it comes first; the files are for devices without one
+  // recorded files come first (ElevenLabs voice); the device's own Thai voice is the fallback when a file is missing
   let thVoice;
   function deviceVoice() {
     if (thVoice !== undefined && thVoice !== null) return thVoice;
@@ -246,9 +246,9 @@ const Learn = (function () {
   function speak(text, delay = 0) {
     stopVoice(); text = plain(text); if (!voiceOn || api.muted() || !text) return;
     const go = () => {
-      if (sayDevice(text)) return;
       const a = new Audio(api.voiceDir + vkey(text) + ".mp3"); audio = a;
       a.onerror = () => { // no file: the device's own Thai voice, if there is one
+        if (audio !== a || sayDevice(text)) return;
         try { const u = new SpeechSynthesisUtterance(text); u.lang = "th-TH"; u.rate = 0.95; speechSynthesis.speak(u); } catch (e) {}
       };
       a.play().catch(() => {});
@@ -408,10 +408,9 @@ const Learn = (function () {
   function speakPair(a, b) {
     stopVoice(); if (!voiceOn || api.muted()) return;
     later(() => {
-      if (sayDevice(a + " " + b)) return;
       const x = new Audio(api.voiceDir + vkey(a) + ".mp3"); audio = x;
       x.onended = () => { if (audio === x) { const y = new Audio(api.voiceDir + vkey(b) + ".mp3"); audio = y; y.play().catch(() => {}); } };
-      x.onerror = () => { try { const u = new SpeechSynthesisUtterance(a + " " + b); u.lang = "th-TH"; speechSynthesis.speak(u); } catch (e) {} };
+      x.onerror = () => { if (audio !== x || sayDevice(a + " " + b)) return; try { const u = new SpeechSynthesisUtterance(a + " " + b); u.lang = "th-TH"; speechSynthesis.speak(u); } catch (e) {} };
       x.play().catch(() => {});
     }, 450);
   }
