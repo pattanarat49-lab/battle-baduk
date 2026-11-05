@@ -532,8 +532,8 @@ const Learn = (function () {
     const f = S.fight; f.over = true; f.won = won; f.turn = 0;
     f.line = BOSS[f.boss].say[won ? "win" : "lose"];
     renderFight();
-    if (won) { SFX.done(); confetti(40); speak(f.line, 600, f.boss); }
-    else { later(SFX.lose, 300); speak(f.line, 900, f.boss); }
+    if (won) { SFX.done(); confetti(40); speak(f.line, 250, f.boss); }
+    else { later(SFX.lose, 300); speak(f.line, 350, f.boss); }
   }
   function tapFight(i) {
     const f = S.fight;
@@ -541,7 +541,7 @@ const Learn = (function () {
     if (!fightMove(1, i)) { S.x = [i]; SFX.heart(); drawBoard(); later(() => { S.x = []; drawBoard(); }, 600); return; }
     if (f.over) return;
     const bs = BOSS[f.boss].say;
-    if (f.line === bs.capOk) speak(f.line, 250, f.boss); else f.line = bs.turn;
+    if (f.line === bs.capOk) speak(f.line, 0, f.boss); else f.line = bs.turn;
     renderFight(); S.lock = true;
     later(() => {
       S.lock = false;
@@ -549,8 +549,8 @@ const Learn = (function () {
       if (j < 0 || f.moves > S.b.N * S.b.N * 2) return endFight(f.me > f.it);
       const before = f.it; fightMove(2, j);
       if (f.over) return;
-      if (f.it > before) speak(bs.capBad, 250, f.boss);
-      else if (S.b.groups(1).some(g => g.libs.size === 1)) { if (f.line !== bs.warn) speak(bs.warn, 200, f.boss); f.line = bs.warn; }
+      if (f.it > before) speak(bs.capBad, 0, f.boss);
+      else if (S.b.groups(1).some(g => g.libs.size === 1)) { if (f.line !== bs.warn) speak(bs.warn, 0, f.boss); f.line = bs.warn; }
       else f.line = bs.yours;
       renderFight();
     }, 650);
@@ -584,7 +584,7 @@ const Learn = (function () {
         const pop = t.parentNode.querySelector(".ln-pop"), was = !pop.hidden;
         root.querySelectorAll(".ln-pop").forEach(p => { p.hidden = true; p.parentNode.classList.remove("open"); });
         pop.hidden = was; t.parentNode.classList.toggle("open", !was); SFX.tap();
-        const pl = ALL[+t.dataset.pick]; if (!was && pl && pl.items) preload(pl.items.slice(0, 3).map(it => it.say)); // head start before START
+        const pl = ALL[+t.dataset.pick]; if (!was && pl) { if (pl.boss) preload(bossTexts(pl.boss), pl.boss); else preload(pl.items.slice(0, 3).map(it => it.say)); } // head start before START
         return;
       }
       if (t.dataset.opt !== undefined) { if (S.state !== "ask") return; return +t.dataset.opt === S.it.ok ? (SFX.tap(), right()) : wrong(+t.dataset.opt); }
