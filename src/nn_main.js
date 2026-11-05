@@ -33,7 +33,7 @@
     // (rank_15k ... rank_2d), sampled at about temperature 1 instead of random blunders, keeping their old style flags
     // not an opponent: opens the step-by-step lessons for people who have never played
     { id: "tutorial", en: "TUTORIAL", name: "คัมภีร์สอนเล่น", country: "", rank: "มือใหม่เริ่มที่นี่", style: "balance", tutorial: true, search: {},
-      bio: "ไม่เคยเล่นโกะมาก่อน? เริ่มที่นี่ ลุงวินสอนกติกาทีละขั้นบนกระดาน 9×9 ตั้งแต่วางหมาก การกิน โค ตา ไปจนถึงการนับแต้ม พร้อมแบบฝึกให้ลองแตะเล่นเอง",
+      bio: "ไม่เคยเล่นโกะมาก่อน? เริ่มที่นี่ ลุงวินสอนกติกาทีละขั้นบนกระดาน 9×9 ตั้งแต่วางหมาก การกิน โคะ ตา ไปจนถึงการนับแต้ม พร้อมแบบฝึกให้ลองแตะเล่นเอง",
       say: { hello: "มาๆ หลาน ลุงสอนเอง เดี๋ยวก็เป็น" } },
     // beginner coach (owner 2026-11-01, not live yet): plays a gentle 19x19 game with HumanSL at 15 kyu, and during the
     // game offers three choices for each of the player's moves with the idea behind them, and answers typed questions
@@ -93,7 +93,7 @@
       // the opening leans hardest on the 1850s favourites (old joseki); later only near-equal choices go their way
       early: { visits: 100000, timeMs: 15000, era: { top: 5, margin: 0.08, points: 3.5 }, no33: 60 },
       search: { visits: 100000, timeMs: 15000, era: { top: 3, margin: 0.05, points: 2 }, no33: 60 },
-      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เปิดเกมด้วยหมากโคสุมิที่ขึ้นชื่อของชูซากุ และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
+      bio: "วิญญาณนักหมากล้อมจากยุคเอโดะ ฝีมือเทียบเท่าฮงอินโบ ชูซากุ ผู้ชนะรวด 19 ครั้งในการแข่งโอชิโรโกะต่อหน้าโชกุน เล่นหมากแบบโบราณ หนักแน่นไม่ประมาท เปิดเกมด้วยหมากโคะสุมิที่ขึ้นชื่อของชูซากุ และค่อยๆ บีบให้ได้เปรียบทีละน้อย",
       say: { hello: "มาเล่นหมากล้อมด้วยกันเถอะ", ahead: "หมากตานี้… ข้ามองเห็นทางไปถึงตอนจบแล้ว", behind: "ยอดเยี่ยม! นี่แหละหมากที่ข้ารอคอย", win: "ขอบคุณสำหรับเกมที่งดงาม", lose: "หัตถ์แห่งพระเจ้า… ข้าได้เห็นแล้ว" } },
     // Takemiya, cosmic style: sanrensei when his book runs out, and of near-equal moves the one highest toward the centre
     { id: "takemiya", en: "TAKEMIYA", name: "ทาเคมิยะ", country: "ญี่ปุ่น", rank: "9 ดั้งโปร", style: "cosmic", secret: true, special: true, fx: "gold", brain: "b18", opening: "sanrensei", cornersFirst: "44", book: "takemiya-book.json", no33: true,
@@ -133,7 +133,7 @@
       capture: "ครูขอกิน {n} เม็ดนะ ลองดูว่ามันเหลือลมหายใจเดียวตั้งแต่ตอนไหน|หมากโดนกิน {n} เม็ด ไม่เป็นไร ครั้งหน้าระวังตอนเหลือลมหายใจเดียวนะ",
       humanPass: "ผ่านแล้วเหรอ ถ้ายังมีที่ได้แต้ม ลองถามครูก่อนนะ|ผ่านได้เมื่อไม่มีจุดได้แต้มแล้วนะ",
       aiPass: "ครูผ่านนะ ถ้าคุณก็ไม่มีจุดจะเล่น ผ่านตามได้เลย",
-      ko: "อันนี้คือโค กินคืนทันทีไม่ได้ ต้องไปเดินที่อื่นก่อนหนึ่งตานะ",
+      ko: "อันนี้คือโคะ กินคืนทันทีไม่ได้ ต้องไปเดินที่อื่นก่อนหนึ่งตานะ",
       slow: "คิดไม่ออกใช่ไหม ลองดูตัวเลือก A B C ที่ครูให้ หรือพิมพ์ถามครูก็ได้นะ",
       byoyomi: "เข้าเบียวโยมิแล้ว ต้องเดินภายใน 30 วินาทีนะ",
       ahead: "ครูนำอยู่นิดหน่อย ลองดูตัวเลือกที่ครูให้นะ",
@@ -154,7 +154,7 @@
       comeback: "เดี๋ยวนะ ผมกลับมาได้ไง|ดวงล้วนๆ เลยครับเกมนี้",
       humanPass: "พี่ผ่านเหรอครับ ผมต้องผ่านด้วยไหม|เอ่อ… ผ่านแปลว่าจบแล้วใช่ไหมครับ",
       aiPass: "ผมไม่รู้จะลงตรงไหนแล้ว ขอผ่านครับ|ผมว่าเต็มแล้ว ผ่านครับ",
-      ko: "อ๋อ อันนี้ที่เรียกว่าโคใช่ไหมครับ ผมก็งงเหมือนกัน|ต้องไปเดินที่อื่นก่อนนะพี่ ผมเพิ่งอ่านเจอ",
+      ko: "อ๋อ อันนี้ที่เรียกว่าโคะใช่ไหมครับ ผมก็งงเหมือนกัน|ต้องไปเดินที่อื่นก่อนนะพี่ ผมเพิ่งอ่านเจอ",
       hint: "พี่แอบดูคำแนะนำ ผมขอบ้างได้ไหม|โกงนิดๆ ไม่เป็นไรครับ ผมก็อยากโกง",
       slow: "พี่คิดนานจัง ผมไปกินข้าวก่อนได้ไหม|ไม่ต้องรีบนะครับ ผมก็คิดไม่ออกเหมือนกัน",
       byoyomi: "เหลือ 30 วิแล้วนะพี่ รีบๆ|นาฬิกาเดินแล้วพี่!",
@@ -178,7 +178,7 @@
       comeback: "เอ๊ะ ผมกลับมาได้ไง|รับไปรับมา ชนะซะงั้น",
       humanPass: "พี่ผ่านเหรอครับ งั้นผมรับต่อ|ผ่านแล้วเหรอครับ",
       aiPass: "ผมไม่รู้จะรับตรงไหนแล้ว ผ่านครับ|ผ่านครับ",
-      ko: "อันนี้ที่พี่วินเรียกว่าโคใช่ไหม|ต้องไปเดินที่อื่นก่อนสินะครับ",
+      ko: "อันนี้ที่พี่วินเรียกว่าโคะใช่ไหม|ต้องไปเดินที่อื่นก่อนสินะครับ",
       hint: "พี่ดูคำแนะนำด้วย ผมขอดูบ้างได้ไหม|ดูโพยเหมือนดูแผนที่เลยครับ",
       slow: "ไม่ต้องรีบครับ ผมรอออเดอร์อยู่พอดี|คิดนานจัง ผมขอเช็คแอปแป๊บ",
       byoyomi: "เวลานับถอยหลังแล้วนะพี่|รีบหน่อยครับ เหมือนส่งอาหารไม่ทัน",
@@ -226,7 +226,7 @@
       comeback: "พลิกสมการได้แล้วครับ|เห็นไหม คณิตไม่เคยโกหก",
       humanPass: "ผ่านแล้วเหรอครับ ขอนับแต้มในใจก่อน|โอเค ผมคิดต่ออีกนิด",
       aiPass: "คำนวณแล้วไม่มีจุดที่คุ้มค่า ผ่านครับ|ผ่านครับ",
-      ko: "โคครับ ต้องหาจุดคุกคามก่อน|กติกาข้อนี้ผมสอนนักเรียนบ่อย",
+      ko: "โคะครับ ต้องหาจุดคุกคามก่อน|กติกาข้อนี้ผมสอนนักเรียนบ่อย",
       hint: "ดูเฉลยก่อนทำโจทย์เหรอครับ|ไม่เป็นไรครับ ดูแล้วลองคิดตามด้วยนะ",
       slow: "คิดนานแบบนี้ ผมตรวจข้อสอบได้อีกสองแผ่น|ใจเย็นครับ โจทย์ยากต้องใช้เวลา",
       byoyomi: "หมดเวลาหลักแล้วครับ เหลือ 30 วิ|รีบหน่อยครับ เหมือนสอบใกล้หมดเวลา",
@@ -250,7 +250,7 @@
       comeback: "ยังไม่ยอมแพ้ครับ! กลับมาแล้ว|ความพยายามไม่เคยทรยศครับ",
       humanPass: "ผ่านเหรอครับ งั้นผมขอนับดูก่อนนะครับ|เข้าใจแล้วครับ",
       aiPass: "ผมว่าเขตแดนปิดหมดแล้วครับ ขอผ่าน|ขอผ่านครับ",
-      ko: "โคครับ ต้องหาที่ขู่ก่อนนะครับ|ห้ามเก็บโคทันทีครับ ตามกติกา",
+      ko: "โคะครับ ต้องหาที่ขู่ก่อนนะครับ|ห้ามเก็บโคะทันทีครับ ตามกติกา",
       hint: "ใช้คำแนะนำไม่ผิดครับ ผมก็ถามรุ่นพี่บ่อย|ดูเฉลยแล้วอย่าลืมจำนะครับ",
       slow: "คิดอย่างรอบคอบดีมากครับ|ผมรอได้ครับ ที่ชมรมเคยคิดกันตาละสิบนาที",
       byoyomi: "เบียวโยมิแล้วครับ ฮาจิเมะ!|เข้าช่วงนับเวลาแล้วนะครับ",
@@ -274,7 +274,7 @@
       comeback: "ใครบอกว่าเกมนี้จบแล้ว ฮ่าๆ|เซอร์ไพรส์! กลับมาแล้ว",
       humanPass: "ผ่านเหรอ? น่าเบื่อจัง|จบแล้วเหรอ ผมยังมีมุกเหลืออีกเยอะเลย",
       aiPass: "หมดมุกแล้ว… ผ่านก็ได้|โชว์จบแล้ว ผ่าน",
-      ko: "โค! เกมแย่งชิงที่ผมชอบที่สุด|ไปหาขู่ที่อื่นก่อนสิ ผมรอได้",
+      ko: "โคะ! เกมแย่งชิงที่ผมชอบที่สุด|ไปหาขู่ที่อื่นก่อนสิ ผมรอได้",
       hint: "แอบดูโพยเหรอ? ผมไม่มีโพยให้ดูหรอกนะ|คำใบ้ก็ช่วยอ่านใจผมไม่ได้",
       slow: "คิดนานจัง กำลังหาว่าผมจะเล่นมุกอะไรเหรอ|ยิ่งคิดยิ่งงงใช่ไหม ฮ่าๆ",
       byoyomi: "ติ๊กต่อก ติ๊กต่อก…|เวลาเหลือน้อยแล้วนะ ใจเต้นไหม",
@@ -298,7 +298,7 @@
       comeback: "กลับมาแล้ว! ศึกพลิกแล้ว|เห็นไหม สู้ไม่ถอยก็พลิกได้",
       humanPass: "ผ่านเหรอ? ผมยังอยากสู้อยู่เลย|จบแล้วเหรอครับ",
       aiPass: "ศึกจบแล้ว ผ่านครับ|ไม่มีที่ให้สู้แล้ว ผ่าน",
-      ko: "โค! มาแย่งกันเลย|ผมมีเหตุขู่เยอะนะ",
+      ko: "โคะ! มาแย่งกันเลย|ผมมีเหตุขู่เยอะนะ",
       hint: "ดูคำใบ้ได้ แต่ศึกต้องสู้เองนะ|คำใบ้บอกให้หนีหรือให้สู้ล่ะ",
       slow: "อ่านศึกอยู่เหรอครับ ค่อยๆ คิด|ตรงนั้นซับซ้อนจริง ผมรอได้",
       byoyomi: "นับวินาทีแล้วนะครับ|เวลาน้อยแล้ว ระวังโดนตัด",
@@ -346,7 +346,7 @@
       comeback: "เห็นไหม! การบุกคือคำตอบ|กลับมาแล้ว ทีนี้ไม่ปล่อยแล้ว",
       humanPass: "ผ่าน? ไม่สู้แล้วเหรอ|หนีไม่พ้นหรอก",
       aiPass: "ไม่มีอะไรให้ฆ่าแล้ว ผ่าน|ผ่าน น่าเบื่อ",
-      ko: "โคเหรอ ผมชอบสู้โค!|ห้ามเก็บคืนทันที ไปหาที่ขู่มาก่อน",
+      ko: "โคะเหรอ ผมชอบสู้โคะ!|ห้ามเก็บคืนทันที ไปหาที่ขู่มาก่อน",
       hint: "ขอให้ AI ช่วยก็ไม่รอดหรอก|ดูคำใบ้ไปก็เท่านั้น",
       slow: "คิดนานไปก็ไม่รอดหรอก|เร็วเข้า ผมอยากบุกต่อแล้ว",
       byoyomi: "เวลาเริ่มบีบแล้ว!|30 วิ! รีบตายหรือรีบหนี",
@@ -370,7 +370,7 @@
       comeback: "รับไว้ แล้วโต้กลับ นี่แหละวิถีผม|อดทนจนได้ผล",
       humanPass: "ผ่าน? งั้นผมจะปิดประตูให้เรียบร้อย|ได้เลย",
       aiPass: "เขตแดนผมปิดหมดแล้ว ผ่าน|ไม่มีรอยรั่ว ผ่าน",
-      ko: "โคก็ต้องรอจังหวะ เหมือนการตั้งรับ|ห้ามเก็บทันที ไปขู่ที่อื่นก่อน",
+      ko: "โคะก็ต้องรอจังหวะ เหมือนการตั้งรับ|ห้ามเก็บทันที ไปขู่ที่อื่นก่อน",
       hint: "ถามคำใบ้ไปก็ยังหาช่องไม่เจอหรอก|ใช้ทุกทางที่มีเถอะ",
       slow: "ผมรอได้ การรอคือจุดแข็งผม|คิดให้ดี เพราะผมไม่ปล่อยช่องให้",
       byoyomi: "เวลาหมดแล้ว รีบอาจพลาดนะ|ใจเย็นแม้เวลาน้อย",
@@ -394,7 +394,7 @@
       comeback: "เกมพลิกแล้วครับ ห้ามประมาทจนวินาทีสุดท้าย|โกะไม่จบจนกว่าจะนับแต้มครับ",
       humanPass: "ผ่านนะครับ ผมขอตรวจเขตก่อน|รับทราบครับ",
       aiPass: "ผมว่าปิดเขตครบแล้วครับ ผ่าน|ผ่านครับ ถ้าตรงไหนยังไม่จบเล่นต่อได้นะครับ",
-      ko: "เป็นโคครับ ต้องเดินที่อื่นก่อนหนึ่งตา|หาที่ขู่ดีๆ แล้วค่อยกลับมาเก็บครับ",
+      ko: "เป็นโคะครับ ต้องเดินที่อื่นก่อนหนึ่งตา|หาที่ขู่ดีๆ แล้วค่อยกลับมาเก็บครับ",
       hint: "ใช้คำแนะนำเพื่อเรียนรู้ดีครับ|ลองคิดเองก่อนด้วยนะครับ จะเก่งเร็วขึ้น",
       slow: "ไม่ต้องรีบครับ คิดให้รอบคอบ|ตาสำคัญควรใช้เวลาครับ",
       byoyomi: "เข้าเบียวโยมิแล้วครับ เดินตามสัญชาตญาณได้เลย|เหลือ 30 วิต่อตาแล้วครับ",
@@ -466,7 +466,7 @@
       comeback: "เกมยังไม่จบ|ข้ายังอยู่",
       humanPass: "ผ่าน|...",
       aiPass: "ผ่าน|จบแล้ว",
-      ko: "โค|อดทน",
+      ko: "โคะ|อดทน",
       hint: "ถามเครื่องจักรรึ|ตาที่ได้มาง่าย ลืมง่าย",
       slow: "ข้ารอได้|เวลาเป็นของเจ้า",
       byoyomi: "สามสิบวินาที|เวลาหมดแล้ว",
@@ -490,7 +490,7 @@
       comeback: "กลับมาได้ดี",
       humanPass: "ผ่านแล้วใช่ไหม งั้นจบการสอบ",
       aiPass: "ผมผ่าน",
-      ko: "โคแล้ว ต้องหาตาบังคับก่อนนะ",
+      ko: "โคะแล้ว ต้องหาตาบังคับก่อนนะ",
       hint: "ช่วงสอบใช้คำแนะนำไม่ได้นะ",
       slow: "คิดให้ละเอียด ไม่ต้องรีบ",
       byoyomi: "เบียวโยมิแล้ว ระวังเวลา",
@@ -1655,7 +1655,7 @@
     unlockAudio();
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     if (board.color[p] !== EMPTY) return;
-    if (!board.isLegal(p, human)) { if (p === board.ko) speak("ko", { gap: 4 }); flash(p === board.ko ? "ห้ามเดินตรงนี้ทันที เพราะเป็นโค ให้เดินที่อื่นก่อนหนึ่งตา" : "จุดนี้วางไม่ได้ (ไม่มีลมหายใจ)"); return; }
+    if (!board.isLegal(p, human)) { if (p === board.ko) speak("ko", { gap: 4 }); flash(p === board.ko ? "ห้ามเดินตรงนี้ทันที เพราะเป็นโคะ ให้เดินที่อื่นก่อนหนึ่งตา" : "จุดนี้วางไม่ได้ (ไม่มีลมหายใจ)"); return; }
     // on a touch screen the first tap only marks the point; the move is made with the confirm button or a second tap on the same point
     if (lastPtr !== "mouse" && p !== pending) { pending = p; blip(700); render(); return; }
     playMove(p);
@@ -2036,7 +2036,7 @@
   charsEl.addEventListener("pointerdown", e => { swipeX = e.clientX; });
   charsEl.addEventListener("pointerup", e => { if (swipeX === null) return; const dx = e.clientX - swipeX; swipeX = null; if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); });
   document.addEventListener("keydown", e => {
-    if (!$("tutor").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
+    if (!$("tutor").hidden || !$("learn").hidden || !$("anel").hidden || !$("menu").hidden || !$("prof").hidden) return; // the tutorial and the analysis board have their own keys
     if ($("home").hidden) {
       if (ended() && (e.key === "ArrowLeft" || e.key === "ArrowRight")) reviewTo(atNow() + (e.key === "ArrowLeft" ? -1 : 1));
       return;
@@ -2053,6 +2053,10 @@
   // the book returns to wherever it was opened from: the main menu or the character select
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
+  Learn.onHome = () => showMenu();
+  Learn.onBook = () => { tutorFrom = "menu"; Tutorial.open(); };
+  Learn.muted = () => !soundOn;
+  Learn.onPlay = () => Tutorial.onPlay();
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
   async function startExamBot() {
     if (!(await ensureBrain(CHARS[EXAMBOT]))) return;
@@ -2106,15 +2110,15 @@
   Analysis.onPhoto = () => trackMode("photo", true);
   // ---------- main menu and profile ----------
   const MENU = [
+    { id: "learn", t: "LEARN", img: "learn/hikaru_wave.png", s: "เรียนหมากล้อมจากศูนย์ มีเสียงพูด เหมาะกับเด็กและมือใหม่" },
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
     { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
-    { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
     { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
-  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
+  $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="${m.img || `menu/${m.id}.png`}" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
   // the best rank from all of the player's exams with Hikaru (kept apart from the history, which holds only 100 games)
   function bestRank(hist) {
@@ -2132,7 +2136,14 @@
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
-    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
+    sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU.find(m => m.id === "profile").s;
+    // LEARN: progress line, and the (RECOMMEND) tag sits there until a new player has started the course or played a game
+    $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
+    const fresh = !hist.length && !Learn.started();
+    for (const [id, on] of [["learn", fresh], ["exam", !fresh]]) {
+      const b = $("mnList").querySelector(`[data-mn="${id}"] b`); let tag = b.querySelector(".mn-rec");
+      if (on && !tag) b.insertAdjacentHTML("beforeend", ' <i class="mn-rec">(RECOMMEND)</i>'); else if (!on && tag) tag.remove();
+    }
   }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
@@ -2149,6 +2160,7 @@
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+    else if (go === "learn") { hideScreens(); trackMode("learn"); Learn.open(); }
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
