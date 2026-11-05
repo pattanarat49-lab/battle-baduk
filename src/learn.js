@@ -243,10 +243,19 @@ const Learn = (function () {
   }
   // iOS speaks only after a first utterance made inside a tap
   function primeVoice() { try { if (deviceVoice()) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {} }
+  // clips are fetched ahead (whole lesson on open) so a line plays the moment its text appears
+  const clips = new Map();
+  function clip(text) {
+    const k = vkey(plain(text)); let a = clips.get(k);
+    if (!a) { a = new Audio(api.voiceDir + k + ".mp3"); a.preload = "auto"; clips.set(k, a); }
+    try { a.currentTime = 0; } catch (e) {}
+    return a;
+  }
+  function preload(list) { if (!voiceOn || api.muted()) return; for (const t of list) if (t) { const a = clip(t); try { a.load(); } catch (e) {} } }
   function speak(text, delay = 0) {
     stopVoice(); text = plain(text); if (!voiceOn || api.muted() || !text) return;
     const go = () => {
-      const a = new Audio(api.voiceDir + vkey(text) + ".mp3"); audio = a;
+      const a = clip(text); audio = a;
       a.onerror = () => { // no file: the device's own Thai voice, if there is one
         if (audio !== a || sayDevice(text)) return;
         try { const u = new SpeechSynthesisUtterance(text); u.lang = "th-TH"; u.rate = 0.95; speechSynthesis.speak(u); } catch (e) {}
@@ -320,6 +329,7 @@ const Learn = (function () {
     const l = ALL[k]; if (!l || !unlocked(k)) return;
     clearT(); ctx(); SFX.tap(); primeVoice();
     if (l.boss) return openFight(k);
+    preload([...l.items.flatMap(it => [it.say, it.hint]), ...PRAISE, ...OOPS, LINES.done, LINES.out]);
     S.view = "lesson"; S.lesson = k; S.queue = l.items.slice(); S.total = l.items.length; S.done = 0; S.hearts = HEARTS; S.miss = 0; S.usedHint = false;
     nextItem();
   }
@@ -345,7 +355,7 @@ const Learn = (function () {
     if (!S.queue.length) return lessonDone();
     S.it = S.queue[0]; S.state = S.it.t === "info" ? (S.it.play ? "demo" : "info") : "ask"; S.hintShown = false;
     S.pose = S.it.t === "info" ? (S.it.play ? "point" : S.done === 0 && S.queue.length === S.total ? "wave" : "talk") : S.it.t === "choice" ? "wonder" : any(["think", "chin", "arms"]);
-    setupBoard(S.it); renderLesson(); speak(S.it.say, 250);
+    setupBoard(S.it); renderLesson(); speak(S.it.say);
     if (S.it.play) playDemo(0);
   }
   function playDemo(k) {
@@ -392,7 +402,7 @@ const Learn = (function () {
   function right() {
     S.state = "fb"; S.queue.shift(); S.done++;
     const p = PRAISE[(Math.random() * PRAISE.length) | 0]; S.pose = any(MOOD.yes);
-    SFX.good(); speak(p, 380); renderLesson({ ok: true, title: p });
+    SFX.good(); speak(p, 150); renderLesson({ ok: true, title: p });
     confetti(12);
   }
   function wrong(pick) {
@@ -400,7 +410,7 @@ const Learn = (function () {
     S.queue.push(S.queue.shift()); // ask it again at the end, like Duolingo
     const o = OOPS[(Math.random() * OOPS.length) | 0], hint = S.it.hint || ""; S.pose = any(MOOD.oops);
     SFX.bad(); later(SFX.heart, 500);
-    if (hint) speakPair(o, plain(hint)); else speak(o, 450);
+    if (hint) speakPair(o, plain(hint)); else speak(o, 200);
     renderLesson({ ok: false, title: o, text: rich(hint), pick });
     if (S.hearts <= 0) later(outOfHearts, 1500);
   }
@@ -408,11 +418,11 @@ const Learn = (function () {
   function speakPair(a, b) {
     stopVoice(); if (!voiceOn || api.muted()) return;
     later(() => {
-      const x = new Audio(api.voiceDir + vkey(a) + ".mp3"); audio = x;
-      x.onended = () => { if (audio === x) { const y = new Audio(api.voiceDir + vkey(b) + ".mp3"); audio = y; y.play().catch(() => {}); } };
+      const x = clip(a); audio = x;
+      x.onended = () => { if (audio === x) { const y = clip(b); audio = y; y.play().catch(() => {}); } };
       x.onerror = () => { if (audio !== x || sayDevice(a + " " + b)) return; try { const u = new SpeechSynthesisUtterance(a + " " + b); u.lang = "th-TH"; speechSynthesis.speak(u); } catch (e) {} };
       x.play().catch(() => {});
-    }, 450);
+    }, 200);
   }
   function outOfHearts() {
     S.view = "end"; SFX.lose(); speak(LINES.out, 300);
@@ -469,12 +479,13 @@ const Learn = (function () {
   // ---------- boss: capture-go ----------
   function openFight(k) {
     const l = ALL[k], bo = BOSS[l.boss];
+    preload([bo.intro, LINES.bossWin, LINES.bossLose, ...Object.values(LINES)]);
     S.view = "fight"; S.lesson = k; S.it = { n: l.n };
     const N = l.n, b = new Board(N), c = (N - 1) / 2;
     b.a[c * N + c] = 1; b.a[(c + 1) * N + c + 1] = 1; b.a[c * N + c + 1] = 2; b.a[(c + 1) * N + c] = 2; // the cross-cut start
     S.b = b; S.last = -1; S.gone = []; S.x = []; S.ring = []; S.found = new Set(); S.lock = false;
     S.fight = { boss: l.boss, goal: l.goal, me: 0, it: 0, turn: 1, over: false, line: bo.intro, moves: 0 };
-    S.typed = null; renderFight(); speak(bo.intro, 250);
+    S.typed = null; renderFight(); speak(bo.intro);
   }
   function renderFight() {
     const f = S.fight, bo = BOSS[f.boss], l = ALL[S.lesson];
@@ -552,7 +563,9 @@ const Learn = (function () {
       if (t.dataset.pick !== undefined) {
         const pop = t.parentNode.querySelector(".ln-pop"), was = !pop.hidden;
         root.querySelectorAll(".ln-pop").forEach(p => { p.hidden = true; p.parentNode.classList.remove("open"); });
-        pop.hidden = was; t.parentNode.classList.toggle("open", !was); SFX.tap(); return;
+        pop.hidden = was; t.parentNode.classList.toggle("open", !was); SFX.tap();
+        const pl = ALL[+t.dataset.pick]; if (!was && pl && pl.items) preload(pl.items.slice(0, 3).map(it => it.say)); // head start before START
+        return;
       }
       if (t.dataset.opt !== undefined) { if (S.state !== "ask") return; return +t.dataset.opt === S.it.ok ? (SFX.tap(), right()) : wrong(+t.dataset.opt); }
       const act = t.dataset.act;
