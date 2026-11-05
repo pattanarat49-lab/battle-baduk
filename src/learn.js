@@ -220,9 +220,29 @@ const Learn = (function () {
     fire() { tone(220, 0, 0.35, "sawtooth", 0.05, 880); }
   };
   function stopVoice() { if (audio) { try { audio.pause(); } catch (e) {} audio = null; } try { speechSynthesis.cancel(); } catch (e) {} }
+  // the device's own Thai voice sounds much more natural than the pre-made files, so it comes first; the files are for devices without one
+  let thVoice;
+  function deviceVoice() {
+    if (thVoice !== undefined && thVoice !== null) return thVoice;
+    try {
+      const vs = speechSynthesis.getVoices().filter(v => /^th/i.test(v.lang));
+      if (!vs.length) { thVoice = null; return null; }
+      const pref = ["Premwadee", "Niwat", "Kanya", "Narisa", "Google", "Achara", "Pattara"];
+      thVoice = vs.sort((a, b) => { const r = v => { const k = pref.findIndex(n => v.name.includes(n)); return k < 0 ? 99 : k; }; return r(a) - r(b); })[0];
+      return thVoice;
+    } catch (e) { thVoice = null; return null; }
+  }
+  try { speechSynthesis.onvoiceschanged = () => { thVoice = undefined; deviceVoice(); }; } catch (e) {}
+  function sayDevice(text) {
+    const v = deviceVoice(); if (!v) return false;
+    try { const u = new SpeechSynthesisUtterance(text); u.voice = v; u.lang = v.lang; u.rate = 1; u.pitch = 1.12; speechSynthesis.speak(u); return true; } catch (e) { return false; }
+  }
+  // iOS speaks only after a first utterance made inside a tap
+  function primeVoice() { try { if (deviceVoice()) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {} }
   function speak(text, delay = 0) {
     stopVoice(); text = plain(text); if (!voiceOn || api.muted() || !text) return;
     const go = () => {
+      if (sayDevice(text)) return;
       const a = new Audio(api.voiceDir + vkey(text) + ".mp3"); audio = a;
       a.onerror = () => { // no file: the device's own Thai voice, if there is one
         try { const u = new SpeechSynthesisUtterance(text); u.lang = "th-TH"; u.rate = 0.95; speechSynthesis.speak(u); } catch (e) {}
@@ -262,8 +282,8 @@ const Learn = (function () {
 
   function head() {
     return `<div class="ln-top"><button class="ln-x" data-act="home" aria-label="กลับ">← กลับ</button>
-      <div class="ln-stat"><span class="ln-fire${liveStreak() ? " on" : ""}" title="เรียนต่อเนื่อง">🔥 ${liveStreak()}</span><span class="ln-xp" title="คะแนนประสบการณ์">⭐ ${prog.xp} XP</span>
-      <button class="ln-voice" data-act="voice" aria-label="เสียงพูด">${voiceOn ? "🔊" : "🔇"}</button></div></div>`;
+      <div class="ln-stat"><span class="ln-fire${liveStreak() ? " on" : ""}" title="เรียนต่อเนื่อง">🔥 ${liveStreak()}</span><span class="ln-xp" title="คะแนนประสบการณ์"><img class="ln-ic " src="learn/icon_star.png" alt=""> ${prog.xp} XP</span>
+      <button class="ln-voice" data-act="voice" aria-label="เสียงพูด"><img class="ln-ic${voiceOn ? "" : " off"}" src="learn/icon_voice.png" alt=""></button></div></div>`;
   }
   function renderPath() {
     S.view = "path"; clearT(); stopVoice();
@@ -279,7 +299,7 @@ const Learn = (function () {
           <div class="ln-pop" style="--uc:${u.c}" hidden><b>${l.t}</b><small>${open ? (l.boss ? `จับหมากกับ${BOSS[l.boss].name} · กินก่อน ${l.goal} เม็ดชนะ` : `${l.items.length} ข้อ`) : "ผ่านด่านก่อนหน้าก่อนนะ"}</small>
             ${open ? `<button class="ln-btn pop" data-lesson="${k}">${st ? "เล่นอีกครั้ง" : "เริ่ม"} +${l.boss ? 30 : 25} XP</button>` : ""}</div>
           ${off === 0 || k % 3 === 2 ? `<img class="ln-deco ${off > 0 ? "l" : off < 0 ? "r" : side === "l" ? "r" : "l"}" style="--dl:${(k % 5) * .3}s" src="learn/stone_${(k * 7) % 16 + 1}.png" alt="">` : ""}
-          <div class="ln-cap">${l.t}</div><div class="ln-stars">${[1, 2, 3].map(n => `<i class="${n <= st ? "on" : ""}">★</i>`).join("")}</div></div>`;
+          <div class="ln-cap">${l.t}</div><div class="ln-stars">${[1, 2, 3].map(n => `<img class="ln-ic${n <= st ? "" : " off"}" src="learn/icon_star.png" alt="">`).join("")}</div></div>`;
         k++;
       });
       h += `</div>`;
@@ -294,7 +314,7 @@ const Learn = (function () {
   // ---------- a lesson ----------
   function openLesson(k) {
     const l = ALL[k]; if (!l || !unlocked(k)) return;
-    clearT(); ctx(); SFX.tap();
+    clearT(); ctx(); SFX.tap(); primeVoice();
     if (l.boss) return openFight(k);
     S.view = "lesson"; S.lesson = k; S.queue = l.items.slice(); S.total = l.items.length; S.done = 0; S.hearts = HEARTS; S.miss = 0; S.usedHint = false;
     nextItem();
@@ -302,11 +322,11 @@ const Learn = (function () {
   function lessonShell(body, foot) {
     const pct = Math.round(S.done / S.total * 100);
     return `<div class="ln-top lesson"><button class="ln-x" data-act="quit" aria-label="ออก">✕</button><div class="ln-prog"><i style="width:${pct}%"></i></div>
-      <span class="ln-hearts${S.hurt ? " hurt" : ""}">❤️ ${S.hearts}</span><button class="ln-voice" data-act="voice" aria-label="เสียงพูด">${voiceOn ? "🔊" : "🔇"}</button></div>
+      <span class="ln-hearts${S.hurt ? " hurt" : ""}"><img class="ln-ic " src="learn/icon_heart.png" alt=""> ${S.hearts}</span><button class="ln-voice" data-act="voice" aria-label="เสียงพูด"><img class="ln-ic${voiceOn ? "" : " off"}" src="learn/icon_voice.png" alt=""></button></div>
       <div class="ln-stage">${body}</div>${foot || ""}`;
   }
   function talk(face, name, text, boss) {
-    return `<div class="ln-talk${boss ? " boss" : ""}"><div class="ln-bub"><div class="ln-who">${name}</div><p>${rich(text)}</p><button class="ln-say" data-act="again" aria-label="ฟังอีกครั้ง">🔊</button></div>
+    return `<div class="ln-talk${boss ? " boss" : ""}"><div class="ln-bub"><div class="ln-who">${name}</div><p>${rich(text)}</p><button class="ln-say" data-act="again" aria-label="ฟังอีกครั้ง"><img class="ln-ic " src="learn/icon_voice.png" alt=""></button></div>
       <img class="ln-mascot${boss ? " face" : ""}" src="${face}" alt="${name}"></div>`;
   }
   const mood = () => TEACH.pose(S.pose || "idle");
@@ -345,7 +365,7 @@ const Learn = (function () {
       <button class="ln-btn big ${fb.ok ? "pri" : "red"}" data-act="next">${fb.ok ? "ต่อไป" : "เข้าใจแล้ว"}</button></div></div>`;
     else if (S.state === "info" || S.state === "demo") foot = `<div class="ln-sheet"><div class="in"><span></span><button class="ln-btn big pri" data-act="next"${S.state === "demo" ? " disabled" : ""}>ต่อไป</button></div></div>`;
     else foot = `<div class="ln-sheet"><div class="in"><button class="ln-btn link" data-act="skip">ข้าม</button>${it.hint ? `<button class="ln-btn hint" data-act="hint">💡 คำใบ้</button>` : "<span></span>"}<span class="ln-sp"></span></div></div>`;
-    const text = S.hintShown && S.state === "ask" ? it.hint : it.say;
+    const text = S.nudge || (S.hintShown && S.state === "ask" ? it.hint : it.say);
     $("learn").innerHTML = lessonShell(`<div class="ln-label${it.t === "info" ? " new" : ""}">${label}</div><h2 class="ln-title">${it.t === "info" ? ALL[S.lesson].t : TITLE[it.t] || ""}</h2>` + talk(mood(), TEACH.name, text) + `<div class="ln-boardbox"><svg id="lnBoard" role="img" aria-label="กระดาน"></svg></div>` + meta + opts, foot);
     $("learn").className = "learn lesson";
     drawBoard();
@@ -384,6 +404,7 @@ const Learn = (function () {
   function speakPair(a, b) {
     stopVoice(); if (!voiceOn || api.muted()) return;
     later(() => {
+      if (sayDevice(a + " " + b)) return;
       const x = new Audio(api.voiceDir + vkey(a) + ".mp3"); audio = x;
       x.onended = () => { if (audio === x) { const y = new Audio(api.voiceDir + vkey(b) + ".mp3"); audio = y; y.play().catch(() => {}); } };
       x.onerror = () => { try { const u = new SpeechSynthesisUtterance(a + " " + b); u.lang = "th-TH"; speechSynthesis.speak(u); } catch (e) {} };
@@ -402,7 +423,7 @@ const Learn = (function () {
     finish(l.id, stars, xp);
     S.view = "end"; SFX.done(); speak(LINES.done, 500); confetti(40);
     $("learn").innerHTML = `<div class="ln-end"><img class="ln-endimg" src="${TEACH.pose("yay")}" alt=""><h2>เรียนจบบท "${l.t}"</h2>
-      <div class="ln-bigstars">${[1, 2, 3].map(n => `<i class="${n <= stars ? "on" : ""}" style="--d:${n * .25}s">★</i>`).join("")}</div>
+      <div class="ln-bigstars">${[1, 2, 3].map(n => `<img class="${n <= stars ? "on" : "off"}" style="--d:${n * .25}s" src="learn/icon_star.png" alt="">`).join("")}</div>
       <div class="ln-tiles"><div class="ln-tile xp"><small>ได้ XP</small><b>+${xp}</b></div><div class="ln-tile acc"><small>ถูกต้อง</small><b>${Math.round(S.total / (S.total + S.miss) * 100)}%</b></div>
       <div class="ln-tile fire${!wasToday ? " up" : ""}"><small>เรียนต่อเนื่อง</small><b>🔥 ${liveStreak()} วัน</b></div></div>
       ${!wasToday && liveStreak() > before ? `<p class="ln-note">เรียนต่อเนื่องเพิ่มเป็น ${liveStreak()} วันแล้ว พรุ่งนี้มาเรียนอีกนะ</p>` : ""}
@@ -415,10 +436,13 @@ const Learn = (function () {
   function tapLesson(i) {
     const it = S.it, b = S.b, N = b.N, ans = L(it.ans, N);
     const place = () => { const r = b.play(1, i); if (r.ok) { S.last = i; S.gone = r.cap.map(s => [s, 2]); r.cap.length ? SFX.cap() : SFX.stone(); } return r; };
-    if (it.t === "any") { if (b.a[i]) return; place(); drawBoard(); return later(right, 350); }
-    if (it.t === "tap") { if (b.a[i]) return; if (!ans.includes(i)) return wrongAt(i); place(); drawBoard(); return later(right, 350); }
-    if (it.t === "stone") { if (!b.a[i]) return; if (!ans.includes(i)) return wrongAt(i); S.ring = [i]; SFX.tap(); drawBoard(); return later(right, 300); }
-    if (it.t === "illegal") { if (b.a[i]) return; if (!ans.includes(i)) return wrongAt(i); S.x = [i]; SFX.tap(); drawBoard(); return later(right, 300); }
+    const busy = () => { S.nudge = "ตรงนั้นมีหมากอยู่แล้ว ลองแตะจุดว่างนะ"; SFX.heart(); renderLesson(); S.nudge = null; };
+    if (it.t === "stone" && !b.a[i]) { S.nudge = "แตะที่ตัวหมากดำเลยนะ"; SFX.heart(); renderLesson(); S.nudge = null; return; }
+    if (it.t !== "stone" && b.a[i]) return busy();
+    if (it.t === "any") { place(); drawBoard(); return later(right, 350); }
+    if (it.t === "tap") { if (!ans.includes(i)) return wrongAt(i); place(); drawBoard(); return later(right, 350); }
+    if (it.t === "stone") { if (!ans.includes(i)) return wrongAt(i); S.ring = [i]; SFX.tap(); drawBoard(); return later(right, 300); }
+    if (it.t === "illegal") { if (!ans.includes(i)) return wrongAt(i); S.x = [i]; SFX.tap(); drawBoard(); return later(right, 300); }
     if (it.t === "libs") {
       const libs = b.group(P(it.of, N)).libs; if (S.found.has(i)) return;
       if (!libs.has(i)) return wrongAt(i);
@@ -427,7 +451,6 @@ const Learn = (function () {
       return renderLesson();
     }
     if (["capture", "escape", "atari"].includes(it.t)) {
-      if (b.a[i]) return;
       const t = b.clone(), r = t.play(1, i);
       if (!r.ok) return wrongAt(i);
       const good = it.t === "capture" ? r.cap.length >= (it.min || 1)
@@ -512,7 +535,8 @@ const Learn = (function () {
     const svg = $("lnBoard"); if (!svg) return -1;
     const N = S.b.N, p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
     const q = p.matrixTransform(svg.getScreenCTM().inverse()), x = Math.round(q.x), y = Math.round(q.y);
-    return x < 0 || y < 0 || x >= N || y >= N || Math.hypot(q.x - x, q.y - y) > .55 ? -1 : y * N + x;
+    const cx = Math.max(0, Math.min(N - 1, x)), cy = Math.max(0, Math.min(N - 1, y)); // any tap on the board counts, snapped to the nearest point
+    return q.x < -.75 || q.y < -.75 || q.x > N - .25 || q.y > N - .25 ? -1 : cy * N + cx;
   }
   function wire() {
     wired = true;
@@ -529,7 +553,7 @@ const Learn = (function () {
       }
       if (t.dataset.opt !== undefined) { if (S.state !== "ask") return; return +t.dataset.opt === S.it.ok ? (SFX.tap(), right()) : wrong(+t.dataset.opt); }
       const act = t.dataset.act;
-      if (act === "voice") { voiceOn = !voiceOn; try { localStorage.setItem("gonn.learnVoice", voiceOn ? "1" : "0"); } catch (e) {} if (!voiceOn) stopVoice(); t.textContent = voiceOn ? "🔊" : "🔇"; return; }
+      if (act === "voice") { voiceOn = !voiceOn; try { localStorage.setItem("gonn.learnVoice", voiceOn ? "1" : "0"); } catch (e) {} if (!voiceOn) stopVoice(); t.querySelector("img").classList.toggle("off", !voiceOn); return; }
       if (act === "again") return speak(S.view === "fight" ? S.fight.line : S.it.say);
       if (act === "next") { SFX.tap(); if (S.state === "fb" && S.hearts <= 0) return; if (S.state === "info") { S.queue.shift(); S.done++; } return nextItem(); }
       if (act === "hint") { S.hintShown = true; S.usedHint = true; S.pose = "point"; if (S.it.ans && !["stone"].includes(S.it.t)) S.ring = L(S.it.ans, S.it.n || 5).slice(0, 1); SFX.tap(); renderLesson(); return speak(S.it.hint); }
