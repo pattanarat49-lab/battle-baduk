@@ -63,7 +63,7 @@ const Analysis = (function () {
     const myB = nb(c), opB = nb(o);
     // tactics
     const capt = A.caps[c] - B.caps[c];
-    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโค อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`, false, "capture");
+    if (capt > 0) add(10 + capt, `กินหมาก${on} ${capt} เม็ด${A.ko !== PASS ? " (เป็นการกินโคะ อีกฝ่ายกินคืนทันทีไม่ได้)" : ""}`, false, "capture");
     const hm = A.head[m], myLibs = A.libs(hm, 4);
     const saved = myB.filter(h => B.libs(h, 2) === 1).reduce((s, h) => s + B.gsize[h], 0);
     if (saved && myLibs >= 2) add(9 + saved, `พาหมาก${cn} ${saved} เม็ดที่โดนขู่กิน (อะตาริ) หนีออกมา${myLibs === 2 ? " แต่ยังเหลือลมหายใจแค่ 2 ต้องระวังต่อ" : ""}`, false, "escape");
