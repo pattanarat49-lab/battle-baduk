@@ -57,8 +57,8 @@ const Learn = (function () {
         { t: "libs", n: 5, w: "c3", of: "c3", say: "ลองแตะลมหายใจของหมากขาวให้ครบทุกจุด", hint: "ลมหายใจอยู่ติดหมากตรงๆ ไม่นับแนวทแยงนะ" },
         { t: "choice", n: 5, b: "a3", opts: ["2", "3", "4"], ok: 1, say: "หมากที่อยู่ริมกระดาน มีลมหายใจกี่จุด", hint: "ริมกระดานไม่มีลมหายใจด้านนอก เหลือแค่สามจุด" },
         { t: "choice", n: 5, b: "a1", opts: ["2", "3", "4"], ok: 0, say: "แล้วหมากที่อยู่มุมล่ะ มีลมหายใจกี่จุด", hint: "มุมกระดานมีลมหายใจแค่สองจุด" },
-        { t: "info", n: 5, b: "c3 d3", lib: "c3", say: "หมากสีเดียวกันที่อยู่ติดกัน เป็น**ทีมเดียวกัน** ใช้ลมหายใจร่วมกัน สองเม็ดนี้มีลมหายใจหกจุด" },
-        { t: "libs", n: 5, w: "b3 c3", b: "c4", of: "c3", say: "แตะลมหายใจของทีมหมากขาวให้ครบ จุดที่มีหมากดำอยู่แล้วไม่นับนะ", hint: "หาจุดว่างรอบหมากขาวทั้งสองเม็ด" }
+        { t: "info", n: 5, b: "c3 d3", lib: "c3", say: "หมากสีเดียวกันที่อยู่ติดกัน เป็น**กลุ่มเดียวกัน** ใช้ลมหายใจร่วมกัน สองเม็ดนี้มีลมหายใจหกจุด" },
+        { t: "libs", n: 5, w: "b3 c3", b: "c4", of: "c3", say: "แตะลมหายใจของกลุ่มหมากขาวให้ครบ จุดที่มีหมากดำอยู่แล้วไม่นับนะ", hint: "หาจุดว่างรอบหมากขาวทั้งสองเม็ด" }
       ] }
     ] },
     { t: "กินหมาก", c: "#1cb0f6", lessons: [
@@ -70,12 +70,12 @@ const Learn = (function () {
         { t: "capture", n: 5, w: "d4", b: "d5 e4 c4", ans: "d3", say: "อีกข้อนะ กินหมากขาวให้ได้", hint: "ดูด้านล่างของหมากขาว" },
         { t: "choice", n: 5, opts: ["โดนกิน ยกออก", "กลายเป็นสีดำ", "อยู่ที่เดิม"], ok: 0, say: "ถ้าหมากโดนปิดลมหายใจจนหมด จะเกิดอะไรขึ้น", hint: "หมากที่ไม่มีลมหายใจ จะโดนกินแล้วยกออก" }
       ] },
-      { id: "u2b", t: "กินทั้งทีม", icon: "✋", items: [
-        { t: "info", n: 7, w: "c4 d4", b: "b4 c5 d5 e4 c3", play: [{ c: 1, at: "d3" }], say: "ทีมหมากก็**โดนกินได้ทั้งทีม** ถ้าโดนปิดลมหายใจจนหมด ดูนะ" },
-        { t: "capture", n: 7, w: "d4 d5", b: "c4 c5 e4 e5 d6", ans: "d3", min: 2, say: "ลองกินหมากขาวทั้งสองเม็ดเลย", hint: "ทีมขาวเหลือลมหายใจจุดเดียว" },
-        { t: "choice", n: 7, w: "d4 d5", b: "c4 c5 e4 d6", lib: "d4", opts: ["1", "2", "3"], ok: 1, say: "ทีมหมากขาวนี้ เหลือลมหายใจกี่จุด", hint: "นับจุดว่างที่ติดกับหมากขาว ได้สองจุด" },
-        { t: "capture", n: 7, w: "a4 a5", b: "a6 b5 b4", ans: "a3", min: 2, say: "ทีมขาวที่ริมกระดาน ก็กินได้นะ ลองดู", hint: "ลมหายใจสุดท้ายอยู่ริมกระดานด้านล่าง" },
-        { t: "capture", n: 7, w: "c3 d3", b: "b3 c4 d4 e3 c2", ans: "d2", min: 2, say: "ข้อสุดท้าย กินทีมขาวให้หมด", hint: "หาจุดว่างจุดเดียวที่ติดกับหมากขาว" }
+      { id: "u2b", t: "กินทั้งกลุ่ม", icon: "✋", items: [
+        { t: "info", n: 7, w: "c4 d4", b: "b4 c5 d5 e4 c3", play: [{ c: 1, at: "d3" }], say: "กลุ่มหมากก็**โดนกินได้ทั้งกลุ่ม** ถ้าโดนปิดลมหายใจจนหมด ดูนะ" },
+        { t: "capture", n: 7, w: "d4 d5", b: "c4 c5 e4 e5 d6", ans: "d3", min: 2, say: "ลองกินหมากขาวทั้งสองเม็ดเลย", hint: "กลุ่มขาวเหลือลมหายใจจุดเดียว" },
+        { t: "choice", n: 7, w: "d4 d5", b: "c4 c5 e4 d6", lib: "d4", opts: ["1", "2", "3"], ok: 1, say: "กลุ่มหมากขาวนี้ เหลือลมหายใจกี่จุด", hint: "นับจุดว่างที่ติดกับหมากขาว ได้สองจุด" },
+        { t: "capture", n: 7, w: "a4 a5", b: "a6 b5 b4", ans: "a3", min: 2, say: "กลุ่มขาวที่ริมกระดาน ก็กินได้นะ ลองดู", hint: "ลมหายใจสุดท้ายอยู่ริมกระดานด้านล่าง" },
+        { t: "capture", n: 7, w: "c3 d3", b: "b3 c4 d4 e3 c2", ans: "d2", min: 2, say: "ข้อสุดท้าย กินกลุ่มขาวให้หมด", hint: "หาจุดว่างจุดเดียวที่ติดกับหมากขาว" }
       ] },
       { id: "boss1", boss: "mek", goal: 1, n: 7, t: "บอส · เมฆ" }
     ] },
@@ -92,7 +92,7 @@ const Learn = (function () {
         { t: "info", n: 5, w: "c3", b: "c4 b3", say: "ทีนี้เราเป็นฝ่ายขู่บ้าง ถ้าเราวางให้หมากขาวเหลือลมหายใจจุดเดียว เรียกว่าเราอาตาริ" },
         { t: "atari", n: 5, w: "c3", b: "c4 b3", ans: "d3 c2", say: "วางหมากให้หมากขาวเหลือลมหายใจจุดเดียว", hint: "หมากขาวมีลมหายใจสองจุด ปิดไปหนึ่งจุด" },
         { t: "atari", n: 5, w: "b4", b: "a4 b5", ans: "c4 b3", say: "อาตาริหมากขาวเม็ดนี้", hint: "ปิดลมหายใจทางขวาหรือด้านล่าง" },
-        { t: "atari", n: 7, w: "d4 e4", b: "c4 d5 e5 f4", ans: "d3 e3", say: "อาตาริทีมหมากขาวทั้งทีมเลย", hint: "ทีมขาวมีลมหายใจสองจุด อยู่ด้านล่าง" },
+        { t: "atari", n: 7, w: "d4 e4", b: "c4 d5 e5 f4", ans: "d3 e3", say: "อาตาริกลุ่มหมากขาวทั้งกลุ่มเลย", hint: "กลุ่มขาวมีลมหายใจสองจุด อยู่ด้านล่าง" },
         { t: "choice", n: 5, opts: ["กินหมากขาวได้", "ต้องรอผ่าน"], ok: 0, say: "ถ้าเราอาตาริแล้ว ขาวไม่หนี ตาต่อไปเราทำอะไรได้", hint: "ปิดลมหายใจสุดท้ายได้เลย" }
       ] },
       { id: "boss2", boss: "win", goal: 2, n: 7, t: "บอส · ลุงวิน" }
@@ -128,11 +128,26 @@ const Learn = (function () {
       ] }
     ] }
   ];
+  // each boss speaks for himself, in his own voice: learn/voice/<boss>_<hash>.mp3 (turn / yours are shown, not spoken)
   const BOSS = {
-    mek: { name: "เมฆ", face: "chars/mek_face.jpg", see: 0.5, intro: "บอสด่านแรกคือเมฆ ใครกินหมากได้ก่อนหนึ่งเม็ดชนะ สู้ๆ นะ" },
-    win: { name: "ลุงวิน", face: "chars/win_face.jpg", see: 0.72, intro: "บอสคนต่อไปคือลุงวิน ใครกินหมากได้ก่อนสองเม็ดชนะ อย่าลืมหนีหมากที่โดนขู่นะ" },
-    yuto: { name: "ยูโตะ", face: "chars/yuto_face.jpg", see: 0.9, intro: "บอสคนสุดท้ายคือยูโตะ เก่งมากเลยนะ ใครกินหมากได้ก่อนสามเม็ดชนะ" }
+    mek: { name: "เมฆ", face: "chars/mek_face.jpg", see: 0.5, say: {
+      intro: "สวัสดีครับพี่ ผมชื่อเมฆ ผมเพิ่งหัดเล่นเหมือนกัน ใครกินหมากได้ก่อนหนึ่งเม็ดชนะนะครับ",
+      warn: "ระวังนะพี่ หมากของพี่โดนอาตาริอยู่", capOk: "ไม่นะ หมากผมโดนกินแล้ว", capBad: "เย้ ผมกินได้แล้ว",
+      win: "พี่เก่งจังเลย สอนผมบ้างได้ไหมครับ", lose: "ผมชนะเหรอ ไม่อยากเชื่อเลย มาเล่นกันอีกนะพี่",
+      turn: "ตาผมบ้างนะครับ", yours: "ตาพี่แล้วครับ" } },
+    win: { name: "ลุงวิน", face: "chars/win_face.jpg", see: 0.72, say: {
+      intro: "ลุงวินมาแล้ว หมากฮอสลุงไม่เคยแพ้ใครนะ ใครกินหมากได้ก่อนสองเม็ดชนะ ระวังหมากโดนขู่ล่ะหลาน",
+      warn: "หมากหลานโดนอาตาริอยู่นะ จะหนีไหม", capOk: "เฮ้ย หมากลุงหายไปแล้ว", capBad: "เสร็จลุง กินซะเลย",
+      win: "เก่งนี่หว่า เดี๋ยวลุงไปฝึกมาใหม่", lose: "เห็นไหม เซียนก็คือเซียน มาลองใหม่ได้นะหลาน",
+      turn: "ตาลุงบ้างละ", yours: "ตาหลานแล้ว" } },
+    yuto: { name: "ยูโตะ", face: "chars/yuto_face.jpg", see: 0.9, say: {
+      intro: "โอเนไงชิมัส ผมชื่อยูโตะครับ ใครกินหมากได้ก่อนสามเม็ดชนะ ขอคำชี้แนะด้วยครับ",
+      warn: "หมากของคุณโดนอาตาริอยู่นะครับ", capOk: "อ๊ะ ผมอ่านพลาดไปครับ", capBad: "ขออนุญาตกินนะครับ",
+      win: "มาเกะมาชิตะ ขอบคุณที่ชี้แนะครับ", lose: "ขอบคุณสำหรับเกมครับ ลองใหม่อีกครั้งนะครับ",
+      turn: "ขออนุญาตเดินนะครับ", yours: "เชิญครับ" } }
   };
+  const SPOKEN = ["intro", "warn", "capOk", "capBad", "win", "lose"];
+  const bossTexts = k => SPOKEN.map(n => BOSS[k].say[n]);
   // the teacher is Hikaru (the owner's chibi sprites), perched on the top edge of the board; his pose follows the mood
   const TEACH = { name: "ฮิคารุ", pose: m => `learn/hikaru_${m}.png` };
   const any = a => a[(Math.random() * a.length) | 0];
@@ -144,8 +159,7 @@ const Learn = (function () {
   const OOPS = ["ไม่เป็นไรนะ ลองใหม่อีกที", "เกือบแล้ว ลองอีกครั้งนะ", "ยังไม่ใช่ ค่อยๆ ดูนะ"];
   const LINES = {
     done: "เรียนจบบทนี้แล้ว เก่งมากเลย", out: "หัวใจหมดแล้ว ไม่เป็นไรนะ มาลองใหม่กัน",
-    bossWin: "ชนะแล้ว สุดยอดไปเลย", bossLose: "เกือบแล้ว มาลองใหม่อีกที", grad: "ยินดีด้วย หนูเรียนจบทุกบทแล้ว ไปลองเล่นจริงกับเมฆบนกระดานเก้าคูณเก้ากันเลย",
-    capOk: "กินได้แล้ว", capBad: "โอ๊ะ โดนกินซะแล้ว"
+    grad: "ยินดีด้วย หนูเรียนจบทุกบทแล้ว ไปลองเล่นจริงกับเมฆบนกระดานเก้าคูณเก้ากันเลย"
   };
   const ALL = UNITS.flatMap((u, k) => u.lessons.map(l => Object.assign(l, { unit: k })));
   const HEARTS = 5;
@@ -153,7 +167,7 @@ const Learn = (function () {
   // every spoken sentence maps to learn/voice/<fnv-1a of the text>.mp3 (src/tools/learn_voice.py makes them)
   function vkey(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); }
   function texts() {
-    const t = new Set([...PRAISE, ...OOPS, ...Object.values(LINES), ...Object.values(BOSS).map(b => b.intro)]);
+    const t = new Set([...PRAISE, ...OOPS, ...Object.values(LINES)]);
     for (const l of ALL) for (const it of l.items || []) { t.add(plain(it.say)); if (it.hint) t.add(plain(it.hint)); }
     return [...t];
   }
@@ -245,17 +259,17 @@ const Learn = (function () {
   function primeVoice() { try { if (deviceVoice()) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {} }
   // clips are fetched ahead (whole lesson on open) so a line plays the moment its text appears
   const clips = new Map();
-  function clip(text) {
-    const k = vkey(plain(text)); let a = clips.get(k);
+  function clip(text, who = "") {
+    const k = (who ? who + "_" : "") + vkey(plain(text)); let a = clips.get(k);
     if (!a) { a = new Audio(api.voiceDir + k + ".mp3"); a.preload = "auto"; clips.set(k, a); }
     try { a.currentTime = 0; } catch (e) {}
     return a;
   }
-  function preload(list) { if (!voiceOn || api.muted()) return; for (const t of list) if (t) { const a = clip(t); try { a.load(); } catch (e) {} } }
-  function speak(text, delay = 0) {
+  function preload(list, who) { if (!voiceOn || api.muted()) return; for (const t of list) if (t) { const a = clip(t, who); try { a.load(); } catch (e) {} } }
+  function speak(text, delay = 0, who = "") {
     stopVoice(); text = plain(text); if (!voiceOn || api.muted() || !text) return;
     const go = () => {
-      const a = clip(text); audio = a;
+      const a = clip(text, who); audio = a;
       a.onerror = () => { // no file: the device's own Thai voice, if there is one
         if (audio !== a || sayDevice(text)) return;
         try { const u = new SpeechSynthesisUtterance(text); u.lang = "th-TH"; u.rate = 0.95; speechSynthesis.speak(u); } catch (e) {}
@@ -479,13 +493,13 @@ const Learn = (function () {
   // ---------- boss: capture-go ----------
   function openFight(k) {
     const l = ALL[k], bo = BOSS[l.boss];
-    preload([bo.intro, LINES.bossWin, LINES.bossLose, ...Object.values(LINES)]);
+    preload(bossTexts(l.boss), l.boss);
     S.view = "fight"; S.lesson = k; S.it = { n: l.n };
     const N = l.n, b = new Board(N), c = (N - 1) / 2;
     b.a[c * N + c] = 1; b.a[(c + 1) * N + c + 1] = 1; b.a[c * N + c + 1] = 2; b.a[(c + 1) * N + c] = 2; // the cross-cut start
     S.b = b; S.last = -1; S.gone = []; S.x = []; S.ring = []; S.found = new Set(); S.lock = false;
-    S.fight = { boss: l.boss, goal: l.goal, me: 0, it: 0, turn: 1, over: false, line: bo.intro, moves: 0 };
-    S.typed = null; renderFight(); speak(bo.intro);
+    S.fight = { boss: l.boss, goal: l.goal, me: 0, it: 0, turn: 1, over: false, line: bo.say.intro, moves: 0 };
+    S.typed = null; renderFight(); speak(bo.say.intro, 0, l.boss);
   }
   function renderFight() {
     const f = S.fight, bo = BOSS[f.boss], l = ALL[S.lesson];
@@ -507,7 +521,8 @@ const Learn = (function () {
     const f = S.fight, r = S.b.play(c, i);
     if (!r.ok) return false;
     f.moves++; S.last = i; S.gone = r.cap.map(s => [s, 3 - c]);
-    if (r.cap.length) { if (c === 1) { f.me += r.cap.length; f.line = LINES.capOk; SFX.cap(); } else { f.it += r.cap.length; f.line = LINES.capBad; SFX.bad(); } }
+    const bs = BOSS[f.boss].say;
+    if (r.cap.length) { if (c === 1) { f.me += r.cap.length; f.line = bs.capOk; SFX.cap(); } else { f.it += r.cap.length; f.line = bs.capBad; SFX.bad(); } }
     else SFX.stone();
     if (f.me >= f.goal || f.it >= f.goal) return endFight(f.me >= f.goal), true;
     f.turn = 3 - c;
@@ -515,24 +530,29 @@ const Learn = (function () {
   }
   function endFight(won) {
     const f = S.fight; f.over = true; f.won = won; f.turn = 0;
-    f.line = won ? LINES.bossWin : LINES.bossLose;
+    f.line = BOSS[f.boss].say[won ? "win" : "lose"];
     renderFight();
-    if (won) { SFX.done(); confetti(40); speak(LINES.bossWin, 600); }
-    else { later(SFX.lose, 300); speak(LINES.bossLose, 900); }
+    if (won) { SFX.done(); confetti(40); speak(f.line, 600, f.boss); }
+    else { later(SFX.lose, 300); speak(f.line, 900, f.boss); }
   }
   function tapFight(i) {
     const f = S.fight;
     if (S.b.a[i]) return;
     if (!fightMove(1, i)) { S.x = [i]; SFX.heart(); drawBoard(); later(() => { S.x = []; drawBoard(); }, 600); return; }
     if (f.over) return;
-    if (!f.line || f.line === BOSS[f.boss].intro) f.line = "ตาฉันบ้างนะ";
+    const bs = BOSS[f.boss].say;
+    if (f.line === bs.capOk) speak(f.line, 250, f.boss); else f.line = bs.turn;
     renderFight(); S.lock = true;
     later(() => {
       S.lock = false;
       const j = botMove(S.b, 2, BOSS[f.boss].see);
       if (j < 0 || f.moves > S.b.N * S.b.N * 2) return endFight(f.me > f.it);
-      fightMove(2, j);
-      if (!f.over) { if (f.line !== LINES.capBad) f.line = S.b.groups(1).some(g => g.libs.size === 1) ? "ระวังนะ หมากของหนูโดนอาตาริอยู่" : "ตาหนูแล้ว"; renderFight(); }
+      const before = f.it; fightMove(2, j);
+      if (f.over) return;
+      if (f.it > before) speak(bs.capBad, 250, f.boss);
+      else if (S.b.groups(1).some(g => g.libs.size === 1)) { if (f.line !== bs.warn) speak(bs.warn, 200, f.boss); f.line = bs.warn; }
+      else f.line = bs.yours;
+      renderFight();
     }, 650);
   }
 
@@ -570,7 +590,7 @@ const Learn = (function () {
       if (t.dataset.opt !== undefined) { if (S.state !== "ask") return; return +t.dataset.opt === S.it.ok ? (SFX.tap(), right()) : wrong(+t.dataset.opt); }
       const act = t.dataset.act;
       if (act === "voice") { voiceOn = !voiceOn; try { localStorage.setItem("gonn.learnVoice", voiceOn ? "1" : "0"); } catch (e) {} if (!voiceOn) stopVoice(); t.querySelector("img").classList.toggle("off", !voiceOn); return; }
-      if (act === "again") return speak(S.view === "fight" ? S.fight.line : S.it.say);
+      if (act === "again") return S.view === "fight" ? speak(S.fight.line, 0, S.fight.boss) : speak(S.it.say);
       if (act === "next") { SFX.tap(); if (S.state === "fb" && S.hearts <= 0) return; if (S.state === "info") { S.queue.shift(); S.done++; } return nextItem(); }
       if (act === "hint") { S.hintShown = true; S.usedHint = true; S.pose = "point"; if (S.it.ans && !["stone"].includes(S.it.t)) S.ring = L(S.it.ans, S.it.n || 5).slice(0, 1); SFX.tap(); renderLesson(); return speak(S.it.hint); }
       if (act === "skip") { S.queue.push(S.queue.shift()); return nextItem(); }
@@ -598,7 +618,7 @@ const Learn = (function () {
   };
   api.started = () => Object.keys(loadP().stars).length > 0;
   if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) window.__lnItem = () => S.it;
-  api._test = { Board, P, L, UNITS, ALL, BOSS, botMove, texts, vkey };
+  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey };
   return api;
 })();
 if (typeof module !== "undefined") module.exports = Learn;
