@@ -782,6 +782,7 @@ body.learning { overflow: hidden; }
 .ln-boardbox { background: #f1ede3; border-top: 2px solid var(--ln-line); border-bottom: 2px solid var(--ln-line); padding: 14px 0 10px; display: flex; justify-content: center; }
 #lnBoard { width: min(calc(100% - 24px), 500px, 38vh); aspect-ratio: 1; display: block; touch-action: manipulation; }
 #lnBoard.locked { pointer-events: none; }
+#lnBoard.big { width: min(calc(100% - 8px), 640px, 54vh); }
 .ln-pulse { animation: ln-ring 1.1s ease-in-out infinite; }
 @keyframes ln-ring { 50% { opacity: .35; } }
 circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln-stone .22s ease-out; }
