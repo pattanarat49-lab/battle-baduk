@@ -41,7 +41,8 @@ const Learn = (function () {
   // ---------- the course ----------
   // item types: info (talk, optional demo moves), any, tap (place on one of ans), capture, escape (group "of" gets 2+ liberties),
   // atari (leave a white group with one liberty), libs (tap every liberty of "of"), stone (tap one of the stones in ans),
-  // illegal (tap the forbidden point; c = colour that tries), choice (opts, ok = index)
+  // illegal (tap the forbidden point; c = colour that tries), choice (opts, ok = index),
+  // seq (several moves: each step has ans, or cap = capture at least that many; white answers with the step's reply)
   const UNITS = [
     { t: "รู้จักหมากล้อม", c: "#58cc02", lessons: [
       { id: "u1a", t: "วางหมาก", icon: "●", items: [
@@ -114,6 +115,7 @@ const Learn = (function () {
       ] },
       { id: "boss3", boss: "yuto", goal: 3, n: 7, t: "บอส · ยูโตะ" }
     ] },
+
     { t: "ล้อมพื้นที่", c: "#ff4b4b", lessons: [
       { id: "u5a", t: "ล้อมพื้นที่", icon: "▦", items: [
         { t: "info", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5", shade: 1, say: "เป้าหมายของหมากล้อม คือ**ล้อมพื้นที่**ให้ได้มากกว่าอีกฝ่าย สี่เหลี่ยมเล็กๆ คือพื้นที่ของแต่ละสี" },
@@ -125,6 +127,56 @@ const Learn = (function () {
         { t: "info", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5 e1 e2", shade: 1, say: "ขาวเดินทีหลัง เลยได้**แต้มต่อหกแต้มครึ่ง** เรียกว่า**โคมิ**" },
         { t: "choice", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5 e1 e2", shade: 1, opts: ["⚫ ดำ", "⚪ ขาว"], ok: 0, say: "ดำได้สิบแต้ม ขาวได้สามแต้ม บวกโคมิหกแต้มครึ่ง ใครชนะ", hint: "ขาวรวมได้เก้าแต้มครึ่ง ดำได้สิบแต้ม ดำชนะครึ่งแต้ม" },
         { t: "info", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5", shade: 1, say: "เมื่อไม่มีที่ให้ลงแล้ว ทั้งสองฝ่ายกดผ่าน เกมก็จบ แล้วนับแต้ม ใครได้มากกว่าชนะ เก่งมาก หนูพร้อมเล่นจริงแล้ว" }
+      ] }
+    ] },
+    { t: "ท่ากินหมาก", c: "#0fa3a3", lessons: [
+      { id: "u6a", t: "อาตาริสองทาง", icon: "✌", items: [
+        { t: "info", n: 7, b: "b4 c5 f4 e5", w: "c4 e4", play: [{ c: 1, at: "d4" }], say: "ถ้าเราลงตาเดียว แล้วขู่กินหมากขาวได้สองกลุ่มพร้อมกัน เรียกว่า**อาตาริสองทาง** ขาวหนีได้ทีละกลุ่ม เราเลยได้กินอีกกลุ่มแน่นอน ดูนะ" },
+        { t: "atari", n: 7, b: "b2 c3 f2 e3", w: "c2 e2", min: 2, ans: "d2", say: "หาจุดที่ขู่กินหมากขาวได้สองเม็ดพร้อมกัน", hint: "ลงตรงจุดที่อยู่ระหว่างหมากขาวสองเม็ด" },
+        { t: "seq", n: 7, b: "c6 b5 e6 f5", w: "c5 e5", steps: [{ ans: "d5", reply: "c4" }, { cap: 1 }], say: "อาตาริสองทาง แล้วกินหมากเม็ดที่ขาวหนีไม่ทัน", hint: "ลงระหว่างหมากขาวสองเม็ดก่อน แล้วกินเม็ดที่ยังไม่หนี" },
+        { t: "choice", n: 7, opts: ["ขาวหนีได้แค่ทีละกลุ่ม", "ขาวต้องผ่าน"], ok: 0, say: "ทำไมอาตาริสองทางถึงได้กินหมากแน่ๆ", hint: "ขาวหนีได้ทีละกลุ่ม อีกกลุ่มเลยโดนกิน" }
+      ] },
+      { id: "u6b", t: "บันได", icon: "⚟", items: [
+        { t: "info", n: 7, b: "b3 c2 e3", w: "c3", play: [{ c: 1, at: "c4" }, { c: 2, at: "d3" }, { c: 1, at: "d4" }, { c: 2, at: "d2" }, { c: 1, at: "e2" }, { c: 2, at: "d1" }, { c: 1, at: "c1" }, { c: 2, at: "e1" }, { c: 1, at: "f1" }], say: "ถ้าเราอาตาริซิกแซกไปเรื่อยๆ หมากขาวจะหนีไปชนขอบกระดาน แล้วโดนกินทั้งกลุ่ม ท่านี้เรียกว่า**บันได** หรือ**ชิโจ** ดูนะ" },
+        { t: "seq", n: 7, b: "b3 c2 e3", w: "c3", steps: [{ ans: "c4", reply: "d3" }, { ans: "d4", reply: "d2" }, { ans: "e2", reply: "d1" }, { ans: "c1", reply: "e1" }, { cap: 5 }], say: "ลองไล่บันไดเองบ้าง อาตาริให้ถูกด้านนะ", hint: "อาตาริจากด้านที่บังคับให้ขาวหนีลงไปหาขอบกระดาน" },
+        { t: "info", n: 7, b: "b3 c2 e3", w: "c3 d2", say: "แต่ถ้ามีหมากขาวรออยู่บนทางหนี ขาวจะต่อกันแล้วหนีรอด บันไดก็ใช้ไม่ได้ ต้องดูทางก่อนไล่นะ" },
+        { t: "choice", n: 7, b: "b3 c2 e3", w: "c3 d2", opts: ["ไม่ควร ขาวหนีรอดแน่", "ควรไล่เลย"], ok: 0, say: "ทางหนีมีหมากขาวขวางอยู่ ควรไล่บันไดไหม", hint: "หมากขาวที่ขวางทาง จะช่วยให้ขาวหนีรอด" }
+      ] },
+      { id: "u6c", t: "ตาข่าย", icon: "#", items: [
+        { t: "info", n: 7, b: "c5 c4 f4 d3", w: "d4", play: [{ c: 1, at: "e5" }], say: "บางทีไล่อาตาริแล้วขาวหนีรอด ให้ล้อมหลวมๆ ไว้แทน เรียกว่า**ตาข่าย** หรือ**เกตะ** หมากขาวจะหนีไม่ออก" },
+        { t: "seq", n: 7, b: "c5 c4 f4 d3", w: "d4", steps: [{ ans: "e5", reply: "e4" }, { ans: "e3", reply: "d5" }, { ans: "d6" }], say: "ลองกางตาข่ายจับหมากขาวดู", hint: "เริ่มจากลงเฉียงๆ ปิดทางหนีไว้ก่อน ยังไม่ต้องอาตาริ แล้วค่อยปิดทางที่ขาวหนี" },
+        { t: "choice", n: 7, opts: ["ล้อมหลวมๆ ไม่ต้องติดหมาก", "ต้องลงติดหมากทุกด้าน"], ok: 0, say: "ตาข่ายต่างจากอาตาริยังไง", hint: "ตาข่ายล้อมไว้หลวมๆ ปิดทางหนีไว้ก่อน" }
+      ] },
+      { id: "u6d", t: "กินกลับ", icon: "↺", items: [
+        { t: "info", n: 6, b: "b3 c3 c2 d2 e2 d1 e1", w: "a3 b2 b1 c1", play: [{ c: 1, at: "a2" }, { c: 2, at: "a1" }, { c: 1, at: "a2" }], say: "เรายอมวางหมากให้ขาวกินหนึ่งเม็ด แล้วกินกลับได้ทั้งกลุ่ม เรียกว่า**กินกลับ** หรือ**สแนปแบ็ก** ดูนะ" },
+        { t: "seq", n: 6, b: "c3 d3 e3 f3 c2 f2", w: "a3 a2 b2 e2 a1 b1 c1 e1 f1", steps: [{ ans: "d1", reply: "d2" }, { ans: "d1" }], say: "ลองกินกลับดู กินกลุ่มหมากขาวด้านขวาให้ได้", hint: "ยอมวางหมากให้ขาวกินก่อนหนึ่งเม็ด ตรงมุมล่าง แล้วลงที่เดิมอีกครั้ง" },
+        { t: "choice", n: 6, opts: ["หนึ่งเม็ด", "ไม่ต้องเสียเลย", "สามเม็ด"], ok: 0, say: "ท่ากินกลับ เราต้องยอมเสียหมากก่อนกี่เม็ด", hint: "ยอมเสียหนึ่งเม็ด แล้วกินกลับทั้งกลุ่ม" }
+      ] },
+      { id: "boss4", boss: "jay", goal: 5, n: 9, t: "บอส · เจ" }
+    ] },
+    { t: "ความเป็นความตาย", c: "#e05297", lessons: [
+      { id: "u7a", t: "ห้องปลอม", icon: "◌", items: [
+        { t: "info", n: 6, b: "b1 b2 c2 d1", w: "d2 e1", ring: "c1", say: "ตรงวงกลมดูเหมือน**ห้อง** แต่หมากดำมุมขวาล่างเหลือลมหายใจจุดเดียว ห้องแบบนี้เรียกว่า**ห้องปลอม**" },
+        { t: "info", n: 6, b: "b1 b2 c2 d1", w: "d2 e1", play: [{ c: 2, at: "c1" }], say: "ดูนะ ขาวลงในห้องปลอมได้ แล้วกินหมากดำไปหนึ่งเม็ด ห้องก็หายไป" },
+        { t: "choice", n: 6, b: "b1 b2 c2 d1", w: "d2 e1", ring: "c1", opts: ["ห้องปลอม", "ห้องจริง"], ok: 0, say: "ห้องตรงวงกลมนี้ เป็นห้องจริงหรือห้องปลอม", hint: "หมากดำข้างห้องโดนอาตาริ ห้องนี้เลยเป็นห้องปลอม" }
+      ] },
+      { id: "u7b", t: "เซกิ", icon: "⇄", items: [
+        { t: "info", n: 7, b: "c1 c2 c3 d4 e4 f4 f3 f2 f1", w: "e1 e2 e3 d3 b1 b2 b3 b4 c4", lib: "c1", say: "กลุ่มดำกับกลุ่มขาวตรงกลาง ไม่มีห้องทั้งคู่ และใช้**ลมหายใจร่วมกันสองจุด**" },
+        { t: "info", n: 7, b: "c1 c2 c3 d4 e4 f4 f3 f2 f1", w: "e1 e2 e3 d3 b1 b2 b3 b4 c4", play: [{ c: 1, at: "d1" }, { c: 2, at: "d2" }], say: "ถ้าดำใจร้อนลงไปก่อน ดำจะเหลือลมหายใจจุดเดียว แล้วโดนขาวกินเอง ดูนะ" },
+        { t: "info", n: 7, b: "c1 c2 c3 d4 e4 f4 f3 f2 f1", w: "e1 e2 e3 d3 b1 b2 b3 b4 c4", say: "ขาวก็เหมือนกัน ใครลงก่อนคนนั้นโดนกิน ทั้งสองฝ่ายเลยไม่ลง ปล่อยไว้แบบนี้ เรียกว่า**เซกิ** รอดทั้งคู่" },
+        { t: "choice", n: 7, b: "c1 c2 c3 d4 e4 f4 f3 f2 f1", w: "e1 e2 e3 d3 b1 b2 b3 b4 c4", lib: "c1", opts: ["ไม่ควร ปล่อยไว้", "ควรลงเลย"], ok: 0, say: "ในเซกิ ดำควรลงที่จุดลมหายใจร่วมไหม", hint: "ใครลงก่อน คนนั้นโดนกิน" },
+        { t: "choice", n: 7, b: "c1 c2 c3 d4 e4 f4 f3 f2 f1", w: "e1 e2 e3 d3 b1 b2 b3 b4 c4", opts: ["⚫ ดำ", "⚪ ขาว", "ไม่มีใครได้"], ok: 2, say: "นับแต้มแบบกติกาญี่ปุ่น จุดว่างในเซกิเป็นแต้มของใคร", hint: "ในเซกิ จุดว่างไม่นับเป็นแต้มของใครเลย" }
+      ] },
+      { id: "u7c", t: "จุดตาย", icon: "✚", items: [
+        { t: "info", n: 6, b: "a4 b4 c4 c3 d3 d2 d1", w: "a3 b3 b2 c2 c1", say: "กลุ่มขาวมีช่องว่างสามช่อง เป็นรูปตัวงอ ถ้าเราลงตรง**จุดตาย** ขาวจะสร้างสองห้องไม่ได้" },
+        { t: "seq", n: 6, b: "a4 b4 c4 c3 d3 d2 d1", w: "a3 b3 b2 c2 c1", steps: [{ ans: "a1", reply: "a2" }, { cap: 5 }], say: "ลงจุดตายของขาว แล้วกินกลุ่มขาวให้ได้", hint: "จุดตายคือหัวมุม จุดที่ติดกับช่องว่างอีกสองช่อง" },
+        { t: "choice", n: 6, opts: ["จุดที่ทำให้อีกฝ่ายสร้างสองห้องไม่ได้", "จุดที่ห้ามลง"], ok: 0, say: "จุดตายคืออะไร", hint: "ลงจุดตายแล้ว อีกฝ่ายจะสร้างสองห้องไม่ได้" }
+      ] },
+      { id: "u7d", t: "กินแข่ง", icon: "⚔", items: [
+        { t: "info", n: 7, b: "c1 c2 d3 e3 f1 f2", w: "d1 d2 a1 a2 b3 c3", lib: "c1", say: "กลุ่มดำกับกลุ่มขาวล้อมกันอยู่ ไม่มีห้องทั้งคู่ ใครปิดลมหายใจอีกฝ่ายได้ก่อนคนนั้นชนะ เรียกว่า**กินแข่ง** หรือ**เซเมไอ**" },
+        { t: "choice", n: 7, b: "c1 c2 d3 e3 f1 f2", w: "d1 d2 a1 a2 b3 c3", lib: "d1", opts: ["1", "2", "3"], ok: 1, say: "กลุ่มขาวตรงกลางมีลมหายใจกี่จุด", hint: "นับจุดว่างที่ติดกับกลุ่มขาว ได้สองจุด" },
+        { t: "seq", n: 7, b: "c1 c2 d3 e3 f1 f2", w: "d1 d2 a1 a2 b3 c3", steps: [{ ans: "e1 e2", reply: "b1" }, { cap: 2 }], say: "ตาเรา ลองกินกลุ่มขาวให้ทัน", hint: "ปิดลมหายใจของขาวทางขวา อย่าไปลงในลมหายใจของตัวเอง" },
+        { t: "choice", n: 7, opts: ["ของอีกฝ่าย", "ของตัวเอง"], ok: 0, say: "ตอนกินแข่ง ควรปิดลมหายใจของใคร", hint: "ปิดลมหายใจของอีกฝ่าย ลมหายใจของเราต้องเก็บไว้" }
       ] }
     ] }
   ];
@@ -144,7 +196,12 @@ const Learn = (function () {
       intro: "โอเนไงชิมัส ผมชื่อยูโตะครับ ใครกินหมากได้ก่อนสามเม็ดชนะ ขอคำชี้แนะด้วยครับ",
       warn: "หมากของคุณโดนอาตาริอยู่นะครับ", capOk: "อ๊ะ ผมอ่านพลาดไปครับ", capBad: "ขออนุญาตกินนะครับ",
       win: "มาเกะมาชิตะ ขอบคุณที่ชี้แนะครับ", lose: "ขอบคุณสำหรับเกมครับ ลองใหม่อีกครั้งนะครับ",
-      turn: "ขออนุญาตเดินนะครับ", yours: "เชิญครับ" } }
+      turn: "ขออนุญาตเดินนะครับ", yours: "เชิญครับ" } },
+    jay: { name: "เจ", face: "chars/jay_face.jpg", see: 0.95, say: {
+      intro: "ผมชื่อเจ ชอบสู้ที่สุด ด่านนี้ใครกินหมากได้ก่อนห้าเม็ดชนะ ใช้ท่าที่เรียนมาให้หมดเลยนะ",
+      warn: "หมากของคุณโดนอาตาริแล้ว หนีทันไหม", capOk: "เจ็บ แต่ศึกยังไม่จบ", capBad: "จับได้แล้ว บอกแล้วว่าผมตัดแน่",
+      win: "สุดยอด คุณใช้ท่าได้เก่งมาก", lose: "ศึกนี้ผมชนะ ลองใหม่อีกครั้งนะ",
+      turn: "ตาผมบุกบ้าง", yours: "ตาคุณแล้ว" } }
   };
   const SPOKEN = ["intro", "warn", "capOk", "capBad", "win", "lose"];
   const bossTexts = k => SPOKEN.map(n => BOSS[k].say[n]);
@@ -362,7 +419,7 @@ const Learn = (function () {
     const N = it.n || 5, b = new Board(N);
     for (const i of L(it.b, N)) b.a[i] = 1;
     for (const i of L(it.w, N)) b.a[i] = 2;
-    S.b = b; S.found = new Set(); S.last = -1; S.gone = []; S.x = L(it.x, N); S.ring = L(it.ring, N); S.lock = false;
+    S.b = b; S.found = new Set(); S.last = -1; S.gone = []; S.x = L(it.x, N); S.ring = L(it.ring, N); S.lock = false; S.step = 0;
   }
   function nextItem() {
     clearT(); S.hurt = false; S.typed = null;
@@ -477,12 +534,24 @@ const Learn = (function () {
       if (S.found.size === libs.size) { drawBoard(); return later(right, 300); }
       return renderLesson();
     }
+    if (it.t === "seq") { // our move, then white answers by itself, until the last step
+      const st = it.steps[S.step], t = b.clone(), r = t.play(1, i);
+      if (!r.ok || !(st.cap ? r.cap.length >= st.cap : L(st.ans, N).includes(i))) return wrongAt(i);
+      const pr = place(); drawBoard(); S.step++;
+      if (S.step >= it.steps.length) return later(right, pr.cap.length ? 600 : 350);
+      S.lock = true;
+      return later(() => {
+        const j = P(st.reply, N), r2 = b.play(2, j);
+        if (r2.ok) { S.last = j; S.gone = r2.cap.map(s => [s, 1]); r2.cap.length ? SFX.bad() : SFX.stone(); }
+        S.lock = false; drawBoard();
+      }, 750);
+    }
     if (["capture", "escape", "atari"].includes(it.t)) {
       const t = b.clone(), r = t.play(1, i);
       if (!r.ok) return wrongAt(i);
       const good = it.t === "capture" ? r.cap.length >= (it.min || 1)
         : it.t === "escape" ? t.group(P(it.of, N)).libs.size >= 2
-        : t.group(i).libs.size >= 2 && t.groups(2).some(g => g.libs.size === 1);
+        : t.group(i).libs.size >= 2 && t.groups(2).filter(g => g.libs.size === 1).length >= (it.min || 1);
       place(); drawBoard();
       if (good) return later(right, it.t === "capture" ? 600 : 350);
       return later(() => wrong(), 450);
