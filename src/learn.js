@@ -268,7 +268,7 @@ const Learn = (function () {
     const t = today(); if (prog.day !== t) { prog.streak = prog.day === yesterday() ? prog.streak + 1 : 1; prog.day = t; }
     saveP();
   }
-  const unlocked = k => k === 0 || !!prog.stars[ALL[k - 1].id];
+  const unlocked = k => !!ALL[k]; // every lesson is open: players may jump to any topic (owner, 2026-11-08)
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
 
   // ---------- sound: effects made with WebAudio, speech from files ----------
