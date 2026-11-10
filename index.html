@@ -768,6 +768,15 @@ body.learning { overflow: hidden; }
 .ln-stage { max-width: 640px; margin: 0 auto; padding: 4px 0 130px; }
 .ln-label { padding: 6px 16px 0; color: var(--ln-blue); font-weight: 600; font-size: 14px; letter-spacing: .03em; }
 .ln-label.new { color: var(--ln-purple); } .ln-label.boss { color: #ff9600; }
+.ln-label.game { color: #ff9600; }
+.ln-node.game { border-radius: 22px; background: #ffc800; box-shadow: 0 7px 0 #d9a400; }
+.ln-node.game.done { background: #ffc800; }
+.ln-gscore { color: #ff9600; font-weight: 600; font-size: 20px; white-space: nowrap; min-width: 52px; text-align: right; }
+.ln-gscore.pop { animation: lnGsPop .35s; }
+@keyframes lnGsPop { 40% { transform: scale(1.5); } }
+.ln-prog i.low { background: var(--ln-red); }
+.ln-opts.nums { grid-template-columns: repeat(4, 1fr); max-width: 420px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.ln-opts.nums .ln-opt { font-size: 26px; font-weight: 600; padding: 12px 0; }
 .ln-title { margin: 2px 16px 0; font-size: clamp(22px, 6vw, 28px); font-weight: 600; color: var(--ln-ink); }
 .ln-talk { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; padding: 8px 12px 0 16px; margin-bottom: -26px; position: relative; z-index: 1; }
 .ln-mascot { width: clamp(96px, 27vw, 132px); flex: none; animation: ln-bob 2.4s ease-in-out infinite; filter: drop-shadow(0 3px 0 rgba(0,0,0,.08)); }
@@ -2762,7 +2771,8 @@ const Learn = (function () {
         { t: "choice", n: 5, b: "a1", opts: ["2", "3", "4"], ok: 0, say: "แล้วหมากที่อยู่มุมล่ะ มีลมหายใจกี่จุด", hint: "มุมกระดานมีลมหายใจแค่สองจุด" },
         { t: "info", n: 5, b: "c3 d3", lib: "c3", say: "หมากสีเดียวกันที่อยู่ติดกัน เป็น**กลุ่มเดียวกัน** ใช้ลมหายใจร่วมกัน สองเม็ดนี้มีลมหายใจหกจุด" },
         { t: "libs", n: 5, w: "b3 c3", b: "c4", of: "c3", say: "แตะลมหายใจของกลุ่มหมากขาวให้ครบ จุดที่มีหมากดำอยู่แล้วไม่นับนะ", hint: "หาจุดว่างรอบหมากขาวทั้งสองเม็ด" }
-      ] }
+      ] },
+      { id: "g1", game: "libs", t: "เกม · นับลมหายใจ", icon: "🎮" }
     ] },
     { t: "กินหมาก", c: "#1cb0f6", lessons: [
       { id: "u2a", t: "กินหมาก", icon: "✊", items: [
@@ -2780,6 +2790,7 @@ const Learn = (function () {
         { t: "capture", n: 7, w: "a4 a5", b: "a6 b5 b4", ans: "a3", min: 2, say: "กลุ่มขาวที่ริมกระดาน ก็กินได้นะ ลองดู", hint: "ลมหายใจสุดท้ายอยู่ริมกระดานด้านล่าง" },
         { t: "capture", n: 7, w: "c3 d3", b: "b3 c4 d4 e3 c2", ans: "d2", min: 2, say: "ข้อสุดท้าย กินกลุ่มขาวให้หมด", hint: "หาจุดว่างจุดเดียวที่ติดกับหมากขาว" }
       ] },
+      { id: "g2", game: "eat", t: "เกม · กินให้ไว", icon: "🎮" },
       { id: "boss1", boss: "mek", goal: 1, n: 7, t: "บอส · เมฆ" }
     ] },
     { t: "หนีให้รอด", c: "#ff9600", lessons: [
@@ -2791,6 +2802,7 @@ const Learn = (function () {
         { t: "escape", n: 5, b: "a3", w: "a4 b3", of: "a3", ans: "a2", say: "หมากริมกระดานโดนขู่ ช่วยหนีให้ที", hint: "ต่อลงไปตามริมกระดาน" },
         { t: "choice", n: 5, opts: ["ต่อหมากออกไปหนี", "ปล่อยไว้เฉยๆ"], ok: 0, say: "ถ้าหมากของเราโดนอาตาริ ควรทำยังไงดี", hint: "ต่อหมากออกไป จะได้ลมหายใจเพิ่ม" }
       ] },
+      { id: "g3", game: "save", t: "เกม · หนีให้ทัน", icon: "🎮" },
       { id: "u3b", t: "ขู่กิน", icon: "⚡", items: [
         { t: "info", n: 5, w: "c3", b: "c4 b3", say: "ทีนี้เราเป็นฝ่ายขู่บ้าง ถ้าเราวางให้หมากขาวเหลือลมหายใจจุดเดียว เรียกว่าเราอาตาริ" },
         { t: "atari", n: 5, w: "c3", b: "c4 b3", ans: "d3 c2", say: "วางหมากให้หมากขาวเหลือลมหายใจจุดเดียว", hint: "หมากขาวมีลมหายใจสองจุด ปิดไปหนึ่งจุด" },
@@ -2798,6 +2810,7 @@ const Learn = (function () {
         { t: "atari", n: 7, w: "d4 e4", b: "c4 d5 e5 f4", ans: "d3 e3", say: "อาตาริกลุ่มหมากขาวทั้งกลุ่มเลย", hint: "กลุ่มขาวมีลมหายใจสองจุด อยู่ด้านล่าง" },
         { t: "choice", n: 5, opts: ["กินหมากขาวได้", "ต้องรอผ่าน"], ok: 0, say: "ถ้าเราอาตาริแล้ว ขาวไม่หนี ตาต่อไปเราทำอะไรได้", hint: "ปิดลมหายใจสุดท้ายได้เลย" }
       ] },
+      { id: "g4", game: "atari", t: "เกม · ขู่ให้ไว", icon: "🎮" },
       { id: "boss2", boss: "win", goal: 2, n: 7, t: "บอส · ลุงวิน" }
     ] },
     { t: "กติกาพิเศษ", c: "#ce82ff", lessons: [
@@ -3009,6 +3022,45 @@ const Learn = (function () {
         { t: "choice", n: 19, opts: ["ตาที่ใหญ่และเป็นเซนเตะ", "ตาเล็กๆ ที่ไหนก็ได้"], ok: 0, say: "ปลายเกม ควรเล่นตาไหนก่อน", hint: "ใหญ่ก่อน และเซนเตะก่อน" },
         { t: "choice", n: 19, opts: ["ไม่ได้แต้ม", "หนึ่งแต้ม", "สองแต้ม"], ok: 0, say: "จุดว่างระหว่างเขตของสองฝ่าย ที่ไม่เป็นของใคร เรียกว่า**ดาเมะ** ได้กี่แต้ม", hint: "กติกาญี่ปุ่น ดาเมะไม่นับเป็นแต้มของใคร" }
       ] }
+    ] },
+    { t: "รูปหมากสวย", c: "#f2711c", lessons: [
+      { id: "u10a", t: "กระโดดหนึ่งช่อง", icon: "⇡", items: [
+        { t: "info", n: 7, b: "d3 d5", ring: "d4", say: "เรารู้จักสร้างฐานกับโจมตีแล้ว ทีนี้มาดูวิธีเดินหมากให้สวยกัน ลงเว้นหนึ่งช่องจากหมากตัวเองแบบนี้ เรียกว่า**กระโดดหนึ่งช่อง** เดินได้ไว และตัดยาก" },
+        { t: "info", n: 7, b: "d3 d5", play: [{ c: 2, at: "d4" }, { c: 1, at: "e4" }], say: "ถ้าขาวลงแทรกตรงกลาง ดำอาตาริได้ทันที คนที่แทรกเข้ามาเลยเสี่ยงเอง ดูนะ" },
+        { t: "tap", n: 7, b: "c4", ans: "c6 c2 e4 a4", say: "ลองกระโดดหนึ่งช่องจากหมากดำ", hint: "ลงเว้นหนึ่งช่อง ในแนวตรงกับหมากดำ" },
+        { t: "choice", n: 7, b: "d3 d5", opts: ["เดินไว และตัดยาก", "กินหมากได้ทันที"], ok: 0, say: "กระโดดหนึ่งช่องดียังไง", hint: "คนโบราณบอกว่า กระโดดหนึ่งช่องไม่มีวันผิด" }
+      ] },
+      { id: "u10b", t: "ทแยงกับม้ากระโดด", icon: "♞", items: [
+        { t: "info", n: 7, b: "c3 d4", ring: "c4 d3", say: "ลงเฉียงติดกันแบบนี้ เรียกว่า**หมากทแยง** เดินช้าหน่อย แต่มีจุดเชื่อมสองจุด ขาวลงจุดหนึ่ง เราก็ต่ออีกจุด" },
+        { t: "info", n: 7, b: "c3 e4", say: "ลงแบบม้าหมากรุก เรียกว่า**ม้ากระโดด** เดินไวกว่าหมากทแยง แต่มีช่องให้อีกฝ่ายแทรกได้ ต้องระวัง" },
+        { t: "tap", n: 7, b: "d4", ans: "c3 e3 c5 e5", say: "ลองลงหมากทแยงจากหมากดำ", hint: "ลงเฉียงติดกับหมากดำ มุมไหนก็ได้" },
+        { t: "tap", n: 7, b: "d4", ans: "b3 b5 f3 f5 c2 e2 c6 e6", say: "ทีนี้ลองลงม้ากระโดด", hint: "เดินตรงสองช่อง แล้วเลี้ยวหนึ่งช่อง เหมือนม้าหมากรุก" },
+        { t: "choice", n: 7, opts: ["หมากทแยง", "ม้ากระโดด"], ok: 0, say: "แบบไหนเชื่อมกันแน่นกว่า", hint: "หมากทแยงมีจุดเชื่อมสองจุด ตัดไม่ได้" }
+      ] },
+      { id: "u10c", t: "ปากเสือ", icon: "◠", items: [
+        { t: "info", n: 7, b: "c4 d5 e4", ring: "d4", say: "หมากดำสามเม็ดล้อมจุดว่างไว้สามด้าน เรียกว่า**ปากเสือ** ตรงวงกลมคือในปาก" },
+        { t: "info", n: 7, b: "c4 d5 e4", play: [{ c: 2, at: "d4" }, { c: 1, at: "d3" }], say: "ถ้าขาวลงเข้ามาในปากเสือ จะเหลือลมหายใจจุดเดียว แล้วโดนกินทันที ดูนะ" },
+        { t: "capture", n: 7, b: "c4 d5 e4", w: "d4", ans: "d3", say: "ขาวเดินเข้าปากเสือมาแล้ว งับเลย", hint: "ปิดลมหายใจจุดสุดท้ายของหมากขาว" },
+        { t: "tap", n: 7, b: "c4 d5", w: "c5", ring: "d4", ans: "e4 d3", say: "ขาวจ้องจะตัดตรงวงกลม ลองป้องกันด้วยรูปปากเสือ ไม่ต้องลงตรงจุดตัด", hint: "ลงให้หมากดำสามเม็ดล้อมจุดตัดไว้" },
+        { t: "choice", n: 7, b: "c4 d5 e4", opts: ["โดนกินทันที", "ตัดหมากเราได้"], ok: 0, say: "ถ้าอีกฝ่ายลงในปากเสือ จะเป็นยังไง", hint: "ในปากเสือเหลือลมหายใจจุดเดียว" }
+      ] },
+      { id: "g5", game: "link", t: "เกม · ต่อให้ติด", icon: "🎮" },
+      { id: "u10d", t: "รูปแย่", icon: "✖", items: [
+        { t: "info", n: 7, b: "c3 d3 c4", ring: "d4", say: "หมากสามเม็ดอัดกันเป็นมุมฉาก โดยที่ตรงวงกลมยังว่าง เรียกว่า**สามเหลี่ยมอัด** เป็นรูปแย่ ใช้หมากเปลือง แต่ได้งานน้อย" },
+        { t: "info", n: 7, b: "c3 c5 e4", say: "หมากสามเม็ดเท่ากัน ถ้าวางห่างกันแบบนี้ จะคุมที่ได้มากกว่าเยอะ" },
+        { t: "info", n: 7, b: "c3 d3 c4 d4", say: "ถ้าอัดกันสี่เม็ดเป็นก้อนแบบนี้ เรียกว่า**ก้อนแป้ง** แย่ยิ่งกว่าสามเหลี่ยมอัดอีก" },
+        { t: "choice", n: 7, b: "c3 c4", ring: "d3", opts: ["สามเหลี่ยมอัด", "ปากเสือ"], ok: 0, say: "ถ้าดำลงตรงวงกลม จะได้รูปอะไร", hint: "สามเม็ดอัดกันเป็นมุมฉาก คือสามเหลี่ยมอัด" },
+        { t: "choice", n: 7, opts: ["ใช้หมากเปลือง ได้งานน้อย", "โดนกินทันที"], ok: 0, say: "ทำไมสามเหลี่ยมอัดถึงเป็นรูปแย่", hint: "หมากอัดกันแน่น คุมที่ได้น้อย" }
+      ] },
+      { id: "u10e", t: "แปะ งัด ยืด", icon: "⤴", items: [
+        { t: "info", n: 7, b: "d3", w: "d4", say: "หมากขาวมาลงติดหมากเรา เรียกว่า**แปะ** พอโดนแปะ หมากเราเหลือลมหายใจสามจุด ต้องรีบตอบ" },
+        { t: "info", n: 7, b: "d3", w: "d4", play: [{ c: 1, at: "e4" }], say: "ตอบแบบแรกคือ**งัด** ลงโอบหัวหมากขาว ทำให้ขาวเหลือลมหายใจน้อยลง ดูนะ" },
+        { t: "info", n: 7, b: "d3", w: "d4", play: [{ c: 1, at: "e3" }], say: "ตอบแบบที่สองคือ**ยืด** ลงต่อหมากตัวเองให้ยาวขึ้น ลมหายใจเพิ่ม หมากแข็งแรง ดูนะ" },
+        { t: "tap", n: 7, b: "d3", w: "d4", ans: "c4 e4", say: "ลองงัดหมากขาวดู", hint: "ลงข้างหมากขาว เฉียงกับหมากดำของเรา" },
+        { t: "tap", n: 7, b: "d3", w: "d4", ans: "c3 e3", say: "ทีนี้ลองยืดบ้าง", hint: "ลงต่อหมากดำออกไปด้านข้าง" },
+        { t: "choice", n: 7, opts: ["งัดหรือยืด", "ปล่อยไว้ ไปลงที่อื่น"], ok: 0, say: "โดนแปะแล้ว ควรทำยังไง", hint: "โดนแปะต้องตอบ จะงัดหรือยืดก็ได้" }
+      ] },
+      { id: "g6", game: "mix", n: 9, secs: 60, star: [5, 10, 15], t: "เกม · รวมมิตร", icon: "🎮" }
     ] }
   ];
   // each boss speaks for himself, in his own voice: learn/voice/<boss>_<hash>.mp3 (turn / yours are shown, not spoken)
@@ -3047,7 +3099,17 @@ const Learn = (function () {
   const OOPS = ["ไม่เป็นไรนะ ลองใหม่อีกที", "เกือบแล้ว ลองอีกครั้งนะ", "ยังไม่ใช่ ค่อยๆ ดูนะ"];
   const LINES = {
     done: "เรียนจบบทนี้แล้ว เก่งมากเลย", out: "หัวใจหมดแล้ว ไม่เป็นไรนะ มาลองใหม่กัน",
+    time: "หมดเวลาแล้ว เก่งมากเลย", best: "สถิติใหม่ สุดยอดไปเลย",
     grad: "ยินดีด้วย หนูเรียนจบทุกบทแล้ว ไปลองเล่นจริงกับเมฆบนกระดานเก้าคูณเก้ากันเลย"
+  };
+  // mini-games: quick random puzzles against the clock, no hearts (for children)
+  const GAMES = {
+    libs: { name: "นับลมหายใจ", task: "หมากดำมีลมหายใจกี่จุด", say: "มาเล่นเกมนับลมหายใจกัน ดูกลุ่มหมากดำ แล้วตอบให้ไวว่ามีลมหายใจกี่จุด" },
+    eat: { name: "กินให้ไว", task: "กินหมากขาวเลย", say: "มาเล่นเกมกินให้ไวกัน หาหมากขาวที่เหลือลมหายใจจุดเดียว แล้วกินให้ได้มากที่สุดก่อนหมดเวลา" },
+    save: { name: "หนีให้ทัน", task: "ช่วยหมากดำหนี", say: "มาเล่นเกมหนีให้ทันกัน หมากดำโดนอาตาริอยู่ ช่วยให้หนีรอดให้ได้มากที่สุดก่อนหมดเวลา" },
+    atari: { name: "ขู่ให้ไว", task: "อาตาริหมากขาว", say: "มาเล่นเกมขู่ให้ไวกัน ลงหมากให้ขาวเหลือลมหายใจจุดเดียว ทำให้ได้มากที่สุดก่อนหมดเวลา" },
+    link: { name: "ต่อให้ติด", task: "ต่อหมากดำให้ติดกัน", say: "มาเล่นเกมต่อให้ติดกัน ขาวจ้องจะตัดอยู่ รีบต่อหมากดำสองเม็ดให้ติดกันให้ได้มากที่สุด" },
+    mix: { name: "รวมมิตร", task: "", say: "เกมนี้รวมทุกแบบเลย อ่านโจทย์ข้างบนให้ดี แล้วตอบให้ไวนะ" }
   };
   const ALL = UNITS.flatMap((u, k) => u.lessons.map(l => Object.assign(l, { unit: k })));
   const HEARTS = 5;
@@ -3055,7 +3117,7 @@ const Learn = (function () {
   // every spoken sentence maps to learn/voice/<fnv-1a of the text>.mp3 (src/tools/learn_voice.py makes them)
   function vkey(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); }
   function texts() {
-    const t = new Set([...PRAISE, ...OOPS, ...Object.values(LINES)]);
+    const t = new Set([...PRAISE, ...OOPS, ...Object.values(LINES), ...Object.values(GAMES).map(g => g.say)]);
     for (const l of ALL) for (const it of l.items || []) { t.add(plain(it.say)); if (it.hint) t.add(plain(it.hint)); }
     return [...t];
   }
@@ -3196,7 +3258,7 @@ const Learn = (function () {
     svg.classList.toggle("big", N >= 13);
     svg.classList.toggle("locked", !canTap());
   }
-  const canTap = () => !S.lock && ((S.view === "lesson" && S.state === "ask" && S.it && !["info", "choice"].includes(S.it.t)) || (S.view === "fight" && S.fight && !S.fight.over && S.fight.turn === 1));
+  const canTap = () => !S.lock && ((S.view === "lesson" && S.state === "ask" && S.it && !["info", "choice"].includes(S.it.t)) || (S.view === "fight" && S.fight && !S.fight.over && S.fight.turn === 1) || (S.view === "game" && S.game && !S.game.over && S.game.p.mode !== "libs"));
 
   function head() {
     return `<div class="ln-top"><button class="ln-x" data-act="home" aria-label="กลับ">← กลับ</button>
@@ -3212,9 +3274,9 @@ const Learn = (function () {
       u.lessons.forEach((l, li) => {
         const st = prog.stars[l.id] || 0, open = unlocked(k), isCur = k === cur, off = [0, 1, 0, -1][(k) % 4];
         h += `<div class="ln-node-w" style="--off:${off}">${isCur ? `<div class="ln-start">${st ? "อีกครั้ง" : "เริ่ม"}</div>` : ""}
-          <button class="ln-node${l.boss ? " boss" : ""}${open ? "" : " lock"}${st ? " done" : ""}${isCur ? " cur" : ""}" style="--uc:${u.c}" data-pick="${k}" aria-label="${l.t}">
+          <button class="ln-node${l.boss ? " boss" : ""}${l.game ? " game" : ""}${open ? "" : " lock"}${st ? " done" : ""}${isCur ? " cur" : ""}" style="--uc:${u.c}" data-pick="${k}" aria-label="${l.t}">
           ${l.boss ? `<img src="${BOSS[l.boss].face}" alt="">` : `<span>${open ? (st ? "✓" : l.icon) : "🔒"}</span>`}</button>
-          <div class="ln-pop" style="--uc:${u.c}" hidden><b>${l.t}</b><small>${open ? (l.boss ? `จับหมากกับ${BOSS[l.boss].name} · กินก่อน ${l.goal} เม็ดชนะ` : `${l.items.length} ข้อ`) : "ผ่านด่านก่อนหน้าก่อนนะ"}</small>
+          <div class="ln-pop" style="--uc:${u.c}" hidden><b>${l.t}</b><small>${open ? (l.boss ? `จับหมากกับ${BOSS[l.boss].name} · กินก่อน ${l.goal} เม็ดชนะ` : l.game ? `มินิเกมจับเวลา ${l.secs || 45} วินาที${prog.best && prog.best[l.id] ? ` · สถิติ ${prog.best[l.id]}` : ""}` : `${l.items.length} ข้อ`) : "ผ่านด่านก่อนหน้าก่อนนะ"}</small>
             ${open ? `<button class="ln-btn pop" data-lesson="${k}">${st ? "เล่นอีกครั้ง" : "เริ่ม"} +${l.boss ? 30 : 25} XP</button>` : ""}</div>
           ${off === 0 || k % 3 === 2 ? `<img class="ln-deco ${off > 0 ? "l" : off < 0 ? "r" : side === "l" ? "r" : "l"}" style="--dl:${(k % 5) * .3}s" src="learn/stone_${(k * 7) % 16 + 1}.png" alt="">` : ""}
           <div class="ln-cap">${l.t}</div><div class="ln-stars">${[1, 2, 3].map(n => `<img class="ln-ic${n <= st ? "" : " off"}" src="learn/icon_star.png" alt="">`).join("")}</div></div>`;
@@ -3234,6 +3296,7 @@ const Learn = (function () {
     const l = ALL[k]; if (!l || !unlocked(k)) return;
     clearT(); ctx(); SFX.tap(); primeVoice();
     if (l.boss) return openFight(k);
+    if (l.game) return openGame(k);
     preload([...l.items.flatMap(it => [it.say, it.hint]), ...PRAISE, ...OOPS, LINES.done, LINES.out]);
     S.view = "lesson"; S.lesson = k; S.queue = l.items.slice(); S.total = l.items.length; S.done = 0; S.hearts = HEARTS; S.miss = 0; S.usedHint = false;
     nextItem();
@@ -3459,6 +3522,115 @@ const Learn = (function () {
     }, 650);
   }
 
+  // ---------- mini-games ----------
+  const rnd = n => (Math.random() * n) | 0;
+  function grow(b, c, size) {
+    let i; do { i = rnd(b.a.length); } while (b.a[i]);
+    b.a[i] = c; const g = [i];
+    while (g.length < size) { const o = [...new Set(g.flatMap(s => nbs(s, b.N)).filter(k => !b.a[k]))]; if (!o.length) break; const k = any(o); b.a[k] = c; g.push(k); }
+    return g;
+  }
+  const inAtari = (b, c) => b.groups(c).filter(g => g.libs.size === 1).length;
+  const dead = b => [1, 2].some(c => b.groups(c).some(g => !g.libs.size));
+  function sprinkle(b, n, fine) { for (let k = 0; k < n; k++) { const i = rnd(b.a.length); if (b.a[i]) continue; b.a[i] = 1 + rnd(2); if (!fine(b)) b.a[i] = 0; } }
+  // one random puzzle with a checked answer
+  function puzzle(mode, N) {
+    for (let tries = 0; tries < 400; tries++) {
+      const b = new Board(N); let p = null;
+      if (mode === "eat" || mode === "save") { // one group (white: eat, black: save) left with a single liberty
+        const tc = mode === "eat" ? 2 : 1, g = grow(b, tc, 1 + rnd(3)), libs = [...b.group(g[0]).libs]; if (libs.length < 2) continue;
+        const keep = any(libs); for (const l of libs) if (l !== keep) b.a[l] = 3 - tc;
+        const fine = b => !dead(b) && inAtari(b, tc) === 1 && !inAtari(b, 3 - tc) && b.group(g[0]).libs.size === 1;
+        if (!fine(b)) continue; sprinkle(b, 2 + rnd(3), fine);
+        p = { b, check: mode === "eat" ? i => { const r = b.clone().play(1, i); return r.ok && r.cap.length > 0; } : i => { const t = b.clone(), r = t.play(1, i); return r.ok && t.group(g[0]).libs.size >= 2; } };
+      } else if (mode === "atari") { // a white group with two liberties: take one away, safely
+        const g = grow(b, 2, 1 + rnd(2)), libs = [...b.group(g[0]).libs].sort(() => Math.random() - .5); if (libs.length < 3) continue;
+        for (const l of libs.slice(2)) b.a[l] = 1;
+        const fine = b => !dead(b) && !inAtari(b, 1) && !inAtari(b, 2) && b.group(g[0]).libs.size === 2;
+        if (!fine(b)) continue; sprinkle(b, 1 + rnd(3), fine);
+        p = { b, check: i => { const t = b.clone(), r = t.play(1, i); return r.ok && !r.cap.length && t.group(i).libs.size >= 2 && inAtari(t, 2) > 0; } };
+      } else if (mode === "link") { // two black stones on a diagonal, white already on one of the two joints
+        const x = 1 + rnd(N - 3), y = 1 + rnd(N - 3), q = [y * N + x, (y + 1) * N + x + 1, y * N + x + 1, (y + 1) * N + x], f = rnd(2) * 2, w = rnd(2);
+        b.a[q[f]] = 1; b.a[q[f + 1]] = 1; b.a[q[(f + 2) % 4 + w]] = 2; const ans = q[(f + 2) % 4 + 1 - w];
+        const fine = b => !dead(b) && !inAtari(b, 1) && !inAtari(b, 2) && !b.a[ans] && b.group(q[f]).stones.length === 1 && b.group(q[f + 1]).stones.length === 1;
+        for (let k = 1 + rnd(3); k > 0; k--) { const i = rnd(b.a.length); if (b.a[i]) continue; b.a[i] = 2; if (!fine(b)) b.a[i] = 0; } // only white extras: the black pair stays obvious
+        p = { b, check: i => i === ans };
+      } else { // libs: count the liberties of the one black group
+        const g = grow(b, 1, 1 + rnd(4));
+        for (let k = rnd(3); k > 0; k--) { const libs = [...b.group(g[0]).libs]; if (libs.length > 1) b.a[any(libs)] = 2; }
+        if (dead(b) || inAtari(b, 2)) continue;
+        const n = b.group(g[0]).libs.size; if (n > 6) continue;
+        const lo = Math.max(1, n - rnd(4)); p = { b, n, opts: [lo, lo + 1, lo + 2, lo + 3], lib: g[0] };
+      }
+      if (p.check && !p.b.a.some((v, i) => !v && p.check(i))) continue;
+      p.mode = mode; return p;
+    }
+    return null;
+  }
+  function openGame(k) {
+    const l = ALL[k], g = GAMES[l.game], secs = l.secs || 45;
+    preload([g.say, LINES.time, LINES.best]);
+    S.view = "game"; S.lesson = k; S.pose = "wave"; S.typed = null;
+    S.game = { mode: l.game, n: l.n || 7, secs, left: secs, score: 0, on: false, over: false, p: null };
+    newPuzzle(); speak(g.say);
+  }
+  function newPuzzle() {
+    const G = S.game, mode = G.mode === "mix" ? any(["libs", "eat", "save", "atari", "link"]) : G.mode;
+    G.p = puzzle(mode, G.n) || puzzle("libs", G.n);
+    S.b = G.p.b; S.it = { n: G.n }; S.found = new Set(); S.last = -1; S.gone = []; S.x = []; S.ring = []; S.lock = false;
+    renderGame();
+  }
+  function renderGame() {
+    const G = S.game, g = GAMES[G.mode], p = G.p;
+    const opts = p.mode === "libs" ? `<div class="ln-opts nums">${p.opts.map(n => `<button class="ln-opt" data-num="${n}">${n}</button>`).join("")}</div>` : "";
+    const body = `<div class="ln-label game">✦ มินิเกม · ${g.name}</div><h2 class="ln-title">${GAMES[p.mode].task}</h2>` + (G.on ? "" : talk(mood(), TEACH.name, g.say)) +
+      `<div class="ln-boardbox"><svg id="lnBoard" role="img" aria-label="กระดาน"></svg></div>` + opts;
+    const foot = `<div class="ln-sheet"><div class="in"><span class="ln-turn">${G.on ? "ตอบผิด เสียเวลา 3 วินาที" : "ตอบข้อแรกเพื่อเริ่มจับเวลา"}</span><span></span></div></div>`;
+    S.total = G.secs; S.done = G.left;
+    $("learn").innerHTML = lessonShell(body, foot).replace(/<span class="ln-hearts[^<]*<img[^>]*>[^<]*<\/span>/, `<span class="ln-gscore" id="lnGs">★ ${G.score}</span>`);
+    $("learn").className = "learn lesson game";
+    drawBoard();
+    if (!G.on && S.typed !== g.say) { S.typed = g.say; typeIn($("learn").querySelector(".ln-bub p")); }
+  }
+  function gameBar() { const G = S.game, e = $("learn").querySelector(".ln-prog i"); if (e) { e.style.width = Math.max(0, G.left / G.secs * 100) + "%"; e.classList.toggle("low", G.left <= 10); } }
+  function gameTick() {
+    const G = S.game; if (!G || G.over || S.view !== "game") return;
+    G.left--; gameBar();
+    if (G.left <= 0) return gameOver();
+    if (G.left <= 5) SFX.tap();
+    later(gameTick, 1000);
+  }
+  function gameAnswer(ok, i, btn) {
+    const G = S.game; if (!G || G.over || S.lock) return;
+    if (!G.on) { G.on = true; stopVoice(); later(gameTick, 1000); }
+    if (ok) {
+      G.score++; S.lock = true; let cap = 0;
+      if (i >= 0) { const r = S.b.play(1, i); if (r.ok) { S.last = i; S.gone = r.cap.map(s => [s, 2]); cap = r.cap.length; } }
+      else { S.found = new Set(S.b.group(G.p.lib).libs); if (btn) btn.classList.add("right"); }
+      cap ? SFX.cap() : SFX.good(); drawBoard();
+      const e = $("lnGs"); if (e) { e.textContent = "★ " + G.score; e.classList.remove("pop"); void e.offsetWidth; e.classList.add("pop"); }
+      return later(() => { if (!G.over) newPuzzle(); }, 480);
+    }
+    G.left = Math.max(0, G.left - 3); SFX.bad(); gameBar();
+    if (i >= 0) { S.x = [i]; drawBoard(); later(() => { S.x = []; if (!G.over && S.view === "game") drawBoard(); }, 500); }
+    else if (btn) { btn.classList.add("wrong"); btn.disabled = true; }
+    if (G.left <= 0) gameOver();
+  }
+  function gameOver() {
+    const G = S.game, l = ALL[S.lesson], th = l.star || [4, 8, 12]; G.over = true;
+    const stars = G.score >= th[2] ? 3 : G.score >= th[1] ? 2 : G.score >= th[0] ? 1 : 0;
+    prog.best = prog.best || {}; const old = prog.best[l.id] || 0, isBest = G.score > old; if (isBest) prog.best[l.id] = G.score;
+    if (stars) finish(l.id, stars, 10 + stars * 5); else saveP();
+    S.view = "end"; clearT(); SFX.done(); if (stars) confetti(40); speak(isBest && old ? LINES.best : LINES.time, 400);
+    $("learn").innerHTML = `<div class="ln-end"><img class="ln-endimg" src="${TEACH.pose(stars ? "yay" : "cheer")}" alt=""><h2>หมดเวลา!</h2>
+      <div class="ln-bigstars">${[1, 2, 3].map(n => `<img class="${n <= stars ? "on" : "off"}" style="--d:${n * .25}s" src="learn/icon_star.png" alt="">`).join("")}</div>
+      <div class="ln-tiles"><div class="ln-tile xp"><small>คะแนน</small><b>${G.score}</b></div><div class="ln-tile acc"><small>สถิติดีที่สุด</small><b>${Math.max(old, G.score)}</b></div>
+      <div class="ln-tile fire"><small>ได้ XP</small><b>+${stars ? 10 + stars * 5 : 0}</b></div></div>
+      <p class="ln-note">${isBest && old ? "สถิติใหม่! เก่งขึ้นแล้วนะ" : stars < 3 ? `ได้ ${th[Math.min(2, stars)]} คะแนน จะได้ดาวเพิ่มอีกดวง` : "ได้สามดาวเต็มเลย สุดยอด"}</p>
+      <div class="ln-row col"><button class="ln-btn big pri" data-act="retry">เล่นอีกครั้ง</button><button class="ln-btn" data-act="path">กลับไปหน้าบทเรียน</button></div></div>`;
+    $("learn").className = "learn end";
+  }
+
   function confetti(n) {
     const box = document.createElement("div"); box.className = "ln-confetti";
     const cols = ["#58cc02", "#1cb0f6", "#ff9600", "#ce82ff", "#ff4b4b", "#ffc800"];
@@ -3479,7 +3651,7 @@ const Learn = (function () {
     wired = true;
     const root = $("learn");
     root.addEventListener("click", e => {
-      if (e.target.closest("#lnBoard")) { if (!canTap()) return; const i = ptAt(e); if (i < 0) return; return S.view === "fight" ? tapFight(i) : tapLesson(i); }
+      if (e.target.closest("#lnBoard")) { if (!canTap()) return; const i = ptAt(e); if (i < 0) return; return S.view === "fight" ? tapFight(i) : S.view === "game" ? gameAnswer(S.game.p.check(i), i) : tapLesson(i); }
       const t = e.target.closest("button"); if (!t || t.disabled) return;
       ctx();
       if (t.dataset.lesson !== undefined) return openLesson(+t.dataset.lesson);
@@ -3487,13 +3659,14 @@ const Learn = (function () {
         const pop = t.parentNode.querySelector(".ln-pop"), was = !pop.hidden;
         root.querySelectorAll(".ln-pop").forEach(p => { p.hidden = true; p.parentNode.classList.remove("open"); });
         pop.hidden = was; t.parentNode.classList.toggle("open", !was); SFX.tap();
-        const pl = ALL[+t.dataset.pick]; if (!was && pl) { if (pl.boss) preload(bossTexts(pl.boss), pl.boss); else preload(pl.items.slice(0, 3).map(it => it.say)); } // head start before START
+        const pl = ALL[+t.dataset.pick]; if (!was && pl) { if (pl.boss) preload(bossTexts(pl.boss), pl.boss); else if (pl.game) preload([GAMES[pl.game].say]); else preload(pl.items.slice(0, 3).map(it => it.say)); } // head start before START
         return;
       }
+      if (t.dataset.num !== undefined) return gameAnswer(+t.dataset.num === S.game.p.n, -1, t);
       if (t.dataset.opt !== undefined) { if (S.state !== "ask") return; return +t.dataset.opt === S.it.ok ? (SFX.tap(), right()) : wrong(+t.dataset.opt); }
       const act = t.dataset.act;
       if (act === "voice") { voiceOn = !voiceOn; try { localStorage.setItem("gonn.learnVoice", voiceOn ? "1" : "0"); } catch (e) {} if (!voiceOn) stopVoice(); t.querySelector("img").classList.toggle("off", !voiceOn); return; }
-      if (act === "again") return S.view === "fight" ? speak(S.fight.line, 0, S.fight.boss) : speak(S.it.say);
+      if (act === "again") return S.view === "fight" ? speak(S.fight.line, 0, S.fight.boss) : S.view === "game" ? speak(GAMES[S.game.mode].say) : speak(S.it.say);
       if (act === "next") { SFX.tap(); if (S.state === "fb" && S.hearts <= 0) return; if (S.state === "info") { S.queue.shift(); S.done++; } return nextItem(); }
       if (act === "hint") { S.hintShown = true; S.usedHint = true; S.pose = "point"; if (S.it.ans && !["stone"].includes(S.it.t)) S.ring = L(S.it.ans, S.it.n || 5).slice(0, 1); SFX.tap(); renderLesson(); return speak(S.it.hint); }
       if (act === "skip") { S.queue.push(S.queue.shift()); return nextItem(); }
@@ -3520,8 +3693,8 @@ const Learn = (function () {
     return `เรียนต่อ: ${ALL[cur].t} · ${cur}/${ALL.length} ด่าน${s ? ` · 🔥 ${s} วัน` : ""}`;
   };
   api.started = () => Object.keys(loadP().stars).length > 0;
-  if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) window.__lnItem = () => S.it;
-  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey };
+  if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) { window.__lnItem = () => S.it; window.__lnGame = () => { const G = S.game, p = G && G.p; if (!p) return null; let sol = -1; if (p.check) for (let i = 0; i < p.b.a.length; i++) if (!p.b.a[i] && p.check(i)) { sol = i; break; } return { mode: p.mode, n: p.b.N, num: p.n, sol, on: G.on, over: G.over, score: G.score, left: G.left }; }; }
+  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey, GAMES, puzzle };
   return api;
 })();
 if (typeof module !== "undefined") module.exports = Learn;
@@ -6033,7 +6206,7 @@ const Coach = (function () {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "ac44976482";
+  const BUILD = "722ec74af4";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
