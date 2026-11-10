@@ -777,6 +777,20 @@ body.learning { overflow: hidden; }
 .ln-prog i.low { background: var(--ln-red); }
 .ln-opts.nums { grid-template-columns: repeat(4, 1fr); max-width: 420px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 .ln-opts.nums .ln-opt { font-size: 26px; font-weight: 600; padding: 12px 0; }
+.ln-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px 16px; max-width: 420px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.ln-card { aspect-ratio: 1.15; border: 2px solid var(--ln-line); border-radius: 14px; background: #1cb0f6; box-shadow: 0 4px 0 #1899d6; display: grid; place-items: center; padding: 6px; overflow: hidden; font-family: inherit; }
+.ln-card img { width: 58%; opacity: .95; }
+.ln-card.up { background: #fff; box-shadow: 0 4px 0 var(--ln-line); animation: lnFlip .25s; }
+.ln-card.up svg { width: 88%; height: 88%; }
+.ln-card.up span { font-size: 16px; font-weight: 600; color: var(--ln-ink); line-height: 1.25; }
+.ln-card.ok { border-color: var(--ln-green); background: #d7ffb8; box-shadow: 0 4px 0 var(--ln-green); }
+@keyframes lnFlip { from { transform: rotateY(90deg); } }
+.ln-tfs { display: flex; gap: 14px; justify-content: center; padding: 26px 16px; }
+.ln-tf { flex: 1; max-width: 170px; aspect-ratio: 1; border-radius: 22px; border: 0; color: #fff; font-size: 54px; font-weight: 600; font-family: inherit; display: grid; place-items: center; align-content: center; }
+.ln-tf small { font-size: 20px; display: block; }
+.ln-tf.yes { background: var(--ln-green); box-shadow: 0 6px 0 var(--ln-green-d); } .ln-tf.no { background: var(--ln-red); box-shadow: 0 6px 0 var(--ln-red-d); }
+.ln-tf:active { transform: translateY(4px); box-shadow: none; }
+.ln-tf:disabled { opacity: .35; } .ln-tf.right { opacity: 1; outline: 5px solid #ffc800; } .ln-tf.wrong { opacity: .8; }
 .ln-title { margin: 2px 16px 0; font-size: clamp(22px, 6vw, 28px); font-weight: 600; color: var(--ln-ink); }
 .ln-talk { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; padding: 8px 12px 0 16px; margin-bottom: -26px; position: relative; z-index: 1; }
 .ln-mascot { width: clamp(96px, 27vw, 132px); flex: none; animation: ln-bob 2.4s ease-in-out infinite; filter: drop-shadow(0 3px 0 rgba(0,0,0,.08)); }
@@ -2810,7 +2824,6 @@ const Learn = (function () {
         { t: "atari", n: 7, w: "d4 e4", b: "c4 d5 e5 f4", ans: "d3 e3", say: "อาตาริกลุ่มหมากขาวทั้งกลุ่มเลย", hint: "กลุ่มขาวมีลมหายใจสองจุด อยู่ด้านล่าง" },
         { t: "choice", n: 5, opts: ["กินหมากขาวได้", "ต้องรอผ่าน"], ok: 0, say: "ถ้าเราอาตาริแล้ว ขาวไม่หนี ตาต่อไปเราทำอะไรได้", hint: "ปิดลมหายใจสุดท้ายได้เลย" }
       ] },
-      { id: "g4", game: "atari", t: "เกม · ขู่ให้ไว", icon: "🎮" },
       { id: "boss2", boss: "win", goal: 2, n: 7, t: "บอส · ลุงวิน" }
     ] },
     { t: "กติกาพิเศษ", c: "#ce82ff", lessons: [
@@ -2842,7 +2855,9 @@ const Learn = (function () {
         { t: "info", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5 e1 e2", shade: 1, say: "ขาวเดินทีหลัง เลยได้**แต้มต่อหกแต้มครึ่ง** เรียกว่า**โคมิ**" },
         { t: "choice", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5 e1 e2", shade: 1, opts: ["⚫ ดำ", "⚪ ขาว"], ok: 0, say: "ดำได้สิบแต้ม ขาวได้สามแต้ม บวกโคมิหกแต้มครึ่ง ใครชนะ", hint: "ขาวรวมได้เก้าแต้มครึ่ง ดำได้สิบแต้ม ดำชนะครึ่งแต้ม" },
         { t: "info", n: 5, b: "c1 c2 c3 c4 c5", w: "d1 d2 d3 d4 d5", shade: 1, say: "เมื่อไม่มีที่ให้ลงแล้ว ทั้งสองฝ่ายกดผ่าน เกมก็จบ แล้วนับแต้ม ใครได้มากกว่าชนะ เก่งมาก หนูพร้อมเล่นจริงแล้ว" }
-      ] }
+      ] },
+      { id: "g7", game: "trap", t: "เกม · จับหมากจอมซน", icon: "🎮" },
+      { id: "g8", game: "tf", pool: "basic", t: "เกม · จริงหรือมั่ว", icon: "🎮" }
     ] },
     { t: "ท่ากินหมาก", c: "#0fa3a3", lessons: [
       { id: "u6a", t: "อาตาริสองทาง", icon: "✌", items: [
@@ -2979,7 +2994,8 @@ const Learn = (function () {
         { t: "choice", n: 19, opts: ["ไปลงที่ใหญ่ที่อื่น", "ต้องลงตอบติดๆ ทุกครั้ง"], ok: 0, say: "อีกฝ่ายลงใกล้หมากเรา แต่หมากเรายังปลอดภัย ควรทำยังไง", hint: "หมากเราไม่อันตราย ก็ไม่ต้องรีบตอบ" },
         { t: "choice", n: 19, opts: ["ปล่อยไป แล้วเล่นที่อื่น", "หนีต่อจนสุดทาง"], ok: 0, say: "หมากเม็ดเล็กๆ ที่หนีไม่รอดแล้ว ควรทำยังไง", hint: "หนีต่อมีแต่จะเสียมากขึ้น" },
         { t: "info", n: 19, say: "แพ้ไม่เป็นไรนะ ทุกเกมช่วยให้เก่งขึ้น เรียนครบแล้ว ลองไปเล่นเกมจริงบนกระดานสิบเก้าเส้นได้เลย สู้ๆ" }
-      ] }
+      ] },
+      { id: "g9", game: "tf", pool: "big", t: "เกม · จริงหรือมั่ว 19×19", icon: "🎮" }
     ] },
     { t: "ขั้นต่อไป 19×19", c: "#7c4dff", lessons: [
       { id: "u9a", t: "บุกสามสาม", icon: "⤵", items: [
@@ -3011,10 +3027,19 @@ const Learn = (function () {
         { t: "choice", n: 19, opts: ["ต้องบุกเข้าไป", "ปล่อยไว้ก็ได้"], ok: 0, say: "ถ้าเขตของอีกฝ่ายใหญ่มาก จนเรานับแล้วตามไม่ทัน ควรทำยังไง", hint: "ถ้าปล่อยไว้ก็แพ้แน่ ต้องกล้าบุก" }
       ] },
       { id: "u9e", t: "เซนเตะ โกเตะ", icon: "⚑", items: [
-        { t: "info", n: 19, say: "ตาที่อีกฝ่าย**ต้องรีบตอบ** เรียกว่า**เซนเตะ** เราเลยได้ลงต่ออีก ส่วนตาที่อีกฝ่ายไม่ต้องตอบ เรียกว่า**โกเตะ**" },
-        { t: "info", n: 19, b: "j9 h10", w: "j10", play: [{ c: 1, at: "k10" }, { c: 2, at: "j11" }], say: "ดำอาตาริ ขาวต้องรีบหนี แล้วดำก็ได้ลงต่อที่อื่นอีก ตาแบบนี้คือเซนเตะ ดูนะ" },
-        { t: "choice", n: 19, opts: ["เซนเตะ", "โกเตะ"], ok: 0, say: "ถ้าได้ประโยชน์พอๆ กัน ตาไหนดีกว่า", hint: "เซนเตะได้ประโยชน์ แล้วยังได้ลงต่ออีก" },
-        { t: "choice", n: 19, opts: ["เพราะเรายังได้ลงต่อ", "เพราะจบเกมเร็ว"], ok: 0, say: "ทำไมเซนเตะถึงดี", hint: "อีกฝ่ายต้องตอบ ตาต่อไปก็ยังเป็นของเรา" }
+        { t: "info", n: 19, say: "หมากล้อมผลัดกันลงคนละตา ใครได้ลงที่ใหญ่ๆ ก่อนก็ได้เปรียบ คนที่ได้เลือกว่าจะลงตรงไหนต่อ เรียกว่าได้**เซนเตะ** แปลว่ามือนำ" },
+        { t: "info", n: 19, say: "ตาเซนเตะ คือตาที่ลงแล้วอีกฝ่าย**ต้องตอบ** เพราะถ้าไม่ตอบจะเสียหายหนัก พอเขาตอบเสร็จ ก็กลับมาเป็นตาของเราอีกครั้ง" },
+        { t: "info", n: 19, b: "j9 h10", w: "j10", play: [{ c: 1, at: "k10" }, { c: 2, at: "j11" }], say: "ดูตัวอย่างนะ ดำอาตาริ ขาวต้องรีบหนี ไม่งั้นโดนกิน ดำเลยได้ลงต่อที่อื่นอีก ตานี้คือเซนเตะ" },
+        { t: "choice", n: 19, b: "j9 h10 k10", w: "j10", opts: ["เซนเตะ", "โกเตะ"], ok: 0, say: "ดำอาตาริหมากขาว ตานี้เป็นเซนเตะหรือโกเตะ", hint: "ขาวต้องตอบ ไม่งั้นโดนกิน ตานี้เลยเป็นเซนเตะ" },
+        { t: "info", n: 19, say: "ส่วนตาที่ลงแล้วอีกฝ่าย**ไม่ต้องตอบ** เรียกว่า**โกเตะ** แปลว่ามือตาม พอเราลงเสร็จ อีกฝ่ายก็ไปลงที่ใหญ่ที่อื่นได้เลย" },
+        { t: "info", n: 19, b: "j10 k11", w: "k10", play: [{ c: 1, at: "j11" }, { c: 2, at: "p10" }], say: "ดูตัวอย่างนะ ดำต่อหมากตัวเองให้แน่น แต่ไม่ได้ขู่อะไรขาวเลย ขาวจึงไปลงที่อื่นได้ ตานี้คือโกเตะ" },
+        { t: "choice", n: 19, b: "j10 k11 j11", w: "k10", opts: ["โกเตะ", "เซนเตะ"], ok: 0, say: "ดำต่อหมากตัวเอง โดยไม่ได้ขู่อะไรขาว ตานี้เป็นเซนเตะหรือโกเตะ", hint: "ขาวไม่ต้องตอบ ตานี้เลยเป็นโกเตะ" },
+        { t: "tap", n: 19, b: "j9 h10", w: "j10", ans: "k10 j11", say: "ลองลงตาเซนเตะดู ขู่ให้ขาวต้องตอบ", hint: "อาตาริหมากขาว ขาวจะต้องรีบหนี" },
+        { t: "info", n: 19, say: "โกเตะไม่ได้แย่เสมอไปนะ ถ้าหมากเราอันตราย ก็ต้องป้องกันก่อน ถึงจะเป็นโกเตะก็ตาม แต่ถ้าเลือกได้ ให้เล่น**ตาเซนเตะก่อน** แล้วค่อยกลับมาเล่นตาโกเตะ" },
+        { t: "choice", n: 19, opts: ["เล่นตาเซนเตะก่อน", "เล่นตาโกเตะก่อน"], ok: 0, say: "มีตาเซนเตะกับตาโกเตะ ที่ใหญ่พอๆ กัน ควรเล่นตาไหนก่อน", hint: "เล่นเซนเตะก่อน แล้วยังได้กลับมาเล่นตาโกเตะอีก" },
+        { t: "info", n: 19, say: "ระวัง**เซนเตะปลอม**ด้วย ถ้าเราขู่ แต่อีกฝ่ายเสียแค่นิดเดียว เขาอาจไม่ตอบ แล้วไปลงที่ใหญ่กว่าแทน เราก็เสียเซนเตะไปเอง" },
+        { t: "choice", n: 19, opts: ["ไปลงจุดใหญ่ ยอมเสียเม็ดเดียว", "ต้องตอบทุกครั้ง"], ok: 0, say: "อีกฝ่ายขู่กินหมากเราแค่เม็ดเดียวที่ไม่สำคัญ แต่มีจุดใหญ่มากรออยู่ ควรทำยังไง", hint: "ถ้าเสียแค่นิดเดียว ไม่ต้องตอบก็ได้ ไปเอาจุดใหญ่ดีกว่า" },
+        { t: "choice", n: 19, opts: ["เพราะเรายังได้เลือกที่ลงต่อ", "เพราะจบเกมเร็ว"], ok: 0, say: "สรุปแล้ว ทำไมเซนเตะถึงดี", hint: "อีกฝ่ายต้องตอบ ตาต่อไปก็ยังเป็นของเรา" }
       ] },
       { id: "u9f", t: "ปลายเกม", icon: "⌛", items: [
         { t: "info", n: 19, say: "ช่วงท้ายเกม เขตแดนเริ่มชัดแล้ว ต้องปิดขอบเขตให้เรียบร้อย ช่วงนี้เรียกว่า**ปลายเกม** หรือ**โยเซ**" },
@@ -3044,7 +3069,7 @@ const Learn = (function () {
         { t: "tap", n: 7, b: "c4 d5", w: "c5", ring: "d4", ans: "e4 d3", say: "ขาวจ้องจะตัดตรงวงกลม ลองป้องกันด้วยรูปปากเสือ ไม่ต้องลงตรงจุดตัด", hint: "ลงให้หมากดำสามเม็ดล้อมจุดตัดไว้" },
         { t: "choice", n: 7, b: "c4 d5 e4", opts: ["โดนกินทันที", "ตัดหมากเราได้"], ok: 0, say: "ถ้าอีกฝ่ายลงในปากเสือ จะเป็นยังไง", hint: "ในปากเสือเหลือลมหายใจจุดเดียว" }
       ] },
-      { id: "g5", game: "link", t: "เกม · ต่อให้ติด", icon: "🎮" },
+      { id: "g5", game: "match", t: "เกม · จับคู่รูปหมาก", icon: "🎮" },
       { id: "u10d", t: "รูปแย่", icon: "✖", items: [
         { t: "info", n: 7, b: "c3 d3 c4", ring: "d4", say: "หมากสามเม็ดอัดกันเป็นมุมฉาก โดยที่ตรงวงกลมยังว่าง เรียกว่า**สามเหลี่ยมอัด** เป็นรูปแย่ ใช้หมากเปลือง แต่ได้งานน้อย" },
         { t: "info", n: 7, b: "c3 c5 e4", say: "หมากสามเม็ดเท่ากัน ถ้าวางห่างกันแบบนี้ จะคุมที่ได้มากกว่าเยอะ" },
@@ -3061,6 +3086,54 @@ const Learn = (function () {
         { t: "choice", n: 7, opts: ["งัดหรือยืด", "ปล่อยไว้ ไปลงที่อื่น"], ok: 0, say: "โดนแปะแล้ว ควรทำยังไง", hint: "โดนแปะต้องตอบ จะงัดหรือยืดก็ได้" }
       ] },
       { id: "g6", game: "mix", n: 9, secs: 60, star: [5, 10, 15], t: "เกม · รวมมิตร", icon: "🎮" }
+    ] },
+    { t: "โจเซกิมุม 4-4", c: "#00a3c4", lessons: [
+      { id: "u11a", t: "โจเซกิคืออะไร", icon: "✎", items: [
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", say: "**โจเซกิ**คือลำดับการเดินหมากที่มุม ที่นักหมากล้อมเก่งๆ ช่วยกันคิดมาหลายร้อยปี จนรู้ว่าถ้าเดินตามนี้ ทั้งสองฝ่ายได้ผลพอๆ กัน ไม่มีใครเสียเปรียบ" },
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", say: "โจเซกิมีประโยชน์สามข้อ หนึ่ง ตอนเปิดเกม**ไม่ต้องคิดเองทุกตา** สอง **ไม่เสียเปรียบที่มุม**ตั้งแต่ต้นเกม สาม ได้เรียน**รูปหมากดีๆ** ไปด้วย" },
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", say: "แต่อย่าท่องจำอย่างเดียวนะ ต้องเข้าใจว่าแต่ละตาลงเพื่ออะไร และเลือกโจเซกิให้เข้ากับหมากรอบๆ กระดานด้วย" },
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", ring: "n17 q14", say: "หน่วยนี้เราจะเรียนโจเซกิของ**มุมสี่สี่** หรือจุดดาว ที่เจอบ่อยที่สุดสามแบบ เริ่มจากการเข้ามุมแบบม้ากระโดด ตรงวงกลมจุดไหนก็ได้" },
+        { t: "tap", n: 19, b: "d4 d16", w: "p16 p4", ans: "n17 q14", say: "ลองเข้ามุมสี่สี่ของขาวที่มุมขวาบน แบบม้ากระโดด", hint: "ลงบนเส้นที่สาม ห่างจากจุดดาวของขาวแบบม้ากระโดด" },
+        { t: "choice", n: 19, opts: ["ลำดับเดินที่มุม ที่ได้ผลพอๆ กันทั้งสองฝ่าย", "ท่ากินหมากแบบหนึ่ง", "กติกาพิเศษ"], ok: 0, say: "โจเซกิคืออะไร", hint: "โจเซกิคือลำดับเดินหมากที่มุม ที่ทั้งสองฝ่ายไม่เสียเปรียบ" },
+        { t: "choice", n: 19, opts: ["เข้าใจว่าแต่ละตาลงเพื่ออะไร", "ท่องจำให้ได้ก็พอ"], ok: 0, say: "เรียนโจเซกิยังไงถึงจะดี", hint: "ต้องเข้าใจเหตุผลของแต่ละตา ไม่ใช่ท่องอย่างเดียว" }
+      ] },
+      { id: "u11b", t: "เข้ามุมแล้วสไลด์", icon: "①", items: [
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", play: [{ c: 1, at: "n17" }, { c: 2, at: "q14" }, { c: 1, at: "p18" }, { c: 2, at: "q17" }, { c: 1, at: "k17" }], say: "โจเซกิแรกเป็นแบบที่ใช้บ่อยที่สุด มีห้าตา ดูให้จบก่อนนะ" },
+        { t: "info", n: 19, b: "d4 d16 n17", w: "p16 p4", ring: "n17", say: "ตาแรก ดำ**เข้ามุม**แบบม้ากระโดด บนเส้นที่สาม เพื่อไม่ให้ขาวปิดมุมได้ง่ายๆ" },
+        { t: "info", n: 19, b: "d4 d16 n17", w: "p16 p4 q14", ring: "q14", say: "ขาวตอบด้วย**ม้ากระโดด**อีกด้านหนึ่ง ป้องกันมุม และขยายไปทางริมขวา" },
+        { t: "info", n: 19, b: "d4 d16 n17 p18", w: "p16 p4 q14", ring: "p18", say: "ดำ**สไลด์**เข้าไปบนเส้นที่สอง ใต้หมากขาว เพื่อแย่งฐานของขาว และสร้างฐานให้ตัวเอง" },
+        { t: "info", n: 19, b: "d4 d16 n17 p18", w: "p16 p4 q14 q17", ring: "q17", say: "ขาวลงจุด**สามสาม** กันมุมไว้ ไม่ให้ดำเข้ามาลึกกว่านี้" },
+        { t: "info", n: 19, b: "d4 d16 n17 p18 k17", w: "p16 p4 q14 q17", ring: "k17", say: "ดำ**กางปีก**สองช่องตามริมบน ได้ฐานที่ปลอดภัย จบโจเซกิ ดำได้ริมบน ขาวได้มุม ได้พอๆ กัน" },
+        { t: "seq", n: 19, b: "d4 d16", w: "p16 p4", steps: [{ ans: "n17", reply: "q14" }, { ans: "p18", reply: "q17" }, { ans: "k17" }], say: "ลองเดินโจเซกินี้เอง เริ่มจากเข้ามุมที่ริมบน แล้วสไลด์ แล้วกางปีก", hint: "เข้ามุมบนเส้นที่สาม สไลด์เข้าใต้มุมบนเส้นที่สอง แล้วกางปีกห่างสองช่อง" },
+        { t: "choice", n: 19, b: "d4 d16 n17 p18 k17", w: "p16 p4 q14 q17", opts: ["ดำได้ฐานริมบน ขาวได้มุม", "ดำได้ทั้งมุมและริม", "ขาวได้หมด"], ok: 0, say: "จบโจเซกินี้แล้ว แต่ละฝ่ายได้อะไร", hint: "ดำได้ฐานที่ริมบน ส่วนขาวได้มุม" },
+        { t: "choice", n: 19, b: "d4 d16 n17 p18", w: "p16 p4 q14", ring: "p18", opts: ["แย่งฐานขาว และสร้างฐานให้ตัวเอง", "กินหมากขาวทันที"], ok: 0, say: "ดำสไลด์ตรงวงกลมเพื่ออะไร", hint: "สไลด์เข้าใต้มุม ทำให้ขาวมีฐานน้อยลง และดำได้ฐานเพิ่ม" }
+      ] },
+      { id: "u11c", t: "บุกสามสาม", icon: "②", items: [
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", play: [{ c: 1, at: "q17" }, { c: 2, at: "p17" }, { c: 1, at: "q16" }, { c: 2, at: "q14" }, { c: 1, at: "q15" }, { c: 2, at: "p15" }, { c: 1, at: "r14" }], say: "โจเซกิที่สอง ดำไม่เข้ามุมจากข้างนอก แต่**บุกสามสาม**เข้าไปในมุมเลย มีเจ็ดตา ดูให้จบก่อนนะ" },
+        { t: "info", n: 19, b: "d4 d16 q17", w: "p16 p4 p17", ring: "p17", say: "ดำบุกสามสาม ขาว**กั้น**ด้านหนึ่งไว้ ขาวเลือกได้ว่าจะกั้นด้านไหน ให้กั้นด้านที่อยากได้กำแพง" },
+        { t: "info", n: 19, b: "d4 d16 q17 q16", w: "p16 p4 p17 q14", ring: "q14", say: "ดำ**ยืด**ออกมาหนึ่งตา แล้วขาวกระโดดลงมาดักหัวไว้ ไม่ติดหมากดำ เพื่อให้รูปหมากขาวไม่มีจุดอ่อน" },
+        { t: "info", n: 19, b: "d4 d16 q17 q16 q15", w: "p16 p4 p17 q14 p15", ring: "p15", say: "ดำดันออกอีกหนึ่งตา ขาวกั้นไว้ กำแพงของขาวเริ่มเป็นรูปแล้ว" },
+        { t: "info", n: 19, b: "d4 d16 q17 q16 q15 r14", w: "p16 p4 p17 q14 p15", ring: "r14", say: "ดำ**งัด**ที่เส้นที่สอง ให้กลุ่มมุมรอดแน่นอน จบโจเซกิ ดำได้มุมและได้**เซนเตะ** ไปลงที่อื่นต่อ ขาวได้กำแพงหันออกข้างนอก" },
+        { t: "seq", n: 19, b: "d4 d16", w: "p16 p4", steps: [{ ans: "q17", reply: "p17" }, { ans: "q16", reply: "q14" }, { ans: "q15", reply: "p15" }, { ans: "r14" }], say: "ลองเดินโจเซกิบุกสามสามเอง", hint: "บุกสามสาม ยืดออกหนึ่งตา ดันอีกหนึ่งตา แล้วงัดที่เส้นที่สอง" },
+        { t: "choice", n: 19, b: "d4 d16 q17 q16 q15 r14", w: "p16 p4 p17 q14 p15", opts: ["ดำได้มุมและเซนเตะ ขาวได้กำแพง", "ดำได้กำแพง ขาวได้มุม"], ok: 0, say: "จบโจเซกิบุกสามสามแล้ว แต่ละฝ่ายได้อะไร", hint: "ดำได้พื้นที่มุมกับเซนเตะ ขาวได้กำแพงข้างนอก" },
+        { t: "choice", n: 19, opts: ["ไม่ดี ขาวจะได้กำแพงใหญ่ขึ้นอีก", "ดี บุกได้ทุกครั้ง"], ok: 0, say: "ถ้าข้างนอกมุมนี้ ขาวมีหมากแข็งแรงเยอะอยู่แล้ว บุกสามสามดีไหม", hint: "บุกสามสามให้กำแพงกับขาว ถ้าขาวแข็งแรงอยู่แล้วยิ่งได้เปรียบ" }
+      ] },
+      { id: "u11d", t: "โดนหนีบแล้วเข้าสามสาม", icon: "③", items: [
+        { t: "info", n: 19, b: "d4 d16 n17", w: "p16 p4 l17", ring: "l17", say: "บางครั้งเราเข้ามุมแล้ว ขาวไม่ตอบที่มุม แต่ลงมา**หนีบ**หมากเราจากอีกด้าน ไม่ให้เรากางปีกได้" },
+        { t: "info", n: 19, b: "d4 d16", w: "p16 p4", play: [{ c: 1, at: "n17" }, { c: 2, at: "l17" }, { c: 1, at: "q17" }, { c: 2, at: "p17" }, { c: 1, at: "q16" }, { c: 2, at: "p15" }, { c: 1, at: "p18" }], say: "โดนหนีบแบบนี้ วิธีที่ง่ายที่สุดคือ**เข้าสามสาม**เลย มีเจ็ดตา ดูให้จบก่อนนะ" },
+        { t: "info", n: 19, b: "d4 d16 n17 q17", w: "p16 p4 l17 p17", ring: "p17", say: "ดำเข้าสามสาม ขาวกั้นด้านบน เพื่อแยกหมากดำสองกลุ่มออกจากกัน" },
+        { t: "info", n: 19, b: "d4 d16 n17 q17 q16", w: "p16 p4 l17 p17 p15", ring: "p15", say: "ดำยืดออกมา ขาวยืดลงมาด้วย ทำกำแพงให้หนา หันหน้าออกข้างนอก" },
+        { t: "info", n: 19, b: "d4 d16 n17 q17 q16 p18", w: "p16 p4 l17 p17 p15", ring: "p18", say: "ดำ**งัด**ที่เส้นที่สอง กลุ่มมุมมีที่พอจะรอด และยังต่อกับหมากที่เข้ามุมได้ด้วย จบโจเซกิ ดำได้มุม ขาวได้กำแพง" },
+        { t: "seq", n: 19, b: "d4 d16", w: "p16 p4", steps: [{ ans: "n17", reply: "l17" }, { ans: "q17", reply: "p17" }, { ans: "q16", reply: "p15" }, { ans: "p18" }], say: "ลองเดินเอง เข้ามุมที่ริมบนก่อน พอขาวหนีบ ก็เข้าสามสาม", hint: "เข้ามุม เข้าสามสาม ยืดออกหนึ่งตา แล้วงัดที่เส้นที่สองด้านบน" },
+        { t: "choice", n: 19, opts: ["เข้าสามสาม", "ทิ้งหมากไปเลย", "ลงติดหมากที่หนีบ"], ok: 0, say: "เข้ามุมแล้วโดนหนีบ วิธีง่ายที่สุดคืออะไร", hint: "เข้าสามสาม เอาพื้นที่มุมแทน" }
+      ] },
+      { id: "u11e", t: "เลือกโจเซกิ", icon: "⚖", items: [
+        { t: "info", n: 19, b: "d4 d16 n17 p18 k17", w: "p16 p4 q14 q17", say: "ทบทวนกัน โจเซกิ**สไลด์** ดำได้ฐานที่ริม เหมาะเวลาที่เราอยากขยายไปตามริมด้านนั้น" },
+        { t: "info", n: 19, b: "d4 d16 q17 q16 q15 r14", w: "p16 p4 p17 q14 p15", say: "โจเซกิ**บุกสามสาม** ดำได้มุมกับเซนเตะ แต่ขาวได้กำแพง เหมาะเวลาที่กำแพงของขาวไม่ค่อยมีประโยชน์" },
+        { t: "choice", n: 19, opts: ["เข้ามุมแล้วสไลด์", "บุกสามสาม"], ok: 0, say: "ถ้าเราอยากได้ฐานตามริมกระดาน ควรเลือกโจเซกิไหน", hint: "สไลด์แล้วกางปีก ได้ฐานที่ริม" },
+        { t: "choice", n: 19, opts: ["บุกสามสาม", "เข้ามุมแล้วสไลด์"], ok: 0, say: "ถ้าเราอยากได้พื้นที่มุมทันที และได้เซนเตะด้วย ควรเลือกโจเซกิไหน", hint: "บุกสามสามได้มุมกับเซนเตะ" },
+        { t: "choice", n: 19, opts: ["ดูหมากรอบๆ กระดานก่อน", "ใช้แบบเดิมทุกครั้ง"], ok: 0, say: "ก่อนเลือกโจเซกิ ควรทำอะไร", hint: "โจเซกิที่ดี ต้องเข้ากับหมากรอบๆ กระดาน" }
+      ] }
     ] }
   ];
   // each boss speaks for himself, in his own voice: learn/voice/<boss>_<hash>.mp3 (turn / yours are shown, not spoken)
@@ -3099,7 +3172,7 @@ const Learn = (function () {
   const OOPS = ["ไม่เป็นไรนะ ลองใหม่อีกที", "เกือบแล้ว ลองอีกครั้งนะ", "ยังไม่ใช่ ค่อยๆ ดูนะ"];
   const LINES = {
     done: "เรียนจบบทนี้แล้ว เก่งมากเลย", out: "หัวใจหมดแล้ว ไม่เป็นไรนะ มาลองใหม่กัน",
-    time: "หมดเวลาแล้ว เก่งมากเลย", best: "สถิติใหม่ สุดยอดไปเลย",
+    time: "หมดเวลาแล้ว เก่งมากเลย", gdone: "จบเกมแล้ว เก่งมากเลย", caught: "ล้อมได้แล้ว เก่งมาก", fled: "อ๊ะ หนีไปได้ ไม่เป็นไรนะ", best: "สถิติใหม่ สุดยอดไปเลย",
     grad: "ยินดีด้วย หนูเรียนจบทุกบทแล้ว ไปลองเล่นจริงกับเมฆบนกระดานเก้าคูณเก้ากันเลย"
   };
   // mini-games: quick random puzzles against the clock, no hearts (for children)
@@ -3109,15 +3182,33 @@ const Learn = (function () {
     save: { name: "หนีให้ทัน", task: "ช่วยหมากดำหนี", say: "มาเล่นเกมหนีให้ทันกัน หมากดำโดนอาตาริอยู่ ช่วยให้หนีรอดให้ได้มากที่สุดก่อนหมดเวลา" },
     atari: { name: "ขู่ให้ไว", task: "อาตาริหมากขาว", say: "มาเล่นเกมขู่ให้ไวกัน ลงหมากให้ขาวเหลือลมหายใจจุดเดียว ทำให้ได้มากที่สุดก่อนหมดเวลา" },
     link: { name: "ต่อให้ติด", task: "ต่อหมากดำให้ติดกัน", say: "มาเล่นเกมต่อให้ติดกัน ขาวจ้องจะตัดอยู่ รีบต่อหมากดำสองเม็ดให้ติดกันให้ได้มากที่สุด" },
+    trap: { name: "จับหมากจอมซน", task: "ล้อมหมากขาวไว้ อย่าให้ถึงขอบ", say: "หมากขาวจอมซนกำลังจะหนีไปที่ขอบกระดาน วางหมากดำดักทางไว้ ล้อมให้ได้ก่อนมันหนีถึงขอบนะ เคล็ดลับคือดักห่างๆ ไว้ก่อน อย่าไล่ติดตัว" },
+    match: { name: "จับคู่รูปหมาก", task: "จับคู่รูปกับชื่อ", say: "เปิดการ์ดทีละสองใบ จับคู่รูปหมากกับชื่อของมันให้ถูก จำให้ดีนะว่าใบไหนอยู่ตรงไหน" },
+    tf: { name: "จริงหรือมั่ว", task: "จริงหรือมั่ว", say: "ฮิคารุจะพูดทีละประโยค ช่วยตอบหน่อยว่าจริงหรือมั่ว" },
     mix: { name: "รวมมิตร", task: "", say: "เกมนี้รวมทุกแบบเลย อ่านโจทย์ข้างบนให้ดี แล้วตอบให้ไวนะ" }
   };
+  // memory cards: a shape and its name
+  const SHAPES = [
+    { name: "กระโดดหนึ่งช่อง", b: "c2 c4" }, { name: "หมากทแยง", b: "b2 c3" }, { name: "ม้ากระโดด", b: "b2 d3" },
+    { name: "ปากเสือ", b: "b3 c4 d3" }, { name: "สามเหลี่ยมอัด", b: "b2 c2 b3" }, { name: "ข้อไผ่", b: "b2 b3 d2 d3" }
+  ];
+  // true-or-false review: [sentence, is it true]
+  const QUIZ = {
+    basic: [["ดำได้ลงก่อนเสมอ", 1], ["หมากที่วางแล้ว เดินย้ายที่ได้", 0], ["หมากที่อยู่มุมกระดาน มีลมหายใจสองจุด", 1], ["หมากที่อยู่ริมกระดาน มีลมหายใจสี่จุด", 0],
+      ["หมากที่เหลือลมหายใจจุดเดียว เรียกว่าโดนอาตาริ", 1], ["หมากที่ลมหายใจหมด จะโดนกิน", 1], ["กลุ่มหมากที่มีห้องเดียว ไม่มีวันโดนกิน", 0], ["กลุ่มหมากที่มีสองห้อง ไม่มีวันโดนกิน", 1],
+      ["หมากสีเดียวกันที่ติดกัน ใช้ลมหายใจร่วมกัน", 1], ["หมากที่อยู่เฉียงกัน นับเป็นกลุ่มเดียวกันแล้ว", 0], ["ใครล้อมพื้นที่ได้มากกว่า คนนั้นชนะ", 1], ["ลงหมากในจุดที่ไม่มีลมหายใจได้เสมอ", 0]],
+    big: [["กระดานจริงมีสิบเก้าเส้น", 1], ["มุมคือทอง ริมคือเงิน กลางคือหญ้า", 1], ["ต้นเกมควรลงกลางกระดานก่อน", 0], ["เส้นที่สามคือเส้นพื้นที่", 1],
+      ["เส้นที่สองดีที่สุดตอนต้นเกม", 0], ["ขาวได้โคมิ เพราะดำได้ลงก่อน", 1], ["เกมจบเมื่อกระดานเต็มทุกช่อง", 0], ["ถ้าผ่านติดกันทั้งสองฝ่าย เกมจบ", 1],
+      ["ต้องลงตอบทุกตาที่อีกฝ่ายลง", 0], ["หมากตายในเขตเรา ตอนนับแต้มจะยกออก", 1], ["ควรลงหมากชิดกำแพงแข็งแรงของอีกฝ่าย", 0], ["ปิดมุมแล้ว อีกฝ่ายเข้ามุมได้ยาก", 1]]
+  };
+  const GAMEINFO = l => l.game === "trap" ? "ล้อมหมากขาวให้ได้ 5 รอบ" : l.game === "match" ? "เกมความจำ 12 ใบ" : l.game === "tf" ? "ตอบคำถาม 8 ข้อ" : `มินิเกมจับเวลา ${l.secs || 45} วินาที`;
   const ALL = UNITS.flatMap((u, k) => u.lessons.map(l => Object.assign(l, { unit: k })));
   const HEARTS = 5;
 
   // every spoken sentence maps to learn/voice/<fnv-1a of the text>.mp3 (src/tools/learn_voice.py makes them)
   function vkey(s) { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, "0"); }
   function texts() {
-    const t = new Set([...PRAISE, ...OOPS, ...Object.values(LINES), ...Object.values(GAMES).map(g => g.say)]);
+    const t = new Set([...PRAISE, ...OOPS, ...Object.values(LINES), ...Object.values(GAMES).map(g => g.say), ...Object.values(QUIZ).flat().map(q => q[0])]);
     for (const l of ALL) for (const it of l.items || []) { t.add(plain(it.say)); if (it.hint) t.add(plain(it.hint)); }
     return [...t];
   }
@@ -3258,7 +3349,7 @@ const Learn = (function () {
     svg.classList.toggle("big", N >= 13);
     svg.classList.toggle("locked", !canTap());
   }
-  const canTap = () => !S.lock && ((S.view === "lesson" && S.state === "ask" && S.it && !["info", "choice"].includes(S.it.t)) || (S.view === "fight" && S.fight && !S.fight.over && S.fight.turn === 1) || (S.view === "game" && S.game && !S.game.over && S.game.p.mode !== "libs"));
+  const canTap = () => !S.lock && ((S.view === "lesson" && S.state === "ask" && S.it && !["info", "choice"].includes(S.it.t)) || (S.view === "fight" && S.fight && !S.fight.over && S.fight.turn === 1) || (S.view === "game" && S.game && !S.game.over && S.game.p.mode !== "libs") || (S.view === "trap" && S.trap && S.trap.state === "play"));
 
   function head() {
     return `<div class="ln-top"><button class="ln-x" data-act="home" aria-label="กลับ">← กลับ</button>
@@ -3276,7 +3367,7 @@ const Learn = (function () {
         h += `<div class="ln-node-w" style="--off:${off}">${isCur ? `<div class="ln-start">${st ? "อีกครั้ง" : "เริ่ม"}</div>` : ""}
           <button class="ln-node${l.boss ? " boss" : ""}${l.game ? " game" : ""}${open ? "" : " lock"}${st ? " done" : ""}${isCur ? " cur" : ""}" style="--uc:${u.c}" data-pick="${k}" aria-label="${l.t}">
           ${l.boss ? `<img src="${BOSS[l.boss].face}" alt="">` : `<span>${open ? (st ? "✓" : l.icon) : "🔒"}</span>`}</button>
-          <div class="ln-pop" style="--uc:${u.c}" hidden><b>${l.t}</b><small>${open ? (l.boss ? `จับหมากกับ${BOSS[l.boss].name} · กินก่อน ${l.goal} เม็ดชนะ` : l.game ? `มินิเกมจับเวลา ${l.secs || 45} วินาที${prog.best && prog.best[l.id] ? ` · สถิติ ${prog.best[l.id]}` : ""}` : `${l.items.length} ข้อ`) : "ผ่านด่านก่อนหน้าก่อนนะ"}</small>
+          <div class="ln-pop" style="--uc:${u.c}" hidden><b>${l.t}</b><small>${open ? (l.boss ? `จับหมากกับ${BOSS[l.boss].name} · กินก่อน ${l.goal} เม็ดชนะ` : l.game ? GAMEINFO(l) + `${prog.best && prog.best[l.id] ? ` · สถิติ ${prog.best[l.id]}` : ""}` : `${l.items.length} ข้อ`) : "ผ่านด่านก่อนหน้าก่อนนะ"}</small>
             ${open ? `<button class="ln-btn pop" data-lesson="${k}">${st ? "เล่นอีกครั้ง" : "เริ่ม"} +${l.boss ? 30 : 25} XP</button>` : ""}</div>
           ${off === 0 || k % 3 === 2 ? `<img class="ln-deco ${off > 0 ? "l" : off < 0 ? "r" : side === "l" ? "r" : "l"}" style="--dl:${(k % 5) * .3}s" src="learn/stone_${(k * 7) % 16 + 1}.png" alt="">` : ""}
           <div class="ln-cap">${l.t}</div><div class="ln-stars">${[1, 2, 3].map(n => `<img class="ln-ic${n <= st ? "" : " off"}" src="learn/icon_star.png" alt="">`).join("")}</div></div>`;
@@ -3296,6 +3387,9 @@ const Learn = (function () {
     const l = ALL[k]; if (!l || !unlocked(k)) return;
     clearT(); ctx(); SFX.tap(); primeVoice();
     if (l.boss) return openFight(k);
+    if (l.game === "trap") return openTrap(k);
+    if (l.game === "match") return openMatch(k);
+    if (l.game === "tf") return openTF(k);
     if (l.game) return openGame(k);
     preload([...l.items.flatMap(it => [it.say, it.hint]), ...PRAISE, ...OOPS, LINES.done, LINES.out]);
     S.view = "lesson"; S.lesson = k; S.queue = l.items.slice(); S.total = l.items.length; S.done = 0; S.hearts = HEARTS; S.miss = 0; S.usedHint = false;
@@ -3616,19 +3710,147 @@ const Learn = (function () {
     else if (btn) { btn.classList.add("wrong"); btn.disabled = true; }
     if (G.left <= 0) gameOver();
   }
+  function endGame(l, stars, tiles, note, line) {
+    if (stars) finish(l.id, stars, 10 + stars * 5); else saveP();
+    S.view = "end"; clearT(); SFX.done(); if (stars) confetti(40); speak(line, 400);
+    tiles = [...tiles, ["ได้ XP", "+" + (stars ? 10 + stars * 5 : 0)]]; const cls = ["xp", "acc", "fire"];
+    $("learn").innerHTML = `<div class="ln-end"><img class="ln-endimg" src="${TEACH.pose(stars ? "yay" : "cheer")}" alt=""><h2>${line === LINES.time || line === LINES.best ? "หมดเวลา!" : "จบเกม!"}</h2>
+      <div class="ln-bigstars">${[1, 2, 3].map(n => `<img class="${n <= stars ? "on" : "off"}" style="--d:${n * .25}s" src="learn/icon_star.png" alt="">`).join("")}</div>
+      <div class="ln-tiles">${tiles.map((t, k) => `<div class="ln-tile ${cls[k]}"><small>${t[0]}</small><b>${t[1]}</b></div>`).join("")}</div>
+      <p class="ln-note">${note}</p>
+      <div class="ln-row col"><button class="ln-btn big pri" data-act="retry">เล่นอีกครั้ง</button><button class="ln-btn" data-act="path">กลับไปหน้าบทเรียน</button></div></div>`;
+    $("learn").className = "learn end";
+  }
   function gameOver() {
     const G = S.game, l = ALL[S.lesson], th = l.star || [4, 8, 12]; G.over = true;
     const stars = G.score >= th[2] ? 3 : G.score >= th[1] ? 2 : G.score >= th[0] ? 1 : 0;
     prog.best = prog.best || {}; const old = prog.best[l.id] || 0, isBest = G.score > old; if (isBest) prog.best[l.id] = G.score;
-    if (stars) finish(l.id, stars, 10 + stars * 5); else saveP();
-    S.view = "end"; clearT(); SFX.done(); if (stars) confetti(40); speak(isBest && old ? LINES.best : LINES.time, 400);
-    $("learn").innerHTML = `<div class="ln-end"><img class="ln-endimg" src="${TEACH.pose(stars ? "yay" : "cheer")}" alt=""><h2>หมดเวลา!</h2>
-      <div class="ln-bigstars">${[1, 2, 3].map(n => `<img class="${n <= stars ? "on" : "off"}" style="--d:${n * .25}s" src="learn/icon_star.png" alt="">`).join("")}</div>
-      <div class="ln-tiles"><div class="ln-tile xp"><small>คะแนน</small><b>${G.score}</b></div><div class="ln-tile acc"><small>สถิติดีที่สุด</small><b>${Math.max(old, G.score)}</b></div>
-      <div class="ln-tile fire"><small>ได้ XP</small><b>+${stars ? 10 + stars * 5 : 0}</b></div></div>
-      <p class="ln-note">${isBest && old ? "สถิติใหม่! เก่งขึ้นแล้วนะ" : stars < 3 ? `ได้ ${th[Math.min(2, stars)]} คะแนน จะได้ดาวเพิ่มอีกดวง` : "ได้สามดาวเต็มเลย สุดยอด"}</p>
-      <div class="ln-row col"><button class="ln-btn big pri" data-act="retry">เล่นอีกครั้ง</button><button class="ln-btn" data-act="path">กลับไปหน้าบทเรียน</button></div></div>`;
-    $("learn").className = "learn end";
+    endGame(l, stars, [["คะแนน", G.score], ["สถิติดีที่สุด", Math.max(old, G.score)]], isBest && old ? "สถิติใหม่! เก่งขึ้นแล้วนะ" : stars < 3 ? `ได้ ${th[Math.min(2, stars)]} คะแนน จะได้ดาวเพิ่มอีกดวง` : "ได้สามดาวเต็มเลย สุดยอด", isBest && old ? LINES.best : LINES.time);
+  }
+  const gameShell = (l, body, foot, chip, done, total) => { S.total = total; S.done = done; return lessonShell(`<div class="ln-label game">✦ มินิเกม · ${GAMES[l.game].name}</div>` + body, foot).replace(/<span class="ln-hearts[^<]*<img[^>]*>[^<]*<\/span>/, `<span class="ln-gscore" id="lnGs">${chip}</span>`); };
+
+  // ---- trap: a runaway white stone heads for the edge; fence it in (loose nets beat chasing)
+  const onEdge = (i, N) => { const x = i % N, y = (i / N) | 0; return !x || !y || x === N - 1 || y === N - 1; };
+  function edgeDist(b, i) { // steps the runner still needs to reach the edge, Infinity when fenced in
+    const N = b.N; if (onEdge(i, N)) return 0;
+    const d = new Map([[i, 0]]), q = [i];
+    while (q.length) { const j = q.shift(); for (const k of nbs(j, N)) { if (b.a[k] || d.has(k)) continue; d.set(k, d.get(j) + 1); if (onEdge(k, N)) return d.get(k); q.push(k); } }
+    return Infinity;
+  }
+  const TRAP = { n: 9, pre: 8, lazy: 0.25, rounds: 5 };
+  function openTrap(k) {
+    preload([GAMES.trap.say, LINES.caught, LINES.fled, LINES.gdone]);
+    S.view = "trap"; S.lesson = k; S.pose = "wave"; S.typed = null; S.trap = { round: 0, score: 0, state: "play", at: 0, said: false };
+    trapRound(); speak(GAMES.trap.say);
+  }
+  function trapRound() {
+    const T = S.trap, N = TRAP.n; if (T.round >= TRAP.rounds) return trapEnd();
+    const b = new Board(N), c = (N * N) >> 1; b.a[c] = 2;
+    for (let k = 0; k < TRAP.pre;) { const i = rnd(N * N); if (b.a[i] || nbs(c, N).includes(i)) continue; b.a[i] = 1; k++; }
+    T.round++; T.at = c; T.state = "play"; S.b = b; S.it = { n: N }; S.found = new Set(); S.last = c; S.gone = []; S.x = []; S.ring = [c]; S.lock = false; S.pose = "think";
+    renderTrap();
+  }
+  function renderTrap() {
+    const T = S.trap, l = ALL[S.lesson], g = GAMES.trap;
+    const msg = T.state === "won" ? LINES.caught : T.state === "lost" ? LINES.fled : T.said ? "ดักทางไว้ อย่าให้ถึงขอบกระดาน" : g.say;
+    const body = `<h2 class="ln-title">${g.task}</h2>` + talk(mood(), TEACH.name, msg) + `<div class="ln-boardbox"><svg id="lnBoard" role="img" aria-label="กระดาน"></svg></div>`;
+    const foot = T.state === "play" ? `<div class="ln-sheet"><div class="in"><span class="ln-turn">รอบที่ ${T.round} / ${TRAP.rounds}</span><span></span></div></div>`
+      : `<div class="ln-sheet ${T.state === "won" ? "ok" : "bad"}"><div class="in"><div class="ln-fb"><span class="ln-ico">${T.state === "won" ? "✔" : "✖"}</span><div><b>${T.state === "won" ? "ล้อมได้แล้ว!" : "หนีไปแล้ว!"}</b></div></div>
+        <button class="ln-btn big ${T.state === "won" ? "pri" : "red"}" data-act="trapnext">${T.round >= TRAP.rounds ? "ดูคะแนน" : "รอบต่อไป"}</button></div></div>`;
+    $("learn").innerHTML = gameShell(l, body, foot, "★ " + T.score, T.round - (T.state === "play" ? 1 : 0), TRAP.rounds);
+    $("learn").className = "learn lesson game";
+    drawBoard();
+    if (S.typed !== msg) { S.typed = msg; typeIn($("learn").querySelector(".ln-bub p")); }
+  }
+  function tapTrap(i) {
+    const T = S.trap, b = S.b, N = b.N; if (b.a[i]) return;
+    const first = !T.said; if (first) { T.said = true; stopVoice(); }
+    b.a[i] = 1; S.last = i; SFX.stone(); S.lock = true; first ? renderTrap() : drawBoard();
+    const done = won => { T.state = won ? "won" : "lost"; if (won) { T.score++; SFX.good(); confetti(12); S.pose = any(MOOD.yes); } else { SFX.bad(); S.pose = any(MOOD.oops); } S.ring = [T.at]; S.lock = false; speak(won ? LINES.caught : LINES.fled, 150); renderTrap(); };
+    if (edgeDist(b, T.at) === Infinity) return later(() => done(true), 350);
+    later(() => { // the runner steps toward the nearest edge (and sometimes dawdles)
+      const m = nbs(T.at, N).filter(j => !b.a[j]); if (!m.length) return done(true);
+      const ds = m.map(j => edgeDist(b, j)), mn = Math.min(...ds), to = Math.random() < TRAP.lazy ? any(m) : any(m.filter((j, k) => ds[k] === mn));
+      b.a[T.at] = 0; b.a[to] = 2; T.at = to; S.last = to; S.ring = [to]; SFX.tap();
+      if (onEdge(to, N)) return done(false);
+      S.lock = false; drawBoard();
+    }, 420);
+  }
+  function trapEnd() {
+    const T = S.trap, l = ALL[S.lesson], stars = T.score >= 4 ? 3 : T.score >= 3 ? 2 : T.score >= 2 ? 1 : 0;
+    prog.best = prog.best || {}; prog.best[l.id] = Math.max(prog.best[l.id] || 0, T.score);
+    endGame(l, stars, [["ล้อมได้", `${T.score} / ${TRAP.rounds}`], ["สถิติดีที่สุด", prog.best[l.id]]], stars < 3 ? "เคล็ดลับ: ดักทางห่างๆ ไว้ก่อน เหมือนท่าตาข่าย" : "ล้อมเก่งมาก สุดยอดเลย", LINES.gdone);
+  }
+
+  // ---- match: memory cards, a shape picture and its name
+  function cardSVG(sh) {
+    const N = 5, s = [`<rect x="-.6" y="-.6" width="5.2" height="5.2" rx=".4" fill="#dcb06e"/>`];
+    for (let k = 0; k < N; k++) s.push(`<line x1="0" y1="${k}" x2="4" y2="${k}" stroke="#5a3a1a" stroke-width=".06"/><line x1="${k}" y1="0" x2="${k}" y2="4" stroke="#5a3a1a" stroke-width=".06"/>`);
+    for (const i of L(sh.b, N)) s.push(`<circle cx="${i % N}" cy="${(i / N) | 0}" r=".46" fill="#1a1a1a"/>`);
+    return `<svg viewBox="-.6 -.6 5.2 5.2">${s.join("")}</svg>`;
+  }
+  function openMatch(k) {
+    preload([GAMES.match.say, LINES.gdone]);
+    const cards = SHAPES.flatMap((sh, n) => [{ k: n, pic: true }, { k: n, pic: false }]).sort(() => Math.random() - .5);
+    S.view = "match"; S.lesson = k; S.pose = "wave"; S.typed = null; S.match = { cards, open: [], done: new Set(), turns: 0, busy: false };
+    renderMatch(); speak(GAMES.match.say);
+  }
+  function renderMatch() {
+    const M = S.match, l = ALL[S.lesson], g = GAMES.match;
+    const grid = `<div class="ln-cards">${M.cards.map((c, i) => { const up = M.open.includes(i) || M.done.has(i); return `<button class="ln-card${up ? " up" : ""}${M.done.has(i) ? " ok" : ""}" data-card="${i}">${up ? (c.pic ? cardSVG(SHAPES[c.k]) : `<span>${SHAPES[c.k].name}</span>`) : `<img src="learn/stone_${i % 16 + 1}.png" alt="">`}</button>`; }).join("")}</div>`;
+    const body = `<h2 class="ln-title">${g.task}</h2>` + (M.turns ? "" : talk(mood(), TEACH.name, g.say)) + grid;
+    $("learn").innerHTML = gameShell(l, body, `<div class="ln-sheet"><div class="in"><span class="ln-turn">เปิดไปแล้ว ${M.turns} ครั้ง</span><span></span></div></div>`, `${M.done.size / 2} / ${SHAPES.length}`, M.done.size, M.cards.length);
+    $("learn").className = "learn lesson game";
+    if (!M.turns && S.typed !== g.say) { S.typed = g.say; typeIn($("learn").querySelector(".ln-bub p")); }
+  }
+  function tapCard(i) {
+    const M = S.match; if (M.busy || M.open.includes(i) || M.done.has(i)) return;
+    M.open.push(i); SFX.tap();
+    if (M.open.length < 2) return renderMatch();
+    if (!M.turns) stopVoice();
+    M.turns++; const [a, b] = M.open;
+    if (M.cards[a].k === M.cards[b].k) { M.done.add(a); M.done.add(b); M.open = []; SFX.good(); renderMatch(); if (M.done.size === M.cards.length) later(matchEnd, 700); return; }
+    M.busy = true; renderMatch(); SFX.heart();
+    later(() => { M.open = []; M.busy = false; renderMatch(); }, 950);
+  }
+  function matchEnd() {
+    const M = S.match, l = ALL[S.lesson], stars = M.turns <= 10 ? 3 : M.turns <= 14 ? 2 : 1;
+    prog.best = prog.best || {}; const old = prog.best[l.id] || 0; if (!old || M.turns < old) prog.best[l.id] = M.turns;
+    endGame(l, stars, [["เปิดไป", M.turns + " ครั้ง"], ["น้อยที่สุด", prog.best[l.id] + " ครั้ง"]], stars < 3 ? "เปิดให้น้อยครั้งลง จะได้ดาวเพิ่ม" : "ความจำดีมาก สุดยอดเลย", LINES.gdone);
+  }
+
+  // ---- tf: true-or-false review, spoken by Hikaru
+  function openTF(k) {
+    const l = ALL[k], qs = QUIZ[l.pool].slice().sort(() => Math.random() - .5).slice(0, 8);
+    preload([GAMES.tf.say, ...qs.map(q => q[0]), LINES.gdone]);
+    S.view = "tf"; S.lesson = k; S.typed = null; S.tf = { qs, n: 0, score: 0, q: null, fb: null, intro: true };
+    S.pose = "wave"; renderTF(); speak(GAMES.tf.say);
+  }
+  function renderTF() {
+    const T = S.tf, l = ALL[S.lesson], g = GAMES.tf;
+    const text = T.intro ? g.say : T.q[0];
+    const btns = T.intro ? `<div class="ln-tfs"><button class="ln-btn big pri" data-tf="2">เริ่มเลย</button></div>`
+      : `<div class="ln-tfs"><button class="ln-tf yes${T.fb !== null && T.q[1] ? " right" : ""}${T.fb === 1 && !T.q[1] ? " wrong" : ""}" data-tf="1"${T.fb !== null ? " disabled" : ""}>✔<small>จริง</small></button>
+        <button class="ln-tf no${T.fb !== null && !T.q[1] ? " right" : ""}${T.fb === 0 && T.q[1] ? " wrong" : ""}" data-tf="0"${T.fb !== null ? " disabled" : ""}>✖<small>มั่ว</small></button></div>`;
+    const body = `<h2 class="ln-title">${T.intro ? g.name : `ข้อ ${T.n} / ${T.qs.length}`}</h2>` + talk(mood(), TEACH.name, text) + btns;
+    $("learn").innerHTML = gameShell(l, body, `<div class="ln-sheet"><div class="in"><span class="ln-turn">${T.fb === null ? "ฟังแล้วตอบ จริง หรือ มั่ว" : T.fb === T.q[1] ? "ถูกต้อง!" : "ยังไม่ใช่นะ ประโยคนี้" + (T.q[1] ? "จริง" : "มั่ว")}</span><span></span></div></div>`, "★ " + T.score, T.intro ? 0 : T.n - (T.fb === null ? 1 : 0), T.qs.length);
+    $("learn").className = "learn lesson game";
+    if (S.typed !== text) { S.typed = text; typeIn($("learn").querySelector(".ln-bub p")); }
+  }
+  function tfNext() {
+    const T = S.tf; T.intro = false; if (T.n >= T.qs.length) return tfEnd();
+    T.q = T.qs[T.n++]; T.fb = null; S.pose = "wonder"; renderTF(); speak(T.q[0]);
+  }
+  function tapTF(v) {
+    const T = S.tf; if (v === 2) { SFX.tap(); return tfNext(); }
+    if (T.fb !== null || T.intro) return;
+    T.fb = v; const ok = v === T.q[1]; if (ok) { T.score++; SFX.good(); S.pose = any(MOOD.yes); } else { SFX.bad(); S.pose = any(MOOD.oops); }
+    stopVoice(); renderTF(); later(tfNext, ok ? 900 : 1700);
+  }
+  function tfEnd() {
+    const T = S.tf, l = ALL[S.lesson], stars = T.score >= 8 ? 3 : T.score >= 6 ? 2 : T.score >= 4 ? 1 : 0;
+    prog.best = prog.best || {}; prog.best[l.id] = Math.max(prog.best[l.id] || 0, T.score);
+    endGame(l, stars, [["ตอบถูก", `${T.score} / ${T.qs.length}`], ["สถิติดีที่สุด", prog.best[l.id]]], stars < 3 ? "ลองทบทวนบทเรียน แล้วมาเล่นใหม่นะ" : "ตอบถูกหมดเลย สุดยอด", LINES.gdone);
   }
 
   function confetti(n) {
@@ -3651,7 +3873,7 @@ const Learn = (function () {
     wired = true;
     const root = $("learn");
     root.addEventListener("click", e => {
-      if (e.target.closest("#lnBoard")) { if (!canTap()) return; const i = ptAt(e); if (i < 0) return; return S.view === "fight" ? tapFight(i) : S.view === "game" ? gameAnswer(S.game.p.check(i), i) : tapLesson(i); }
+      if (e.target.closest("#lnBoard")) { if (!canTap()) return; const i = ptAt(e); if (i < 0) return; return S.view === "fight" ? tapFight(i) : S.view === "game" ? gameAnswer(S.game.p.check(i), i) : S.view === "trap" ? tapTrap(i) : tapLesson(i); }
       const t = e.target.closest("button"); if (!t || t.disabled) return;
       ctx();
       if (t.dataset.lesson !== undefined) return openLesson(+t.dataset.lesson);
@@ -3662,11 +3884,14 @@ const Learn = (function () {
         const pl = ALL[+t.dataset.pick]; if (!was && pl) { if (pl.boss) preload(bossTexts(pl.boss), pl.boss); else if (pl.game) preload([GAMES[pl.game].say]); else preload(pl.items.slice(0, 3).map(it => it.say)); } // head start before START
         return;
       }
+      if (t.dataset.card !== undefined) return tapCard(+t.dataset.card);
+      if (t.dataset.tf !== undefined) return tapTF(+t.dataset.tf);
       if (t.dataset.num !== undefined) return gameAnswer(+t.dataset.num === S.game.p.n, -1, t);
       if (t.dataset.opt !== undefined) { if (S.state !== "ask") return; return +t.dataset.opt === S.it.ok ? (SFX.tap(), right()) : wrong(+t.dataset.opt); }
       const act = t.dataset.act;
       if (act === "voice") { voiceOn = !voiceOn; try { localStorage.setItem("gonn.learnVoice", voiceOn ? "1" : "0"); } catch (e) {} if (!voiceOn) stopVoice(); t.querySelector("img").classList.toggle("off", !voiceOn); return; }
-      if (act === "again") return S.view === "fight" ? speak(S.fight.line, 0, S.fight.boss) : S.view === "game" ? speak(GAMES[S.game.mode].say) : speak(S.it.say);
+      if (act === "again") return S.view === "fight" ? speak(S.fight.line, 0, S.fight.boss) : S.view === "game" ? speak(GAMES[S.game.mode].say) : S.view === "tf" ? speak(S.tf.q[0]) : ["trap", "match"].includes(S.view) ? speak(GAMES[ALL[S.lesson].game].say) : speak(S.it.say);
+      if (act === "trapnext") return trapRound();
       if (act === "next") { SFX.tap(); if (S.state === "fb" && S.hearts <= 0) return; if (S.state === "info") { S.queue.shift(); S.done++; } return nextItem(); }
       if (act === "hint") { S.hintShown = true; S.usedHint = true; S.pose = "point"; if (S.it.ans && !["stone"].includes(S.it.t)) S.ring = L(S.it.ans, S.it.n || 5).slice(0, 1); SFX.tap(); renderLesson(); return speak(S.it.hint); }
       if (act === "skip") { S.queue.push(S.queue.shift()); return nextItem(); }
@@ -3693,8 +3918,8 @@ const Learn = (function () {
     return `เรียนต่อ: ${ALL[cur].t} · ${cur}/${ALL.length} ด่าน${s ? ` · 🔥 ${s} วัน` : ""}`;
   };
   api.started = () => Object.keys(loadP().stars).length > 0;
-  if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) { window.__lnItem = () => S.it; window.__lnGame = () => { const G = S.game, p = G && G.p; if (!p) return null; let sol = -1; if (p.check) for (let i = 0; i < p.b.a.length; i++) if (!p.b.a[i] && p.check(i)) { sol = i; break; } return { mode: p.mode, n: p.b.N, num: p.n, sol, on: G.on, over: G.over, score: G.score, left: G.left }; }; }
-  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey, GAMES, puzzle };
+  if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) { window.__lnItem = () => S.it; window.__lnGame = () => { const G = S.game, p = G && G.p; if (!p) return null; let sol = -1; if (p.check) for (let i = 0; i < p.b.a.length; i++) if (!p.b.a[i] && p.check(i)) { sol = i; break; } return { mode: p.mode, n: p.b.N, num: p.n, sol, on: G.on, over: G.over, score: G.score, left: G.left }; }; window.__lnS = () => ({ view: S.view, trap: S.trap && { state: S.trap.state, at: S.trap.at, round: S.trap.round, score: S.trap.score, a: [...S.b.a] }, match: S.match && S.match.cards.map(c => c.k), tf: S.tf && S.tf.q }); }
+  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey, GAMES, puzzle, QUIZ, SHAPES };
   return api;
 })();
 if (typeof module !== "undefined") module.exports = Learn;
@@ -6206,7 +6431,7 @@ const Coach = (function () {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "722ec74af4";
+  const BUILD = "5d983d1e26";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;

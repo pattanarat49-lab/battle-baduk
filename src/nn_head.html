@@ -777,6 +777,20 @@ body.learning { overflow: hidden; }
 .ln-prog i.low { background: var(--ln-red); }
 .ln-opts.nums { grid-template-columns: repeat(4, 1fr); max-width: 420px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 .ln-opts.nums .ln-opt { font-size: 26px; font-weight: 600; padding: 12px 0; }
+.ln-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px 16px; max-width: 420px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+.ln-card { aspect-ratio: 1.15; border: 2px solid var(--ln-line); border-radius: 14px; background: #1cb0f6; box-shadow: 0 4px 0 #1899d6; display: grid; place-items: center; padding: 6px; overflow: hidden; font-family: inherit; }
+.ln-card img { width: 58%; opacity: .95; }
+.ln-card.up { background: #fff; box-shadow: 0 4px 0 var(--ln-line); animation: lnFlip .25s; }
+.ln-card.up svg { width: 88%; height: 88%; }
+.ln-card.up span { font-size: 16px; font-weight: 600; color: var(--ln-ink); line-height: 1.25; }
+.ln-card.ok { border-color: var(--ln-green); background: #d7ffb8; box-shadow: 0 4px 0 var(--ln-green); }
+@keyframes lnFlip { from { transform: rotateY(90deg); } }
+.ln-tfs { display: flex; gap: 14px; justify-content: center; padding: 26px 16px; }
+.ln-tf { flex: 1; max-width: 170px; aspect-ratio: 1; border-radius: 22px; border: 0; color: #fff; font-size: 54px; font-weight: 600; font-family: inherit; display: grid; place-items: center; align-content: center; }
+.ln-tf small { font-size: 20px; display: block; }
+.ln-tf.yes { background: var(--ln-green); box-shadow: 0 6px 0 var(--ln-green-d); } .ln-tf.no { background: var(--ln-red); box-shadow: 0 6px 0 var(--ln-red-d); }
+.ln-tf:active { transform: translateY(4px); box-shadow: none; }
+.ln-tf:disabled { opacity: .35; } .ln-tf.right { opacity: 1; outline: 5px solid #ffc800; } .ln-tf.wrong { opacity: .8; }
 .ln-title { margin: 2px 16px 0; font-size: clamp(22px, 6vw, 28px); font-weight: 600; color: var(--ln-ink); }
 .ln-talk { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; padding: 8px 12px 0 16px; margin-bottom: -26px; position: relative; z-index: 1; }
 .ln-mascot { width: clamp(96px, 27vw, 132px); flex: none; animation: ln-bob 2.4s ease-in-out infinite; filter: drop-shadow(0 3px 0 rgba(0,0,0,.08)); }
