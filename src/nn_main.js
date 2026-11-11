@@ -524,6 +524,10 @@
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
+  // the player's own card in a game: account name, profile picture and rank from the rating (src/rating.js)
+  const meName = () => Account.name() || "คุณ";
+  const meRank = () => { const v = Rating.get(); return v ? `${rankName(Rating.toRank(v.R))} · ${v.R}` : "ผู้เล่น"; };
+  const meAv = () => { const a = Account.avatarSrc(); return a === "menu/guest.png" ? YOU_AV : `<img class="av" alt="" width="160" height="160" src="${a}">`; };
   // Kru Michio's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
   const FON_LV = {
     15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
@@ -1033,9 +1037,9 @@
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
-      $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
-      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+      $("n" + k).textContent = me ? meName() : ch.name;
+      $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
@@ -1155,9 +1159,9 @@
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
-      $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
-      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+      $("n" + k).textContent = me ? meName() : ch.name;
+      $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
