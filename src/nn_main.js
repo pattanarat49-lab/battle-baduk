@@ -967,7 +967,7 @@
     grading.then(() => {
       const r = examResult(ex, len);
       if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); if (EXAMBOT === null) Rating.exam(r.est); Account.push(); }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); if (EXAMBOT === null) Rating.anchor(bestRank(load("history", []))); Account.push(); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -2156,7 +2156,7 @@
     const hist = load("history", []).filter(isRec);
     const ranked = bestRank(hist), wins = hist.filter(h => h.won).length;
     const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
-    const rt = Rating.get();
+    const rt = Rating.anchor(ranked);
     $("mnRank").textContent = rt ? rateName(rt.R) : ranked ? rankName(ranked.rank) : "-";
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
@@ -2256,10 +2256,10 @@
         <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
         <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
     }
-    const rt = Rating.get();
+    const rt = Rating.anchor(ranked);
     h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rateName(rt.R)}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
-        <span class="note">ขึ้นลงตามผลแพ้ชนะกับ AI · เล่นออนไลน์ · สอบวัดระดับ · นับแล้ว ${rt.n} เกม</span></div><div id="pfGraph" class="pf-graph"></div></div>`
-      : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (เริ่มที่ 15 คิว ถ้าสอบก่อนจะเริ่มตามผลสอบ)</span></div>`);
+        <span class="note">${typeof rt.base === "number" ? `เริ่มจากผลสอบที่ดีที่สุด (${rankName(rt.base)}) แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์หลังจากนั้น` : "ขึ้นลงตามผลแพ้ชนะกับ AI และเล่นออนไลน์ · ถ้าสอบกับฮิคารุ ระดับจะเริ่มใหม่จากผลสอบที่ดีที่สุด"}</span></div><div id="pfGraph" class="pf-graph"></div></div>`
+      : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (ถ้ายังไม่เคยสอบเริ่มที่ 15 คิว ถ้าสอบแล้วเริ่มจากผลสอบที่ดีที่สุด)</span></div>`);
     h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
     if (!hist.length) {
