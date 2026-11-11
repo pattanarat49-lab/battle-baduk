@@ -1,12 +1,12 @@
-// Player-to-player screens built on accounts (src/account.js): world chat (name + best exam rank on every message),
-// the leaderboard (best exam rank, then wins), and the profile picture picker (characters the player has beaten).
+// Player-to-player screens built on accounts (src/account.js): world chat (name + rank from the rating on every message),
+// the leaderboard (rating, then wins), and the profile picture picker (characters the player has beaten).
 const Social = (() => {
   let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, onAvatar }
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
   const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
-  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่สอบ";
+  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
   const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
 
   // ---------- world chat ----------
@@ -59,12 +59,12 @@ const Social = (() => {
     if (!r || r.status !== 200) { $("lbBody").innerHTML = `<p class="pf-empty">โหลดอันดับไม่ได้ ลองใหม่อีกครั้ง</p>`; return; }
     const { list, total, me } = r.body;
     const row = (x, i) => `<div class="lb-row${me && x.n === me.n ? " me" : ""}${i < 3 ? " top" + (i + 1) : ""}"><span class="lb-pos">${i + 1}</span>
-      <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}</b><small>ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
+      <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}</b><small>${typeof x.R === "number" ? `เรตติ้ง ${x.R} · ` : ""}ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
       <span class="lb-rank${typeof x.r === "number" ? "" : " no"}">${esc(rankOf(x.r))}</span></div>`;
     let h = me ? `<div class="lb-me">อันดับของคุณ <b>#${me.pos}</b> จาก ${total} คน · ${esc(rankOf(me.r))}</div>`
       : Account.name() ? "" : `<div class="lb-me">ล็อกอินในหน้า PROFILE เพื่อขึ้นกระดานอันดับ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
     h += list.length ? `<div class="lb-list">${list.map(row).join("")}</div>` : `<p class="pf-empty">ยังไม่มีผู้เล่นในกระดาน สมัครแอคเคาท์แล้วเป็นคนแรกเลย</p>`;
-    h += `<p class="note" style="margin-top:8px">เรียงตามระดับที่ดีที่สุดจากการสอบกับฮิคารุ (RANK TEST) ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่สอบอยู่ท้ายตาราง</p>`;
+    h += `<p class="note" style="margin-top:8px">เรียงตามเรตติ้ง ซึ่งขึ้นลงตามผลแพ้ชนะกับ AI, เล่นออนไลน์ และสอบวัดระดับ ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่มีระดับอยู่ท้ายตาราง</p>`;
     $("lbBody").innerHTML = h;
   }
 

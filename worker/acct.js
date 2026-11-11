@@ -4,7 +4,7 @@
 // on top of the artifact's database: `store` only needs get(key) / put(key, value) / del(key) with JSON values.
 //   user:  "u:" + lower-case name -> { name, salt, hash, rsalt, rhash, data, ver, created, updated, fails, lockUntil }
 //   login: "s:" + sha256(token)   -> { u: lower-case name, at }
-//   "lb":   leaderboard, { e: { lower-case name -> { n: name, r: best exam rank, a: avatar, g: games, w: wins } } }
+//   "lb":   leaderboard, { e: { lower-case name -> { n: name, r: rank from the rating (or best exam rank), R: rating, a: avatar, g: games, w: wins } } }
 //   "chat": world chat, { m: [last 50 messages { id, n, r, a, t, at }] }
 // Passwords and recovery codes are kept only as PBKDF2-SHA256 hashes with a random salt each.
 const ITER = 100000;                 // PBKDF2 rounds (the most WebCrypto allows on Workers)
@@ -26,7 +26,7 @@ function same(a, b) { if (typeof a !== "string" || typeof b !== "string" || a.le
 const newToken = () => btoa(String.fromCharCode(...rand(32))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 function newRecovery() { const r = rand(12); let s = ""; for (let i = 0; i < 12; i++) { if (i && i % 4 === 0) s += "-"; s += RC[r[i] % RC.length]; } return s; }
 const CHAT_KEEP = 50, CHAT_LEN = 200, CHAT_GAP = 1500; // messages kept, characters per message, ms between one player's messages
-// what other players see of an account, worked out from its saved progress: best exam rank, games and wins among the
+// what other players see of an account, worked out from its saved progress: rating (or best exam rank), games and wins among the
 // last 100, and the profile picture, which must be a character the player has beaten
 function summary(data) {
   let d = null; try { d = data ? JSON.parse(data) : null; } catch (e) {}
@@ -37,7 +37,11 @@ function summary(data) {
   const beaten = new Set(Array.isArray(d.beaten) ? d.beaten : []);
   for (const h of hist) if (h && h.won && typeof h.char === "string") beaten.add(h.char);
   const a = typeof d.avatar === "string" && /^[a-z]{2,12}$/.test(d.avatar) && beaten.has(d.avatar) ? d.avatar : null;
-  return { r: r === null ? null : Math.round(r * 10) / 10, a, g: hist.length, w: hist.filter(h => h && h.won).length };
+  // the rating (src/rating.js, moved by every game and rank test) is the rank shown everywhere; the best exam rank
+  // stands in for accounts that have no rating yet
+  const R = d.rating && typeof d.rating.R === "number" && isFinite(d.rating.R) ? Math.max(100, Math.min(2900, Math.round(d.rating.R))) : null;
+  if (R !== null) r = (R - 2000) / 100;
+  return { r: r === null ? null : Math.round(r * 10) / 10, R, a, g: hist.length, w: hist.filter(h => h && h.won).length };
 }
 const cleanText = t => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g, " ").replace(/\s+/g, " ").trim().slice(0, CHAT_LEN);
 const cleanCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(.{4})(?=.)/g, "$1-");
@@ -60,12 +64,13 @@ export function makeAccounts(store) {
   // the leaderboard row of one account, rewritten only when something on it changed
   async function board(u) {
     const sum = summary(u.data), lb = (await store.get("lb")) || { e: {} }, k = ukey(u.name).slice(2);
-    const row = { n: u.name, r: sum.r, a: sum.a, g: sum.g, w: sum.w };
+    const row = { n: u.name, r: sum.r, R: sum.R, a: sum.a, g: sum.g, w: sum.w };
     if (JSON.stringify(lb.e[k]) === JSON.stringify(row)) return;
     lb.e[k] = row;
     await store.put("lb", lb);
   }
-  const order = (x, y) => (y.r ?? -99) - (x.r ?? -99) || y.w - x.w || (x.n < y.n ? -1 : 1);
+  const pts = x => x.R ?? (typeof x.r === "number" ? 2000 + 100 * x.r : -1);
+  const order = (x, y) => pts(y) - pts(x) || y.w - x.w || (x.n < y.n ? -1 : 1);
   const lastSaid = new Map(); // name -> time of the last chat message (memory only)
   const dataOf = v => { if (v == null) return null; const s = JSON.stringify(v); return s.length > MAX_DATA ? undefined : s; };
   const out = (u, token, extra) => Object.assign({ token, name: u.name, data: u.data ? JSON.parse(u.data) : null, ver: u.ver }, extra);
@@ -135,7 +140,7 @@ export function makeAccounts(store) {
       await board(u);
       return ok({ ver: u.ver });
     },
-    // top 100 players: best exam rank first (players without an exam last), then wins; plus the asking player's place
+    // top 100 players: highest rating first (players with no rating and no exam last), then wins; plus the asking player's place
     async board(b) {
       const lb = (await store.get("lb")) || { e: {} };
       const all = Object.values(lb.e).sort(order);
@@ -175,7 +180,7 @@ export function makeAccounts(store) {
     if (op === "say" && r.status === 200) r.changed = ["chat"];
     return r;
   }
-  // who a login token belongs to, as other players see them (name, best exam rank, picture); null when not signed in
-  handle.userOf = async token => { const u = await byToken(token); if (!u) return null; const s = summary(u.data); return { n: u.name, r: s.r, a: s.a }; };
+  // who a login token belongs to, as other players see them (name, rank, rating, picture); null when not signed in
+  handle.userOf = async token => { const u = await byToken(token); if (!u) return null; const s = summary(u.data); return { n: u.name, r: s.r, R: s.R, a: s.a }; };
   return handle;
 }

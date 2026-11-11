@@ -7,7 +7,7 @@ const Online = (() => {
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
   const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
-  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่สอบ";
+  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
   const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
   const mins = s => s >= 60 ? `${s / 60} นาที` : s ? `${s} วิ` : "ไม่มี";
   const timeText = x => `${x.main ? mins(x.main) : "ไม่มีเวลาหลัก"}${x.byo ? ` + เบียวโยมิ ${x.byo} วิ × ${x.per}` : ""}`;
@@ -22,6 +22,7 @@ const Online = (() => {
     lobbyMode = mode;
     rooms = {}; lives = {};
     renderLobby();
+    if (Account.name()) checkPending();
     Hub.op("lobby", {}).then(r => { if (r.status === 200) { rooms = Object.fromEntries(r.body.rooms.map(x => [x.id, x])); lives = Object.fromEntries(r.body.live.map(x => [x.g, x])); renderLobby(); } });
     offs.push(Hub.sub("rooms", v => { rooms = (v && v.list) || {}; renderLobby(); }));
     offs.push(Hub.sub("lvidx", v => { lives = (v && v.list) || {}; renderLobby(); }));
@@ -101,12 +102,45 @@ const Online = (() => {
     tickTimer = setInterval(() => renderClocks(), 500);
     render();
   }
+  // ---------- finished online games go into the player's history and move the rating (src/rating.js) ----------
+  // games this browser played in and has not recorded yet are remembered, so a game that ended while the player was
+  // away (out of time, say) is still counted the next time the game opens
+  const PEND = "gonn.onlPend";
+  const pend = () => { try { const v = JSON.parse(localStorage.getItem(PEND)); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  const setPend = v => { try { localStorage.setItem(PEND, JSON.stringify(v.slice(-20))); } catch (e) {} };
+  function record(r) {
+    const me = Account.name(), c = r.black === me ? "b" : r.white === me ? "w" : null;
+    setPend(pend().filter(x => x !== r.id));
+    if (!c || r.st !== "end" || !r.res) return;
+    const id = "on-" + r.id;
+    let hist = []; try { hist = JSON.parse(localStorage.getItem("gonn.history")) || []; } catch (e) {}
+    if (!Array.isArray(hist) || hist.some(h => h && h.id === id)) return;
+    const opp = r.host.n === me ? r.guest : r.host;
+    if (!opp) return;
+    const won = r.res.winner === c, b = new D.Board(r.size);
+    const moves = r.moves.map(m => m ? b.pt(m[0], m[1]) : D.PASS);
+    const oppR = typeof opp.R === "number" ? opp.R : typeof opp.r === "number" ? Rating.toR(opp.r) : Rating.START;
+    const v = Rating.update(oppR, won, r.size, "online", opp.n, r.ended || Date.now());
+    hist.unshift({ id, at: r.ended || Date.now(), char: "online", opp: { n: opp.n, r: opp.r, a: opp.a, R: opp.R }, n: r.size, human: c === "b" ? D.BLACK : D.WHITE,
+      handi: 0, bonus: 0, komi: r.komi, won, how: r.res.how, margin: r.res.margin, moves, dR: v.hist[v.hist.length - 1].d });
+    try { localStorage.setItem("gonn.history", JSON.stringify(hist.slice(0, 100))); } catch (e) {}
+    Account.push();
+  }
+  async function checkPending() {
+    for (const id of pend()) {
+      const x = await Hub.op("get", { id });
+      if (x.status === 404) setPend(pend().filter(i => i !== id));
+      else if (x.status === 200 && x.body.room && x.body.room.st === "end") record(x.body.room);
+    }
+  }
   function setRoom(r) {
     const prev = G.room;
     if (prev && r.v < prev.v) return;
     G.room = r;
     const me = Account.name();
     G.me = r.black === me ? "b" : r.white === me ? "w" : null;
+    if (G.me && (r.st === "play" || r.st === "score") && !pend().includes(r.id)) setPend(pend().concat(r.id));
+    if (G.me && r.st === "end") record(r);
     if (prev && r.moves.length > prev.moves.length && r.moves[r.moves.length - 1]) D.clack();
     G.b = replayBoard(r.size, r.moves);
     G.ghost = null;
@@ -268,6 +302,7 @@ const Online = (() => {
       openNew();
     });
     $("onGo").onclick = create;
+    if (pend().length) setTimeout(() => { if (Account.name()) checkPending(); }, 4000);
     document.addEventListener("click", e => {
       const b = e.target.closest && e.target.closest("button"); if (!b) return;
       if (b.id === "olNew") { D.blip(880); openNew(); }

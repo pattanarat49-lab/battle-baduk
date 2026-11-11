@@ -940,9 +940,20 @@
     if (gameReported) return;
     gameReported = true;
     if (!exam) showResult(humanWon);
+    // the rating (src/rating.js): a finished game against a character with a rank moves it, handicap stones and bonus
+    // points counted as the character playing weaker; the rank test sets it from the graded rank further down
+    let dR;
+    if (!exam && EXAMBOT === null) {
+      const ch = CHARS[gameChar], base = Rating.parseRank(ch.levels ? FON_LV[fonLv].name : ch.rank);
+      if (base !== null) {
+        const give = Math.min(9, (handi ? handi - 0.5 : 0) + bonus / 12 * 19 / n);
+        const v = Rating.update(Rating.toR(base - give), humanWon, n, "ai", ch.name);
+        dR = v.hist[v.hist.length - 1].d;
+      }
+    }
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs(), dR });
     save("history", hist.slice(0, 100));
     // characters ever beaten (profile pictures unlock from these; the history keeps only 100 games)
     if (humanWon) { const bt = load("beaten", []); if (!bt.includes(CHARS[gameChar].id)) save("beaten", bt.concat(CHARS[gameChar].id)); }
@@ -956,7 +967,7 @@
     grading.then(() => {
       const r = examResult(ex, len);
       if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); Account.push(); }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); if (EXAMBOT === null) Rating.exam(r.est); Account.push(); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -2131,6 +2142,9 @@
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+  // a game in the history the pages can show: against a character of this version, or an online game (src/online.js)
+  const isRec = h => !!h && (h.char === "online" ? !!h.opp && Array.isArray(h.moves) : CHARS.some(c => c.id === h.char));
+  const rateName = R => rankName(Rating.toRank(R));
   // the best rank from all of the player's exams with Hikaru (kept apart from the history, which holds only 100 games)
   function bestRank(hist) {
     let b = load("bestRank", null);
@@ -2139,10 +2153,11 @@
   }
   // the player card on wide screens: best exam rank, wins, and the time spent on the clocks
   function renderMenuStats() {
-    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const hist = load("history", []).filter(isRec);
     const ranked = bestRank(hist), wins = hist.filter(h => h.won).length;
     const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
-    $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
+    const rt = Rating.get();
+    $("mnRank").textContent = rt ? rateName(rt.R) : ranked ? rankName(ranked.rank) : "-";
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
@@ -2224,7 +2239,7 @@
   }
   function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
   function renderProfile() {
-    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const hist = load("history", []).filter(isRec);
     const charOf = id => CHARS.find(c => c.id === id);
     const wins = hist.filter(h => h.won).length;
     let h = Account.card() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
@@ -2239,25 +2254,73 @@
         <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
         <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
     }
+    const rt = Rating.get();
+    h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rateName(rt.R)}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
+        <span class="note">ขึ้นลงตามผลแพ้ชนะกับ AI · เล่นออนไลน์ · สอบวัดระดับ · นับแล้ว ${rt.n} เกม</span></div><div id="pfGraph" class="pf-graph"></div></div>`
+      : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (เริ่มที่ 15 คิว ถ้าสอบก่อนจะเริ่มตามผลสอบ)</span></div>`);
     h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
     if (!hist.length) {
       h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
-      $("pfBody").innerHTML = h; return;
+      $("pfBody").innerHTML = h; drawRating(); return;
     }
     const by = new Map();
     for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
     h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
       return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
-        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
-    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") +
+      (by.has("online") ? (v => `<div class="pf-row"><img src="menu/online.png" alt="" width="160" height="160"><div class="t"><b>เล่นออนไลน์</b> <span class="note" style="display:inline">กับผู้เล่นคนอื่น</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`)(by.get("online")) : "") + `</div>`;
+    const escH = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const on = x.char === "online", c = on ? null : charOf(x.char);
       const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
-      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
-        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? (on ? " (คู่แข่งยอมแพ้)" : " (AI ยอมแพ้)") : " (คุณยอมแพ้)") : "");
+      const img = on ? (x.opp.a && charOf(x.opp.a) ? `chars/${x.opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
+      const who = on ? `vs ${escH(x.opp.n)}</b> <span class="note" style="display:inline">ออนไลน์${typeof x.opp.r === "number" ? " · " + rankName(x.opp.r) : ""}</span><b>` : `vs ${c.name}`;
+      const dR = typeof x.dR === "number" ? ` · <span class="pf-dr ${x.dR >= 0 ? "up" : "dn"}">เรตติ้ง ${x.dR >= 0 ? "+" : "−"}${Math.abs(x.dR)}</span>` : "";
+      return `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${who}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""}${dR} · ${when}</div></div>
         <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
       <p class="note" style="margin-top:6px">${Account.name() ? "ประวัติเก็บไว้ในแอคเคาท์ของคุณ" : "ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"} เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
+    drawRating();
+  }
+  // the rating over time: one line, one point per counted game or rank test, the rank names on the left;
+  // pointing at it shows that game (drawn at the box's real width so the text stays readable on a phone)
+  function drawRating() {
+    const box = $("pfGraph"), v = Rating.get(); if (!box || !v || !v.hist.length) return;
+    const H = 190, W = Math.max(260, box.clientWidth), L = 64, Rt = 14, T = 12, B = 24;
+    const pts = v.hist.map(h => ({ R: h.R, h }));
+    pts.unshift({ R: v.hist[0].R - (v.hist[0].d || 0), h: null }); // where the rating stood before the first counted game
+    const ys = pts.map(p => p.R);
+    let lo = Math.min(...ys), hi = Math.max(...ys);
+    const span0 = hi - lo, step = span0 <= 500 ? 100 : span0 <= 1200 ? 200 : 500;
+    lo = Math.floor((lo - 20) / step) * step; hi = Math.ceil((hi + 20) / step) * step; if (hi - lo < 2 * step) hi = lo + 2 * step;
+    const X = i => L + (pts.length === 1 ? 0.5 : i / (pts.length - 1)) * (W - L - Rt), Y = R => T + (hi - R) / (hi - lo) * (H - T - B);
+    let g = "";
+    for (let y = lo; y <= hi; y += step) g += `<line x1="${L}" x2="${W - Rt}" y1="${Y(y)}" y2="${Y(y)}" class="gl"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end">${rankName(Rating.toRank(y))}</text>`;
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.R).toFixed(1)}`).join("");
+    const last = pts.length - 1;
+    const first = v.hist[0].at, lastAt = v.hist[v.hist.length - 1].at, day = t => new Date(t).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟเรตติ้ง ตอนนี้ ${rateName(v.R)} ${v.R} แต้ม">
+      ${g}<text x="${L}" y="${H - 6}">${day(first)}</text><text x="${W - Rt}" y="${H - 6}" text-anchor="end">${day(lastAt)}</text>
+      <path d="${d}" class="ln"/><circle cx="${X(last)}" cy="${Y(pts[last].R)}" r="4" class="dot"/>
+      <line class="hv" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><circle class="hvd" r="5" visibility="hidden"/></svg><div class="pf-tip" hidden></div>`;
+    const svg = box.querySelector("svg"), tip = box.querySelector(".pf-tip"), hv = svg.querySelector(".hv"), hvd = svg.querySelector(".hvd");
+    const KIND = { ai: "(AI)", online: "(ออนไลน์)" };
+    const hide = () => { tip.hidden = true; hv.setAttribute("visibility", "hidden"); hvd.setAttribute("visibility", "hidden"); };
+    svg.addEventListener("pointermove", e => {
+      const r = svg.getBoundingClientRect(), x = e.clientX - r.left;
+      if (pts.length < 2) return;
+      const i = Math.max(1, Math.min(last, Math.round((x - L) / (W - L - Rt) * last))), p = pts[i], h = p.h;
+      hv.setAttribute("x1", X(i)); hv.setAttribute("x2", X(i)); hv.setAttribute("visibility", "visible");
+      hvd.setAttribute("cx", X(i)); hvd.setAttribute("cy", Y(p.R)); hvd.setAttribute("visibility", "visible");
+      const res = h.k === "exam" ? "" : h.w ? " · ชนะ" : " · แพ้";
+      tip.innerHTML = `<b>${rateName(p.R)} · ${p.R}</b> <span class="pf-dr ${h.d >= 0 ? "up" : "dn"}">${h.d >= 0 ? "+" : "−"}${Math.abs(h.d)}</span><br>${h.k === "exam" ? "สอบวัดระดับกับฮิคารุ" : "vs " + String(h.o || "").replace(/[&<>"]/g, "") + " " + (KIND[h.k] || "")}${res}<br><small>${new Date(h.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small>`;
+      tip.hidden = false;
+      const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, X(i) - tw / 2)) + "px"; tip.style.top = Math.max(0, Y(p.R) - tip.offsetHeight - 12) + "px";
+    });
+    svg.addEventListener("pointerleave", hide);
   }
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
@@ -2268,7 +2331,7 @@
       return;
     }
     if (b.dataset.an !== undefined) {
-      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      const x = load("history", []).filter(isRec)[+b.dataset.an]; if (!x) return;
       unlockAudio(); blip(880); hideScreens(); trackMode("analysis"); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
     }
   });

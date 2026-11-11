@@ -4,7 +4,7 @@
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar"];
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -24,7 +24,7 @@ const Account = (() => {
   // every character the player has ever beaten (the history keeps only 100 games, so the list is kept apart)
   function beaten() {
     const b = new Set(Array.isArray(get("beaten")) ? get("beaten") : []);
-    for (const h of get("history") || []) if (h && h.won && h.char) b.add(h.char);
+    for (const h of get("history") || []) if (h && h.won && h.char && h.char !== "online") b.add(h.char);
     return [...b];
   }
   const collect = () => {
@@ -57,6 +57,7 @@ const Account = (() => {
     }
     if (a.beaten || b.beaten) out.beaten = [...new Set([].concat(a.beaten || [], b.beaten || []))];
     if (a.avatar || b.avatar) out.avatar = a.avatar || b.avatar; // this device's choice wins
+    if (a.rating || b.rating) out.rating = Rating.merge(a.rating, b.rating);
     if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
     return out;
   }

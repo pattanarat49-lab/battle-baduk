@@ -414,6 +414,20 @@ body.menuing { padding: 0; background: #0e272d; }
 .pf-h { font-family: var(--f-px); font-size: 13px; letter-spacing: .08em; color: var(--accent); margin: 18px 0 8px; }
 .pf-rank { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pf-rank .exam-rank { font-size: 24px; }
+.pf-rate { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; }
+.pf-rate-top { display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; }
+.pf-rate-top .exam-rank { font-size: 24px; } .pf-rate-r { font-family: var(--f-px); color: var(--accent); font-variant-numeric: tabular-nums; }
+.pf-rate-top .note { flex-basis: 100%; }
+.pf-graph { position: relative; margin-top: 10px; min-width: 0; touch-action: pan-y; }
+.pf-graph svg { display: block; max-width: 100%; overflow: visible; }
+.pf-graph text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.pf-graph .gl { stroke: var(--line); stroke-width: 1; }
+.pf-graph .ln { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.pf-graph .dot, .pf-graph .hvd { fill: var(--accent); stroke: var(--bg-2); stroke-width: 2; }
+.pf-graph .hv { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.pf-tip { position: absolute; pointer-events: none; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line), 0 4px 12px rgba(0,0,0,.35); padding: 6px 9px; font-size: 13px; line-height: 1.4; white-space: nowrap; }
+.pf-tip small { color: var(--muted); }
+.pf-dr { font-variant-numeric: tabular-nums; } .pf-dr.up { color: var(--ok); } .pf-dr.dn { color: var(--warn); }
 .pf-rows { display: grid; gap: 6px; }
 .pf-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
 .pf-row img { width: 40px; height: 40px; display: block; border: 2px solid var(--wood); }
