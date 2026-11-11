@@ -95,6 +95,7 @@ export function makeAccounts(store) {
         return err(401, "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       }
       if (u.fails) { u.fails = 0; await store.put(ukey(u.name), u); }
+      await board(u); // accounts made before the leaderboard existed join it at their next login
       return ok(out(u, await session(u)));
     },
     // forgotten password: the recovery code from sign-up sets a new password, and a new recovery code replaces the used one
@@ -119,6 +120,7 @@ export function makeAccounts(store) {
     },
     async load(b) {
       const u = await byToken(b.token);
+      if (u) await board(u);
       return u ? ok(out(u, undefined)) : err(401, "หมดเวลาเข้าสู่ระบบ กรุณาล็อกอินใหม่");
     },
     // ver is the version the client last saw; when another device saved in between, the client gets that copy back,
