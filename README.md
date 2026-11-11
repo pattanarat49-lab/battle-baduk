@@ -8,6 +8,7 @@ AI ใช้เครือข่าย KataGo (g170e-b10c128) รันใน�
 - `tf.min.js` สำรองไว้เผื่อโหลด TensorFlow.js จาก CDN ไม่ได้
 - `chars/` รูปตัวละคร (`tutorial.jpg` คือการ์ดคัมภีร์สอนเล่น)
 - `src/tutorial.js` โหมดสอนเล่น 9×9 (คัมภีร์สอนเล่น) การ์ดแรกในหน้าเลือกตัว
+- `src/learn.js` โหมด LEARN แบบ Duolingo (ฮิคารุสอน บทเรียน 5×5/7×7 บอสจับหมาก) รูปและเสียงอยู่ใน `learn/` เสียงพูดสร้างด้วย `src/tools/learn_voice.py`
 
 ## สถิติ
 `worker/index.js` (ตั้งค่าใน `wrangler.jsonc`) เสิร์ฟไฟล์เกม และเก็บสถิติแบบไม่ระบุตัวตนใน Durable Object

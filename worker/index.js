@@ -195,7 +195,7 @@ function cleanState(s) {
     moves: Array.isArray(s.moves) && s.moves.length <= 1000 && s.moves.every(m => Number.isInteger(m) && m >= -1 && m < s.size * s.size) ? s.moves : null };
 }
 
-const MODES = new Set(["analysis", "tsumego", "photo"]); // photo: a board picture uploaded in Analysis
+const MODES = new Set(["analysis", "tsumego", "photo", "learn"]); // photo: a board picture uploaded in Analysis
 function clean(b) {
   if (b && b.type === "ping") { const player = id(b.player); return player ? { type: "ping", player } : null; }
   if (b && b.type === "open") { const player = id(b.player); return player && MODES.has(b.mode) ? { type: "open", player, mode: b.mode } : null; }
@@ -309,7 +309,7 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <div class="tile online"><b>● ${s.online || 0} คน</b><span>ออนไลน์อยู่ตอนนี้ (เปิดเว็บอยู่ใน 3 นาทีล่าสุด · อัปเดตทุก 1 นาที)</span></div>
 <div class="tiles"><div class="tile"><b>${s.total.games}</b><span>เกมที่เริ่มเล่นทั้งหมด</span></div><div class="tile"><b>${s.total.players}</b><span>ผู้เล่น (นับตามเครื่อง)</span></div></div>
 <section><h2>กำลังเล่นอยู่ตอนนี้</h2>${live}</section>
-<section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)", "เปิด"], ["tsumego", "Tsumego (โจทย์)", "เปิด"], ["photo", "อัปโหลดรูปกระดาน (Analysis)", "อัปรูป"]].map(([k, t, v]) => { const m = (s.modes || {})[k] || {};
+<section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)", "เปิด"], ["tsumego", "Tsumego (โจทย์)", "เปิด"], ["learn", "Learn (เรียนแบบ Duolingo)", "เปิด"], ["photo", "อัปโหลดรูปกระดาน (Analysis)", "อัปรูป"]].map(([k, t, v]) => { const m = (s.modes || {})[k] || {};
   return `<div class="tile"><b>${m.players || 0} คน</b><span>${t} · ${v}ทั้งหมด ${m.opens || 0} ครั้ง</span></div>`; }).join("")}</div>
 <p class="muted">นับตั้งแต่ 31 ต.ค. 2026 · นับคนตามเครื่อง · เปิดซ้ำในหน้าเดิมโดยไม่รีเฟรชนับครั้งเดียว · อัปรูปนับเริ่ม 31 ต.ค. และนับทุกครั้งที่อัป</p></section>
 <section><h2>สอบวัดระดับ (ฮิคารุ)</h2>

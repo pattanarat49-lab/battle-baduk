@@ -4,7 +4,7 @@
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating"];
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -58,6 +58,14 @@ const Account = (() => {
     if (a.beaten || b.beaten) out.beaten = [...new Set([].concat(a.beaten || [], b.beaten || []))];
     if (a.avatar || b.avatar) out.avatar = a.avatar || b.avatar; // this device's choice wins
     if (a.rating || b.rating) out.rating = Rating.merge(a.rating, b.rating);
+    // LEARN course (src/learn.js): best stars and scores per lesson, the larger XP earned and spent, every item bought
+    const la = a.learn, lb = b.learn;
+    if (la || lb) {
+      const x = la || {}, y = lb || {}, mx = (p, q) => { const o = Object.assign({}, p); for (const k in q || {}) o[k] = Math.max(o[k] || 0, q[k] || 0); return o; };
+      const late = (x.day || "") >= (y.day || "") ? x : y;
+      out.learn = { stars: mx(x.stars, y.stars), best: mx(x.best, y.best), xp: Math.max(x.xp || 0, y.xp || 0), spent: Math.max(x.spent || 0, y.spent || 0),
+        owned: [...new Set([].concat(x.owned || [], y.owned || []))], streak: late.streak || 0, day: late.day || "" };
+    }
     if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
     return out;
   }
