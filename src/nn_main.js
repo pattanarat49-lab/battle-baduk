@@ -2190,7 +2190,7 @@
   Analysis.onPhoto = () => trackMode("photo", true);
   // ---------- main menu and profile ----------
   const MENU = [
-    { id: "learn", t: "LEARN", img: "learn/hikaru_wave.png", s: "เรียนหมากล้อมจากศูนย์ มีเสียงพูด เหมาะกับเด็กและมือใหม่" },
+    { id: "learn", t: "LEARN", rec: "RECOMMEND FOR BEGINNER", img: "learn/hikaru_wave.png", s: "เรียนหมากล้อมจากศูนย์ มีเสียงพูด เหมาะกับเด็กและมือใหม่" },
     { id: "profile", t: "PROFILE", s: "สถิติและเกมที่เล่นในเบราว์เซอร์นี้" },
     { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
@@ -2203,7 +2203,7 @@
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="${m.img || `menu/${m.id}.png`}" alt=""></span><i class="mn-div"></i>
-    <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+    <span class="mn-lab"><b>${m.t}${m.rec ? ` <i class="mn-rec">(${m.rec === 1 ? "RECOMMEND" : m.rec})</i>` : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
   // a game in the history the pages can show: against a character of this version, or an online game (src/online.js)
   const isRec = h => !!h && (h.char === "online" ? !!h.opp && Array.isArray(h.moves) : CHARS.some(c => c.id === h.char));
   const rateName = R => rankName(Rating.toRank(R));
@@ -2227,13 +2227,8 @@
     const av = Account.avatarSrc(); $("mnWhoImg").src = av; $("mnWhoImg").classList.toggle("face", av !== "menu/guest.png");
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU.find(m => m.id === "profile").s;
-    // LEARN: progress line, and the (RECOMMEND) tag sits there until a new player has started the course or played a game
+    // LEARN: progress line (its "RECOMMEND FOR BEGINNER" tag always shows, owner 2026-11-11)
     $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
-    const fresh = !hist.length && !Learn.started();
-    for (const [id, on] of [["learn", fresh], ["exam", !fresh]]) {
-      const b = $("mnList").querySelector(`[data-mn="${id}"] b`); let tag = b.querySelector(".mn-rec");
-      if (on && !tag) b.insertAdjacentHTML("beforeend", ' <i class="mn-rec">(RECOMMEND)</i>'); else if (!on && tag) tag.remove();
-    }
   }
   function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
