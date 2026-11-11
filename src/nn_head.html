@@ -704,6 +704,10 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .on-f[hidden] { display: none; }
 .seg-wrap { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
 .seg-wrap button { border-bottom: 1px solid var(--line); }
+.acct-wel p { margin-bottom: 10px; } .acct-wel .acct-msg { margin-top: 12px; line-height: 1.5; }
+.acct-why { margin: 0 0 14px; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.acct-wel-btns { display: grid; gap: 8px; } .acct-wel-btns button { width: 100%; }
+.acct-wel-btns .acct-guest { background: none; border: 1px dashed var(--line); color: var(--fg); }
 .acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }

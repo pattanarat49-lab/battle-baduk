@@ -201,12 +201,29 @@ const Account = (() => {
     if (a === "logout") logout(); else open(a);
   });
 
+  // the first visit: sign up, sign in, or play without an account (asked once per browser; Profile still has the buttons)
+  function welcome() {
+    if (me || get("welcomed")) return;
+    const d = document.createElement("div");
+    d.className = "sure acct"; d.id = "acWel";
+    d.innerHTML = `<div class="sure-card acct-card acct-wel" role="dialog" aria-labelledby="awT">
+      <p id="awT"><b>WELCOME!</b>ยินดีต้อนรับสู่ Baduk Battle</p>
+      <ul class="acct-why"><li>เก็บประวัติเกม ระดับฝีมือ และด่านโจทย์ ตามไปทุกเครื่อง</li><li>ขึ้นกระดานอันดับ คุยในแชทโลก</li><li>เล่นออนไลน์กับผู้เล่นคนอื่น</li></ul>
+      <div class="acct-wel-btns"><button class="primary" data-w="signup">สมัครแอคเคาท์ (ไม่ต้องใช้อีเมล)</button><button data-w="login">มีแอคเคาท์แล้ว · เข้าสู่ระบบ</button><button class="acct-guest" data-w="guest">เล่นแบบไม่ใช้แอคเคาท์</button></div>
+      <p class="acct-msg">ไม่ใช้แอคเคาท์ก็เล่นกับ AI ได้ครบ ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้ สมัครทีหลังได้ที่หน้า PROFILE แล้วของเดิมจะย้ายเข้าแอคเคาท์ให้</p></div>`;
+    document.body.appendChild(d);
+    d.addEventListener("click", e => {
+      const b = e.target.closest("button[data-w]"); if (!b) return;
+      put("welcomed", 1); d.remove();
+      if (b.dataset.w !== "guest") open(b.dataset.w);
+    });
+  }
   function init(cb) {
     onChange = cb || onChange;
     pull();
     setInterval(() => { if (!document.hidden) push(); }, 20e3);
     document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
   }
-  return { init, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+  return { init, welcome, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
     call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
 })();
