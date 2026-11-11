@@ -10,7 +10,7 @@ const Social = (() => {
   const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
 
   // ---------- world chat ----------
-  let conn = null, msgs = [], seen = new Set();
+  let msgs = [], seen = new Set();
   function line(m) {
     const mine = m.n === Account.name();
     const at = new Date(m.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
@@ -28,25 +28,26 @@ const Social = (() => {
     const on = !!Account.name();
     $("chForm").hidden = !on; $("chLogin").hidden = on;
   }
+  let off = null, offState = null;
   function openChat() {
     show("chat"); syncForm();
     $("chState").textContent = "กำลังเชื่อมต่อ…";
     msgs = []; seen = new Set(); render(true);
-    if (conn) conn.close();
-    conn = Account.chatOpen(ev => {
-      if (ev.state) $("chState").textContent = ev.state === "on" ? "● ออนไลน์" : "ขาดการเชื่อมต่อ กำลังลองใหม่…";
-      if (ev.hist) { $("chState").textContent = "● ออนไลน์"; ev.hist.forEach(add); render(true); }
-      if (ev.msg) { add(ev.msg); render(ev.msg.n === Account.name()); }
-      if (ev.error) { $("chErr").textContent = ev.error; setTimeout(() => { $("chErr").textContent = ""; }, 3000); }
+    closeChat();
+    offState = Hub.onState(s => { $("chState").textContent = s === "on" ? "● ออนไลน์" : "ขาดการเชื่อมต่อ กำลังลองใหม่…"; });
+    off = Hub.sub("chat", list => {
+      $("chState").textContent = "● ออนไลน์";
+      const mine = (list || []).some(m => !seen.has(m.id) && m.n === Account.name());
+      (list || []).forEach(add); render(mine);
     });
   }
-  function closeChat() { if (conn) { conn.close(); conn = null; } }
+  function closeChat() { if (off) { off(); off = null; } if (offState) { offState(); offState = null; } }
   async function send() {
     const t = $("chText").value.trim();
-    if (!t || !conn) return;
-    const ok = await conn.send(t);
-    if (ok === false) { $("chErr").textContent = "ยังไม่ได้เชื่อมต่อ ลองอีกครั้ง"; return; }
+    if (!t) return;
     $("chText").value = "";
+    const r = await Hub.op("say", { token: Account.token(), t });
+    if (r.status !== 200) { $("chText").value = $("chText").value || t; $("chErr").textContent = r.body.error || "ส่งไม่สำเร็จ"; setTimeout(() => { $("chErr").textContent = ""; }, 3000); }
   }
 
   // ---------- leaderboard ----------

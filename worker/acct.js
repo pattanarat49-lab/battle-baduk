@@ -168,9 +168,14 @@ export function makeAccounts(store) {
       return ok({});
     }
   };
-  return async function handle(op, body) {
+  async function handle(op, body) {
     const f = Object.prototype.hasOwnProperty.call(ops, op) && ops[op];
     if (!f) return err(404, "not found");
-    return await f(body && typeof body === "object" ? body : {});
-  };
+    const r = await f(body && typeof body === "object" ? body : {});
+    if (op === "say" && r.status === 200) r.changed = ["chat"];
+    return r;
+  }
+  // who a login token belongs to, as other players see them (name, best exam rank, picture); null when not signed in
+  handle.userOf = async token => { const u = await byToken(token); if (!u) return null; const s = summary(u.data); return { n: u.name, r: s.r, a: s.a }; };
+  return handle;
 }

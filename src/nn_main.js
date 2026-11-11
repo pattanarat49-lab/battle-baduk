@@ -908,7 +908,14 @@
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
   const LIVE_EVERY = MATCH ? 20000 : 60000; // a test match has no player to wait on: every 20 s
   let liveAt = 0, liveTimer = null;
+  // WATCH: spectators of this game get every move over the shared WebSocket (one message, not one request, per move)
+  function liveNow(ended) {
+    if (MATCH || !board || !gameId) return;
+    const st = snapshot();
+    Online.live(gameId, { char: CHARS[gameChar].id, exam: !!exam, size: n, human, moves: st.moves, clocks: st.clocks, ended: ended || null });
+  }
   function liveUpdate() {
+    liveNow();
     if (!STATS_URL || liveTimer) return;
     const g = gameId;
     liveTimer = setTimeout(() => {
@@ -918,6 +925,7 @@
     }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
   function reportEnd(humanWon, how, margin) {
+    liveNow(humanWon ? "human" : "ai");
     if (MATCH) {
       if (gameReported) return;
       gameReported = true;
@@ -2115,6 +2123,8 @@
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
     { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
+    { id: "online", t: "PLAY ONLINE", s: "เล่นกับคนจริง สร้างห้องหรือกด Join" },
+    { id: "watch", t: "WATCH", s: "ดูเกมที่คนอื่นกำลังเล่นอยู่แบบสด ๆ" },
     { id: "ranking", t: "LEADERBOARD", s: "อันดับผู้เล่นทั้งหมด เรียงตามระดับฝีมือ" },
     { id: "chat", t: "WORLD CHAT", s: "คุยกับผู้เล่นคนอื่นทั่วโลก" }
   ];
@@ -2141,11 +2151,46 @@
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { Social.closeChat(); for (const id of ["menu", "home", "prof", "chat", "lb", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
   Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // PLAY ONLINE and WATCH (src/online.js); the count after both players pass uses KataGo like the games against the AI
+  async function countLead(n2, mv, komi) {
+    const b = new Board(n2), pts = [];
+    for (const m of mv) { const p = m ? b.pt(m[0], m[1]) : PASS; b.play(p); pts.push(p); }
+    const dead = new Set();
+    try {
+      if (AI) {
+        const ev = await AI.evaluate(n2, pts, komi), seen = new Set();
+        const ownBlack = q => { const [x, y] = b.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
+        for (const p of b.pts) {
+          const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
+          const chain = [p]; seen.add(p);
+          for (let i = 0; i < chain.length; i++) for (const d of b.dirs) { const q = chain[i] + d; if (b.color[q] === c && !seen.has(q)) { seen.add(q); chain.push(q); } }
+          const s = chain.reduce((a, q) => a + ownBlack(q), 0) / chain.length;
+          if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
+        }
+      }
+    } catch (e) { console.error(e); }
+    let bl = 0, wh = 0; const seen = new Set();
+    for (const p of b.pts) {
+      const c = b.color[p];
+      if ((c === BLACK || c === WHITE) && !dead.has(p)) { if (c === BLACK) bl++; else wh++; continue; }
+      if (seen.has(p)) continue;
+      const region = [p]; seen.add(p); let tb = false, tw = false;
+      for (let i = 0; i < region.length; i++) for (const d of b.dirs) {
+        const q = region[i] + d, cq = b.color[q];
+        if (cq === 3) continue;
+        if ((cq === BLACK || cq === WHITE) && !dead.has(q)) { if (cq === BLACK) tb = true; else tw = true; }
+        else if (!seen.has(q)) { seen.add(q); region.push(q); }
+      }
+      if (tb && !tw) bl += region.length; else if (tw && !tb) wh += region.length;
+    }
+    return { lead: bl - wh - komi, dead: [...dead].map(p => b.xy(p)) };
+  }
+  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
@@ -2160,6 +2205,8 @@
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+    else if (go === "online") Online.openLobby("play");
+    else if (go === "watch") Online.openLobby("watch");
     else if (go === "ranking") Social.openBoard();
     else if (go === "chat") Social.openChat();
   });

@@ -318,7 +318,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
 .mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
 .mn-title i { font-style: normal; } .mn-title .w { display: none; }
-.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(8, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(10, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
 #menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
   border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
 #menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
@@ -339,7 +339,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
 /* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
 @media (min-aspect-ratio: 5/4) {
-  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, minmax(0, 1fr)); }
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, minmax(0, 1fr)); }
   #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
   .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
   .mn-title .n { display: none; } .mn-title .w { display: inline; }
@@ -651,6 +651,45 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .av-pick.on { border-color: var(--accent); background: var(--surface-2); }
 .av-pick.lock { opacity: .45; } .av-pick.lock img { filter: grayscale(1); }
 .mn-who img.face { border: 3px solid var(--wood); box-sizing: border-box; border-radius: 0; }
+/* PLAY ONLINE / WATCH (src/online.js) */
+.ol-new { width: 100%; margin: 4px 0 4px; }
+.ol-list { display: grid; gap: 6px; }
+.ol-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who btn" "meta btn"; gap: 4px 10px; align-items: center; background: var(--surface); padding: 8px 10px; }
+.ol-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.ol-row > button { grid-area: btn; }
+.ol-who { grid-area: who; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.ol-p { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ol-p img { width: 30px; height: 30px; border: 2px solid var(--wood); }
+.ol-p b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.ol-vs { color: var(--muted); font-size: 12px; }
+.ol-meta { grid-area: meta; font-size: 13px; color: var(--muted); }
+.ol-tag { font-size: 11px; padding: 0 6px; border-radius: 6px; background: #3f7d5a; color: #fff; }
+.ol-tag.ai { background: #4a6a8a; } .ol-tag.exam { background: #8a5a2a; }
+.og { display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; padding: 10px 12px; gap: 8px; }
+.og[hidden] { display: none; }
+.og .an-head { margin: 0; }
+.og-wrap { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; }
+@media (min-aspect-ratio: 9/8) { .og-wrap { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) clamp(260px, 30vw, 360px); } }
+.og-cell { min-height: 0; min-width: 0; display: grid; place-items: center; overflow: hidden; padding: 6px; }
+.og-cell canvas { display: block; box-shadow: 0 0 0 6px #5a331a; border-radius: 4px; touch-action: manipulation; }
+.og-side { display: flex; flex-direction: column; gap: 8px; }
+.og-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.og-p { display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-rows: auto auto; gap: 2px 8px; align-items: center; background: var(--surface); padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.og-p.turn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.og-p img { grid-row: span 2; width: 36px; height: 36px; border: 2px solid var(--wood); }
+.og-n { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 13px; }
+.og-c2 { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
+.on-card .actions button { width: 100%; }
+.og-n b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og-n .st { width: 12px; height: 12px; border-radius: 50%; flex: none; } .og-n .st.b { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); } .og-n .st.w { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
+.og-act { padding: 0; }
+.on-card { width: min(460px, 100%); max-height: 90dvh; overflow-y: auto; }
+.on-f { display: grid; gap: 4px; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
+.on-f[hidden] { display: none; }
+.seg-wrap { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
+.seg-wrap button { border-bottom: 1px solid var(--line); }
 .acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
@@ -751,7 +790,7 @@ body.coaching .app .quote { display: none; }
   <div class="mn-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <header class="mn-bar">
     <h1 class="mn-name">BADUK BATTLE</h1>
-    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="tutorial">TUTORIAL</button><button data-mn="ranking">RANKING</button><button data-mn="chat">CHAT</button></nav>
+    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="tutorial">TUTORIAL</button><button data-mn="online">ONLINE</button><button data-mn="watch">WATCH</button><button data-mn="ranking">RANKING</button><button data-mn="chat">CHAT</button></nav>
     <div class="mn-tools">
       <button class="mn-tool" data-mn="profile" aria-label="โปรไฟล์"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 0h4v1h1v4h-1v1h-4v-1h-1v-4h1zM1 7h8v1h1v2h-10v-2h1z"/></svg></button>
       <button class="mn-tool" id="mnGear" aria-label="ตั้งค่า" aria-expanded="false"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v1h1v-1h1v1h1v1h-1v1h1v1h1v2h-1v1h-1v1h1v1h-1v1h-1v-1h-1v1h-2v-1h-1v1h-1v-1h-1v-1h1v-1h-1v-1h-1v-2h1v-1h1v-1h-1v-1h1v-1h1v1h1zM4 4v2h2v-2z"/></svg></button>
@@ -806,6 +845,50 @@ body.coaching .app .quote { display: none; }
   <form class="ch-form" id="chForm" hidden><input id="chText" maxlength="200" placeholder="พิมพ์ข้อความ…" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">ส่ง</button></form>
   <div class="ch-login" id="chLogin" hidden><span>ล็อกอินก่อนถึงจะพิมพ์คุยได้</span><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>
 </section>
+
+<section class="prof" id="onl" hidden>
+  <div class="an-head">
+    <button class="an-back" id="onlBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · PLAY ONLINE</div><h1>เล่นกับคนจริง</h1></div>
+  </div>
+  <div id="onlBody"></div>
+</section>
+
+<section class="prof" id="wat" hidden>
+  <div class="an-head">
+    <button class="an-back" id="watBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · WATCH</div><h1>ดูเกมสด</h1></div>
+  </div>
+  <div id="watBody"></div>
+</section>
+
+<section class="og" id="og" hidden>
+  <div class="an-head">
+    <button class="an-back" id="ogBack">← กลับ</button>
+    <div><div class="px" id="ogTitle">PLAY ONLINE</div></div>
+  </div>
+  <div class="og-wrap">
+    <div class="og-cell"><canvas id="ogCv" aria-label="กระดาน"></canvas></div>
+    <div class="og-side">
+      <div class="og-bars"><div class="og-p" id="ogB"></div><div class="og-p" id="ogW"></div></div>
+      <p class="og-status" id="ogStatus" aria-live="polite"></p>
+      <div class="actions two og-act"><button id="ogPass" hidden>ผ่าน</button><button id="ogResign" hidden>ยอมแพ้</button></div>
+      <button class="pf-an" id="ogClose" hidden>ปิดห้องนี้</button>
+    </div>
+  </div>
+</section>
+
+<div class="sure" id="onNew" hidden><div class="sure-card acct-card on-card" role="dialog" aria-labelledby="onT">
+  <button class="acct-x" id="onX" aria-label="ปิด">✕</button>
+  <p id="onT"><b>NEW ROOM</b>สร้างห้อง</p>
+  <div class="on-f"><span>กระดาน</span><div class="seg" data-k="size"><button data-v="9">9×9</button><button data-v="13">13×13</button><button data-v="19">19×19</button></div></div>
+  <div class="on-f"><span>เวลาหลัก (ต่อคน)</span><div class="seg seg-wrap" data-k="main"><button data-v="0">ไม่มี</button><button data-v="60">1 น.</button><button data-v="300">5 น.</button><button data-v="600">10 น.</button><button data-v="1200">20 น.</button><button data-v="1800">30 น.</button><button data-v="3600">60 น.</button></div></div>
+  <div class="on-f"><span>เบียวโยมิ (วินาทีต่อตา)</span><div class="seg" data-k="byo"><button data-v="0">ไม่มี</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="60">60</button></div></div>
+  <div class="on-f" id="onPerRow"><span>จำนวนครั้งเบียวโยมิ</span><div class="seg" data-k="per"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
+  <div class="on-f"><span>เจ้าของห้องถือ</span><div class="seg" data-k="pick"><button data-v="b">ดำ</button><button data-v="w">ขาว</button><button data-v="r">สุ่ม</button></div></div>
+  <p class="acct-msg" id="onErr"></p>
+  <div class="actions"><button class="primary" id="onGo" style="width:100%">สร้างห้อง</button></div>
+</div></div>
 
 <section class="prof" id="lb" hidden>
   <div class="an-head">

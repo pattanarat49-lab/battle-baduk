@@ -200,33 +200,12 @@ const Account = (() => {
     if (a === "logout") logout(); else open(a);
   });
 
-  // ---------- world chat ----------
-  // On the real site a WebSocket to the Worker (/api/chat): it is open only while the chat screen is, and sends the last
-  // 50 messages on connect. The private preview page provides window.ACCT_CHAT instead.
-  function chatOpen(onEvent) {
-    if (window.ACCT_CHAT) return window.ACCT_CHAT.open(onEvent);
-    let ws = null, closed = false, wait = 1000, timer = 0;
-    const url = (BASE ? BASE.replace(/^http/, "ws") : (location.protocol === "https:" ? "wss://" : "ws://") + location.host) + "/api/chat";
-    const connect = () => {
-      if (closed) return;
-      try { ws = new WebSocket(url); } catch (e) { onEvent({ state: "off" }); return; }
-      ws.onopen = () => { wait = 1000; onEvent({ state: "on" }); };
-      ws.onmessage = e => { let m = null; try { m = JSON.parse(e.data); } catch (x) {} if (m) onEvent(m); };
-      ws.onclose = () => { if (closed) return; onEvent({ state: "off" }); timer = setTimeout(connect, wait); wait = Math.min(wait * 2, 30000); };
-    };
-    connect();
-    return {
-      send: t => { if (!me) return false; if (!ws || ws.readyState !== 1) return false; ws.send(JSON.stringify({ token: me.token, t })); return true; },
-      close: () => { closed = true; clearTimeout(timer); try { ws && ws.close(); } catch (e) {} }
-    };
-  }
-
   function init(cb) {
     onChange = cb || onChange;
     pull();
     setInterval(() => { if (!document.hidden) push(); }, 20e3);
     document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
   }
-  return { init, card, open, push, merge, beaten, chatOpen, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+  return { init, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
     call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
 })();

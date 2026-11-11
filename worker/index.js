@@ -2,11 +2,12 @@
 // POST /api/event  {type: "start"|"move"|"end", game, player, char, size, color, winner, how, moves, state}
 // GET  /stats      summary page and games in progress,  GET /api/stats  the same numbers as JSON
 // GET  /watch?g=…  live board of one game,  GET /api/game?g=…  its latest position
-// POST /api/acct/<signup|login|recover|load|save|logout>  player accounts (worker/acct.js), in their own Durable Object
+// POST /api/acct/<op>  accounts, leaderboard, chat, online rooms (worker/hub.js), in their own Durable Object
+// GET  /api/ws         the same over a WebSocket, with live updates of subscribed keys
 // GET  /api/cancel  always {n: 0}, without touching the Durable Object: game pages opened before the cancel button was removed still poll it
 import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
-import { makeAccounts } from "./acct.js";
+import { makeHub } from "./hub.js";
 
 const CHARS = {
   michio: "ครูมิชิโอะ", mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
@@ -334,18 +335,20 @@ ${matchSection(s, ago)}
 </main><script>setInterval(() => { if (!document.hidden) location.reload(); }, 60000);</script></body></html>`;
 }
 
-// Player accounts, kept apart from Stats so they never touch its tables. One row per account and one per login,
-// written only on sign-up, login and when progress is saved (after a game, a solved problem); reads are by primary key.
+// Player accounts, chat, leaderboard, online rooms and live games (worker/hub.js), kept apart from Stats so they never
+// touch its tables. Rows are written on sign-up, login, saves, chat messages and online moves; reads are by primary key.
+// Live positions of games against the AI ("lv…" keys) stay in memory only: they change every move and are not worth a row.
 export class Accounts extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
-    const sql = ctx.storage.sql;
+    const sql = ctx.storage.sql, mem = new Map();
     sql.exec("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)");
-    this.handle = makeAccounts({
-      get: async k => { const r = sql.exec("SELECT v FROM kv WHERE k = ?", k).toArray()[0]; return r ? JSON.parse(r.v) : null; },
-      put: async (k, v) => { sql.exec("INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v", k, JSON.stringify(v)); },
-      del: async k => { sql.exec("DELETE FROM kv WHERE k = ?", k); }
+    this.handle = makeHub({
+      get: async k => { if (k.startsWith("lv")) return mem.has(k) ? mem.get(k) : null; const r = sql.exec("SELECT v FROM kv WHERE k = ?", k).toArray()[0]; return r ? JSON.parse(r.v) : null; },
+      put: async (k, v) => { if (k.startsWith("lv")) { mem.set(k, v); if (mem.size > 400) mem.delete(mem.keys().next().value); return; } sql.exec("INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v", k, JSON.stringify(v)); },
+      del: async k => { if (k.startsWith("lv")) { mem.delete(k); return; } sql.exec("DELETE FROM kv WHERE k = ?", k); }
     });
+    this.store = { get: async k => k.startsWith("lv") ? (mem.has(k) ? mem.get(k) : null) : (r => r ? JSON.parse(r.v) : null)(sql.exec("SELECT v FROM kv WHERE k = ?", k).toArray()[0]) };
     // wrong passwords per address over 10 minutes, in memory only: guessing across many names gets slowed down too
     this.bad = new Map();
   }
@@ -353,34 +356,51 @@ export class Accounts extends DurableObject {
     const now = Date.now(), b = this.bad.get(ip);
     if (b && now - b.at < 10 * 60e3 && b.n >= 30) return { status: 429, body: { error: "ลองผิดหลายครั้งเกินไป รอสักครู่แล้วลองใหม่" } };
     const r = await this.handle(op, body);
-    if (op === "say" && r.status === 200) this.broadcast({ msg: r.body.msg });
     if (r.status === 401 && (op === "login" || op === "recover")) {
       const v = b && now - b.at < 10 * 60e3 ? b : { at: now, n: 0 }; v.n++; this.bad.set(ip, v);
       if (this.bad.size > 5000) this.bad.clear();
     }
-    return r;
+    if (r.changed && r.changed.length) await this.push(r.changed);
+    return { status: r.status, body: r.body };
   }
-  // world chat over WebSockets (hibernation API: an idle socket costs nothing, and messages sent out are free).
-  // On connect the socket gets the last 50 messages; a client sends {token, t} to say something.
+  // One WebSocket per open page (hibernation API: an idle socket costs nothing, messages sent out are free, messages in
+  // are billed 20 to 1). The page subscribes to store keys ({sub: [keys]}, kept on the socket so it survives hibernation)
+  // and gets {k, v} whenever one changes; it sends operations as {re, op, body} and gets {re, status, body} back.
   async fetch(req) {
     if (req.headers.get("Upgrade") !== "websocket") return new Response("websocket only", { status: 426 });
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);
-    const c = await this.handle("chat", {});
-    pair[1].send(JSON.stringify({ hist: c.body.m }));
+    pair[1].serializeAttachment({ subs: [], ip: req.headers.get("cf-connecting-ip") || "" });
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
   async webSocketMessage(ws, data) {
     let m = null; try { m = JSON.parse(typeof data === "string" ? data : new TextDecoder().decode(data)); } catch (e) {}
     if (!m || typeof m !== "object") return;
-    const r = await this.handle("say", m);
-    if (r.status !== 200) ws.send(JSON.stringify({ error: r.body.error, code: r.status }));
-    else this.broadcast({ msg: r.body.msg });
+    const att = ws.deserializeAttachment() || { subs: [] };
+    if (Array.isArray(m.sub)) {
+      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
+      ws.serializeAttachment(att);
+      for (const k of att.subs) ws.send(JSON.stringify({ k, v: await this.value(k), now: Date.now() }));
+      return;
+    }
+    if (typeof m.op === "string") {
+      if (["login", "signup", "recover"].includes(m.op)) return ws.send(JSON.stringify({ re: m.re, status: 400, body: { error: "use https" } }));
+      const r = await this.call(m.op, m.body, att.ip || "");
+      ws.send(JSON.stringify({ re: m.re, status: r.status, body: r.body, now: Date.now() }));
+    }
   }
   webSocketClose(ws, code) { try { ws.close(code, "bye"); } catch (e) {} }
-  broadcast(o) {
-    const s = JSON.stringify(o);
-    for (const w of this.ctx.getWebSockets()) { try { w.send(s); } catch (e) {} }
+  async value(k) { return k === "chat" ? (((await this.store.get("chat")) || { m: [] }).m) : await this.store.get(k); }
+  async push(keys) {
+    const socks = this.ctx.getWebSockets(), cache = new Map();
+    for (const w of socks) {
+      let att = null; try { att = w.deserializeAttachment(); } catch (e) {}
+      for (const k of keys) {
+        if (!att || !att.subs || !att.subs.includes(k)) continue;
+        if (!cache.has(k)) cache.set(k, JSON.stringify({ k, v: await this.value(k), now: Date.now() }));
+        try { w.send(cache.get(k)); } catch (e) {}
+      }
+    }
   }
 }
 
@@ -408,7 +428,7 @@ async function handle(req, env) {
     await stub().record(e);
     return new Response(null, { status: 204, headers: CORS });
   }
-  if (url.pathname === "/api/chat") return env.ACCOUNTS.get(env.ACCOUNTS.idFromName("accounts")).fetch(req);
+  if (url.pathname === "/api/ws") return env.ACCOUNTS.get(env.ACCOUNTS.idFromName("accounts")).fetch(req);
   if (url.pathname.startsWith("/api/acct/")) {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (req.method !== "POST") return new Response("method", { status: 405, headers: CORS });
