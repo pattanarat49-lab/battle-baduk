@@ -47,12 +47,23 @@ const Rating = (() => {
     put(v);
     return v;
   }
-  // two copies (this device, the account) joined: the one with more games counted wins, histories are combined
+  // two copies (this device, the account) joined. When one already holds the other's latest game it is simply the newer
+  // copy of the same progress and wins. Otherwise they grew apart (a device played as a guest, then signed in): the
+  // higher rating is kept with its own graph (owner 2026-11-11: keep the best when accounts are linked).
   function merge(a, b) {
     if (!a) return b || null; if (!b) return a;
-    const main = (b.n || 0) > (a.n || 0) || ((b.n || 0) === (a.n || 0) && (last(b) > last(a))) ? b : a;
-    const seen = new Set(), hist = [];
-    for (const h of (a.hist || []).concat(b.hist || []).sort((x, y) => x.at - y.at)) { const k = h.at + ":" + h.k; if (!seen.has(k)) { seen.add(k); hist.push(h); } }
+    const key = h => h.at + ":" + h.k, ha = a.hist || [], hb = b.hist || [];
+    const has = (list, h) => !h || list.some(e => key(e) === key(h));
+    const la = ha[ha.length - 1], lb = hb[hb.length - 1];
+    let main, hist;
+    if (has(ha, lb) || has(hb, la)) {
+      main = has(ha, lb) ? a : b;
+      const seen = new Set(); hist = [];
+      for (const h of ha.concat(hb).sort((x, y) => x.at - y.at)) { const k = key(h); if (!seen.has(k)) { seen.add(k); hist.push(h); } }
+    } else {
+      main = (b.R || 0) > (a.R || 0) ? b : a;
+      hist = (main.hist || []).slice();
+    }
     const base = Math.max(typeof a.base === "number" ? a.base : -99, typeof b.base === "number" ? b.base : -99);
     const out = { R: main.R, n: Math.max(a.n || 0, b.n || 0), hist: hist.slice(-KEEP) };
     if (base > -99) out.base = base;
