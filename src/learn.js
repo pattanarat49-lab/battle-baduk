@@ -43,6 +43,9 @@ const Learn = (function () {
   // atari (leave a white group with one liberty), libs (tap every liberty of "of"), stone (tap one of the stones in ans),
   // illegal (tap the forbidden point; c = colour that tries), choice (opts, ok = index),
   // seq (several moves: each step has ans, or cap = capture at least that many; white answers with the step's reply)
+  // real game: Lee Changho (black) vs Gu Li (white), 2005, black wins by half a point; positions after move 206, 226, 296
+  const KG = { 206: { b: "f19 e18 g18 b17 c17 d17 f17 h17 i17 o17 b16 f16 g16 j16 k16 l16 o16 p16 q16 h15 i15 j15 n15 q15 r15 s15 c14 g14 h14 n14 p14 s14 f13 g13 p13 q13 e12 f12 o12 q12 d11 e11 g11 m11 o11 q11 b10 c10 g10 r10 d9 g9 i9 j9 l9 p9 r9 d8 g8 h8 j8 k8 m8 n8 q8 r8 b7 l7 n7 q7 f6 g6 h6 m6 o6 q6 o5 c4 e4 o4 p4 q4 c3 e3 f3 k3 l3 n3 o3 b2 d2 f2 g2 p2 b1", w: "o18 e17 j17 k17 l17 n17 p17 q17 r17 c16 d16 e16 m16 n16 r16 s16 b15 c15 e15 f15 g15 k15 l15 m15 d14 f14 j14 q14 r14 e13 h13 c12 d12 g12 h12 p12 r12 h11 j11 p11 r11 h10 k10 o10 p10 q10 b9 c9 e9 h9 k9 m9 o9 c8 i8 o8 c7 d7 e7 f7 i7 o7 p7 r7 c6 n6 p6 r6 c5 e5 f5 j5 n5 p5 q5 s5 b4 d4 f4 g4 k4 r4 b3 g3 h3 j3 p3 q3 s3 a2 h2 q2 r2" }, 226: { b: "f19 e18 g18 n18 b17 c17 d17 f17 h17 i17 o17 b16 f16 g16 j16 k16 l16 o16 p16 q16 h15 i15 j15 n15 q15 r15 s15 c14 g14 h14 k14 l14 n14 p14 s14 f13 g13 l13 p13 q13 e12 f12 l12 o12 q12 d11 e11 g11 l11 m11 o11 q11 b10 c10 g10 r10 d9 g9 i9 j9 l9 p9 r9 d8 g8 h8 j8 k8 m8 n8 q8 r8 b7 l7 n7 q7 f6 g6 h6 m6 o6 q6 m5 o5 c4 e4 m4 o4 p4 q4 c3 e3 f3 k3 l3 n3 o3 b2 d2 f2 g2 j2 k2 p2 b1", w: "i18 m18 o18 e17 j17 k17 l17 n17 p17 q17 r17 c16 d16 e16 m16 n16 r16 s16 b15 c15 e15 f15 g15 k15 l15 m15 d14 f14 j14 m14 q14 r14 e13 h13 k13 m13 c12 d12 g12 h12 p12 r12 h11 j11 p11 r11 h10 k10 l10 m10 o10 p10 q10 b9 c9 e9 h9 k9 m9 o9 c8 i8 o8 c7 d7 e7 f7 i7 o7 p7 r7 c6 n6 p6 r6 c5 e5 f5 j5 l5 n5 p5 q5 s5 b4 d4 f4 g4 k4 l4 r4 b3 g3 h3 j3 p3 q3 s3 a2 h2 i2 q2 r2" }, 296: { b: "f19 h19 i19 e18 g18 h18 a17 b17 c17 d17 f17 h17 i17 o17 b16 f16 g16 j16 k16 l16 o16 p16 q16 h15 i15 j15 n15 q15 r15 s15 g14 h14 k14 l14 n14 p14 s14 a13 b13 f13 g13 l13 n13 p13 q13 r13 a12 e12 f12 l12 m12 n12 o12 q12 a11 d11 e11 g11 k11 l11 m11 n11 o11 q11 a10 b10 c10 e10 g10 i10 j10 n10 r10 s10 a9 d9 f9 g9 i9 j9 l9 p9 r9 g8 h8 j8 k8 l8 m8 n8 q8 r8 s8 b7 l7 m7 n7 q7 f6 g6 h6 i6 m6 o6 q6 h5 i5 m5 o5 c4 e4 m4 o4 p4 q4 c3 d3 e3 f3 k3 l3 n3 o3 b2 d2 f2 g2 j2 k2 o2 p2 b1 f1 k1 o1", w: "j19 n19 i18 j18 k18 m18 o18 e17 j17 k17 l17 n17 p17 q17 r17 a16 c16 d16 e16 m16 n16 r16 s16 a15 b15 c15 e15 f15 g15 k15 l15 m15 b14 d14 f14 i14 j14 m14 c13 e13 h13 j13 k13 m13 b12 c12 d12 g12 h12 i12 k12 p12 r12 h11 i11 j11 p11 r11 h10 k10 l10 m10 o10 p10 q10 b9 c9 e9 h9 k9 m9 n9 o9 a8 c8 e8 i8 o8 c7 d7 e7 f7 i7 j7 k7 o7 p7 r7 s7 b6 c6 e6 j6 l6 n6 p6 r6 c5 d5 e5 f5 j5 l5 n5 p5 q5 s5 b4 d4 f4 g4 h4 i4 k4 l4 r4 b3 g3 h3 j3 p3 q3 s3 a2 h2 i2 q2 r2 g1 h1 i1 j1 p1 q1" } };
+  const kg = (k, o) => Object.assign({ n: 19 }, KG[k], o);
   const UNITS = [
     { t: "รู้จักหมากล้อม", c: "#58cc02", lessons: [
       { id: "u1a", t: "วางหมาก", icon: "●", items: [
@@ -308,6 +311,14 @@ const Learn = (function () {
         { t: "info", n: 19, b: "j10 k11", w: "k10", play: [{ c: 1, at: "j11" }, { c: 2, at: "p10" }], say: "ดูตัวอย่างนะ ดำต่อหมากตัวเองให้แน่น แต่ไม่ได้ขู่อะไรขาวเลย ขาวจึงไปลงที่อื่นได้ ตานี้คือโกเตะ" },
         { t: "choice", n: 19, b: "j10 k11 j11", w: "k10", opts: ["โกเตะ", "เซนเตะ"], ok: 0, say: "ดำต่อหมากตัวเอง โดยไม่ได้ขู่อะไรขาว ตานี้เป็นเซนเตะหรือโกเตะ", hint: "ขาวไม่ต้องตอบ ตานี้เลยเป็นโกเตะ" },
         { t: "tap", n: 19, b: "j9 h10", w: "j10", ans: "k10 j11", say: "ลองลงตาเซนเตะดู ขู่ให้ขาวต้องตอบ", hint: "อาตาริหมากขาว ขาวจะต้องรีบหนี" },
+        kg(206, { t: "info", ring: "j2", say: "มาดูเกมจริงกันบ้าง นี่คือเกมของ**อีชางโฮ** ถือดำ กับ**กู่ลี่** ถือขาว เมื่อปี 2005 ตอนนี้ดำกำลังจะลงตรงวงกลม" }),
+        kg(206, { t: "info", zoom: "g1 n7", play: [{ c: 1, at: "j2" }, { c: 2, at: "i2" }], say: "ซูมเข้าไปดูนะ ดำลงข้างใต้หมากขาว ขาวรีบกั้นไว้ทันที" }),
+        kg(206, { t: "tap", zoom: "g1 n7", b: KG[206].b + " j2", ring: "j3", ans: "i3 j4", say: "ทำไมขาวต้องรีบกั้น ลองดูว่าถ้าขาวไม่ตอบ ดำจะอาตาริหมากขาวเม็ดที่วงกลมได้ตรงไหน", hint: "หมากขาวเม็ดนี้เหลือลมหายใจสองจุด ปิดจุดไหนก็ได้" }),
+        kg(206, { t: "info", zoom: "g1 n7", b: KG[206].b + " j2 i3", say: "ถ้าขาวไม่ตอบ ดำตัดตรงนี้ หมากขาวโดนอาตาริ แล้วดำยังบุกเข้าเขตขาวได้อีก ขาวเลยต้องตอบ" }),
+        kg(206, { t: "info", b: KG[206].b + " j2", w: KG[206].w + " i2", play: [{ c: 1, at: "k14" }], say: "พอขาวตอบแล้ว อีชางโฮก็ได้ไปลงที่อื่นต่อทันที ตาที่ดำลงเมื่อกี้จึงเป็น**เซนเตะ**" }),
+        kg(226, { t: "info", zoom: "a6 h14", play: [{ c: 1, at: "a9" }, { c: 2, at: "a8" }, { c: 1, at: "a10" }], say: "อีกตัวอย่างจากเกมเดียวกัน ดำลงที่ขอบ ขาวกั้น หมากดำโดนอาตาริ ดำเลยต้องต่อ ตาที่ต่อนี้ไม่ได้ขู่อะไรขาวเลย" }),
+        kg(226, { t: "info", b: KG[226].b + " a9 a10", w: KG[226].w + " a8", play: [{ c: 2, at: "j7" }], say: "ขาวจึงได้ไปลงที่อื่นแทน ตาที่ดำต่อเมื่อกี้จึงเป็น**โกเตะ**" }),
+        kg(226, { t: "choice", zoom: "a6 h14", b: KG[226].b + " a9 a10", w: KG[226].w + " a8", opts: ["เซนเตะ", "โกเตะ"], ok: 1, say: "ดำต่อหมากตัวเองที่ขอบ แล้วขาวไปลงที่อื่น ตาที่ดำต่อเป็นเซนเตะหรือโกเตะ", hint: "ขาวไม่ต้องตอบ ได้ไปลงที่อื่น ตานั้นจึงเป็นโกเตะ" }),
         { t: "info", n: 19, say: "โกเตะไม่ได้แย่เสมอไปนะ ถ้าหมากเราอันตราย ก็ต้องป้องกันก่อน ถึงจะเป็นโกเตะก็ตาม แต่ถ้าเลือกได้ ให้เล่น**ตาเซนเตะก่อน** แล้วค่อยกลับมาเล่นตาโกเตะ" },
         { t: "choice", n: 19, opts: ["เล่นตาเซนเตะก่อน", "เล่นตาโกเตะก่อน"], ok: 0, say: "มีตาเซนเตะกับตาโกเตะ ที่ใหญ่พอๆ กัน ควรเล่นตาไหนก่อน", hint: "เล่นเซนเตะก่อน แล้วยังได้กลับมาเล่นตาโกเตะอีก" },
         { t: "info", n: 19, say: "ระวัง**เซนเตะปลอม**ด้วย ถ้าเราขู่ แต่อีกฝ่ายเสียแค่นิดเดียว เขาอาจไม่ตอบ แล้วไปลงที่ใหญ่กว่าแทน เราก็เสียเซนเตะไปเอง" },
@@ -318,7 +329,14 @@ const Learn = (function () {
         { t: "info", n: 19, say: "ช่วงท้ายเกม เขตแดนเริ่มชัดแล้ว ต้องปิดขอบเขตให้เรียบร้อย ช่วงนี้เรียกว่า**ปลายเกม** หรือ**โยเซ**" },
         { t: "info", n: 19, say: "หลักของปลายเกมคือ เล่น**ตาที่ใหญ่ก่อน** และเล่น**เซนเตะก่อนโกเตะ** แต้มเล็กๆ ที่เก็บได้ รวมกันแล้วชนะกันได้เลย" },
         { t: "choice", n: 19, opts: ["ตาที่ใหญ่และเป็นเซนเตะ", "ตาเล็กๆ ที่ไหนก็ได้"], ok: 0, say: "ปลายเกม ควรเล่นตาไหนก่อน", hint: "ใหญ่ก่อน และเซนเตะก่อน" },
-        { t: "choice", n: 19, opts: ["ไม่ได้แต้ม", "หนึ่งแต้ม", "สองแต้ม"], ok: 0, say: "จุดว่างระหว่างเขตของสองฝ่าย ที่ไม่เป็นของใคร เรียกว่า**ดาเมะ** ได้กี่แต้ม", hint: "กติกาญี่ปุ่น ดาเมะไม่นับเป็นแต้มของใคร" }
+        { t: "choice", n: 19, opts: ["ไม่ได้แต้ม", "หนึ่งแต้ม", "สองแต้ม"], ok: 0, say: "จุดว่างระหว่างเขตของสองฝ่าย ที่ไม่เป็นของใคร เรียกว่า**ดาเมะ** ได้กี่แต้ม", hint: "กติกาญี่ปุ่น ดาเมะไม่นับเป็นแต้มของใคร" },
+        kg(296, { t: "info", say: "มาดูเกมจริงกัน อีชางโฮถือดำ ชนะกู่ลี่แค่**ครึ่งแต้ม** อีชางโฮเป็นยอดฝีมือที่เก่งปลายเกมมาก ทุกแต้มตอนท้ายเกมจึงสำคัญ" }),
+        kg(226, { t: "info", zoom: "a6 h14", play: [{ c: 1, at: "a9" }, { c: 2, at: "a8" }], say: "ปิดขอบเขตแบบมืออาชีพ ดำ**ฮาเนะ**ที่เส้นหนึ่ง ดันเข้าไปลดเขตของขาว ขาวต้องกั้นไว้" }),
+        kg(226, { t: "tap", zoom: "a6 h14", b: KG[226].b + " a9", w: KG[226].w + " a8", ans: "a10", say: "หมากดำที่ฮาเนะโดนอาตาริแล้ว ลองต่อให้ปลอดภัย แบบที่อีชางโฮลง", hint: "ต่อขึ้นไปข้างบน ให้ติดกับหมากดำเม็ดอื่น" }),
+        { t: "info", n: 19, say: "ท่า**ฮาเนะแล้วต่อ**แบบนี้ ใช้ปิดขอบเขตบ่อยมาก ดำเสียไปหนึ่งตาเพื่อต่อ แต่ได้พื้นที่เพิ่ม และเขตของดำก็ไม่มีรูรั่ว" },
+        kg(206, { t: "info", zoom: "g1 n7", play: [{ c: 1, at: "j2" }, { c: 2, at: "i2" }], say: "อีชางโฮชอบเล่น**ตาเซนเตะก่อน**แบบนี้ ลดเขตขาวได้ โดยไม่เสียตา แล้วค่อยไปลงที่อื่น" }),
+        kg(296, { t: "info", say: "สุดท้ายทั้งคู่ถมดาเมะจนเต็ม แล้วกดผ่าน นับแต้มได้ดำชนะครึ่งแต้ม ถ้าดำพลาดปิดขอบเขตไม่ดีสักจุดเดียว ก็แพ้ได้เลยนะ" }),
+        { t: "choice", n: 19, opts: ["ปิดขอบเขตให้แน่น เล่นเซนเตะก่อน", "รีบผ่านเมื่อนำอยู่"], ok: 0, say: "จากเกมของอีชางโฮ ปลายเกมที่ดีควรทำยังไง", hint: "แต้มเล็กๆ รวมกันชนะกันได้ ต้องปิดขอบเขตให้ครบ" },
       ] }
     ] },
     { t: "รูปหมากสวย", c: "#f2711c", lessons: [
@@ -617,13 +635,16 @@ const Learn = (function () {
     if (N === 5) s.push(`<circle cx="2" cy="2" r=".1" fill="#5a3a1a"/>`);
     if (it.shade) { const own = b.area(); for (let i = 0; i < N * N; i++) if (own[i]) s.push(`<rect x="${i % N - .18}" y="${((i / N) | 0) - .18}" width=".36" height=".36" rx=".05" fill="${own[i] === 1 ? "#1a1a1a" : "#fbf7ee"}" stroke="#5a3a1a" stroke-width=".02"/>`); }
     if (it.lib && S.state !== "demo") for (const i of b.group(P(it.lib, N)).libs) { const [x, y] = xy(i); s.push(`<circle class="ln-pulse" cx="${x}" cy="${y}" r=".22" fill="none" stroke="#ff9600" stroke-width=".08"/>`); }
-    for (const i of S.ring) { const [x, y] = xy(i); s.push(`<circle class="ln-pulse" cx="${x}" cy="${y}" r=".4" fill="none" stroke="#ff9600" stroke-width=".09"/>`); }
     for (const i of S.found) { const [x, y] = xy(i); s.push(`<circle class="ln-new" cx="${x}" cy="${y}" r=".24" fill="#58cc02"/>`); }
     for (const [i, c] of S.gone) s.push(stoneSVG(i, c, N, "ln-gone"));
     for (let i = 0; i < N * N; i++) if (b.a[i]) s.push(stoneSVG(i, b.a[i], N, i === S.last ? "ln-new" : ""));
+    for (const i of S.ring) { const [x, y] = xy(i); s.push(`<circle class="ln-pulse" cx="${x}" cy="${y}" r=".4" fill="none" stroke="#ff9600" stroke-width=".09"/>`); }
     if (S.last >= 0 && b.a[S.last]) { const [x, y] = xy(S.last); s.push(`<circle cx="${x}" cy="${y}" r=".15" fill="none" stroke="${b.a[S.last] === 1 ? "#f3ead8" : "#2a1a0b"}" stroke-width=".07"/>`); }
     for (const i of S.x) { const [x, y] = xy(i); s.push(`<g stroke="#ff4b4b" stroke-width=".12" stroke-linecap="round"><line x1="${x - .22}" y1="${y - .22}" x2="${x + .22}" y2="${y + .22}"/><line x1="${x + .22}" y1="${y - .22}" x2="${x - .22}" y2="${y + .22}"/></g>`); }
-    const svg = $("lnBoard"); svg.setAttribute("viewBox", `-.7 -.7 ${N + .4} ${N + .4}`); svg.innerHTML = s.join("");
+    // zoom: "a1 k10" shows only that corner-to-corner part of the board (big real-game positions)
+    let vb = `-.7 -.7 ${N + .4} ${N + .4}`;
+    if (it.zoom && S.view === "lesson") { const [p, q] = L(it.zoom, N), x0 = Math.min(p % N, q % N), x1 = Math.max(p % N, q % N), y0 = Math.min((p / N) | 0, (q / N) | 0), y1 = Math.max((p / N) | 0, (q / N) | 0), w = Math.max(x1 - x0, y1 - y0) + 1.4; vb = `${(x0 + x1) / 2 - w / 2} ${(y0 + y1) / 2 - w / 2} ${w} ${w}`; }
+    const svg = $("lnBoard"); svg.setAttribute("viewBox", vb); svg.innerHTML = s.join("");
     svg.classList.toggle("big", N >= 13);
     svg.classList.toggle("locked", !canTap());
   }
