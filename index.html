@@ -6636,7 +6636,8 @@ const Online = (() => {
     // the special characters' own styles; how each plays is set in its search settings
     ancient: { label: "หมากล้อมโบราณ", opts: {} },
     cosmic: { label: "หมากจักรวาล", opts: {} },
-    creative: { label: "สร้างสรรค์", opts: {} }
+    creative: { label: "สร้างสรรค์", opts: {} },
+    mirror: { label: "หมากกระจก", opts: {} }
   };
   // Strength comes from how much the network reads ahead; ranks are estimates, not measured against people.
   const CHARS = [
@@ -6679,6 +6680,10 @@ const Online = (() => {
     { id: "chris", en: "CHRIS", name: "คริส", country: "อังกฤษ", rank: "1 ดั้ง", style: "balance", brain: "human", profile: "rank_1d", search: { visits: 12, local: 3 }, early: { temperature: 0.1, local: 3 },
       bio: "นักหมากล้อมจากอังกฤษ ใจเย็น คิดอย่างมีเหตุผล",
       say: { hello: "Good game ahead. เชิญเลยครับ", ahead: "เป็นไปตามแผน", behind: "Interesting... น่าสนใจมาก", win: "Well played, เกมดีครับ", lose: "Brilliant! คุณเล่นได้ยอดเยี่ยม" } },
+    { id: "kai", en: "KAI", name: "ไค", country: "ไทย", rank: "1 ดั้ง", style: "mirror", opening: "mirror", mirror: true, brain: "human", profile: "rank_1d",
+      search: { visits: 9, local: 3 }, early: { temperature: 0.1, local: 3 },
+      bio: "นักเล่นสายกวน เล่นหมากกระจก ก๊อปปี้ทุกตาที่คุณเดินแบบสะท้อนผ่านจุดกลางกระดาน ถ้าได้เดินดำจะเปิดที่เทนเง็นก่อน จนกว่าจะก๊อปต่อไม่ได้ถึงจะยอมคิดเอง",
+      say: { hello: "เดินเลย เดี๋ยวผมเดินตาม", ahead: "ก็แค่ทำเหมือนคุณ แต่ทำไมผมนำล่ะ", behind: "เอ๊ะ ก๊อปแล้วยังแพ้เหรอ", win: "ขอบคุณที่สอนวิธีชนะคุณให้นะ", lose: "หากระจกแตกได้ เก่งจริง" } },
     { id: "jay", en: "JAY", name: "เจ", country: "ไทย", rank: "2 ดั้ง", style: "attack", brain: "human", profile: "rank_2d", search: { visits: 20, pda: 2, scoreWeight: 0.5, fight: 0.06 },
       early: { visits: 12, local: 3, temperature: 0.1, pda: 0, scoreWeight: 0 },
       bio: "นักหมากล้อมทีมมหาวิทยาลัย เปิดเกมเรียบร้อยตามแบบ แต่พอพ้นช่วงเปิดเกมจะบุกสุดๆ ชอบตัด ชอบสู้ ไล่ฆ่ากันทั้งกระดาน",
@@ -6897,6 +6902,30 @@ const Online = (() => {
       resigned: "ยอมแล้วเหรอ? เพิ่งจะสนุกเอง|ฮ่าๆ หนีไปซะแล้ว",
       timeoutWin: "เวลาหมดซะแล้ว มุกตลกร้ายจริงๆ|นาฬิกาก็เป็นตัวตลกได้นะ",
       giveUp: "โอเค โชว์นี้ล่มแล้ว ผมยอม|ยอมก็ได้ แต่ผมจะกลับมาพร้อมมุกใหม่"
+    },
+    kai: {
+      hello: "เดินเลย เดี๋ยวผมเดินตาม|กระจกพร้อมแล้ว คุณเดินตรงไหนผมก็เดินตรงนั้น|ลองหาทางทำให้ผมก๊อปไม่ได้ดูสิ",
+      goodMove: "ตาดีนะ ดีจนผมอยากก๊อปเลย|อ้าว ตานี้ก๊อปตามแล้วไม่สวยแฮะ|เก่งนี่ กระจกเริ่มร้าวแล้ว",
+      badMove: "ตานี้ผมไม่อยากก๊อปเลยแฮะ|ขอบคุณ ผมจะไม่ทำตามตานี้นะ|เดินแบบนี้ เงาในกระจกยังอาย",
+      caught: "โดนกินไป {n} เม็ด กระจกแตกซะแล้ว|อ้าว เงาของผมหายไป|โอเค ตรงนี้ก๊อปไม่ได้จริงๆ",
+      capture: "ได้ {n} เม็ด เงาสะท้อนก็กัดได้นะ|กินแล้วครับ|เห็นไหม ก๊อปไปก๊อปมาก็ได้กิน",
+      ahead: "ก็แค่ทำเหมือนคุณ แต่ทำไมผมนำล่ะ|ภาพสะท้อนชนะต้นฉบับซะแล้ว|ซ้ายเป็นขวา ขวาเป็นซ้าย สบายๆ",
+      behind: "เอ๊ะ ก๊อปแล้วยังแพ้เหรอ|ต้องคิดเองแล้วสินะ|กระจกเริ่มมัวแล้ว",
+      comeback: "เงาตามทันแล้ว|ก๊อปจนแซงได้ ฮ่าๆ",
+      humanPass: "ผ่าน? งั้นผมก๊อปไม่ได้แล้วสิ|ผ่านเหรอ เดี๋ยวผมคิดเองบ้าง",
+      aiPass: "ไม่มีอะไรให้ก๊อปแล้ว ผ่าน|ผ่านครับ",
+      ko: "โคเหรอ ตรงนี้ก๊อปไม่ได้แน่|กติกาห้ามก๊อปตรงนี้ เสียดาย",
+      hint: "ดูคำแนะนำเหรอ ผมก็ก๊อปคำแนะนำนั้นด้วยนะ|ดูไปเถอะ ยังไงผมก็เดินตาม",
+      slow: "คิดนานจัง ผมรอก๊อปอยู่นะ|ไม่ต้องรีบ กระจกไม่หนีไปไหน",
+      byoyomi: "เบียวโยมิแล้วนะ เร็วๆ ผมรอก๊อป|เหลือ 30 วิ!",
+      lastPeriod: "ครั้งสุดท้ายแล้ว ระวังนะ|อย่าหมดเวลาล่ะ ผมยังก๊อปไม่เสร็จ",
+      aiByo: "ต้องรีบแล้ว ก๊อปเร็วๆ|เวลาผมเหลือน้อย",
+      mid: "ลองหาจุดที่ผมก๊อปไม่ได้สิ เทนเง็นไง|หมากกระจกมันกวนดีนะ ผมชอบ|ทุกตาที่คุณเดิน คุณกำลังสอนผมอยู่",
+      win: "ขอบคุณที่สอนวิธีชนะคุณให้นะ|กระจกไม่เคยโกหก",
+      lose: "หากระจกแตกได้ เก่งจริง|ยอมรับ ต้นฉบับเก่งกว่าเงา|คราวหน้าผมจะก๊อปให้เนียนกว่านี้",
+      resigned: "ยอมแล้วเหรอ ยังก๊อปไม่ทันมันเลย|ขอบคุณที่เล่นด้วย",
+      timeoutWin: "หมดเวลา อันนี้ผมก๊อปไม่ได้นะ|เสียดาย เวลาก็สำคัญ",
+      giveUp: "กระจกแตกหมดแล้ว ผมยอม|ยอมครับ ก๊อปต่อไม่ไหวแล้ว"
     },
     jay: {
       hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ|สวัสดีครับ วันนี้ขอสู้เต็มที่นะ|ซ้อมกับทีมมหา'ลัยมาทั้งอาทิตย์ มาลองกัน",
@@ -7500,7 +7529,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "5064936f3c";
+  const BUILD = "f7567fb061";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -7809,6 +7838,11 @@ const Online = (() => {
       return near.length ? near[(Math.random() * near.length) | 0] : null;
     }
     if (ch.opening === "raid") return raidMove();
+    // mirror Go: as black, take tengen first so every later move can be copied through it
+    if (ch.opening === "mirror") {
+      const c = (n - 1) / 2, t = board.pt(c, c);
+      return ai === BLACK && !handi && history.length === 0 && ok(t) ? t : null;
+    }
     if (ch.opening === "sanrensei") return sanrensei();
     if (ch.opening === "33" || ch.opening === "corners") {
       // a corner counts as free while its 6x6 area is empty; "corners" picks 4-4, 3-4 or 3-3 there
@@ -8123,6 +8157,21 @@ const Online = (() => {
   // "early" settings cover the opening (about 40 moves on 19x19): the network's first instinct there is standard joseki
   // "late" settings take over from late.from of the board's points played (Lee Changho's endgame)
   const searchFor = ch => ch.levels ? FON_LV[fonLv].search : ch.early && history.length < Math.round(n * n / 9) ? ch.early : ch.late && history.length >= Math.round(n * n * ch.late.from) ? ch.late : ch.search;
+  // Kai copies the player's last move through the centre of the board (mirror Go) while the copy is legal, the player has
+  // not just passed, none of his groups is in atari and the copy costs at most MIRROR_COST win rate against the move his
+  // reading chose; otherwise he plays that move
+  const MIRROR_COST = 0.1;
+  async function mirrorMove(best) {
+    const last = history[history.length - 1];
+    if (last === undefined || last === PASS || handi) return null;
+    const [x, y] = board.xy(last), p = board.pt(n - 1 - x, n - 1 - y);
+    if (p === best) return p;
+    if (board.color[p] !== EMPTY || !board.isLegal(p, ai)) return null;
+    for (const q of board.pts) if (board.color[q] === ai && board.libs(board.head[q], 2) === 1) return null;
+    const [eb, em] = await AI.evalMany(n, [history.concat([best]), history.concat([p])], KOMI);
+    const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the player's side
+    return mine(em) >= mine(eb) - MIRROR_COST ? p : null;
+  }
   async function maybeAI() {
     matchTurn();
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
@@ -8166,6 +8215,11 @@ const Online = (() => {
       flash("สมอง AI ทำงานผิดพลาด กรุณารีเฟรชหน้าเว็บ"); render(); return;
     }
     if (my !== gen) return;
+    if (CHARS[gameChar].mirror && !exam) {
+      const m = await mirrorMove(res.move);
+      if (my !== gen) return;
+      if (m !== null && m !== res.move) res = Object.assign({}, res, { move: m });
+    }
     if (history.length >= 100) {
       const { move: open, ev } = await openBorderMove();
       if (my !== gen) return;
