@@ -2870,7 +2870,7 @@ const Learn = (function () {
       ] },
       { id: "u6b", t: "บันได", icon: "⚟", items: [
         { t: "info", n: 7, b: "b3 c2 e3", w: "c3", play: [{ c: 1, at: "c4" }, { c: 2, at: "d3" }, { c: 1, at: "d4" }, { c: 2, at: "d2" }, { c: 1, at: "e2" }, { c: 2, at: "d1" }, { c: 1, at: "c1" }, { c: 2, at: "e1" }, { c: 1, at: "f1" }], say: "ถ้าเราอาตาริซิกแซกไปเรื่อยๆ หมากขาวจะหนีไปชนขอบกระดาน แล้วโดนกินทั้งกลุ่ม ท่านี้เรียกว่า**บันได** หรือ**ชิโจ** ดูนะ" },
-        { t: "seq", n: 7, b: "b3 c2 e3", w: "c3", steps: [{ ans: "c4", reply: "d3" }, { ans: "d4", reply: "d2" }, { ans: "e2", reply: "d1" }, { ans: "c1", reply: "e1" }, { cap: 5 }], say: "ลองไล่บันไดเองบ้าง อาตาริให้ถูกด้านนะ", hint: "อาตาริจากด้านที่บังคับให้ขาวหนีลงไปหาขอบกระดาน" },
+        { t: "ladder", n: 7, b: "b3 c2 e3", w: "c3", of: "c3", ans: "c4", say: "ลองไล่บันไดเองบ้าง อาตาริให้ถูกด้านนะ", hint: "อาตาริจากด้านที่บังคับให้ขาวหนีลงไปหาขอบกระดาน" },
         { t: "info", n: 7, b: "b3 c2 e3", w: "c3 d2", say: "แต่ถ้ามีหมากขาวรออยู่บนทางหนี ขาวจะต่อกันแล้วหนีรอด บันไดก็ใช้ไม่ได้ ต้องดูทางก่อนไล่นะ" },
         { t: "choice", n: 7, b: "b3 c2 e3", w: "c3 d2", opts: ["ไม่ควร ขาวหนีรอดแน่", "ควรไล่เลย"], ok: 0, say: "ทางหนีมีหมากขาวขวางอยู่ ควรไล่บันไดไหม", hint: "หมากขาวที่ขวางทาง จะช่วยให้ขาวหนีรอด" }
       ] },
@@ -3174,7 +3174,7 @@ const Learn = (function () {
   const MOOD = { yes: ["happy", "cheer", "laugh", "yay", "excite"], oops: ["nervous", "cringe", "shy", "ask"], side: ["read", "sitcross", "run1", "book", "wave", "sleep"] };
   const plain = s => (s || "").replace(/\*\*/g, "");
   const rich = s => (s || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
-  const TITLE = { info: "เรื่องใหม่", any: "วางหมาก", tap: "วางหมาก", capture: "กินหมาก", escape: "หนีให้รอด", atari: "ขู่กิน", libs: "หาลมหายใจ", stone: "เลือกหมาก", illegal: "จุดห้ามลง", choice: "ตอบคำถาม" };
+  const TITLE = { info: "เรื่องใหม่", any: "วางหมาก", tap: "วางหมาก", capture: "กินหมาก", escape: "หนีให้รอด", atari: "ขู่กิน", libs: "หาลมหายใจ", ladder: "ไล่บันได", seq: "ลองเดินเอง", stone: "เลือกหมาก", illegal: "จุดห้ามลง", choice: "ตอบคำถาม" };
   const PRAISE = ["เก่งมาก", "ถูกต้องครับ", "สุดยอดเลย", "เยี่ยมไปเลย", "ใช่แล้ว เก่งจริงๆ"];
   const OOPS = ["ไม่เป็นไรนะ ลองใหม่อีกที", "เกือบแล้ว ลองอีกครั้งนะ", "ยังไม่ใช่ ค่อยๆ ดูนะ"];
   const LINES = {
@@ -3546,6 +3546,18 @@ const Learn = (function () {
         S.lock = false; drawBoard();
       }, 750);
     }
+    if (it.t === "ladder") { // any atari that still catches the stones counts, not just the textbook path
+      const tgt = P(it.of, N), t = b.clone(), r = t.play(1, i);
+      if (!r.ok || !(r.cap.includes(tgt) || (b.group(tgt).libs.size >= 2 && t.group(i).libs.size >= 2 && t.group(tgt).libs.size === 1 && whiteFails(t, tgt, 0)))) return wrongAt(i);
+      const pr = place(); drawBoard();
+      if (!b.a[tgt]) return later(right, 600);
+      S.lock = true;
+      return later(() => {
+        const j = runFrom(b, tgt), r2 = b.play(2, j);
+        if (r2.ok) { S.last = j; S.gone = r2.cap.map(s => [s, 1]); SFX.stone(); }
+        S.lock = false; drawBoard();
+      }, 750);
+    }
     if (["capture", "escape", "atari"].includes(it.t)) {
       const t = b.clone(), r = t.play(1, i);
       if (!r.ok) return wrongAt(i);
@@ -3557,6 +3569,27 @@ const Learn = (function () {
       return later(() => wrong(), 450);
     }
   }
+  // ladder reading: black (to move) captures the white group at tgt whatever white does
+  const ladderMemo = new Map();
+  function blackWins(b, tgt, d) {
+    const libs = [...b.group(tgt).libs];
+    if (libs.length === 1) return true;
+    if (libs.length >= 3 || d > 14) return false;
+    const key = b.a.join("") + tgt; if (ladderMemo.has(key)) return ladderMemo.get(key);
+    if (ladderMemo.size > 20000) ladderMemo.clear();
+    const res = blackWins2(b, tgt, d, libs); ladderMemo.set(key, res); return res;
+  }
+  function blackWins2(b, tgt, d, libs) {
+    return libs.some(l => { const t = b.clone(), r = t.play(1, l); return r.ok && (!t.a[tgt] || (t.group(l).libs.size >= 1 && t.group(tgt).libs.size === 1 && whiteFails(t, tgt, d + 1))); });
+  }
+  // white to move with its group in atari: extending, or capturing a black stone next to it, all still lose
+  function whiteMoves(b, tgt) {
+    const g = b.group(tgt), out = new Set(g.libs);
+    for (const s of g.stones) for (const k of nbs(s, b.N)) if (b.a[k] === 1) { const h = b.group(k); if (h.libs.size === 1) out.add([...h.libs][0]); }
+    return [...out];
+  }
+  function whiteFails(b, tgt, d) { return whiteMoves(b, tgt).every(j => { const t = b.clone(), r = t.play(2, j); return !r.ok || blackWins(t, tgt, d + 1); }); }
+  function runFrom(b, tgt) { return [...b.group(tgt).libs][0]; } // white runs along its last liberty
   // mirror image across the diagonal through the top-right corner (n17 <-> q14), so a joseki may start on either side
   function flip(i, N) { const x = i % N, y = (i / N) | 0; return (N - 1 - x) * N + (N - 1 - y); }
   function wrongAt(i) { S.miss_at = i; later(() => wrong(), 120); }
@@ -3930,7 +3963,7 @@ const Learn = (function () {
   };
   api.started = () => Object.keys(loadP().stars).length > 0;
   if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) { window.__lnItem = () => S.it; window.__lnGame = () => { const G = S.game, p = G && G.p; if (!p) return null; let sol = -1; if (p.check) for (let i = 0; i < p.b.a.length; i++) if (!p.b.a[i] && p.check(i)) { sol = i; break; } return { mode: p.mode, n: p.b.N, num: p.n, sol, on: G.on, over: G.over, score: G.score, left: G.left }; }; window.__lnS = () => ({ view: S.view, trap: S.trap && { state: S.trap.state, at: S.trap.at, round: S.trap.round, score: S.trap.score, a: [...S.b.a] }, match: S.match && S.match.cards.map(c => c.k), tf: S.tf && S.tf.q }); }
-  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey, GAMES, puzzle, QUIZ, SHAPES };
+  api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey, GAMES, puzzle, QUIZ, SHAPES, whiteFails, blackWins };
   return api;
 })();
 if (typeof module !== "undefined") module.exports = Learn;
@@ -6442,7 +6475,7 @@ const Coach = (function () {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "0385043f1c";
+  const BUILD = "feec1ec59a";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
