@@ -318,7 +318,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
 .mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
 .mn-title i { font-style: normal; } .mn-title .w { display: none; }
-.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(6, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(10, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
 #menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
   border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
 #menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
@@ -339,7 +339,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
 /* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
 @media (min-aspect-ratio: 5/4) {
-  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, minmax(0, 1fr)); }
   #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
   .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
   .mn-title .n { display: none; } .mn-title .w { display: inline; }
@@ -414,6 +414,20 @@ body.menuing { padding: 0; background: #0e272d; }
 .pf-h { font-family: var(--f-px); font-size: 13px; letter-spacing: .08em; color: var(--accent); margin: 18px 0 8px; }
 .pf-rank { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pf-rank .exam-rank { font-size: 24px; }
+.pf-rate { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; }
+.pf-rate-top { display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; }
+.pf-rate-top .exam-rank { font-size: 24px; } .pf-rate-r { font-family: var(--f-px); color: var(--accent); font-variant-numeric: tabular-nums; }
+.pf-rate-top .note { flex-basis: 100%; }
+.pf-graph { position: relative; margin-top: 10px; min-width: 0; touch-action: pan-y; }
+.pf-graph svg { display: block; max-width: 100%; overflow: visible; }
+.pf-graph text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.pf-graph .gl { stroke: var(--line); stroke-width: 1; }
+.pf-graph .ln { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.pf-graph .dot, .pf-graph .hvd { fill: var(--accent); stroke: var(--bg-2); stroke-width: 2; }
+.pf-graph .hv { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.pf-tip { position: absolute; pointer-events: none; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line), 0 4px 12px rgba(0,0,0,.35); padding: 6px 9px; font-size: 13px; line-height: 1.4; white-space: nowrap; }
+.pf-tip small { color: var(--muted); }
+.pf-dr { font-variant-numeric: tabular-nums; } .pf-dr.up { color: var(--ok); } .pf-dr.dn { color: var(--warn); }
 .pf-rows { display: grid; gap: 6px; }
 .pf-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
 .pf-row img { width: 40px; height: 40px; display: block; border: 2px solid var(--wood); }
@@ -592,6 +606,109 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .sure-card p { margin: 0 0 14px; font-size: 16px; color: var(--fg); text-align: center; }
 .sure-card p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 4px; font-size: 18px; }
 .sure .actions { padding: 0; }
+/* player accounts (src/account.js): card on the Profile page and the sign-in dialog */
+.acct-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.acct-box .t { min-width: 0; flex: 1 1 200px; } .acct-box .t b { display: block; font-weight: 700; color: var(--accent); }
+.acct-box .t span { display: block; font-size: 13px; color: var(--muted); }
+.acct-box .bad, .acct-msg.bad { color: #ff9b8a; }
+.acct-card { position: relative; text-align: left; }
+.acct-x { position: absolute; top: 6px; right: 6px; min-height: 32px; min-width: 32px; padding: 0; background: none; border: 0; font-size: 18px; color: var(--muted); }
+.acct-tabs { margin-bottom: 12px; } .acct-tabs button { font-size: 14px; }
+.acct-card form { display: grid; gap: 10px; }
+.acct-card form .actions button { width: 100%; }
+.acct-card .acct-msg strong { color: var(--accent); }
+.acct-card label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+.acct-card label[hidden] { display: none; }
+.acct-card input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+.acct-card input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.acct-msg { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--muted); text-align: left !important; }
+.acct-msg.ok { color: var(--fg); }
+/* account avatar, world chat, leaderboard, avatar picker (src/social.js) */
+.acct-av { position: relative; padding: 0; min-height: 0; border: 2px solid var(--wood); border-radius: 0; background: none; width: 56px; height: 56px; flex: none; overflow: hidden; }
+.acct-av img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.acct-av i { position: absolute; left: 0; right: 0; bottom: 0; font-style: normal; font-size: 10px; background: rgba(0, 0, 0, .65); color: var(--fg); text-align: center; }
+.chat { display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; }
+.chat[hidden] { display: none; }
+.ch-state { font-size: 13px; font-weight: 400; color: #7fd48a; margin-left: 6px; }
+.ch-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 8px; }
+.ch-empty { color: var(--muted); text-align: center; margin: 30px 0; }
+.ch-msg { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 8px; align-items: start; }
+.ch-msg img { width: 36px; height: 36px; border: 2px solid var(--wood); display: block; }
+.ch-b { background: var(--surface); padding: 6px 10px; border-radius: 0 10px 10px 10px; min-width: 0; }
+.ch-msg.me .ch-b { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent); }
+.ch-who { font-size: 13px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.ch-who b { color: var(--accent); }
+.ch-rank, .lb-rank { font-size: 12px; padding: 0 6px; border-radius: 6px; background: var(--accent); color: var(--accent-fg); font-weight: 600; white-space: nowrap; }
+.ch-rank.no, .lb-rank.no { background: var(--bg-2); color: var(--muted); font-weight: 400; }
+.ch-who time { margin-left: auto; font-size: 11px; color: var(--muted); }
+.ch-t { overflow-wrap: anywhere; white-space: pre-wrap; }
+.ch-err { min-height: 1.2em; margin: 2px 0; font-size: 13px; color: #ff9b8a; }
+.ch-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.ch-form[hidden], .ch-login[hidden] { display: none; }
+.ch-form input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-width: 0; }
+.ch-login { display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--surface); padding: 10px 12px; margin-bottom: 8px; }
+.lb-me { display: flex; gap: 10px; align-items: center; justify-content: flex-start; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.lb-me b { color: var(--accent); font-size: 18px; }
+.lb-list { display: grid; gap: 4px; }
+.lb-row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
+.lb-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.lb-pos { font-family: var(--f-px); font-weight: 700; font-size: 18px; text-align: center; color: var(--muted); }
+.lb-row.top1 .lb-pos { color: #f5c542; } .lb-row.top2 .lb-pos { color: #d9dde0; } .lb-row.top3 .lb-pos { color: #d08a4c; }
+.lb-row img { width: 40px; height: 40px; border: 2px solid var(--wood); display: block; }
+.lb-name { min-width: 0; } .lb-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-name small { font-size: 12px; color: var(--muted); }
+.av-card { width: min(520px, 100%); max-width: 100%; max-height: 88dvh; overflow-y: auto; }
+.av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-bottom: 8px; min-width: 0; }
+.av-pick { display: grid; gap: 4px; justify-items: center; padding: 6px 2px; min-height: 0; min-width: 0; width: 100%; box-sizing: border-box; overflow: hidden; background: var(--bg-2); border: 2px solid transparent; border-radius: 8px; font-size: 12px; }
+.av-pick img { width: 52px; height: 52px; display: block; border: 2px solid var(--wood); }
+.av-pick span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.av-pick.on { border-color: var(--accent); background: var(--surface-2); }
+.av-pick.lock { opacity: .45; } .av-pick.lock img { filter: grayscale(1); }
+.mn-who img.face { border: 3px solid var(--wood); box-sizing: border-box; border-radius: 0; }
+/* PLAY ONLINE / WATCH (src/online.js) */
+.ol-new { width: 100%; margin: 4px 0 4px; }
+.ol-list { display: grid; gap: 6px; }
+.ol-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who btn" "meta btn"; gap: 4px 10px; align-items: center; background: var(--surface); padding: 8px 10px; }
+.ol-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.ol-row > button { grid-area: btn; }
+.ol-who { grid-area: who; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.ol-p { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ol-p img { width: 30px; height: 30px; border: 2px solid var(--wood); }
+.ol-p b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.ol-vs { color: var(--muted); font-size: 12px; }
+.ol-meta { grid-area: meta; font-size: 13px; color: var(--muted); }
+.ol-tag { font-size: 11px; padding: 0 6px; border-radius: 6px; background: #3f7d5a; color: #fff; }
+.ol-tag.ai { background: #4a6a8a; } .ol-tag.exam { background: #8a5a2a; }
+.og { display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; padding: 10px 12px; gap: 8px; }
+.og[hidden] { display: none; }
+.og .an-head { margin: 0; }
+.og-wrap { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; }
+@media (min-aspect-ratio: 9/8) { .og-wrap { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) clamp(260px, 30vw, 360px); } }
+.og-cell { min-height: 0; min-width: 0; display: grid; place-items: center; overflow: hidden; padding: 6px; }
+.og-cell canvas { display: block; box-shadow: 0 0 0 6px #5a331a; border-radius: 4px; touch-action: manipulation; }
+.og-side { display: flex; flex-direction: column; gap: 8px; }
+.og-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.og-p { display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-rows: auto auto; gap: 2px 8px; align-items: center; background: var(--surface); padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.og-p.turn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.og-p img { grid-row: span 2; width: 36px; height: 36px; border: 2px solid var(--wood); }
+.og-n { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 13px; }
+.og-c2 { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
+.on-card .actions button { width: 100%; }
+.og-n b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og-n .st { width: 12px; height: 12px; border-radius: 50%; flex: none; } .og-n .st.b { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); } .og-n .st.w { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
+.og-act { padding: 0; }
+.on-card { width: min(460px, 100%); max-height: 90dvh; overflow-y: auto; }
+.on-f { display: grid; gap: 4px; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
+.on-f[hidden] { display: none; }
+.seg-wrap { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
+.seg-wrap button { border-bottom: 1px solid var(--line); }
+.acct-wel p { margin-bottom: 10px; } .acct-wel .acct-msg { margin-top: 12px; line-height: 1.5; }
+.acct-why { margin: 0 0 14px; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.acct-wel-btns { display: grid; gap: 8px; } .acct-wel-btns button { width: 100%; }
+.acct-wel-btns .acct-guest { background: none; border: 1px dashed var(--line); color: var(--fg); }
+.acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
 .end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
@@ -705,7 +822,22 @@ body.learning { overflow: hidden; }
 .ln-bigstars img.off { filter: grayscale(1); opacity: .3; }
 .ln-bigstars img.on { animation: ln-starin .5s var(--d) both cubic-bezier(.3, 1.6, .5, 1); }
 .ln-fire { color: #afafaf; } .ln-fire.on { color: #ff9600; }
-.ln-xp { color: #ffc800; }
+.ln-xp { color: #ffc800; font: inherit; font-weight: 600; background: #fff8e0; border: 2px solid #ffe08a; border-radius: 12px; padding: 2px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.ln-shop { max-width: 640px; margin: 0 auto; padding: 14px 16px 40px; }
+.ln-shopback { margin-bottom: 14px; }
+.ln-shophead { display: flex; align-items: center; gap: 14px; padding: 16px; border: 2px solid #ffe08a; background: #fffbea; border-radius: 18px; }
+.ln-shophead img { width: 56px; height: 56px; }
+.ln-shophead div { display: flex; flex-direction: column; }
+.ln-shophead b { font-size: 28px; color: #e6a800; line-height: 1.2; }
+.ln-shophead small { color: var(--ln-sub); }
+.ln-shop h2 { font-size: 22px; margin: 22px 0 12px; }
+.ln-shopempty { text-align: center; padding: 22px 16px; border: 2px dashed var(--ln-line); border-radius: 18px; color: var(--ln-sub); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ln-shopempty img { width: 120px; height: auto; }
+.ln-shopempty b { color: var(--ln-ink); font-size: 18px; }
+.ln-shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.ln-item { border: 2px solid var(--ln-line); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ln-item img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; }
+.ln-item .own { color: var(--ln-green-d); font-weight: 600; }
 .ln-voice { border: 2px solid var(--ln-line); background: #fff; border-radius: 12px; padding: 3px 8px; font-size: 16px; }
 .ln-prog { flex: 1; height: 16px; border-radius: 99px; background: var(--ln-line); overflow: hidden; }
 .ln-prog i { display: block; height: 100%; border-radius: 99px; background: var(--ln-green); box-shadow: inset 0 4px 0 -1px rgba(255,255,255,.35); transition: width .4s ease; min-width: 16px; }
@@ -865,7 +997,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   <div class="mn-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <header class="mn-bar">
     <h1 class="mn-name">BADUK BATTLE</h1>
-    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="learn">LEARN</button></nav>
+    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="learn">LEARN</button><button data-mn="online">ONLINE</button><button data-mn="watch">WATCH</button><button data-mn="ranking">RANKING</button><button data-mn="chat">CHAT</button></nav>
     <div class="mn-tools">
       <button class="mn-tool" data-mn="profile" aria-label="โปรไฟล์"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 0h4v1h1v4h-1v1h-4v-1h-1v-4h1zM1 7h8v1h1v2h-10v-2h1z"/></svg></button>
       <button class="mn-tool" id="mnGear" aria-label="ตั้งค่า" aria-expanded="false"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v1h1v-1h1v1h1v1h-1v1h1v1h1v2h-1v1h-1v1h1v1h-1v1h-1v-1h-1v1h-2v-1h-1v1h-1v-1h-1v-1h1v-1h-1v-1h-1v-2h1v-1h1v-1h-1v-1h1v-1h1v1h1zM4 4v2h2v-2z"/></svg></button>
@@ -874,7 +1006,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   </header>
   <div class="mn-main">
     <aside class="mn-side" aria-label="ผู้เล่น">
-      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b>GUEST</b><span id="mnWhoSub">-</span></div></div>
+      <div class="mn-who"><img id="mnWhoImg" src="menu/guest.png" alt="" width="78" height="79"><div><b id="mnWhoName">GUEST</b><span id="mnWhoSub">-</span></div></div>
       <div class="mn-stats">
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 0h6v1h2v3h-1v1h-2v1h-1v2h2v2h-6v-2h2v-2h-1v-1h-2v-1h-1v-3h2zM1 2v1h1v-1zM8 2v1h1v-1z"/></svg><small>RANK</small><b id="mnRank">-</b></div>
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v3h4v1h-1v1h-1v1h1v4h-1v-1h-2v-1h-2v1h-2v1h-1v-4h1v-1h-1v-1h-1v-1h4z"/></svg><small>WIN</small><b id="mnWin">-</b></div>
@@ -909,6 +1041,76 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   </div>
   <div id="pfBody"></div>
 </section>
+
+<section class="prof chat" id="chat" hidden>
+  <div class="an-head">
+    <button class="an-back" id="chBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · WORLD CHAT</div><h1>แชทโลก <small id="chState" class="ch-state"></small></h1></div>
+  </div>
+  <div class="ch-list" id="chList" aria-live="polite"></div>
+  <p class="ch-err" id="chErr" aria-live="assertive"></p>
+  <form class="ch-form" id="chForm" hidden><input id="chText" maxlength="200" placeholder="พิมพ์ข้อความ…" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">ส่ง</button></form>
+  <div class="ch-login" id="chLogin" hidden><span>ล็อกอินก่อนถึงจะพิมพ์คุยได้</span><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>
+</section>
+
+<section class="prof" id="onl" hidden>
+  <div class="an-head">
+    <button class="an-back" id="onlBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · PLAY ONLINE</div><h1>เล่นกับคนจริง</h1></div>
+  </div>
+  <div id="onlBody"></div>
+</section>
+
+<section class="prof" id="wat" hidden>
+  <div class="an-head">
+    <button class="an-back" id="watBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · WATCH</div><h1>ดูเกมสด</h1></div>
+  </div>
+  <div id="watBody"></div>
+</section>
+
+<section class="og" id="og" hidden>
+  <div class="an-head">
+    <button class="an-back" id="ogBack">← กลับ</button>
+    <div><div class="px" id="ogTitle">PLAY ONLINE</div></div>
+  </div>
+  <div class="og-wrap">
+    <div class="og-cell"><canvas id="ogCv" aria-label="กระดาน"></canvas></div>
+    <div class="og-side">
+      <div class="og-bars"><div class="og-p" id="ogB"></div><div class="og-p" id="ogW"></div></div>
+      <p class="og-status" id="ogStatus" aria-live="polite"></p>
+      <div class="actions two og-act"><button id="ogPass" hidden>ผ่าน</button><button id="ogResign" hidden>ยอมแพ้</button></div>
+      <button class="pf-an" id="ogClose" hidden>ปิดห้องนี้</button>
+    </div>
+  </div>
+</section>
+
+<div class="sure" id="onNew" hidden><div class="sure-card acct-card on-card" role="dialog" aria-labelledby="onT">
+  <button class="acct-x" id="onX" aria-label="ปิด">✕</button>
+  <p id="onT"><b>NEW ROOM</b>สร้างห้อง</p>
+  <div class="on-f"><span>กระดาน</span><div class="seg" data-k="size"><button data-v="9">9×9</button><button data-v="13">13×13</button><button data-v="19">19×19</button></div></div>
+  <div class="on-f"><span>เวลาหลัก (ต่อคน)</span><div class="seg seg-wrap" data-k="main"><button data-v="0">ไม่มี</button><button data-v="60">1 น.</button><button data-v="300">5 น.</button><button data-v="600">10 น.</button><button data-v="1200">20 น.</button><button data-v="1800">30 น.</button><button data-v="3600">60 น.</button></div></div>
+  <div class="on-f"><span>เบียวโยมิ (วินาทีต่อตา)</span><div class="seg" data-k="byo"><button data-v="0">ไม่มี</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="60">60</button></div></div>
+  <div class="on-f" id="onPerRow"><span>จำนวนครั้งเบียวโยมิ</span><div class="seg" data-k="per"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
+  <div class="on-f"><span>เจ้าของห้องถือ</span><div class="seg" data-k="pick"><button data-v="b">ดำ</button><button data-v="w">ขาว</button><button data-v="r">สุ่ม</button></div></div>
+  <p class="acct-msg" id="onErr"></p>
+  <div class="actions"><button class="primary" id="onGo" style="width:100%">สร้างห้อง</button></div>
+</div></div>
+
+<section class="prof" id="lb" hidden>
+  <div class="an-head">
+    <button class="an-back" id="lbBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · LEADERBOARD</div><h1>อันดับผู้เล่น</h1></div>
+  </div>
+  <div id="lbBody"></div>
+</section>
+
+<div class="sure" id="avDlg" hidden><div class="sure-card acct-card av-card" role="dialog" aria-labelledby="avT">
+  <button class="acct-x" id="avX" aria-label="ปิด">✕</button>
+  <p id="avT"><b>PROFILE PICTURE</b>เลือกรูปโปรไฟล์</p>
+  <div class="av-grid" id="avGrid"></div>
+  <p class="acct-msg" id="avNote"></p>
+</div></div>
 
 <section class="home" id="home" hidden>
   <div class="hm-top"><button class="hm-back" id="hmBack">← กลับ</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>
@@ -3266,7 +3468,7 @@ const Learn = (function () {
   // ---------- saved progress ----------
   const KEY = "gonn.learn";
   function loadP() { try { const p = JSON.parse(localStorage.getItem(KEY) || "null"); if (p && p.stars) return p; } catch (e) {} return { stars: {}, xp: 0, streak: 0, day: "" }; }
-  function saveP() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
+  function saveP() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} try { if (window.Account) Account.push(); } catch (e) {} } // synced with the player's account (src/account.js key "learn")
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   const yesterday = () => { const d = new Date(Date.now() - 864e5); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   let prog = { stars: {}, xp: 0, streak: 0, day: "" };
@@ -3275,6 +3477,24 @@ const Learn = (function () {
     prog.stars[id] = Math.max(prog.stars[id] || 0, stars); prog.xp += xp;
     const t = today(); if (prog.day !== t) { prog.streak = prog.day === yesterday() ? prog.streak + 1 : 1; prog.day = t; }
     saveP();
+  }
+  // ---------- XP shop: XP earned in lessons buys things (items come later; owner 2026-11-11) ----------
+  // an item: { id, t: name, img, cost, kind: "avatar" | ... }; bought ids are kept in prog.owned, XP spent in prog.spent
+  const SHOP = [];
+  const xpLeft = () => Math.max(0, (prog.xp || 0) - (prog.spent || 0));
+  const owns = id => (prog.owned || []).includes(id);
+  function buy(id) {
+    const it = SHOP.find(x => x.id === id); if (!it || owns(id) || xpLeft() < it.cost) return SFX.bad && SFX.bad();
+    prog.spent = (prog.spent || 0) + it.cost; prog.owned = (prog.owned || []).concat(id); saveP(); SFX.tap(); renderShop();
+  }
+  function renderShop() {
+    S.view = "shop"; clearT(); stopVoice();
+    let h = head() + `<div class="ln-shop"><button class="ln-btn ln-shopback" data-act="path">← กลับไปบทเรียน</button>
+      <div class="ln-shophead"><img src="learn/icon_star.png" alt=""><div><small>XP ที่ใช้ได้</small><b>${xpLeft()} XP</b><small>สะสมทั้งหมด ${prog.xp || 0} XP</small></div></div>
+      <h2>ร้านค้า</h2>`;
+    if (!SHOP.length) h += `<div class="ln-shopempty"><img src="${TEACH.pose("read")}" alt=""><b>ยังไม่มีของในร้าน</b><span>เก็บ XP จากการทำบทเรียนไว้ก่อนนะ เร็วๆ นี้จะมีของให้แลก เช่น รูปโปรไฟล์</span></div>`;
+    else h += `<div class="ln-shopgrid">${SHOP.map(it => `<div class="ln-item"><img src="${it.img}" alt=""><b>${it.t}</b>${owns(it.id) ? `<span class="own">มีแล้ว</span>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`).join("")}</div>`;
+    $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, 0);
   }
   const unlocked = k => !!ALL[k]; // every lesson is open: players may jump to any topic (owner, 2026-11-08)
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
@@ -3380,7 +3600,7 @@ const Learn = (function () {
 
   function head() {
     return `<div class="ln-top"><button class="ln-x" data-act="home" aria-label="กลับ">← กลับ</button>
-      <div class="ln-stat"><span class="ln-fire${liveStreak() ? " on" : ""}" title="เรียนต่อเนื่อง">🔥 ${liveStreak()}</span><span class="ln-xp" title="คะแนนประสบการณ์"><img class="ln-ic " src="learn/icon_star.png" alt=""> ${prog.xp} XP</span>
+      <div class="ln-stat"><span class="ln-fire${liveStreak() ? " on" : ""}" title="เรียนต่อเนื่อง">🔥 ${liveStreak()}</span><button class="ln-xp" data-act="shop" title="XP ที่ใช้ได้ กดเพื่อเปิดร้านค้า"><img class="ln-ic " src="learn/icon_star.png" alt=""> ${xpLeft()} XP</button>
       <button class="ln-voice" data-act="voice" aria-label="เสียงพูด"><img class="ln-ic${voiceOn ? "" : " off"}" src="learn/icon_voice.png" alt=""></button></div></div>`;
   }
   function renderPath() {
@@ -3402,9 +3622,7 @@ const Learn = (function () {
       });
       h += `</div>`;
     });
-    const all = cur >= ALL.length;
-    h += `<div class="ln-grad${all ? " on" : ""}"><div class="ln-trophy">🏆</div><b>${all ? "เรียนจบแล้ว!" : "เรียนจบทุกบท ปลดล็อกเกมจริง"}</b>
-      <div class="ln-row"><button class="ln-btn pri" data-act="play"${all ? "" : " disabled"}>เล่นจริง 9×9 กับเมฆ</button><button class="ln-btn" data-act="book">คัมภีร์ฉบับเต็ม</button></div></div></div>`;
+    h += `</div>`;
     $("learn").innerHTML = h; $("learn").className = "learn path";
     const c = $("learn").querySelector(".ln-node.cur"); if (c) later(() => c.scrollIntoView({ block: "center", behavior: "smooth" }), 80);
   }
@@ -3962,6 +4180,8 @@ const Learn = (function () {
       if (act === "quit" || act === "path") { SFX.tap(); return renderPath(); }
       if (act === "retry") return openLesson(S.lesson);
       if (act === "bossdone") { finish(ALL[S.lesson].id, 3, 30); return renderPath(); }
+      if (act === "shop") { SFX.tap(); return renderShop(); }
+      if (t.dataset.buy !== undefined) return buy(t.dataset.buy);
       if (act === "home") { close(); return api.onHome && api.onHome(); }
       if (act === "play") { close(); return api.onPlay && api.onPlay(); }
       if (act === "book") { close(); return api.onBook && api.onBook(); }
@@ -5606,6 +5826,787 @@ const Coach = (function () {
   return api;
 })();
 
+// The player's skill rating: the best rank test, plus or minus every finished game since (against the AI, online).
+// Elo on the EGF scale: 1 kyu = 2000, 1 dan = 2100, 15 kyu = 600; one rank = 100 points (about a 64% win rate).
+// Kept in localStorage gonn.rating { R, n: games counted, base: best exam rank it starts from, hist: [{ at, R, d: change, k: "ai"|"online"|"exam", o: opponent, w: won }] }
+// and synced with the account like the rest of the progress (src/account.js).
+const Rating = (() => {
+  const KEY = "gonn.rating", START = 600, KEEP = 300;
+  const get = () => { try { const v = JSON.parse(localStorage.getItem(KEY)); return v && typeof v.R === "number" ? v : null; } catch (e) { return null; } };
+  const put = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
+  const toR = rank => 2000 + 100 * rank;           // rank: 1 kyu = 0, 1 dan = 1, 15 kyu = -14 (rankName() scale)
+  const toRank = R => (R - 2000) / 100;
+  // "15 คิว" -> -14, "2 ดั้ง" -> 2, "1 ดั้งโปร" -> 7 (a professional is stronger than an amateur of the same number), else null
+  function parseRank(s) {
+    const m = /^(\d+)\s*(คิว|ดั้ง)(โปร)?/.exec(String(s || ""));
+    if (!m) return null;
+    const v = +m[1];
+    return m[2] === "คิว" ? 1 - v : m[3] ? Math.min(9, v + 6) : v;
+  }
+  // provisional ratings move fast so a strong newcomer climbs quickly; small boards say less about strength
+  const kOf = (n, size) => (n < 5 ? 150 : n < 15 ? 60 : 32) * (size >= 19 ? 1 : size >= 13 ? 0.6 : 0.4);
+  function update(oppR, won, size, kind, label, at) {
+    const cur = get() || { R: START, n: 0, hist: [] };
+    const exp = 1 / (1 + Math.pow(10, (oppR - cur.R) / 400));
+    const d = Math.round(kOf(cur.n, size) * ((won ? 1 : 0) - exp));
+    cur.R = Math.max(100, Math.min(2900, cur.R + d)); cur.n++;
+    cur.hist.push({ at: at || Date.now(), R: cur.R, d, k: kind, o: label, w: !!won });
+    cur.hist = cur.hist.slice(-KEEP);
+    put(cur);
+    return cur;
+  }
+  // the best rank test is the starting point (owner 2026-11-11): the rating is that rank plus whatever the games played
+  // since that test added or took away. A better test result moves the base up; a worse one leaves it.
+  // best = { rank, at } (the player's best exam). Also fixes up ratings made before this rule.
+  function anchor(best) {
+    if (!best || typeof best.rank !== "number") return get();
+    const cur = get();
+    if (cur && typeof cur.base === "number" && best.rank <= cur.base) return cur;
+    const v = cur || { R: START, n: 0, hist: [] }, at = best.at || Date.now();
+    const since = v.hist.filter(h => h.k !== "exam" && h.at > at).reduce((a, h) => a + (h.d || 0), 0);
+    const R = Math.max(100, Math.min(2900, toR(best.rank) + since)), d = R - v.R;
+    v.R = R; v.base = best.rank; v.n = Math.max(v.n, 5); // a tested player is not a newcomer: normal steps from here
+    v.hist = v.hist.filter(h => !(h.k === "exam" && h.at >= at));
+    v.hist.push({ at, R: toR(best.rank), d, k: "exam", o: "ฮิคารุ (สอบวัดระดับ)", w: null });
+    v.hist.sort((x, y) => x.at - y.at);
+    // later points on the graph follow the new base
+    let r = toR(best.rank); for (const h of v.hist) if (h.at > at) { r = Math.max(100, Math.min(2900, r + (h.d || 0))); h.R = r; }
+    v.hist = v.hist.slice(-KEEP);
+    put(v);
+    return v;
+  }
+  // two copies (this device, the account) joined. When one already holds the other's latest game it is simply the newer
+  // copy of the same progress and wins. Otherwise they grew apart (a device played as a guest, then signed in): the
+  // higher rating is kept with its own graph (owner 2026-11-11: keep the best when accounts are linked).
+  function merge(a, b) {
+    if (!a) return b || null; if (!b) return a;
+    const key = h => h.at + ":" + h.k, ha = a.hist || [], hb = b.hist || [];
+    const has = (list, h) => !h || list.some(e => key(e) === key(h));
+    const la = ha[ha.length - 1], lb = hb[hb.length - 1];
+    let main, hist;
+    if (has(ha, lb) || has(hb, la)) {
+      main = has(ha, lb) ? a : b;
+      const seen = new Set(); hist = [];
+      for (const h of ha.concat(hb).sort((x, y) => x.at - y.at)) { const k = key(h); if (!seen.has(k)) { seen.add(k); hist.push(h); } }
+    } else {
+      main = (b.R || 0) > (a.R || 0) ? b : a;
+      hist = (main.hist || []).slice();
+    }
+    const base = Math.max(typeof a.base === "number" ? a.base : -99, typeof b.base === "number" ? b.base : -99);
+    const out = { R: main.R, n: Math.max(a.n || 0, b.n || 0), hist: hist.slice(-KEEP) };
+    if (base > -99) out.base = base;
+    return out;
+  }
+  const last = v => v.hist && v.hist.length ? v.hist[v.hist.length - 1].at : 0;
+  return { get, toR, toRank, parseRank, update, anchor, merge, START, rank: () => { const v = get(); return v ? toRank(v.R) : null; } };
+})();
+
+// One WebSocket to the Worker (/api/ws) for everything live: chat, online rooms, the lobby and watching games.
+// Hub.op(name, body) -> Promise<{status, body}>; Hub.sub(key, cb) -> unsubscribe; cb(value) runs on every change.
+// The socket opens on first use and closes 30 s after nothing needs it. The private preview page provides
+// window.ACCT_HUB with the same shape (its database instead of a server).
+const Hub = window.ACCT_HUB || (() => {
+  const BASE = /github\.io$/.test(location.hostname) ? "wss://battle-baduk.battlebaduk.workers.dev" : (location.protocol === "https:" ? "wss://" : "ws://") + location.host;
+  let ws = null, live = false, re = 0, wait = 1000, retry = 0, idle = 0, skew = 0;
+  const pending = new Map(), subs = new Map(), queue = [], states = new Set();
+  const say = s => states.forEach(f => { try { f(s); } catch (e) {} });
+  function connect() {
+    if (ws) return;
+    try { ws = new WebSocket(BASE + "/api/ws"); } catch (e) { ws = null; return; }
+    ws.onopen = () => {
+      live = true; wait = 1000; say("on");
+      if (subs.size) ws.send(JSON.stringify({ sub: [...subs.keys()] }));
+      while (queue.length) ws.send(queue.shift());
+    };
+    ws.onmessage = e => {
+      let m = null; try { m = JSON.parse(e.data); } catch (x) { return; }
+      if (typeof m.now === "number") skew = m.now - Date.now();
+      if (m.re && pending.has(m.re)) { const p = pending.get(m.re); pending.delete(m.re); clearTimeout(p.t); p.res({ status: m.status, body: m.body || {} }); }
+      else if (m.k && subs.has(m.k)) for (const f of subs.get(m.k)) { try { f(m.v); } catch (x) { console.error(x); } }
+    };
+    ws.onclose = () => {
+      ws = null; live = false; say("off");
+      for (const [id, p] of pending) { clearTimeout(p.t); p.res({ status: 0, body: { error: "ขาดการเชื่อมต่อ ลองอีกครั้ง" } }); pending.delete(id); }
+      if (subs.size) { clearTimeout(retry); retry = setTimeout(connect, wait); wait = Math.min(wait * 2, 20000); }
+    };
+  }
+  function send(s) { clearTimeout(idle); if (live) ws.send(s); else { queue.push(s); connect(); } }
+  function maybeClose() { clearTimeout(idle); if (!subs.size && !pending.size) idle = setTimeout(() => { if (!subs.size && !pending.size && ws) ws.close(); }, 30000); }
+  function op(name, body) {
+    return new Promise(res => {
+      const id = ++re;
+      const t = setTimeout(() => { pending.delete(id); res({ status: 0, body: { error: "เซิร์ฟเวอร์ไม่ตอบ ลองอีกครั้ง" } }); maybeClose(); }, 15000);
+      pending.set(id, { res: v => { res(v); maybeClose(); }, t });
+      send(JSON.stringify({ re: id, op: name, body: body || {} }));
+    });
+  }
+  function sub(key, cb) {
+    if (!subs.has(key)) subs.set(key, new Set());
+    subs.get(key).add(cb);
+    send(JSON.stringify({ sub: [...subs.keys()] }));
+    return () => {
+      const s = subs.get(key); if (!s) return;
+      s.delete(cb); if (!s.size) subs.delete(key);
+      if (live) ws.send(JSON.stringify({ sub: [...subs.keys()] }));
+      maybeClose();
+    };
+  }
+  return { op, sub, now: () => Date.now() + skew, onState: f => { states.add(f); return () => states.delete(f); }, connected: () => live };
+})();
+
+// Player accounts (name + password): the Profile page signs in, and the player's progress then follows them to any device.
+// Synced: game history (100 most recent), best exam rank, tsumego progress, tutorial step. Not synced: a paused game and
+// settings (sound, board size), which belong to the device.
+// Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
+// Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
+const Account = (() => {
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn"];
+  const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
+  const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
+  let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
+  let onChange = () => {}, busy = false, lastErr = "";
+
+  const host = location.hostname;
+  const BASE = /github\.io$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev" : "";
+  // the private preview page sets window.ACCT_BACKEND (same server code, kept in the artifact's database)
+  let api = window.ACCT_BACKEND || async function (op, body) {
+    // text/plain keeps the request simple (no CORS preflight) when the page is on another host
+    const r = await fetch(BASE + "/api/acct/" + op, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "text/plain" } });
+    let j = null; try { j = await r.json(); } catch (e) {}
+    return { status: r.status, body: j || { error: "เซิร์ฟเวอร์ตอบกลับผิดพลาด (" + r.status + ")" } };
+  };
+
+  // ---------- progress ----------
+  // every character the player has ever beaten (the history keeps only 100 games, so the list is kept apart)
+  function beaten() {
+    const b = new Set(Array.isArray(get("beaten")) ? get("beaten") : []);
+    for (const h of get("history") || []) if (h && h.won && h.char && h.char !== "online") b.add(h.char);
+    return [...b];
+  }
+  const collect = () => {
+    const d = {}; for (const k of SYNC) { const v = get(k); if (v !== null) d[k] = v; }
+    const b = beaten(); if (b.length) d.beaten = b; else delete d.beaten;
+    return d;
+  };
+  const fp = d => JSON.stringify(SYNC.map(k => d[k] === undefined ? null : d[k]));
+  // two copies of the progress joined so that nothing either device did is lost
+  function merge(a, b) {
+    a = a || {}; b = b || {};
+    const out = {};
+    const ha = Array.isArray(a.history) ? a.history : [], hb = Array.isArray(b.history) ? b.history : [];
+    if (ha.length || hb.length) {
+      const by = new Map();
+      for (const h of ha.concat(hb)) {
+        if (!h || !h.id) continue;
+        const o = by.get(h.id);
+        if (!o || (typeof h.rank === "number" && typeof o.rank !== "number")) by.set(h.id, h);
+      }
+      out.history = [...by.values()].sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 100);
+    }
+    const ra = a.bestRank, rb = b.bestRank;
+    if (ra || rb) out.bestRank = !ra ? rb : !rb ? ra : (rb.rank > ra.rank ? rb : ra);
+    const ta = a.tsume3, tb = b.tsume3;
+    if (ta || tb) {
+      const m = !ta ? tb : !tb ? ta : ((tb.solved || 0) > (ta.solved || 0) ? tb : ta);
+      out.tsume3 = Object.assign({}, m, { best: Math.max((ta && ta.best) || 0, (tb && tb.best) || 0),
+        seen: [...new Set([].concat((ta && ta.seen) || [], (tb && tb.seen) || []))].slice(-3000) });
+    }
+    if (a.beaten || b.beaten) out.beaten = [...new Set([].concat(a.beaten || [], b.beaten || []))];
+    if (a.avatar || b.avatar) out.avatar = a.avatar || b.avatar; // this device's choice wins
+    if (a.rating || b.rating) out.rating = Rating.merge(a.rating, b.rating);
+    // LEARN course (src/learn.js): best stars and scores per lesson, the larger XP earned and spent, every item bought
+    const la = a.learn, lb = b.learn;
+    if (la || lb) {
+      const x = la || {}, y = lb || {}, mx = (p, q) => { const o = Object.assign({}, p); for (const k in q || {}) o[k] = Math.max(o[k] || 0, q[k] || 0); return o; };
+      const late = (x.day || "") >= (y.day || "") ? x : y;
+      out.learn = { stars: mx(x.stars, y.stars), best: mx(x.best, y.best), xp: Math.max(x.xp || 0, y.xp || 0), spent: Math.max(x.spent || 0, y.spent || 0),
+        owned: [...new Set([].concat(x.owned || [], y.owned || []))], streak: late.streak || 0, day: late.day || "" };
+    }
+    if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
+    return out;
+  }
+  function apply(d) { for (const k of SYNC) put(k, d[k] === undefined ? null : d[k]); }
+
+  // ---------- talking to the server ----------
+  const remember = () => put("acct", me);
+  function signedIn(r) {
+    const merged = merge(collect(), r.data);
+    apply(merged);
+    me = { token: r.token, name: r.name, ver: r.ver, sent: fp(r.data || {}), at: Date.now() };
+    remember();
+    onChange();
+    return push();
+  }
+  async function push() {
+    if (!me || busy) return;
+    const d = collect(), f = fp(d);
+    if (f === me.sent) return;
+    busy = true;
+    try {
+      for (let i = 0; i < 3; i++) {
+        const r = await api("save", { token: me.token, ver: me.ver, data: d });
+        if (r.status === 200) { me.ver = r.body.ver; me.sent = f; me.at = Date.now(); lastErr = ""; remember(); break; }
+        if (r.status === 409) { // another device saved first: take its copy in and try again
+          const m = merge(collect(), r.body.data); apply(m); me.ver = r.body.ver; remember(); onChange();
+          Object.assign(d, m); continue;
+        }
+        if (r.status === 401) { me = null; remember(); lastErr = r.body.error; onChange(); break; }
+        lastErr = r.body.error || "บันทึกไม่สำเร็จ"; break;
+      }
+    } catch (e) { lastErr = "ออฟไลน์อยู่ จะบันทึกให้เมื่อกลับมาออนไลน์"; }
+    finally { busy = false; onChange(); }
+  }
+  // on page load: take in what other devices saved since this one last looked
+  async function pull() {
+    if (!me) return;
+    try {
+      const r = await api("load", { token: me.token });
+      if (r.status === 401) { me = null; remember(); lastErr = r.body.error; onChange(); return; }
+      if (r.status !== 200) return;
+      if (r.body.ver !== me.ver) { apply(merge(collect(), r.body.data)); me.ver = r.body.ver; me.sent = fp(r.body.data || {}); remember(); onChange(); }
+      me.at = Date.now(); remember();
+      await push();
+    } catch (e) {}
+  }
+
+  // ---------- the sign-in dialog ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let tab = "login";
+  function dialog() {
+    if ($("acct")) return;
+    const d = document.createElement("div");
+    d.className = "sure acct"; d.id = "acct"; d.hidden = true;
+    d.innerHTML = `<div class="sure-card acct-card" role="dialog" aria-labelledby="acT">
+      <button class="acct-x" id="acX" aria-label="ปิด">✕</button>
+      <p id="acT"><b>ACCOUNT</b></p>
+      <div class="seg acct-tabs" id="acTabs"><button data-t="login">เข้าสู่ระบบ</button><button data-t="signup">สมัครใหม่</button><button data-t="recover">ลืมรหัส</button></div>
+      <form id="acForm" autocomplete="on">
+        <label>ชื่อผู้ใช้<input id="acName" name="username" autocomplete="username" maxlength="16" autocapitalize="off" spellcheck="false" required></label>
+        <label id="acCodeL">รหัสกู้คืน<input id="acCode" autocomplete="off" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></label>
+        <label><span id="acPassT">รหัสผ่าน</span><input id="acPass" type="password" name="password" maxlength="64" required></label>
+        <label id="acPass2L">ใส่รหัสผ่านอีกครั้ง<input id="acPass2" type="password" maxlength="64" autocomplete="new-password"></label>
+        <p class="acct-msg" id="acMsg" aria-live="polite"></p>
+        <div class="actions"><button type="submit" class="primary" id="acGo">เข้าสู่ระบบ</button></div>
+      </form>
+      <div id="acDone" hidden>
+        <p class="acct-msg ok">สำเร็จแล้ว! เก็บ <strong>รหัสกู้คืน</strong> นี้ไว้ให้ดี (จด หรือแคปหน้าจอ) ถ้าลืมรหัสผ่าน ใช้รหัสนี้ตั้งรหัสใหม่ได้ และจะไม่แสดงอีก</p>
+        <div class="acct-code" id="acRec"></div>
+        <div class="actions two"><button id="acCopy">คัดลอก</button><button class="primary" id="acOk">จดไว้แล้ว</button></div>
+      </div></div>`;
+    document.body.appendChild(d);
+    d.addEventListener("click", e => { if (e.target === d && $("acDone").hidden) close(); });
+    $("acX").onclick = () => close();
+    $("acTabs").onclick = e => { const b = e.target.closest("button[data-t]"); if (b) setTab(b.dataset.t); };
+    $("acForm").onsubmit = e => { e.preventDefault(); submit(); };
+    $("acCopy").onclick = () => { try { navigator.clipboard.writeText($("acRec").textContent); $("acCopy").textContent = "คัดลอกแล้ว"; } catch (e) {} };
+    $("acOk").onclick = () => close();
+  }
+  function setTab(t) {
+    tab = t;
+    for (const b of $("acTabs").children) b.setAttribute("aria-pressed", String(b.dataset.t === t));
+    $("acCodeL").hidden = t !== "recover";
+    $("acPass2L").hidden = t === "login";
+    $("acPassT").textContent = t === "recover" ? "รหัสผ่านใหม่" : "รหัสผ่าน";
+    $("acPass").autocomplete = t === "login" ? "current-password" : "new-password";
+    $("acGo").textContent = { login: "เข้าสู่ระบบ", signup: "สมัครและเก็บความคืบหน้า", recover: "ตั้งรหัสผ่านใหม่" }[t];
+    $("acMsg").textContent = t === "signup" ? "ชื่อ 3–16 ตัว (ไทย อังกฤษ ตัวเลข _) · รหัสผ่านอย่างน้อย 6 ตัว · ไม่ต้องใช้อีเมล" : "";
+    $("acMsg").className = "acct-msg";
+  }
+  function open(t) {
+    dialog();
+    $("acForm").hidden = false; $("acDone").hidden = true; $("acTabs").hidden = false;
+    $("acPass").value = $("acPass2").value = $("acCode").value = "";
+    setTab(t || "login");
+    $("acct").hidden = false;
+    $("acName").focus();
+  }
+  function close() { if ($("acct")) $("acct").hidden = true; onChange(); }
+  const say = (m, ok) => { $("acMsg").textContent = m; $("acMsg").className = "acct-msg" + (ok ? " ok" : " bad"); };
+  async function submit() {
+    const name = $("acName").value.trim(), pass = $("acPass").value;
+    if (tab !== "login" && pass !== $("acPass2").value) return say("รหัสผ่านสองช่องไม่ตรงกัน");
+    if (tab === "recover" && !$("acCode").value.trim()) return say("ใส่รหัสกู้คืนที่ได้ตอนสมัคร");
+    $("acGo").disabled = true; say("กำลังเชื่อมต่อ…", true);
+    try {
+      const body = tab === "signup" ? { name, pass, data: collect() } : tab === "recover" ? { name, pass, code: $("acCode").value } : { name, pass };
+      const r = await api(tab, body);
+      if (r.status !== 200) { say(r.body.error || "ไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+      await signedIn(r.body);
+      if (r.body.recovery) {
+        $("acForm").hidden = true; $("acTabs").hidden = true; $("acDone").hidden = false;
+        $("acRec").textContent = r.body.recovery; $("acCopy").textContent = "คัดลอก";
+      } else close();
+    } catch (e) { say("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง"); }
+    finally { $("acGo").disabled = false; }
+  }
+  async function logout() {
+    const t = me && me.token;
+    await push();
+    // the progress is safe in the account, so it leaves this device with the player (the next person starts clean);
+    // when the last save did not go through it stays here instead
+    if (me && me.sent !== fp(collect())) { lastErr = "ยังบันทึกล่าสุดไม่สำเร็จ ลองออกจากระบบอีกครั้งตอนออนไลน์"; onChange(); return; }
+    apply({});
+    me = null; remember(); lastErr = ""; onChange();
+    if (t) api("logout", { token: t }).catch(() => {});
+  }
+  const avatarSrc = () => { const a = get("avatar"); return a && beaten().includes(a) ? `chars/${a}_face.jpg` : "menu/guest.png"; };
+  const timeTH = t => new Date(t).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  // the card at the top of the Profile page
+  function card() {
+    if (!me) return `<div class="acct-box"><div class="t"><b>เก็บความคืบหน้าไว้ในแอคเคาท์</b><span>ล็อกอินแล้วประวัติเกม ระดับที่สอบได้ และด่านโจทย์ จะตามไปทุกเครื่อง</span>${lastErr ? `<span class="bad">${esc(lastErr)}</span>` : ""}</div>
+      <div class="pf-btns"><button class="pf-an" data-acct="signup">สมัคร</button><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div></div>`;
+    return `<div class="acct-box in"><button class="acct-av" data-soc="avatar" title="เปลี่ยนรูปโปรไฟล์"><img src="${avatarSrc()}" alt="" width="160" height="160"><i>เปลี่ยนรูป</i></button><div class="t"><b>${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
+      <div class="pf-btns"><button class="pf-an" data-acct="logout">ออกจากระบบ</button></div></div>`;
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("button[data-acct]"); if (!b) return;
+    const a = b.dataset.acct;
+    if (a === "logout") logout(); else open(a);
+  });
+
+  // the first visit: sign up, sign in, or play without an account (asked once per browser; Profile still has the buttons)
+  function welcome() {
+    if (me || get("welcomed")) return;
+    const d = document.createElement("div");
+    d.className = "sure acct"; d.id = "acWel";
+    d.innerHTML = `<div class="sure-card acct-card acct-wel" role="dialog" aria-labelledby="awT">
+      <p id="awT"><b>WELCOME!</b>ยินดีต้อนรับสู่ Baduk Battle</p>
+      <ul class="acct-why"><li>เก็บประวัติเกม ระดับฝีมือ และด่านโจทย์ ตามไปทุกเครื่อง</li><li>ขึ้นกระดานอันดับ คุยในแชทโลก</li><li>เล่นออนไลน์กับผู้เล่นคนอื่น</li></ul>
+      <div class="acct-wel-btns"><button class="primary" data-w="signup">สมัครแอคเคาท์ (ไม่ต้องใช้อีเมล)</button><button data-w="login">มีแอคเคาท์แล้ว · เข้าสู่ระบบ</button><button class="acct-guest" data-w="guest">เล่นแบบไม่ใช้แอคเคาท์</button></div>
+      <p class="acct-msg">ไม่ใช้แอคเคาท์ก็เล่นกับ AI ได้ครบ ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้ สมัครทีหลังได้ที่หน้า PROFILE แล้วของเดิมจะย้ายเข้าแอคเคาท์ให้</p></div>`;
+    document.body.appendChild(d);
+    d.addEventListener("click", e => {
+      const b = e.target.closest("button[data-w]"); if (!b) return;
+      put("welcomed", 1); d.remove();
+      if (b.dataset.w !== "guest") open(b.dataset.w);
+    });
+  }
+  function init(cb) {
+    onChange = cb || onChange;
+    pull();
+    setInterval(() => { if (!document.hidden) push(); }, 20e3);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
+  }
+  return { init, welcome, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+    call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
+})();
+
+// Player-to-player screens built on accounts (src/account.js): world chat (name + rank from the rating on every message),
+// the leaderboard (rating, then wins), and the profile picture picker (characters the player has beaten).
+const Social = (() => {
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, onAvatar }
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const charOf = id => D.CHARS.find(c => c.id === id);
+  const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
+  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
+  const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
+
+  // ---------- world chat ----------
+  let msgs = [], seen = new Set();
+  function line(m) {
+    const mine = m.n === Account.name();
+    const at = new Date(m.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    return `<div class="ch-msg${mine ? " me" : ""}"><img src="${face(m.a)}" alt="" width="160" height="160"><div class="ch-b">
+      <div class="ch-who"><b>${esc(m.n)}</b> <span class="ch-rank${typeof m.r === "number" ? "" : " no"}">${esc(rankOf(m.r))}</span><time>${at}</time></div>
+      <div class="ch-t">${esc(m.t)}</div></div></div>`;
+  }
+  function render(stick) {
+    const box = $("chList"), atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    box.innerHTML = msgs.length ? msgs.map(line).join("") : `<p class="ch-empty">ยังไม่มีข้อความ ทักทายคนอื่นเป็นคนแรกเลย!</p>`;
+    if (stick || atEnd) box.scrollTop = box.scrollHeight;
+  }
+  function add(m) { if (!m || seen.has(m.id)) return; seen.add(m.id); msgs.push(m); msgs = msgs.slice(-100); }
+  function syncForm() {
+    const on = !!Account.name();
+    $("chForm").hidden = !on; $("chLogin").hidden = on;
+  }
+  let off = null, offState = null;
+  function openChat() {
+    show("chat"); syncForm();
+    $("chState").textContent = "กำลังเชื่อมต่อ…";
+    msgs = []; seen = new Set(); render(true);
+    closeChat();
+    offState = Hub.onState(s => { $("chState").textContent = s === "on" ? "● ออนไลน์" : "ขาดการเชื่อมต่อ กำลังลองใหม่…"; });
+    off = Hub.sub("chat", list => {
+      $("chState").textContent = "● ออนไลน์";
+      const mine = (list || []).some(m => !seen.has(m.id) && m.n === Account.name());
+      (list || []).forEach(add); render(mine);
+    });
+  }
+  function closeChat() { if (off) { off(); off = null; } if (offState) { offState(); offState = null; } }
+  async function send() {
+    const t = $("chText").value.trim();
+    if (!t) return;
+    $("chText").value = "";
+    const r = await Hub.op("say", { token: Account.token(), t });
+    if (r.status !== 200) { $("chText").value = $("chText").value || t; $("chErr").textContent = r.body.error || "ส่งไม่สำเร็จ"; setTimeout(() => { $("chErr").textContent = ""; }, 3000); }
+  }
+
+  // ---------- leaderboard ----------
+  async function openBoard() {
+    show("lb");
+    $("lbBody").innerHTML = `<p class="note">กำลังโหลด…</p>`;
+    let r;
+    try { r = await Account.call("board", {}); } catch (e) { r = null; }
+    if (!r || r.status !== 200) { $("lbBody").innerHTML = `<p class="pf-empty">โหลดอันดับไม่ได้ ลองใหม่อีกครั้ง</p>`; return; }
+    const { list, total, me } = r.body;
+    const row = (x, i) => `<div class="lb-row${me && x.n === me.n ? " me" : ""}${i < 3 ? " top" + (i + 1) : ""}"><span class="lb-pos">${i + 1}</span>
+      <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}</b><small>${typeof x.R === "number" ? `เรตติ้ง ${x.R} · ` : ""}ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
+      <span class="lb-rank${typeof x.r === "number" ? "" : " no"}">${esc(rankOf(x.r))}</span></div>`;
+    let h = me ? `<div class="lb-me">อันดับของคุณ <b>#${me.pos}</b> จาก ${total} คน · ${esc(rankOf(me.r))}</div>`
+      : Account.name() ? "" : `<div class="lb-me">ล็อกอินในหน้า PROFILE เพื่อขึ้นกระดานอันดับ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
+    h += list.length ? `<div class="lb-list">${list.map(row).join("")}</div>` : `<p class="pf-empty">ยังไม่มีผู้เล่นในกระดาน สมัครแอคเคาท์แล้วเป็นคนแรกเลย</p>`;
+    h += `<p class="note" style="margin-top:8px">เรียงตามเรตติ้ง (เริ่มจากผลสอบกับฮิคารุที่ดีที่สุด แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์) ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่มีระดับอยู่ท้ายตาราง</p>`;
+    $("lbBody").innerHTML = h;
+  }
+
+  // ---------- profile picture ----------
+  function openAvatar() {
+    const won = new Set(Account.beaten()), cur = Account.avatarSrc();
+    const list = D.CHARS.filter(c => !c.tutorial);
+    $("avGrid").innerHTML = `<button class="av-pick${cur === "menu/guest.png" ? " on" : ""}" data-av=""><img src="menu/guest.png" alt="" width="160" height="160"><span>ไม่ใช้รูป</span></button>` +
+      list.map(c => { const ok = won.has(c.id);
+        return `<button class="av-pick${ok ? "" : " lock"}${cur === `chars/${c.id}_face.jpg` ? " on" : ""}" data-av="${c.id}"${ok ? "" : " disabled"}><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><span>${ok ? esc(c.name) : "🔒 " + esc(c.name)}</span></button>`; }).join("");
+    $("avNote").textContent = won.size ? `ปลดล็อกแล้ว ${list.filter(c => won.has(c.id)).length} จาก ${list.length} ตัว · ชนะตัวละครไหนก็ใช้รูปตัวนั้นได้` : "ยังไม่ได้ชนะตัวละครไหนเลย ลองไปชนะใน PLAY WITH AI ก่อนนะ";
+    $("avDlg").hidden = false;
+  }
+
+  function init(deps) {
+    D = deps;
+    $("chBack").onclick = () => { D.blip(660); closeChat(); D.showMenu(); };
+    $("lbBack").onclick = () => { D.blip(660); D.showMenu(); };
+    $("chForm").onsubmit = e => { e.preventDefault(); send(); };
+    $("avX").onclick = () => { $("avDlg").hidden = true; };
+    $("avDlg").addEventListener("click", e => {
+      if (e.target === $("avDlg")) { $("avDlg").hidden = true; return; }
+      const b = e.target.closest("button[data-av]"); if (!b || b.disabled) return;
+      try { if (b.dataset.av) localStorage.setItem("gonn.avatar", JSON.stringify(b.dataset.av)); else localStorage.removeItem("gonn.avatar"); } catch (x) {}
+      $("avDlg").hidden = true; D.blip(880); Account.push(); D.onAvatar();
+    });
+    document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("button[data-soc]"); if (b && b.dataset.soc === "avatar") openAvatar(); });
+  }
+  return { init, openChat, openBoard, openAvatar, closeChat, refresh: () => { if (!$("chat").hidden) { syncForm(); render(); } } };
+})();
+
+// PLAY ONLINE (rooms between two signed-in players) and WATCH (games in progress, live): lobby, room settings, the
+// online board, and the spectator view of online games and of games against the AI / rank tests.
+// Server side: worker/online.js through Hub (src/hub.js).
+const Online = (() => {
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead }
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const charOf = id => D.CHARS.find(c => c.id === id);
+  const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
+  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
+  const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
+  const mins = s => s >= 60 ? `${s / 60} นาที` : s ? `${s} วิ` : "ไม่มี";
+  const timeText = x => `${x.main ? mins(x.main) : "ไม่มีเวลาหลัก"}${x.byo ? ` + เบียวโยมิ ${x.byo} วิ × ${x.per}` : ""}`;
+  const pickText = { b: "เจ้าของห้องถือดำ", w: "เจ้าของห้องถือขาว", r: "สุ่มสี" };
+  const clockText = s => { s = Math.max(0, s); const m = Math.floor(s / 60), x = Math.floor(s % 60); return `${m}:${String(x).padStart(2, "0")}`; };
+
+  // ---------- lobby (PLAY ONLINE) and WATCH lists ----------
+  let lobbyMode = null, offs = [], rooms = {}, lives = {};
+  function unsubAll() { offs.forEach(f => f()); offs = []; }
+  function openLobby(mode) { // "play" or "watch"
+    show(mode === "play" ? "onl" : "wat"); // hiding the other screens leaves any game or list being watched
+    lobbyMode = mode;
+    rooms = {}; lives = {};
+    renderLobby();
+    if (Account.name()) checkPending();
+    Hub.op("lobby", {}).then(r => { if (r.status === 200) { rooms = Object.fromEntries(r.body.rooms.map(x => [x.id, x])); lives = Object.fromEntries(r.body.live.map(x => [x.g, x])); renderLobby(); } });
+    offs.push(Hub.sub("rooms", v => { rooms = (v && v.list) || {}; renderLobby(); }));
+    offs.push(Hub.sub("lvidx", v => { lives = (v && v.list) || {}; renderLobby(); }));
+    offs.push(Hub.onState(() => renderLobby()));
+  }
+  const pRow = (p, extra) => `<span class="ol-p"><img src="${face(p && p.a)}" alt="" width="160" height="160"><b>${esc(p ? p.n : "?")}</b><span class="ch-rank${p && typeof p.r === "number" ? "" : " no"}">${esc(rankOf(p && p.r))}</span>${extra || ""}</span>`;
+  function gameRows(list) {
+    return list.map(g => g.kind === "room"
+      ? `<div class="ol-row"><div class="ol-who">${pRow(g.r.host, g.r.black === g.r.host.n ? " ⚫" : " ⚪")}<span class="ol-vs">vs</span>${pRow(g.r.guest, g.r.black === (g.r.guest && g.r.guest.n) ? " ⚫" : " ⚪")}</div>
+          <div class="ol-meta"><span class="ol-tag">คน vs คน</span> ${g.r.size}×${g.r.size} · ${esc(timeText(g.r))} · ตาที่ ${g.r.moves}</div><button class="pf-an" data-watch-room="${g.r.id}">ดู</button></div>`
+      : (() => { const c = charOf(g.l.char) || { name: g.l.char, id: "" };
+        return `<div class="ol-row"><div class="ol-who">${pRow(g.l.who, g.l.human === 1 ? " ⚫" : " ⚪")}<span class="ol-vs">vs</span><span class="ol-p"><img src="${c.id ? `chars/${c.id}_face.jpg` : "menu/guest.png"}" alt="" width="160" height="160"><b>${esc(c.name)}</b>${g.l.human === 1 ? " ⚪" : " ⚫"}</span></div>
+          <div class="ol-meta"><span class="ol-tag${g.l.exam ? " exam" : " ai"}">${g.l.exam ? "สอบวัดระดับ" : "vs AI"}</span> ${g.l.size}×${g.l.size} · ตาที่ ${g.l.moves}${g.l.ended ? " · จบแล้ว" : ""}</div><button class="pf-an" data-watch-live="${g.l.g}">ดู</button></div>`; })()).join("");
+  }
+  function playing() {
+    const now = Date.now();
+    const a = Object.values(rooms).filter(r => r.st === "play" || r.st === "score").map(r => ({ kind: "room", r, at: r.at }));
+    const b = Object.values(lives).filter(l => now - l.at < 10 * 60e3 && !l.ended).map(l => ({ kind: "live", l, at: l.at }));
+    return a.concat(b).sort((x, y) => y.at - x.at);
+  }
+  function renderLobby() {
+    if (lobbyMode === "watch") {
+      const g = playing();
+      $("watBody").innerHTML = (g.length ? `<div class="ol-list">${gameRows(g)}</div>` : `<p class="pf-empty">ตอนนี้ยังไม่มีใครเล่นอยู่ ลองกลับมาดูใหม่นะ (รายการอัปเดตเอง)</p>`)
+        + `<p class="note" style="margin-top:8px">ดูได้ทั้งเกมคน vs คน เกมกับ AI และการสอบวัดระดับ แบบเรียลไทม์ · เกมกับ AI ที่ไม่ได้ล็อกอินจะขึ้นชื่อ "ผู้เล่นทั่วไป"</p>`;
+      return;
+    }
+    if (lobbyMode !== "play") return;
+    const me = Account.name();
+    const open = Object.values(rooms).filter(r => r.st === "open").sort((x, y) => y.at - x.at);
+    let h = me ? `<button class="px-start ol-new" id="olNew">+ สร้างห้อง</button>`
+      : `<div class="lb-me">ล็อกอินก่อนถึงจะสร้างห้องหรือ Join ได้ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
+    h += `<div class="pf-h">ห้องที่รอคู่แข่ง</div>`;
+    h += open.length ? `<div class="ol-list">${open.map(r => { const mine = r.host.n === me;
+      return `<div class="ol-row${mine ? " me" : ""}"><div class="ol-who">${pRow(r.host)}</div><div class="ol-meta">${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}</div>
+        ${mine ? `<button class="pf-an" data-enter="${r.id}">ห้องของคุณ</button>` : `<button class="pf-an primary" data-join="${r.id}"${me ? "" : " disabled"}>Join</button>`}</div>`; }).join("")}</div>`
+      : `<p class="pf-empty">ยังไม่มีห้องว่าง กด "สร้างห้อง" แล้วรอคนมา Join ได้เลย</p>`;
+    const g = playing().filter(x => x.kind === "room");
+    if (g.length) h += `<div class="pf-h">กำลังเล่นอยู่</div><div class="ol-list">${gameRows(g)}</div>`;
+    $("onlBody").innerHTML = h + `<p class="ch-err" id="onlErr" aria-live="assertive"></p>`;
+  }
+
+  // ---------- create a room ----------
+  const SET = { size: 19, main: 600, byo: 30, per: 3, pick: "r" };
+  function openNew() {
+    for (const [k, v] of Object.entries(SET)) for (const b of $("onNew").querySelectorAll(`[data-k="${k}"] button`)) b.setAttribute("aria-pressed", String(b.dataset.v == v));
+    $("onPerRow").hidden = !SET.byo;
+    $("onErr").textContent = "";
+    $("onNew").hidden = false;
+  }
+  async function create() {
+    $("onGo").disabled = true; $("onErr").textContent = "กำลังสร้างห้อง…";
+    const r = await Hub.op("create", Object.assign({ token: Account.token() }, SET));
+    $("onGo").disabled = false;
+    if (r.status !== 200) { $("onErr").textContent = r.body.error || "สร้างห้องไม่สำเร็จ"; return; }
+    $("onNew").hidden = true; enterRoom(r.body.room.id, r.body.room);
+  }
+
+  // ---------- the online board: playing a room, or watching a room / a game against the AI ----------
+  let G = null; // { kind: "room"|"live", id, room|live, off, me: "b"|"w"|null, ghost, b: Board, scored, ticked }
+  let tickTimer = 0;
+  function leaveGame() { if (G) { G.off && G.off(); G = null; } clearInterval(tickTimer); }
+  function enterRoom(id, first) {
+    leaveGame(); show("og");
+    G = { kind: "room", id, room: null, me: null, ghost: null, scored: false, ticked: 0 };
+    const g = G;
+    if (first) setRoom(first);
+    G.off = Hub.sub("room:" + id, r => { if (G === g) { if (!r) { $("ogStatus").textContent = "ห้องนี้ถูกปิดแล้ว"; return; } setRoom(r); } });
+    tickTimer = setInterval(tick, 250);
+    draw();
+  }
+  function watchLive(gid) {
+    leaveGame(); show("og");
+    G = { kind: "live", id: gid, live: null, me: null };
+    const g = G;
+    G.off = Hub.sub("lv:" + gid, v => { if (G === g && v) { const n0 = G.live ? G.live.moves.length : 0; G.live = v; G.at = Date.now(); if (v.moves.length > n0 && n0) D.clack(); render(); } });
+    tickTimer = setInterval(() => renderClocks(), 500);
+    render();
+  }
+  // ---------- finished online games go into the player's history and move the rating (src/rating.js) ----------
+  // games this browser played in and has not recorded yet are remembered, so a game that ended while the player was
+  // away (out of time, say) is still counted the next time the game opens
+  const PEND = "gonn.onlPend";
+  const pend = () => { try { const v = JSON.parse(localStorage.getItem(PEND)); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  const setPend = v => { try { localStorage.setItem(PEND, JSON.stringify(v.slice(-20))); } catch (e) {} };
+  function record(r) {
+    const me = Account.name(), c = r.black === me ? "b" : r.white === me ? "w" : null;
+    setPend(pend().filter(x => x !== r.id));
+    if (!c || r.st !== "end" || !r.res) return;
+    const id = "on-" + r.id;
+    let hist = []; try { hist = JSON.parse(localStorage.getItem("gonn.history")) || []; } catch (e) {}
+    if (!Array.isArray(hist) || hist.some(h => h && h.id === id)) return;
+    const opp = r.host.n === me ? r.guest : r.host;
+    if (!opp) return;
+    const won = r.res.winner === c, b = new D.Board(r.size);
+    const moves = r.moves.map(m => m ? b.pt(m[0], m[1]) : D.PASS);
+    const oppR = typeof opp.R === "number" ? opp.R : typeof opp.r === "number" ? Rating.toR(opp.r) : Rating.START;
+    const v = Rating.update(oppR, won, r.size, "online", opp.n, r.ended || Date.now());
+    hist.unshift({ id, at: r.ended || Date.now(), char: "online", opp: { n: opp.n, r: opp.r, a: opp.a, R: opp.R }, n: r.size, human: c === "b" ? D.BLACK : D.WHITE,
+      handi: 0, bonus: 0, komi: r.komi, won, how: r.res.how, margin: r.res.margin, moves, dR: v.hist[v.hist.length - 1].d });
+    try { localStorage.setItem("gonn.history", JSON.stringify(hist.slice(0, 100))); } catch (e) {}
+    Account.push();
+  }
+  async function checkPending() {
+    for (const id of pend()) {
+      const x = await Hub.op("get", { id });
+      if (x.status === 404) setPend(pend().filter(i => i !== id));
+      else if (x.status === 200 && x.body.room && x.body.room.st === "end") record(x.body.room);
+    }
+  }
+  function setRoom(r) {
+    const prev = G.room;
+    if (prev && r.v < prev.v) return;
+    G.room = r;
+    const me = Account.name();
+    G.me = r.black === me ? "b" : r.white === me ? "w" : null;
+    if (G.me && (r.st === "play" || r.st === "score") && !pend().includes(r.id)) setPend(pend().concat(r.id));
+    if (G.me && r.st === "end") record(r);
+    if (prev && r.moves.length > prev.moves.length && r.moves[r.moves.length - 1]) D.clack();
+    G.b = replayBoard(r.size, r.moves);
+    G.ghost = null;
+    if (r.st === "score" && G.me && !G.scored && !(r.scores && r.scores[G.me] !== undefined)) countScore();
+    render();
+  }
+  function replayBoard(n, moves) {
+    const b = new D.Board(n);
+    for (const m of moves) b.play(m ? b.pt(m[0], m[1]) : D.PASS);
+    return b;
+  }
+  async function countScore() {
+    G.scored = true; const g = G, r = G.room;
+    const res = await D.countLead(r.size, r.moves, r.komi);
+    if (G !== g) return;
+    G.dead = res.dead;
+    render();
+    const x = await Hub.op("score", { token: Account.token(), id: r.id, m: res.lead });
+    if (x.status !== 200 && G === g) $("ogStatus").textContent = x.body.error || "ส่งผลนับแต้มไม่สำเร็จ";
+  }
+  // the time left on a room's clock for colour c, counted down for the player to move
+  function left(r, c) {
+    const [main, per] = r.clk[c];
+    if (r.st !== "play" || (r.moves.length % 2 === 0 ? "b" : "w") !== c) return { main, per, byo: main > 0 ? r.byo : r.byo };
+    const el = (Hub.now() - r.turnAt) / 1000;
+    if (el <= main) return { main: main - el, per, byo: r.byo, run: true };
+    if (!r.byo || per <= 0) return { main: 0, per: 0, byo: 0, run: true, out: true };
+    const over = el - main, used = Math.floor(over / r.byo), p = per - used;
+    return p > 0 ? { main: 0, per: p, byo: r.byo - (over - used * r.byo), run: true } : { main: 0, per: 0, byo: 0, run: true, out: true };
+  }
+  function clockStr(t, byoLen) {
+    if (t.main > 0) return clockText(t.main) + (byoLen && t.per ? ` <small>+${t.per}×${byoLen}</small>` : "");
+    if (t.out) return "หมดเวลา";
+    return byoLen ? `${Math.ceil(t.byo)} <small>วิ · เหลือ ${t.per} ครั้ง</small>` : "0:00";
+  }
+  function tick() {
+    if (!G || G.kind !== "room" || !G.room) return;
+    renderClocks();
+    const r = G.room, c = r.moves.length % 2 === 0 ? "b" : "w";
+    if (r.st === "play" && left(r, c).out && Date.now() - G.ticked > 3000) { G.ticked = Date.now(); Hub.op("tick", { id: r.id }); }
+    if (r.st === "score" && Hub.now() - r.scoreAt > 62000 && Date.now() - G.ticked > 5000) { G.ticked = Date.now(); Hub.op("tick", { id: r.id }); }
+  }
+  function renderClocks() {
+    if (!G) return;
+    if (G.kind === "room" && G.room) {
+      const r = G.room;
+      for (const c of ["b", "w"]) $("og" + c + "C").innerHTML = clockStr(left(r, c), r.byo);
+    } else if (G.kind === "live" && G.live && G.live.clocks) {
+      const cl = G.live.clocks, toPlay = G.live.moves.length % 2 === 0 ? 0 : 1, el = G.live.ended ? 0 : (Date.now() - G.at) / 1000;
+      ["b", "w"].forEach((c, i) => { const [main, per, byo] = cl[i]; let m = main, b = byo; if (i === toPlay) { if (m > 0) m = Math.max(0, m - el); else b = Math.max(0, b - el); }
+        $("og" + c + "C").innerHTML = m > 0 ? clockText(m) : `${Math.ceil(b)} <small>วิ · เหลือ ${per} ครั้ง</small>`; });
+    }
+  }
+  const RES = { resign: "ยอมแพ้", timeout: "หมดเวลา", score: "นับแต้ม" };
+  function render() {
+    if (!G) return;
+    let black, white, status = "", btns = false, turn = null;
+    if (G.kind === "room") {
+      const r = G.room; if (!r) { $("ogStatus").textContent = "กำลังโหลด…"; return; }
+      const host = r.host, guest = r.guest;
+      black = r.black ? (r.black === host.n ? host : guest) : host; white = r.white ? (r.white === host.n ? host : guest) : null;
+      turn = r.st === "play" ? (r.moves.length % 2 === 0 ? "b" : "w") : null;
+      if (r.st === "open") status = `รอคู่แข่งกด Join · รหัสห้อง <b>${r.id}</b> · ${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}`;
+      else if (r.st === "play") status = G.me ? (turn === G.me ? "ตาคุณเดิน" : "รอคู่แข่งเดิน…") : `กำลังดู · ตาที่ ${r.moves.length + 1}`;
+      else if (r.st === "score") status = "ผ่านกันทั้งคู่ กำลังนับแต้ม…";
+      else if (r.res) { const w = r.res.winner === "b" ? "ดำ" : "ขาว", wn = r.res.winner === "b" ? r.black : r.white;
+        status = `<b>${w}ชนะ</b> (${esc(wn)}) · ${RES[r.res.how] || ""}${r.res.margin != null ? ` ${r.res.margin} แต้ม` : ""}${G.me ? (r.res.winner === G.me ? " · คุณชนะ! 🎉" : " · คุณแพ้") : ""}`; }
+      btns = !!G.me && (r.st === "play");
+      $("ogClose").hidden = !(r.st === "open" && G.me === null && r.host.n === Account.name());
+    } else {
+      const l = G.live; if (!l) { $("ogStatus").textContent = "รอข้อมูลตาถัดไปจากผู้เล่น…"; $("ogB").innerHTML = $("ogW").innerHTML = ""; draw(); return; }
+      const c = charOf(l.char) || { name: l.char, id: "" }, ai = { n: c.name, r: null, a: null, img: c.id ? `chars/${c.id}_face.jpg` : "menu/guest.png", ai: c.rank };
+      black = l.human === 1 ? l.who : ai; white = l.human === 1 ? ai : l.who;
+      turn = l.ended ? null : (l.moves.length % 2 === 0 ? "b" : "w");
+      status = l.ended ? "เกมนี้จบแล้ว" : `กำลังดูสด · ${l.exam ? "สอบวัดระดับ" : "vs AI"} · ตาที่ ${l.moves.length + 1}`;
+      $("ogClose").hidden = true;
+    }
+    const bar = (p, c) => p ? `<img src="${p.img || face(p.a)}" alt="" width="160" height="160"><span class="og-n"><span class="st ${c}"></span><b>${esc(p.n)}</b></span><span class="og-c2"><span class="og-c" id="og${c}C"></span><span class="ch-rank${p.ai || typeof p.r === "number" ? "" : " no"}">${esc(p.ai || rankOf(p.r))}</span></span>`
+      : `<span class="og-n"><span class="st ${c}"></span><b>รอคู่แข่ง…</b></span><span class="og-c2"><span class="og-c" id="og${c}C"></span></span>`;
+    $("ogB").innerHTML = bar(black, "b"); $("ogW").innerHTML = bar(white, "w");
+    $("ogB").classList.toggle("turn", turn === "b"); $("ogW").classList.toggle("turn", turn === "w");
+    $("ogStatus").innerHTML = status;
+    $("ogPass").hidden = $("ogResign").hidden = !btns;
+    $("ogTitle").textContent = G.kind === "room" ? (G.me ? "PLAY ONLINE" : "WATCH") : "WATCH";
+    renderClocks(); draw();
+  }
+
+  // ---------- drawing ----------
+  const STAR = { 9: [2, 4, 6], 13: [3, 6, 9], 19: [3, 9, 15] };
+  function draw() {
+    const cv = $("ogCv"), box = cv.parentElement.getBoundingClientRect(), sz = Math.max(160, Math.floor(Math.min(box.width, box.height || box.width, window.innerHeight - box.top - 12) - 24));
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== sz * dpr) { cv.width = cv.height = sz * dpr; cv.style.width = cv.style.height = sz + "px"; }
+    const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    let n = 19, stones = null, last = -1, dead = null;
+    if (G && G.kind === "room" && G.room) { n = G.room.size; const b = G.b; stones = []; for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) { const c = b.color[b.pt(i, y)]; stones.push(c === D.BLACK ? 1 : c === D.WHITE ? 2 : 0); }
+      const lm = G.room.moves[G.room.moves.length - 1]; last = lm ? lm[1] * n + lm[0] : -1; dead = G.dead ? new Set(G.dead.map(([i, j]) => j * n + i)) : null; }
+    else if (G && G.kind === "live" && G.live) { n = G.live.size; const b = new D.Board(n); for (const m of G.live.moves) b.play(m < 0 ? D.PASS : b.pt(m % n, Math.floor(m / n)));
+      stones = []; for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) { const c = b.color[b.pt(i, y)]; stones.push(c === D.BLACK ? 1 : c === D.WHITE ? 2 : 0); }
+      const lm = G.live.moves[G.live.moves.length - 1]; last = lm >= 0 ? lm : -1; }
+    const cell = sz / (n + 1);
+    x.fillStyle = "#dcb57a"; x.fillRect(0, 0, sz, sz);
+    x.strokeStyle = "#3b2a17"; x.lineWidth = 1;
+    for (let i = 0; i < n; i++) {
+      x.beginPath(); x.moveTo(cell, cell * (i + 1)); x.lineTo(cell * n, cell * (i + 1)); x.stroke();
+      x.beginPath(); x.moveTo(cell * (i + 1), cell); x.lineTo(cell * (i + 1), cell * n); x.stroke();
+    }
+    x.fillStyle = "#3b2a17";
+    for (const i of STAR[n] || []) for (const j of STAR[n] || []) { if (n === 9 && (i === 4) !== (j === 4)) continue; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), Math.max(2, cell * 0.1), 0, 7); x.fill(); }
+    const stone = (i, j, c, alpha) => {
+      const cx = cell * (i + 1), cy = cell * (j + 1), r = cell * 0.47;
+      x.globalAlpha = alpha || 1;
+      const g = x.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
+      if (c === 1) { g.addColorStop(0, "#666"); g.addColorStop(1, "#111"); } else { g.addColorStop(0, "#fff"); g.addColorStop(1, "#cfcfc6"); }
+      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); x.globalAlpha = 1;
+    };
+    if (stones) stones.forEach((c, k) => { if (c) stone(k % n, Math.floor(k / n), c, dead && dead.has(k) ? 0.4 : 1); });
+    if (last >= 0 && stones) { const i = last % n, j = Math.floor(last / n); x.strokeStyle = stones[last] === 1 ? "#fff" : "#000"; x.lineWidth = 2; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), cell * 0.22, 0, 7); x.stroke(); }
+    if (G && G.ghost) stone(G.ghost[0], G.ghost[1], G.me === "b" ? 1 : 2, 0.55);
+    if (dead) { x.strokeStyle = "#c0392b"; x.lineWidth = 2; for (const k of dead) { const i = k % n, j = Math.floor(k / n), cx = cell * (i + 1), cy = cell * (j + 1), d = cell * 0.18; x.beginPath(); x.moveTo(cx - d, cy - d); x.lineTo(cx + d, cy + d); x.moveTo(cx + d, cy - d); x.lineTo(cx - d, cy + d); x.stroke(); } }
+  }
+  // tap once to see the stone, again on the same point to play it (a mouse plays on the first click)
+  function onBoard(ev) {
+    if (!G || G.kind !== "room" || !G.room || G.room.st !== "play" || !G.me) return;
+    const r = G.room; if ((r.moves.length % 2 === 0 ? "b" : "w") !== G.me) return;
+    const cv = $("ogCv"), rc = cv.getBoundingClientRect(), n = r.size, cell = rc.width / (n + 1);
+    const i = Math.round((ev.clientX - rc.left) / cell) - 1, j = Math.round((ev.clientY - rc.top) / cell) - 1;
+    if (i < 0 || j < 0 || i >= n || j >= n) return;
+    if (!G.b.isLegal(G.b.pt(i, j), G.me === "b" ? D.BLACK : D.WHITE)) { $("ogStatus").textContent = "เดินตรงนั้นไม่ได้"; return; }
+    const touch = ev.pointerType === "touch" || ev.pointerType === "pen";
+    if (touch && !(G.ghost && G.ghost[0] === i && G.ghost[1] === j)) { G.ghost = [i, j]; draw(); $("ogStatus").textContent = "แตะจุดเดิมอีกครั้งเพื่อวางหมาก"; return; }
+    send([i, j]);
+  }
+  async function send(p) {
+    const r = G.room, g = G;
+    G.ghost = p ? p : null;
+    const x = await Hub.op("move", { token: Account.token(), id: r.id, n: r.moves.length, p });
+    if (G !== g) return;
+    if (x.status !== 200) { G.ghost = null; $("ogStatus").textContent = x.body.error || "ส่งตาเดินไม่สำเร็จ"; draw(); }
+    else if (x.body.room) setRoom(x.body.room);
+  }
+  // ---------- a game against the AI tells spectators every move ----------
+  function live(gid, s) { if (gid) Hub.op("live", { token: Account.token(), g: gid, s }); }
+
+  function init(deps) {
+    D = deps;
+    $("onlBack").onclick = () => { D.blip(660); unsubAll(); lobbyMode = null; D.showMenu(); };
+    $("watBack").onclick = () => { D.blip(660); unsubAll(); lobbyMode = null; D.showMenu(); };
+    $("ogBack").onclick = () => { D.blip(660); const from = G && G.kind === "room" && (G.me || (G.room && G.room.host.n === Account.name())) ? "play" : "watch"; leaveGame(); openLobby(from); };
+    $("ogClose").onclick = async () => { if (!G || !G.room) return; await Hub.op("close", { token: Account.token(), id: G.room.id }); leaveGame(); openLobby("play"); };
+    $("ogPass").onclick = async () => { if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
+    $("ogResign").onclick = async () => { if (!G || !G.room || !await D.askSure("ยอมแพ้?", "ยอมแพ้เกมนี้จริงไหม", "ยอมแพ้")) return; const x = await Hub.op("resign", { token: Account.token(), id: G.room.id }); if (x.status === 200 && x.body.room) setRoom(x.body.room); };
+    $("ogCv").addEventListener("pointerup", onBoard);
+    window.addEventListener("resize", () => { if (G) draw(); });
+    $("onNew").addEventListener("click", e => {
+      if (e.target === $("onNew") || e.target.id === "onX") { $("onNew").hidden = true; return; }
+      const b = e.target.closest("[data-k] button"); if (!b) return;
+      const k = b.closest("[data-k]").dataset.k; SET[k] = k === "pick" ? b.dataset.v : +b.dataset.v;
+      openNew();
+    });
+    $("onGo").onclick = create;
+    if (pend().length) setTimeout(() => { if (Account.name()) checkPending(); }, 4000);
+    document.addEventListener("click", e => {
+      const b = e.target.closest && e.target.closest("button"); if (!b) return;
+      if (b.id === "olNew") { D.blip(880); openNew(); }
+      else if (b.dataset.join) { D.blip(880); (async () => { const x = await Hub.op("join", { token: Account.token(), id: b.dataset.join }); if (x.status !== 200) { const e = $("onlErr"); if (e) { e.textContent = x.body.error || "เข้าห้องไม่ได้"; setTimeout(() => { e.textContent = ""; }, 4000); } return; } enterRoom(x.body.room.id, x.body.room); })(); }
+      else if (b.dataset.enter) { D.blip(880); enterRoom(b.dataset.enter); }
+      else if (b.dataset.watchRoom) { D.blip(880); enterRoom(b.dataset.watchRoom); }
+      else if (b.dataset.watchLive) { D.blip(880); watchLive(b.dataset.watchLive); }
+    });
+  }
+  return { init, openLobby, live, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
+})();
+
 </script>
 <script>
 (function () {
@@ -6134,6 +7135,10 @@ const Coach = (function () {
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
+  // the player's own card in a game: account name, profile picture and rank from the rating (src/rating.js)
+  const meName = () => Account.name() || "คุณ";
+  const meRank = () => { const v = Rating.get(); return v ? `${rankName(Rating.toRank(v.R))} · ${v.R}` : "ผู้เล่น"; };
+  const meAv = () => { const a = Account.avatarSrc(); return a === "menu/guest.png" ? YOU_AV : `<img class="av" alt="" width="160" height="160" src="${a}">`; };
   // Kru Michio's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
   const FON_LV = {
     15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
@@ -6495,7 +7500,7 @@ const Coach = (function () {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "510a67f3b9";
+  const BUILD = "5064936f3c";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -6518,7 +7523,14 @@ const Coach = (function () {
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
   const LIVE_EVERY = MATCH ? 20000 : 60000; // a test match has no player to wait on: every 20 s
   let liveAt = 0, liveTimer = null;
+  // WATCH: spectators of this game get every move over the shared WebSocket (one message, not one request, per move)
+  function liveNow(ended) {
+    if (MATCH || !board || !gameId) return;
+    const st = snapshot();
+    Online.live(gameId, { char: CHARS[gameChar].id, exam: !!exam, size: n, human, moves: st.moves, clocks: st.clocks, ended: ended || null });
+  }
   function liveUpdate() {
+    liveNow();
     if (!STATS_URL || liveTimer) return;
     const g = gameId;
     liveTimer = setTimeout(() => {
@@ -6528,6 +7540,7 @@ const Coach = (function () {
     }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
   function reportEnd(humanWon, how, margin) {
+    liveNow(humanWon ? "human" : "ai");
     if (MATCH) {
       if (gameReported) return;
       gameReported = true;
@@ -6542,10 +7555,24 @@ const Coach = (function () {
     if (gameReported) return;
     gameReported = true;
     if (!exam) showResult(humanWon);
+    // the rating (src/rating.js): a finished game against a character with a rank moves it, handicap stones and bonus
+    // points counted as the character playing weaker; the rank test sets it from the graded rank further down
+    let dR;
+    if (!exam && EXAMBOT === null) {
+      const ch = CHARS[gameChar], base = Rating.parseRank(ch.levels ? FON_LV[fonLv].name : ch.rank);
+      if (base !== null) {
+        const give = Math.min(9, (handi ? handi - 0.5 : 0) + bonus / 12 * 19 / n);
+        const v = Rating.update(Rating.toR(base - give), humanWon, n, "ai", ch.name);
+        dR = v.hist[v.hist.length - 1].d;
+      }
+    }
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs(), dR });
     save("history", hist.slice(0, 100));
+    // characters ever beaten (profile pictures unlock from these; the history keeps only 100 games)
+    if (humanWon) { const bt = load("beaten", []); if (!bt.includes(CHARS[gameChar].id)) save("beaten", bt.concat(CHARS[gameChar].id)); }
+    Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
@@ -6555,7 +7582,7 @@ const Coach = (function () {
     grading.then(() => {
       const r = examResult(ex, len);
       if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); if (EXAMBOT === null) Rating.anchor(bestRank(load("history", []))); Account.push(); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -6621,9 +7648,9 @@ const Coach = (function () {
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
-      $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
-      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+      $("n" + k).textContent = me ? meName() : ch.name;
+      $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
@@ -6743,9 +7770,9 @@ const Coach = (function () {
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
-      $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
-      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+      $("n" + k).textContent = me ? meName() : ch.name;
+      $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
@@ -7725,11 +8752,18 @@ const Coach = (function () {
     { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
-    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
+    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
+    { id: "online", t: "PLAY ONLINE", s: "เล่นกับคนจริง สร้างห้องหรือกด Join" },
+    { id: "watch", t: "WATCH", s: "ดูเกมที่คนอื่นกำลังเล่นอยู่แบบสด ๆ" },
+    { id: "ranking", t: "LEADERBOARD", s: "อันดับผู้เล่นทั้งหมด เรียงตามระดับฝีมือ" },
+    { id: "chat", t: "WORLD CHAT", s: "คุยกับผู้เล่นคนอื่นทั่วโลก" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="${m.img || `menu/${m.id}.png`}" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+  // a game in the history the pages can show: against a character of this version, or an online game (src/online.js)
+  const isRec = h => !!h && (h.char === "online" ? !!h.opp && Array.isArray(h.moves) : CHARS.some(c => c.id === h.char));
+  const rateName = R => rankName(Rating.toRank(R));
   // the best rank from all of the player's exams with Hikaru (kept apart from the history, which holds only 100 games)
   function bestRank(hist) {
     let b = load("bestRank", null);
@@ -7738,13 +8772,16 @@ const Coach = (function () {
   }
   // the player card on wide screens: best exam rank, wins, and the time spent on the clocks
   function renderMenuStats() {
-    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const hist = load("history", []).filter(isRec);
     const ranked = bestRank(hist), wins = hist.filter(h => h.won).length;
     const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
-    $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
+    const rt = Rating.anchor(ranked);
+    $("mnRank").textContent = rt ? rateName(rt.R) : ranked ? rankName(ranked.rank) : "-";
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    $("mnWhoName").textContent = Account.name() || "GUEST";
+    const av = Account.avatarSrc(); $("mnWhoImg").src = av; $("mnWhoImg").classList.toggle("face", av !== "menu/guest.png");
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU.find(m => m.id === "profile").s;
     // LEARN: progress line, and the (RECOMMEND) tag sits there until a new player has started the course or played a game
@@ -7755,9 +8792,50 @@ const Coach = (function () {
       if (on && !tag) b.insertAdjacentHTML("beforeend", ' <i class="mn-rec">(RECOMMEND)</i>'); else if (!on && tag) tag.remove();
     }
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
+  // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // first visit: offer an account once the loading screen is gone
+  if (!MATCH && EXAMBOT === null) (function welcome() { if (!$("splash").hidden) return setTimeout(welcome, 300); if (!$("menu").hidden) Account.welcome(); })();
+  // PLAY ONLINE and WATCH (src/online.js); the count after both players pass uses KataGo like the games against the AI
+  async function countLead(n2, mv, komi) {
+    const b = new Board(n2), pts = [];
+    for (const m of mv) { const p = m ? b.pt(m[0], m[1]) : PASS; b.play(p); pts.push(p); }
+    const dead = new Set();
+    try {
+      if (AI) {
+        const ev = await AI.evaluate(n2, pts, komi), seen = new Set();
+        const ownBlack = q => { const [x, y] = b.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
+        for (const p of b.pts) {
+          const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
+          const chain = [p]; seen.add(p);
+          for (let i = 0; i < chain.length; i++) for (const d of b.dirs) { const q = chain[i] + d; if (b.color[q] === c && !seen.has(q)) { seen.add(q); chain.push(q); } }
+          const s = chain.reduce((a, q) => a + ownBlack(q), 0) / chain.length;
+          if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
+        }
+      }
+    } catch (e) { console.error(e); }
+    let bl = 0, wh = 0; const seen = new Set();
+    for (const p of b.pts) {
+      const c = b.color[p];
+      if ((c === BLACK || c === WHITE) && !dead.has(p)) { if (c === BLACK) bl++; else wh++; continue; }
+      if (seen.has(p)) continue;
+      const region = [p]; seen.add(p); let tb = false, tw = false;
+      for (let i = 0; i < region.length; i++) for (const d of b.dirs) {
+        const q = region[i] + d, cq = b.color[q];
+        if (cq === 3) continue;
+        if ((cq === BLACK || cq === WHITE) && !dead.has(q)) { if (cq === BLACK) tb = true; else tw = true; }
+        else if (!seen.has(q)) { seen.add(q); region.push(q); }
+      }
+      if (tb && !tw) bl += region.length; else if (tw && !tb) wh += region.length;
+    }
+    return { lead: bl - wh - komi, dead: [...dead].map(p => b.xy(p)) };
+  }
+  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead });
+  // chat, leaderboard and the profile picture picker (src/social.js)
+  Social.init({ CHARS, rankName, hideScreens, showMenu, blip, onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -7771,6 +8849,10 @@ const Coach = (function () {
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
     else if (go === "learn") { hideScreens(); trackMode("learn"); Learn.open(); }
+    else if (go === "online") Online.openLobby("play");
+    else if (go === "watch") Online.openLobby("watch");
+    else if (go === "ranking") Social.openBoard();
+    else if (go === "chat") Social.openChat();
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
@@ -7786,10 +8868,10 @@ const Coach = (function () {
   }
   function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
   function renderProfile() {
-    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const hist = load("history", []).filter(isRec);
     const charOf = id => CHARS.find(c => c.id === id);
     const wins = hist.filter(h => h.won).length;
-    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+    let h = Account.card() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     const ranked = bestRank(hist);
     const g = pausedGame();
@@ -7801,25 +8883,73 @@ const Coach = (function () {
         <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
         <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
     }
+    const rt = Rating.anchor(ranked);
+    h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rateName(rt.R)}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
+        <span class="note">${typeof rt.base === "number" ? `เริ่มจากผลสอบที่ดีที่สุด (${rankName(rt.base)}) แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์หลังจากนั้น` : "ขึ้นลงตามผลแพ้ชนะกับ AI และเล่นออนไลน์ · ถ้าสอบกับฮิคารุ ระดับจะเริ่มใหม่จากผลสอบที่ดีที่สุด"}</span></div><div id="pfGraph" class="pf-graph"></div></div>`
+      : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (ถ้ายังไม่เคยสอบเริ่มที่ 15 คิว ถ้าสอบแล้วเริ่มจากผลสอบที่ดีที่สุด)</span></div>`);
     h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
     if (!hist.length) {
       h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
-      $("pfBody").innerHTML = h; return;
+      $("pfBody").innerHTML = h; drawRating(); return;
     }
     const by = new Map();
     for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
     h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
       return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
-        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
-    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") +
+      (by.has("online") ? (v => `<div class="pf-row"><img src="menu/online.png" alt="" width="160" height="160"><div class="t"><b>เล่นออนไลน์</b> <span class="note" style="display:inline">กับผู้เล่นคนอื่น</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`)(by.get("online")) : "") + `</div>`;
+    const escH = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const on = x.char === "online", c = on ? null : charOf(x.char);
       const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
-      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
-        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? (on ? " (คู่แข่งยอมแพ้)" : " (AI ยอมแพ้)") : " (คุณยอมแพ้)") : "");
+      const img = on ? (x.opp.a && charOf(x.opp.a) ? `chars/${x.opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
+      const who = on ? `vs ${escH(x.opp.n)}</b> <span class="note" style="display:inline">ออนไลน์${typeof x.opp.r === "number" ? " · " + rankName(x.opp.r) : ""}</span><b>` : `vs ${c.name}`;
+      const dR = typeof x.dR === "number" ? ` · <span class="pf-dr ${x.dR >= 0 ? "up" : "dn"}">เรตติ้ง ${x.dR >= 0 ? "+" : "−"}${Math.abs(x.dR)}</span>` : "";
+      return `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${who}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""}${dR} · ${when}</div></div>
         <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
-      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+      <p class="note" style="margin-top:6px">${Account.name() ? "ประวัติเก็บไว้ในแอคเคาท์ของคุณ" : "ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"} เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
+    drawRating();
+  }
+  // the rating over time: one line, one point per counted game or rank test, the rank names on the left;
+  // pointing at it shows that game (drawn at the box's real width so the text stays readable on a phone)
+  function drawRating() {
+    const box = $("pfGraph"), v = Rating.get(); if (!box || !v || !v.hist.length) return;
+    const H = 190, W = Math.max(260, box.clientWidth), L = 64, Rt = 14, T = 12, B = 24;
+    const pts = v.hist.map(h => ({ R: h.R, h }));
+    pts.unshift({ R: v.hist[0].R - (v.hist[0].d || 0), h: null }); // where the rating stood before the first counted game
+    const ys = pts.map(p => p.R);
+    let lo = Math.min(...ys), hi = Math.max(...ys);
+    const span0 = hi - lo, step = span0 <= 500 ? 100 : span0 <= 1200 ? 200 : 500;
+    lo = Math.floor((lo - 20) / step) * step; hi = Math.ceil((hi + 20) / step) * step; if (hi - lo < 2 * step) hi = lo + 2 * step;
+    const X = i => L + (pts.length === 1 ? 0.5 : i / (pts.length - 1)) * (W - L - Rt), Y = R => T + (hi - R) / (hi - lo) * (H - T - B);
+    let g = "";
+    for (let y = lo; y <= hi; y += step) g += `<line x1="${L}" x2="${W - Rt}" y1="${Y(y)}" y2="${Y(y)}" class="gl"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end">${rankName(Rating.toRank(y))}</text>`;
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.R).toFixed(1)}`).join("");
+    const last = pts.length - 1;
+    const first = v.hist[0].at, lastAt = v.hist[v.hist.length - 1].at, day = t => new Date(t).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟเรตติ้ง ตอนนี้ ${rateName(v.R)} ${v.R} แต้ม">
+      ${g}<text x="${L}" y="${H - 6}">${day(first)}</text><text x="${W - Rt}" y="${H - 6}" text-anchor="end">${day(lastAt)}</text>
+      <path d="${d}" class="ln"/><circle cx="${X(last)}" cy="${Y(pts[last].R)}" r="4" class="dot"/>
+      <line class="hv" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><circle class="hvd" r="5" visibility="hidden"/></svg><div class="pf-tip" hidden></div>`;
+    const svg = box.querySelector("svg"), tip = box.querySelector(".pf-tip"), hv = svg.querySelector(".hv"), hvd = svg.querySelector(".hvd");
+    const KIND = { ai: "(AI)", online: "(ออนไลน์)" };
+    const hide = () => { tip.hidden = true; hv.setAttribute("visibility", "hidden"); hvd.setAttribute("visibility", "hidden"); };
+    svg.addEventListener("pointermove", e => {
+      const r = svg.getBoundingClientRect(), x = e.clientX - r.left;
+      if (pts.length < 2) return;
+      const i = Math.max(1, Math.min(last, Math.round((x - L) / (W - L - Rt) * last))), p = pts[i], h = p.h;
+      hv.setAttribute("x1", X(i)); hv.setAttribute("x2", X(i)); hv.setAttribute("visibility", "visible");
+      hvd.setAttribute("cx", X(i)); hvd.setAttribute("cy", Y(p.R)); hvd.setAttribute("visibility", "visible");
+      const res = h.k === "exam" ? "" : h.w ? " · ชนะ" : " · แพ้";
+      tip.innerHTML = `<b>${rateName(p.R)} · ${p.R}</b> <span class="pf-dr ${h.d >= 0 ? "up" : "dn"}">${h.d >= 0 ? "+" : "−"}${Math.abs(h.d)}</span><br>${h.k === "exam" ? "สอบวัดระดับกับฮิคารุ" : "vs " + String(h.o || "").replace(/[&<>"]/g, "") + " " + (KIND[h.k] || "")}${res}<br><small>${new Date(h.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small>`;
+      tip.hidden = false;
+      const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, X(i) - tw / 2)) + "px"; tip.style.top = Math.max(0, Y(p.R) - tip.offsetHeight - 12) + "px";
+    });
+    svg.addEventListener("pointerleave", hide);
   }
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
@@ -7830,7 +8960,7 @@ const Coach = (function () {
       return;
     }
     if (b.dataset.an !== undefined) {
-      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      const x = load("history", []).filter(isRec)[+b.dataset.an]; if (!x) return;
       unlockAudio(); blip(880); hideScreens(); trackMode("analysis"); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
     }
   });

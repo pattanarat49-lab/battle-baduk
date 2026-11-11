@@ -4,7 +4,7 @@
   "main": "worker/index.js",
   "compatibility_date": "2025-06-01",
   "assets": { "directory": "./", "binding": "ASSETS" },
-  "durable_objects": { "bindings": [{ "name": "STATS", "class_name": "Stats" }] },
+  "durable_objects": { "bindings": [{ "name": "STATS", "class_name": "Stats" }, { "name": "ACCOUNTS", "class_name": "Accounts" }] },
   "observability": { "enabled": true },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Stats"] }]
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Stats"] }, { "tag": "v2", "new_sqlite_classes": ["Accounts"] }]
 }

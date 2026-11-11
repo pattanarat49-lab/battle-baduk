@@ -17,6 +17,11 @@ page=head+'''<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/d
 '''+open('analysis.js').read()+'''
 '''+open('tsumego.js').read()+'''
 '''+open('coach.js').read()+'''
+'''+open('rating.js').read()+'''
+'''+open('hub.js').read()+'''
+'''+open('account.js').read()+'''
+'''+open('social.js').read()+'''
+'''+open('online.js').read()+'''
 </script>
 <script>
 '''+open('nn_main.js').read()+'''

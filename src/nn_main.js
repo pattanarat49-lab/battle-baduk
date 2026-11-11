@@ -524,6 +524,10 @@
   function avatarSVG(c, cls) { return cls ? `<img class="${cls}" src="chars/${c.id}.jpg" alt="${c.name}" width="480" height="480">` : `<img class="av" src="chars/${c.id}_face.jpg" alt="" width="160" height="160">`; }
   // a plain silhouette for the human player until real profiles exist
   const YOU_AV = `<img class="av" alt="" width="160" height="160" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#3b6a73"/><circle cx="32" cy="25" r="11" fill="#a9c3c2"/><path d="M11 60c2-12 11-19 21-19s19 7 21 19z" fill="#a9c3c2"/></svg>')}">`;
+  // the player's own card in a game: account name, profile picture and rank from the rating (src/rating.js)
+  const meName = () => Account.name() || "คุณ";
+  const meRank = () => { const v = Rating.get(); return v ? `${rankName(Rating.toRank(v.R))} · ${v.R}` : "ผู้เล่น"; };
+  const meAv = () => { const a = Account.avatarSrc(); return a === "menu/guest.png" ? YOU_AV : `<img class="av" alt="" width="160" height="160" src="${a}">`; };
   // Kru Michio's strength, picked on the select screen (owner 2026-11-01): HumanSL from 15 kyu to 1 dan
   const FON_LV = {
     15: { name: "15 คิว", search: { profile: "rank_15k", temperature: 0.8, local: 3, keepTerritory: true } },
@@ -908,7 +912,14 @@
   // spectators get the board at most once a minute, not every move: each update is one request against the free daily quota
   const LIVE_EVERY = MATCH ? 20000 : 60000; // a test match has no player to wait on: every 20 s
   let liveAt = 0, liveTimer = null;
+  // WATCH: spectators of this game get every move over the shared WebSocket (one message, not one request, per move)
+  function liveNow(ended) {
+    if (MATCH || !board || !gameId) return;
+    const st = snapshot();
+    Online.live(gameId, { char: CHARS[gameChar].id, exam: !!exam, size: n, human, moves: st.moves, clocks: st.clocks, ended: ended || null });
+  }
   function liveUpdate() {
+    liveNow();
     if (!STATS_URL || liveTimer) return;
     const g = gameId;
     liveTimer = setTimeout(() => {
@@ -918,6 +929,7 @@
     }, Math.max(0, liveAt + LIVE_EVERY - Date.now()));
   }
   function reportEnd(humanWon, how, margin) {
+    liveNow(humanWon ? "human" : "ai");
     if (MATCH) {
       if (gameReported) return;
       gameReported = true;
@@ -932,10 +944,24 @@
     if (gameReported) return;
     gameReported = true;
     if (!exam) showResult(humanWon);
+    // the rating (src/rating.js): a finished game against a character with a rank moves it, handicap stones and bonus
+    // points counted as the character playing weaker; the rank test sets it from the graded rank further down
+    let dR;
+    if (!exam && EXAMBOT === null) {
+      const ch = CHARS[gameChar], base = Rating.parseRank(ch.levels ? FON_LV[fonLv].name : ch.rank);
+      if (base !== null) {
+        const give = Math.min(9, (handi ? handi - 0.5 : 0) + bonus / 12 * 19 / n);
+        const v = Rating.update(Rating.toR(base - give), humanWon, n, "ai", ch.name);
+        dR = v.hist[v.hist.length - 1].d;
+      }
+    }
     // the profile page's record of games played in this browser, newest first
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
-    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
+    hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs(), dR });
     save("history", hist.slice(0, 100));
+    // characters ever beaten (profile pictures unlock from these; the history keeps only 100 games)
+    if (humanWon) { const bt = load("beaten", []); if (!bt.includes(CHARS[gameChar].id)) save("beaten", bt.concat(CHARS[gameChar].id)); }
+    Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
@@ -945,7 +971,7 @@
     grading.then(() => {
       const r = examResult(ex, len);
       if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); if (EXAMBOT === null) Rating.anchor(bestRank(load("history", []))); Account.push(); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -1011,9 +1037,9 @@
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = !MATCH && col === human, ch = MATCH ? CHARS[MATCH[col]] : CHARS[gameChar];
-      $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
-      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+      $("n" + k).textContent = me ? meName() : ch.name;
+      $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
@@ -1133,9 +1159,9 @@
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
       const me = col === human;
-      $("n" + k).textContent = me ? "คุณ" : ch.name;
-      $("rk" + k).textContent = me ? "ผู้เล่น" : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
-      $("av" + k).innerHTML = me ? YOU_AV : avatarSVG(ch);
+      $("n" + k).textContent = me ? meName() : ch.name;
+      $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
+      $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
@@ -2115,11 +2141,18 @@
     { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
-    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
+    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
+    { id: "online", t: "PLAY ONLINE", s: "เล่นกับคนจริง สร้างห้องหรือกด Join" },
+    { id: "watch", t: "WATCH", s: "ดูเกมที่คนอื่นกำลังเล่นอยู่แบบสด ๆ" },
+    { id: "ranking", t: "LEADERBOARD", s: "อันดับผู้เล่นทั้งหมด เรียงตามระดับฝีมือ" },
+    { id: "chat", t: "WORLD CHAT", s: "คุยกับผู้เล่นคนอื่นทั่วโลก" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="${m.img || `menu/${m.id}.png`}" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ' <i class="mn-rec">(RECOMMEND)</i>' : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
+  // a game in the history the pages can show: against a character of this version, or an online game (src/online.js)
+  const isRec = h => !!h && (h.char === "online" ? !!h.opp && Array.isArray(h.moves) : CHARS.some(c => c.id === h.char));
+  const rateName = R => rankName(Rating.toRank(R));
   // the best rank from all of the player's exams with Hikaru (kept apart from the history, which holds only 100 games)
   function bestRank(hist) {
     let b = load("bestRank", null);
@@ -2128,13 +2161,16 @@
   }
   // the player card on wide screens: best exam rank, wins, and the time spent on the clocks
   function renderMenuStats() {
-    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const hist = load("history", []).filter(isRec);
     const ranked = bestRank(hist), wins = hist.filter(h => h.won).length;
     const secs = hist.reduce((a, h) => a + (h.secs || 0), 0);
-    $("mnRank").textContent = ranked ? rankName(ranked.rank) : "-";
+    const rt = Rating.anchor(ranked);
+    $("mnRank").textContent = rt ? rateName(rt.R) : ranked ? rankName(ranked.rank) : "-";
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    $("mnWhoName").textContent = Account.name() || "GUEST";
+    const av = Account.avatarSrc(); $("mnWhoImg").src = av; $("mnWhoImg").classList.toggle("face", av !== "menu/guest.png");
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU.find(m => m.id === "profile").s;
     // LEARN: progress line, and the (RECOMMEND) tag sits there until a new player has started the course or played a game
@@ -2145,9 +2181,50 @@
       if (on && !tag) b.insertAdjacentHTML("beforeend", ' <i class="mn-rec">(RECOMMEND)</i>'); else if (!on && tag) tag.remove();
     }
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
+  // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // first visit: offer an account once the loading screen is gone
+  if (!MATCH && EXAMBOT === null) (function welcome() { if (!$("splash").hidden) return setTimeout(welcome, 300); if (!$("menu").hidden) Account.welcome(); })();
+  // PLAY ONLINE and WATCH (src/online.js); the count after both players pass uses KataGo like the games against the AI
+  async function countLead(n2, mv, komi) {
+    const b = new Board(n2), pts = [];
+    for (const m of mv) { const p = m ? b.pt(m[0], m[1]) : PASS; b.play(p); pts.push(p); }
+    const dead = new Set();
+    try {
+      if (AI) {
+        const ev = await AI.evaluate(n2, pts, komi), seen = new Set();
+        const ownBlack = q => { const [x, y] = b.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
+        for (const p of b.pts) {
+          const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
+          const chain = [p]; seen.add(p);
+          for (let i = 0; i < chain.length; i++) for (const d of b.dirs) { const q = chain[i] + d; if (b.color[q] === c && !seen.has(q)) { seen.add(q); chain.push(q); } }
+          const s = chain.reduce((a, q) => a + ownBlack(q), 0) / chain.length;
+          if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
+        }
+      }
+    } catch (e) { console.error(e); }
+    let bl = 0, wh = 0; const seen = new Set();
+    for (const p of b.pts) {
+      const c = b.color[p];
+      if ((c === BLACK || c === WHITE) && !dead.has(p)) { if (c === BLACK) bl++; else wh++; continue; }
+      if (seen.has(p)) continue;
+      const region = [p]; seen.add(p); let tb = false, tw = false;
+      for (let i = 0; i < region.length; i++) for (const d of b.dirs) {
+        const q = region[i] + d, cq = b.color[q];
+        if (cq === 3) continue;
+        if ((cq === BLACK || cq === WHITE) && !dead.has(q)) { if (cq === BLACK) tb = true; else tw = true; }
+        else if (!seen.has(q)) { seen.add(q); region.push(q); }
+      }
+      if (tb && !tw) bl += region.length; else if (tw && !tb) wh += region.length;
+    }
+    return { lead: bl - wh - komi, dead: [...dead].map(p => b.xy(p)) };
+  }
+  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead });
+  // chat, leaderboard and the profile picture picker (src/social.js)
+  Social.init({ CHARS, rankName, hideScreens, showMenu, blip, onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -2161,6 +2238,10 @@
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
     else if (go === "learn") { hideScreens(); trackMode("learn"); Learn.open(); }
+    else if (go === "online") Online.openLobby("play");
+    else if (go === "watch") Online.openLobby("watch");
+    else if (go === "ranking") Social.openBoard();
+    else if (go === "chat") Social.openChat();
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
@@ -2176,10 +2257,10 @@
   }
   function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
   function renderProfile() {
-    const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
+    const hist = load("history", []).filter(isRec);
     const charOf = id => CHARS.find(c => c.id === id);
     const wins = hist.filter(h => h.won).length;
-    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+    let h = Account.card() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     const ranked = bestRank(hist);
     const g = pausedGame();
@@ -2191,25 +2272,73 @@
         <div>${g.n}×${g.n} · คุณถือ${g.human === WHITE ? "ขาว" : "ดำ"} · ${g.history.length} ตา · ${left} · เก็บไว้อีก ${[keep >= 60 ? Math.floor(keep / 60) + " ชม." : "", keep % 60 ? keep % 60 + " นาที" : ""].join(" ").trim()}</div></div>
         <div class="pf-btns"><button class="pf-an primary" id="pfResume">เล่นต่อ</button></div></div></div>`;
     }
+    const rt = Rating.anchor(ranked);
+    h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rateName(rt.R)}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
+        <span class="note">${typeof rt.base === "number" ? `เริ่มจากผลสอบที่ดีที่สุด (${rankName(rt.base)}) แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์หลังจากนั้น` : "ขึ้นลงตามผลแพ้ชนะกับ AI และเล่นออนไลน์ · ถ้าสอบกับฮิคารุ ระดับจะเริ่มใหม่จากผลสอบที่ดีที่สุด"}</span></div><div id="pfGraph" class="pf-graph"></div></div>`
+      : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (ถ้ายังไม่เคยสอบเริ่มที่ 15 คิว ถ้าสอบแล้วเริ่มจากผลสอบที่ดีที่สุด)</span></div>`);
     h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
     if (!hist.length) {
       h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
-      $("pfBody").innerHTML = h; return;
+      $("pfBody").innerHTML = h; drawRating(); return;
     }
     const by = new Map();
     for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
     h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
       return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
-        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") + `</div>`;
-    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const c = charOf(x.char);
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") +
+      (by.has("online") ? (v => `<div class="pf-row"><img src="menu/online.png" alt="" width="160" height="160"><div class="t"><b>เล่นออนไลน์</b> <span class="note" style="display:inline">กับผู้เล่นคนอื่น</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`)(by.get("online")) : "") + `</div>`;
+    const escH = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const on = x.char === "online", c = on ? null : charOf(x.char);
       const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? " (AI ยอมแพ้)" : " (คุณยอมแพ้)") : "");
-      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
-        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
+      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? (on ? " (คู่แข่งยอมแพ้)" : " (AI ยอมแพ้)") : " (คุณยอมแพ้)") : "");
+      const img = on ? (x.opp.a && charOf(x.opp.a) ? `chars/${x.opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
+      const who = on ? `vs ${escH(x.opp.n)}</b> <span class="note" style="display:inline">ออนไลน์${typeof x.opp.r === "number" ? " · " + rankName(x.opp.r) : ""}</span><b>` : `vs ${c.name}`;
+      const dR = typeof x.dR === "number" ? ` · <span class="pf-dr ${x.dR >= 0 ? "up" : "dn"}">เรตติ้ง ${x.dR >= 0 ? "+" : "−"}${Math.abs(x.dR)}</span>` : "";
+      return `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${who}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""}${dR} · ${when}</div></div>
         <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
-      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+      <p class="note" style="margin-top:6px">${Account.name() ? "ประวัติเก็บไว้ในแอคเคาท์ของคุณ" : "ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"} เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
+    drawRating();
+  }
+  // the rating over time: one line, one point per counted game or rank test, the rank names on the left;
+  // pointing at it shows that game (drawn at the box's real width so the text stays readable on a phone)
+  function drawRating() {
+    const box = $("pfGraph"), v = Rating.get(); if (!box || !v || !v.hist.length) return;
+    const H = 190, W = Math.max(260, box.clientWidth), L = 64, Rt = 14, T = 12, B = 24;
+    const pts = v.hist.map(h => ({ R: h.R, h }));
+    pts.unshift({ R: v.hist[0].R - (v.hist[0].d || 0), h: null }); // where the rating stood before the first counted game
+    const ys = pts.map(p => p.R);
+    let lo = Math.min(...ys), hi = Math.max(...ys);
+    const span0 = hi - lo, step = span0 <= 500 ? 100 : span0 <= 1200 ? 200 : 500;
+    lo = Math.floor((lo - 20) / step) * step; hi = Math.ceil((hi + 20) / step) * step; if (hi - lo < 2 * step) hi = lo + 2 * step;
+    const X = i => L + (pts.length === 1 ? 0.5 : i / (pts.length - 1)) * (W - L - Rt), Y = R => T + (hi - R) / (hi - lo) * (H - T - B);
+    let g = "";
+    for (let y = lo; y <= hi; y += step) g += `<line x1="${L}" x2="${W - Rt}" y1="${Y(y)}" y2="${Y(y)}" class="gl"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end">${rankName(Rating.toRank(y))}</text>`;
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.R).toFixed(1)}`).join("");
+    const last = pts.length - 1;
+    const first = v.hist[0].at, lastAt = v.hist[v.hist.length - 1].at, day = t => new Date(t).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟเรตติ้ง ตอนนี้ ${rateName(v.R)} ${v.R} แต้ม">
+      ${g}<text x="${L}" y="${H - 6}">${day(first)}</text><text x="${W - Rt}" y="${H - 6}" text-anchor="end">${day(lastAt)}</text>
+      <path d="${d}" class="ln"/><circle cx="${X(last)}" cy="${Y(pts[last].R)}" r="4" class="dot"/>
+      <line class="hv" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><circle class="hvd" r="5" visibility="hidden"/></svg><div class="pf-tip" hidden></div>`;
+    const svg = box.querySelector("svg"), tip = box.querySelector(".pf-tip"), hv = svg.querySelector(".hv"), hvd = svg.querySelector(".hvd");
+    const KIND = { ai: "(AI)", online: "(ออนไลน์)" };
+    const hide = () => { tip.hidden = true; hv.setAttribute("visibility", "hidden"); hvd.setAttribute("visibility", "hidden"); };
+    svg.addEventListener("pointermove", e => {
+      const r = svg.getBoundingClientRect(), x = e.clientX - r.left;
+      if (pts.length < 2) return;
+      const i = Math.max(1, Math.min(last, Math.round((x - L) / (W - L - Rt) * last))), p = pts[i], h = p.h;
+      hv.setAttribute("x1", X(i)); hv.setAttribute("x2", X(i)); hv.setAttribute("visibility", "visible");
+      hvd.setAttribute("cx", X(i)); hvd.setAttribute("cy", Y(p.R)); hvd.setAttribute("visibility", "visible");
+      const res = h.k === "exam" ? "" : h.w ? " · ชนะ" : " · แพ้";
+      tip.innerHTML = `<b>${rateName(p.R)} · ${p.R}</b> <span class="pf-dr ${h.d >= 0 ? "up" : "dn"}">${h.d >= 0 ? "+" : "−"}${Math.abs(h.d)}</span><br>${h.k === "exam" ? "สอบวัดระดับกับฮิคารุ" : "vs " + String(h.o || "").replace(/[&<>"]/g, "") + " " + (KIND[h.k] || "")}${res}<br><small>${new Date(h.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small>`;
+      tip.hidden = false;
+      const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, X(i) - tw / 2)) + "px"; tip.style.top = Math.max(0, Y(p.R) - tip.offsetHeight - 12) + "px";
+    });
+    svg.addEventListener("pointerleave", hide);
   }
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
@@ -2220,7 +2349,7 @@
       return;
     }
     if (b.dataset.an !== undefined) {
-      const x = load("history", []).filter(h => CHARS.some(c => c.id === h.char))[+b.dataset.an]; if (!x) return;
+      const x = load("history", []).filter(isRec)[+b.dataset.an]; if (!x) return;
       unlockAudio(); blip(880); hideScreens(); trackMode("analysis"); Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "prof" });
     }
   });

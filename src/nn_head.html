@@ -318,7 +318,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
 .mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
 .mn-title i { font-style: normal; } .mn-title .w { display: none; }
-.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(6, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(10, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
 #menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
   border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
 #menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
@@ -339,7 +339,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
 /* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
 @media (min-aspect-ratio: 5/4) {
-  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, minmax(0, 1fr)); }
   #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
   .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
   .mn-title .n { display: none; } .mn-title .w { display: inline; }
@@ -414,6 +414,20 @@ body.menuing { padding: 0; background: #0e272d; }
 .pf-h { font-family: var(--f-px); font-size: 13px; letter-spacing: .08em; color: var(--accent); margin: 18px 0 8px; }
 .pf-rank { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pf-rank .exam-rank { font-size: 24px; }
+.pf-rate { background: var(--bg-2); border: 1px dashed rgba(227, 176, 106, .45); padding: 12px 14px; }
+.pf-rate-top { display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; }
+.pf-rate-top .exam-rank { font-size: 24px; } .pf-rate-r { font-family: var(--f-px); color: var(--accent); font-variant-numeric: tabular-nums; }
+.pf-rate-top .note { flex-basis: 100%; }
+.pf-graph { position: relative; margin-top: 10px; min-width: 0; touch-action: pan-y; }
+.pf-graph svg { display: block; max-width: 100%; overflow: visible; }
+.pf-graph text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.pf-graph .gl { stroke: var(--line); stroke-width: 1; }
+.pf-graph .ln { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.pf-graph .dot, .pf-graph .hvd { fill: var(--accent); stroke: var(--bg-2); stroke-width: 2; }
+.pf-graph .hv { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.pf-tip { position: absolute; pointer-events: none; background: var(--surface-2); box-shadow: 0 0 0 2px var(--line), 0 4px 12px rgba(0,0,0,.35); padding: 6px 9px; font-size: 13px; line-height: 1.4; white-space: nowrap; }
+.pf-tip small { color: var(--muted); }
+.pf-dr { font-variant-numeric: tabular-nums; } .pf-dr.up { color: var(--ok); } .pf-dr.dn { color: var(--warn); }
 .pf-rows { display: grid; gap: 6px; }
 .pf-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
 .pf-row img { width: 40px; height: 40px; display: block; border: 2px solid var(--wood); }
@@ -592,6 +606,109 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .sure-card p { margin: 0 0 14px; font-size: 16px; color: var(--fg); text-align: center; }
 .sure-card p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 4px; font-size: 18px; }
 .sure .actions { padding: 0; }
+/* player accounts (src/account.js): card on the Profile page and the sign-in dialog */
+.acct-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.acct-box .t { min-width: 0; flex: 1 1 200px; } .acct-box .t b { display: block; font-weight: 700; color: var(--accent); }
+.acct-box .t span { display: block; font-size: 13px; color: var(--muted); }
+.acct-box .bad, .acct-msg.bad { color: #ff9b8a; }
+.acct-card { position: relative; text-align: left; }
+.acct-x { position: absolute; top: 6px; right: 6px; min-height: 32px; min-width: 32px; padding: 0; background: none; border: 0; font-size: 18px; color: var(--muted); }
+.acct-tabs { margin-bottom: 12px; } .acct-tabs button { font-size: 14px; }
+.acct-card form { display: grid; gap: 10px; }
+.acct-card form .actions button { width: 100%; }
+.acct-card .acct-msg strong { color: var(--accent); }
+.acct-card label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+.acct-card label[hidden] { display: none; }
+.acct-card input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+.acct-card input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.acct-msg { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--muted); text-align: left !important; }
+.acct-msg.ok { color: var(--fg); }
+/* account avatar, world chat, leaderboard, avatar picker (src/social.js) */
+.acct-av { position: relative; padding: 0; min-height: 0; border: 2px solid var(--wood); border-radius: 0; background: none; width: 56px; height: 56px; flex: none; overflow: hidden; }
+.acct-av img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.acct-av i { position: absolute; left: 0; right: 0; bottom: 0; font-style: normal; font-size: 10px; background: rgba(0, 0, 0, .65); color: var(--fg); text-align: center; }
+.chat { display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; }
+.chat[hidden] { display: none; }
+.ch-state { font-size: 13px; font-weight: 400; color: #7fd48a; margin-left: 6px; }
+.ch-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 8px; }
+.ch-empty { color: var(--muted); text-align: center; margin: 30px 0; }
+.ch-msg { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 8px; align-items: start; }
+.ch-msg img { width: 36px; height: 36px; border: 2px solid var(--wood); display: block; }
+.ch-b { background: var(--surface); padding: 6px 10px; border-radius: 0 10px 10px 10px; min-width: 0; }
+.ch-msg.me .ch-b { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent); }
+.ch-who { font-size: 13px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.ch-who b { color: var(--accent); }
+.ch-rank, .lb-rank { font-size: 12px; padding: 0 6px; border-radius: 6px; background: var(--accent); color: var(--accent-fg); font-weight: 600; white-space: nowrap; }
+.ch-rank.no, .lb-rank.no { background: var(--bg-2); color: var(--muted); font-weight: 400; }
+.ch-who time { margin-left: auto; font-size: 11px; color: var(--muted); }
+.ch-t { overflow-wrap: anywhere; white-space: pre-wrap; }
+.ch-err { min-height: 1.2em; margin: 2px 0; font-size: 13px; color: #ff9b8a; }
+.ch-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.ch-form[hidden], .ch-login[hidden] { display: none; }
+.ch-form input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-width: 0; }
+.ch-login { display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--surface); padding: 10px 12px; margin-bottom: 8px; }
+.lb-me { display: flex; gap: 10px; align-items: center; justify-content: flex-start; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.lb-me b { color: var(--accent); font-size: 18px; }
+.lb-list { display: grid; gap: 4px; }
+.lb-row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
+.lb-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.lb-pos { font-family: var(--f-px); font-weight: 700; font-size: 18px; text-align: center; color: var(--muted); }
+.lb-row.top1 .lb-pos { color: #f5c542; } .lb-row.top2 .lb-pos { color: #d9dde0; } .lb-row.top3 .lb-pos { color: #d08a4c; }
+.lb-row img { width: 40px; height: 40px; border: 2px solid var(--wood); display: block; }
+.lb-name { min-width: 0; } .lb-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-name small { font-size: 12px; color: var(--muted); }
+.av-card { width: min(520px, 100%); max-width: 100%; max-height: 88dvh; overflow-y: auto; }
+.av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-bottom: 8px; min-width: 0; }
+.av-pick { display: grid; gap: 4px; justify-items: center; padding: 6px 2px; min-height: 0; min-width: 0; width: 100%; box-sizing: border-box; overflow: hidden; background: var(--bg-2); border: 2px solid transparent; border-radius: 8px; font-size: 12px; }
+.av-pick img { width: 52px; height: 52px; display: block; border: 2px solid var(--wood); }
+.av-pick span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.av-pick.on { border-color: var(--accent); background: var(--surface-2); }
+.av-pick.lock { opacity: .45; } .av-pick.lock img { filter: grayscale(1); }
+.mn-who img.face { border: 3px solid var(--wood); box-sizing: border-box; border-radius: 0; }
+/* PLAY ONLINE / WATCH (src/online.js) */
+.ol-new { width: 100%; margin: 4px 0 4px; }
+.ol-list { display: grid; gap: 6px; }
+.ol-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who btn" "meta btn"; gap: 4px 10px; align-items: center; background: var(--surface); padding: 8px 10px; }
+.ol-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.ol-row > button { grid-area: btn; }
+.ol-who { grid-area: who; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.ol-p { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ol-p img { width: 30px; height: 30px; border: 2px solid var(--wood); }
+.ol-p b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 9em; }
+.ol-vs { color: var(--muted); font-size: 12px; }
+.ol-meta { grid-area: meta; font-size: 13px; color: var(--muted); }
+.ol-tag { font-size: 11px; padding: 0 6px; border-radius: 6px; background: #3f7d5a; color: #fff; }
+.ol-tag.ai { background: #4a6a8a; } .ol-tag.exam { background: #8a5a2a; }
+.og { display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; padding: 10px 12px; gap: 8px; }
+.og[hidden] { display: none; }
+.og .an-head { margin: 0; }
+.og-wrap { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; }
+@media (min-aspect-ratio: 9/8) { .og-wrap { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr) clamp(260px, 30vw, 360px); } }
+.og-cell { min-height: 0; min-width: 0; display: grid; place-items: center; overflow: hidden; padding: 6px; }
+.og-cell canvas { display: block; box-shadow: 0 0 0 6px #5a331a; border-radius: 4px; touch-action: manipulation; }
+.og-side { display: flex; flex-direction: column; gap: 8px; }
+.og-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.og-p { display: grid; grid-template-columns: 36px minmax(0, 1fr); grid-template-rows: auto auto; gap: 2px 8px; align-items: center; background: var(--surface); padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.og-p.turn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.og-p img { grid-row: span 2; width: 36px; height: 36px; border: 2px solid var(--wood); }
+.og-n { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 13px; }
+.og-c2 { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
+.on-card .actions button { width: 100%; }
+.og-n b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.og-n .st { width: 12px; height: 12px; border-radius: 50%; flex: none; } .og-n .st.b { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); } .og-n .st.w { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
+.og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
+.og-act { padding: 0; }
+.on-card { width: min(460px, 100%); max-height: 90dvh; overflow-y: auto; }
+.on-f { display: grid; gap: 4px; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
+.on-f[hidden] { display: none; }
+.seg-wrap { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
+.seg-wrap button { border-bottom: 1px solid var(--line); }
+.acct-wel p { margin-bottom: 10px; } .acct-wel .acct-msg { margin-top: 12px; line-height: 1.5; }
+.acct-why { margin: 0 0 14px; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.acct-wel-btns { display: grid; gap: 8px; } .acct-wel-btns button { width: 100%; }
+.acct-wel-btns .acct-guest { background: none; border: 1px dashed var(--line); color: var(--fg); }
+.acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
 .end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
@@ -705,7 +822,22 @@ body.learning { overflow: hidden; }
 .ln-bigstars img.off { filter: grayscale(1); opacity: .3; }
 .ln-bigstars img.on { animation: ln-starin .5s var(--d) both cubic-bezier(.3, 1.6, .5, 1); }
 .ln-fire { color: #afafaf; } .ln-fire.on { color: #ff9600; }
-.ln-xp { color: #ffc800; }
+.ln-xp { color: #ffc800; font: inherit; font-weight: 600; background: #fff8e0; border: 2px solid #ffe08a; border-radius: 12px; padding: 2px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.ln-shop { max-width: 640px; margin: 0 auto; padding: 14px 16px 40px; }
+.ln-shopback { margin-bottom: 14px; }
+.ln-shophead { display: flex; align-items: center; gap: 14px; padding: 16px; border: 2px solid #ffe08a; background: #fffbea; border-radius: 18px; }
+.ln-shophead img { width: 56px; height: 56px; }
+.ln-shophead div { display: flex; flex-direction: column; }
+.ln-shophead b { font-size: 28px; color: #e6a800; line-height: 1.2; }
+.ln-shophead small { color: var(--ln-sub); }
+.ln-shop h2 { font-size: 22px; margin: 22px 0 12px; }
+.ln-shopempty { text-align: center; padding: 22px 16px; border: 2px dashed var(--ln-line); border-radius: 18px; color: var(--ln-sub); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ln-shopempty img { width: 120px; height: auto; }
+.ln-shopempty b { color: var(--ln-ink); font-size: 18px; }
+.ln-shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.ln-item { border: 2px solid var(--ln-line); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ln-item img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; }
+.ln-item .own { color: var(--ln-green-d); font-weight: 600; }
 .ln-voice { border: 2px solid var(--ln-line); background: #fff; border-radius: 12px; padding: 3px 8px; font-size: 16px; }
 .ln-prog { flex: 1; height: 16px; border-radius: 99px; background: var(--ln-line); overflow: hidden; }
 .ln-prog i { display: block; height: 100%; border-radius: 99px; background: var(--ln-green); box-shadow: inset 0 4px 0 -1px rgba(255,255,255,.35); transition: width .4s ease; min-width: 16px; }
@@ -865,7 +997,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   <div class="mn-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <header class="mn-bar">
     <h1 class="mn-name">BADUK BATTLE</h1>
-    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="learn">LEARN</button></nav>
+    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="learn">LEARN</button><button data-mn="online">ONLINE</button><button data-mn="watch">WATCH</button><button data-mn="ranking">RANKING</button><button data-mn="chat">CHAT</button></nav>
     <div class="mn-tools">
       <button class="mn-tool" data-mn="profile" aria-label="โปรไฟล์"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 0h4v1h1v4h-1v1h-4v-1h-1v-4h1zM1 7h8v1h1v2h-10v-2h1z"/></svg></button>
       <button class="mn-tool" id="mnGear" aria-label="ตั้งค่า" aria-expanded="false"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v1h1v-1h1v1h1v1h-1v1h1v1h1v2h-1v1h-1v1h1v1h-1v1h-1v-1h-1v1h-2v-1h-1v1h-1v-1h-1v-1h1v-1h-1v-1h-1v-2h1v-1h1v-1h-1v-1h1v-1h1v1h1zM4 4v2h2v-2z"/></svg></button>
@@ -874,7 +1006,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   </header>
   <div class="mn-main">
     <aside class="mn-side" aria-label="ผู้เล่น">
-      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b>GUEST</b><span id="mnWhoSub">-</span></div></div>
+      <div class="mn-who"><img id="mnWhoImg" src="menu/guest.png" alt="" width="78" height="79"><div><b id="mnWhoName">GUEST</b><span id="mnWhoSub">-</span></div></div>
       <div class="mn-stats">
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 0h6v1h2v3h-1v1h-2v1h-1v2h2v2h-6v-2h2v-2h-1v-1h-2v-1h-1v-3h2zM1 2v1h1v-1zM8 2v1h1v-1z"/></svg><small>RANK</small><b id="mnRank">-</b></div>
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v3h4v1h-1v1h-1v1h1v4h-1v-1h-2v-1h-2v1h-2v1h-1v-4h1v-1h-1v-1h-1v-1h4z"/></svg><small>WIN</small><b id="mnWin">-</b></div>
@@ -909,6 +1041,76 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   </div>
   <div id="pfBody"></div>
 </section>
+
+<section class="prof chat" id="chat" hidden>
+  <div class="an-head">
+    <button class="an-back" id="chBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · WORLD CHAT</div><h1>แชทโลก <small id="chState" class="ch-state"></small></h1></div>
+  </div>
+  <div class="ch-list" id="chList" aria-live="polite"></div>
+  <p class="ch-err" id="chErr" aria-live="assertive"></p>
+  <form class="ch-form" id="chForm" hidden><input id="chText" maxlength="200" placeholder="พิมพ์ข้อความ…" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">ส่ง</button></form>
+  <div class="ch-login" id="chLogin" hidden><span>ล็อกอินก่อนถึงจะพิมพ์คุยได้</span><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>
+</section>
+
+<section class="prof" id="onl" hidden>
+  <div class="an-head">
+    <button class="an-back" id="onlBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · PLAY ONLINE</div><h1>เล่นกับคนจริง</h1></div>
+  </div>
+  <div id="onlBody"></div>
+</section>
+
+<section class="prof" id="wat" hidden>
+  <div class="an-head">
+    <button class="an-back" id="watBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · WATCH</div><h1>ดูเกมสด</h1></div>
+  </div>
+  <div id="watBody"></div>
+</section>
+
+<section class="og" id="og" hidden>
+  <div class="an-head">
+    <button class="an-back" id="ogBack">← กลับ</button>
+    <div><div class="px" id="ogTitle">PLAY ONLINE</div></div>
+  </div>
+  <div class="og-wrap">
+    <div class="og-cell"><canvas id="ogCv" aria-label="กระดาน"></canvas></div>
+    <div class="og-side">
+      <div class="og-bars"><div class="og-p" id="ogB"></div><div class="og-p" id="ogW"></div></div>
+      <p class="og-status" id="ogStatus" aria-live="polite"></p>
+      <div class="actions two og-act"><button id="ogPass" hidden>ผ่าน</button><button id="ogResign" hidden>ยอมแพ้</button></div>
+      <button class="pf-an" id="ogClose" hidden>ปิดห้องนี้</button>
+    </div>
+  </div>
+</section>
+
+<div class="sure" id="onNew" hidden><div class="sure-card acct-card on-card" role="dialog" aria-labelledby="onT">
+  <button class="acct-x" id="onX" aria-label="ปิด">✕</button>
+  <p id="onT"><b>NEW ROOM</b>สร้างห้อง</p>
+  <div class="on-f"><span>กระดาน</span><div class="seg" data-k="size"><button data-v="9">9×9</button><button data-v="13">13×13</button><button data-v="19">19×19</button></div></div>
+  <div class="on-f"><span>เวลาหลัก (ต่อคน)</span><div class="seg seg-wrap" data-k="main"><button data-v="0">ไม่มี</button><button data-v="60">1 น.</button><button data-v="300">5 น.</button><button data-v="600">10 น.</button><button data-v="1200">20 น.</button><button data-v="1800">30 น.</button><button data-v="3600">60 น.</button></div></div>
+  <div class="on-f"><span>เบียวโยมิ (วินาทีต่อตา)</span><div class="seg" data-k="byo"><button data-v="0">ไม่มี</button><button data-v="10">10</button><button data-v="20">20</button><button data-v="30">30</button><button data-v="60">60</button></div></div>
+  <div class="on-f" id="onPerRow"><span>จำนวนครั้งเบียวโยมิ</span><div class="seg" data-k="per"><button data-v="1">1</button><button data-v="3">3</button><button data-v="5">5</button></div></div>
+  <div class="on-f"><span>เจ้าของห้องถือ</span><div class="seg" data-k="pick"><button data-v="b">ดำ</button><button data-v="w">ขาว</button><button data-v="r">สุ่ม</button></div></div>
+  <p class="acct-msg" id="onErr"></p>
+  <div class="actions"><button class="primary" id="onGo" style="width:100%">สร้างห้อง</button></div>
+</div></div>
+
+<section class="prof" id="lb" hidden>
+  <div class="an-head">
+    <button class="an-back" id="lbBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · LEADERBOARD</div><h1>อันดับผู้เล่น</h1></div>
+  </div>
+  <div id="lbBody"></div>
+</section>
+
+<div class="sure" id="avDlg" hidden><div class="sure-card acct-card av-card" role="dialog" aria-labelledby="avT">
+  <button class="acct-x" id="avX" aria-label="ปิด">✕</button>
+  <p id="avT"><b>PROFILE PICTURE</b>เลือกรูปโปรไฟล์</p>
+  <div class="av-grid" id="avGrid"></div>
+  <p class="acct-msg" id="avNote"></p>
+</div></div>
 
 <section class="home" id="home" hidden>
   <div class="hm-top"><button class="hm-back" id="hmBack">← กลับ</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>

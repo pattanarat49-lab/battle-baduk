@@ -541,7 +541,7 @@ const Learn = (function () {
   // ---------- saved progress ----------
   const KEY = "gonn.learn";
   function loadP() { try { const p = JSON.parse(localStorage.getItem(KEY) || "null"); if (p && p.stars) return p; } catch (e) {} return { stars: {}, xp: 0, streak: 0, day: "" }; }
-  function saveP() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} }
+  function saveP() { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} try { if (window.Account) Account.push(); } catch (e) {} } // synced with the player's account (src/account.js key "learn")
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   const yesterday = () => { const d = new Date(Date.now() - 864e5); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   let prog = { stars: {}, xp: 0, streak: 0, day: "" };
@@ -550,6 +550,24 @@ const Learn = (function () {
     prog.stars[id] = Math.max(prog.stars[id] || 0, stars); prog.xp += xp;
     const t = today(); if (prog.day !== t) { prog.streak = prog.day === yesterday() ? prog.streak + 1 : 1; prog.day = t; }
     saveP();
+  }
+  // ---------- XP shop: XP earned in lessons buys things (items come later; owner 2026-11-11) ----------
+  // an item: { id, t: name, img, cost, kind: "avatar" | ... }; bought ids are kept in prog.owned, XP spent in prog.spent
+  const SHOP = [];
+  const xpLeft = () => Math.max(0, (prog.xp || 0) - (prog.spent || 0));
+  const owns = id => (prog.owned || []).includes(id);
+  function buy(id) {
+    const it = SHOP.find(x => x.id === id); if (!it || owns(id) || xpLeft() < it.cost) return SFX.bad && SFX.bad();
+    prog.spent = (prog.spent || 0) + it.cost; prog.owned = (prog.owned || []).concat(id); saveP(); SFX.tap(); renderShop();
+  }
+  function renderShop() {
+    S.view = "shop"; clearT(); stopVoice();
+    let h = head() + `<div class="ln-shop"><button class="ln-btn ln-shopback" data-act="path">← กลับไปบทเรียน</button>
+      <div class="ln-shophead"><img src="learn/icon_star.png" alt=""><div><small>XP ที่ใช้ได้</small><b>${xpLeft()} XP</b><small>สะสมทั้งหมด ${prog.xp || 0} XP</small></div></div>
+      <h2>ร้านค้า</h2>`;
+    if (!SHOP.length) h += `<div class="ln-shopempty"><img src="${TEACH.pose("read")}" alt=""><b>ยังไม่มีของในร้าน</b><span>เก็บ XP จากการทำบทเรียนไว้ก่อนนะ เร็วๆ นี้จะมีของให้แลก เช่น รูปโปรไฟล์</span></div>`;
+    else h += `<div class="ln-shopgrid">${SHOP.map(it => `<div class="ln-item"><img src="${it.img}" alt=""><b>${it.t}</b>${owns(it.id) ? `<span class="own">มีแล้ว</span>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`).join("")}</div>`;
+    $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, 0);
   }
   const unlocked = k => !!ALL[k]; // every lesson is open: players may jump to any topic (owner, 2026-11-08)
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
@@ -655,7 +673,7 @@ const Learn = (function () {
 
   function head() {
     return `<div class="ln-top"><button class="ln-x" data-act="home" aria-label="กลับ">← กลับ</button>
-      <div class="ln-stat"><span class="ln-fire${liveStreak() ? " on" : ""}" title="เรียนต่อเนื่อง">🔥 ${liveStreak()}</span><span class="ln-xp" title="คะแนนประสบการณ์"><img class="ln-ic " src="learn/icon_star.png" alt=""> ${prog.xp} XP</span>
+      <div class="ln-stat"><span class="ln-fire${liveStreak() ? " on" : ""}" title="เรียนต่อเนื่อง">🔥 ${liveStreak()}</span><button class="ln-xp" data-act="shop" title="XP ที่ใช้ได้ กดเพื่อเปิดร้านค้า"><img class="ln-ic " src="learn/icon_star.png" alt=""> ${xpLeft()} XP</button>
       <button class="ln-voice" data-act="voice" aria-label="เสียงพูด"><img class="ln-ic${voiceOn ? "" : " off"}" src="learn/icon_voice.png" alt=""></button></div></div>`;
   }
   function renderPath() {
@@ -677,9 +695,7 @@ const Learn = (function () {
       });
       h += `</div>`;
     });
-    const all = cur >= ALL.length;
-    h += `<div class="ln-grad${all ? " on" : ""}"><div class="ln-trophy">🏆</div><b>${all ? "เรียนจบแล้ว!" : "เรียนจบทุกบท ปลดล็อกเกมจริง"}</b>
-      <div class="ln-row"><button class="ln-btn pri" data-act="play"${all ? "" : " disabled"}>เล่นจริง 9×9 กับเมฆ</button><button class="ln-btn" data-act="book">คัมภีร์ฉบับเต็ม</button></div></div></div>`;
+    h += `</div>`;
     $("learn").innerHTML = h; $("learn").className = "learn path";
     const c = $("learn").querySelector(".ln-node.cur"); if (c) later(() => c.scrollIntoView({ block: "center", behavior: "smooth" }), 80);
   }
@@ -1237,6 +1253,8 @@ const Learn = (function () {
       if (act === "quit" || act === "path") { SFX.tap(); return renderPath(); }
       if (act === "retry") return openLesson(S.lesson);
       if (act === "bossdone") { finish(ALL[S.lesson].id, 3, 30); return renderPath(); }
+      if (act === "shop") { SFX.tap(); return renderShop(); }
+      if (t.dataset.buy !== undefined) return buy(t.dataset.buy);
       if (act === "home") { close(); return api.onHome && api.onHome(); }
       if (act === "play") { close(); return api.onPlay && api.onPlay(); }
       if (act === "book") { close(); return api.onBook && api.onBook(); }
