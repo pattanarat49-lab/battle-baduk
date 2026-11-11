@@ -2171,6 +2171,8 @@
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
   Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // first visit: offer an account once the loading screen is gone
+  if (!MATCH && EXAMBOT === null) (function welcome() { if (!$("splash").hidden) return setTimeout(welcome, 300); if (!$("menu").hidden) Account.welcome(); })();
   // PLAY ONLINE and WATCH (src/online.js); the count after both players pass uses KataGo like the games against the AI
   async function countLead(n2, mv, komi) {
     const b = new Board(n2), pts = [];

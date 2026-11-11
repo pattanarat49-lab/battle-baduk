@@ -704,6 +704,10 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .on-f[hidden] { display: none; }
 .seg-wrap { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
 .seg-wrap button { border-bottom: 1px solid var(--line); }
+.acct-wel p { margin-bottom: 10px; } .acct-wel .acct-msg { margin-top: 12px; line-height: 1.5; }
+.acct-why { margin: 0 0 14px; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+.acct-wel-btns { display: grid; gap: 8px; } .acct-wel-btns button { width: 100%; }
+.acct-wel-btns .acct-guest { background: none; border: 1px dashed var(--line); color: var(--fg); }
 .acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
@@ -4656,13 +4660,30 @@ const Account = (() => {
     if (a === "logout") logout(); else open(a);
   });
 
+  // the first visit: sign up, sign in, or play without an account (asked once per browser; Profile still has the buttons)
+  function welcome() {
+    if (me || get("welcomed")) return;
+    const d = document.createElement("div");
+    d.className = "sure acct"; d.id = "acWel";
+    d.innerHTML = `<div class="sure-card acct-card acct-wel" role="dialog" aria-labelledby="awT">
+      <p id="awT"><b>WELCOME!</b>ยินดีต้อนรับสู่ Baduk Battle</p>
+      <ul class="acct-why"><li>เก็บประวัติเกม ระดับฝีมือ และด่านโจทย์ ตามไปทุกเครื่อง</li><li>ขึ้นกระดานอันดับ คุยในแชทโลก</li><li>เล่นออนไลน์กับผู้เล่นคนอื่น</li></ul>
+      <div class="acct-wel-btns"><button class="primary" data-w="signup">สมัครแอคเคาท์ (ไม่ต้องใช้อีเมล)</button><button data-w="login">มีแอคเคาท์แล้ว · เข้าสู่ระบบ</button><button class="acct-guest" data-w="guest">เล่นแบบไม่ใช้แอคเคาท์</button></div>
+      <p class="acct-msg">ไม่ใช้แอคเคาท์ก็เล่นกับ AI ได้ครบ ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้ สมัครทีหลังได้ที่หน้า PROFILE แล้วของเดิมจะย้ายเข้าแอคเคาท์ให้</p></div>`;
+    document.body.appendChild(d);
+    d.addEventListener("click", e => {
+      const b = e.target.closest("button[data-w]"); if (!b) return;
+      put("welcomed", 1); d.remove();
+      if (b.dataset.w !== "guest") open(b.dataset.w);
+    });
+  }
   function init(cb) {
     onChange = cb || onChange;
     pull();
     setInterval(() => { if (!document.hidden) push(); }, 20e3);
     document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
   }
-  return { init, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+  return { init, welcome, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
     call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
 })();
 
@@ -5970,7 +5991,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "9f28f3b76d";
+  const BUILD = "dc55592c10";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -7256,6 +7277,8 @@ const Online = (() => {
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
   Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // first visit: offer an account once the loading screen is gone
+  if (!MATCH && EXAMBOT === null) (function welcome() { if (!$("splash").hidden) return setTimeout(welcome, 300); if (!$("menu").hidden) Account.welcome(); })();
   // PLAY ONLINE and WATCH (src/online.js); the count after both players pass uses KataGo like the games against the AI
   async function countLead(n2, mv, komi) {
     const b = new Board(n2), pts = [];
