@@ -353,11 +353,34 @@ export class Accounts extends DurableObject {
     const now = Date.now(), b = this.bad.get(ip);
     if (b && now - b.at < 10 * 60e3 && b.n >= 30) return { status: 429, body: { error: "ลองผิดหลายครั้งเกินไป รอสักครู่แล้วลองใหม่" } };
     const r = await this.handle(op, body);
+    if (op === "say" && r.status === 200) this.broadcast({ msg: r.body.msg });
     if (r.status === 401 && (op === "login" || op === "recover")) {
       const v = b && now - b.at < 10 * 60e3 ? b : { at: now, n: 0 }; v.n++; this.bad.set(ip, v);
       if (this.bad.size > 5000) this.bad.clear();
     }
     return r;
+  }
+  // world chat over WebSockets (hibernation API: an idle socket costs nothing, and messages sent out are free).
+  // On connect the socket gets the last 50 messages; a client sends {token, t} to say something.
+  async fetch(req) {
+    if (req.headers.get("Upgrade") !== "websocket") return new Response("websocket only", { status: 426 });
+    const pair = new WebSocketPair();
+    this.ctx.acceptWebSocket(pair[1]);
+    const c = await this.handle("chat", {});
+    pair[1].send(JSON.stringify({ hist: c.body.m }));
+    return new Response(null, { status: 101, webSocket: pair[0] });
+  }
+  async webSocketMessage(ws, data) {
+    let m = null; try { m = JSON.parse(typeof data === "string" ? data : new TextDecoder().decode(data)); } catch (e) {}
+    if (!m || typeof m !== "object") return;
+    const r = await this.handle("say", m);
+    if (r.status !== 200) ws.send(JSON.stringify({ error: r.body.error, code: r.status }));
+    else this.broadcast({ msg: r.body.msg });
+  }
+  webSocketClose(ws, code) { try { ws.close(code, "bye"); } catch (e) {} }
+  broadcast(o) {
+    const s = JSON.stringify(o);
+    for (const w of this.ctx.getWebSockets()) { try { w.send(s); } catch (e) {} }
   }
 }
 
@@ -385,6 +408,7 @@ async function handle(req, env) {
     await stub().record(e);
     return new Response(null, { status: 204, headers: CORS });
   }
+  if (url.pathname === "/api/chat") return env.ACCOUNTS.get(env.ACCOUNTS.idFromName("accounts")).fetch(req);
   if (url.pathname.startsWith("/api/acct/")) {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (req.method !== "POST") return new Response("method", { status: 405, headers: CORS });

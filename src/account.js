@@ -4,7 +4,7 @@
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep"];
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -21,7 +21,17 @@ const Account = (() => {
   };
 
   // ---------- progress ----------
-  const collect = () => { const d = {}; for (const k of SYNC) { const v = get(k); if (v !== null) d[k] = v; } return d; };
+  // every character the player has ever beaten (the history keeps only 100 games, so the list is kept apart)
+  function beaten() {
+    const b = new Set(Array.isArray(get("beaten")) ? get("beaten") : []);
+    for (const h of get("history") || []) if (h && h.won && h.char) b.add(h.char);
+    return [...b];
+  }
+  const collect = () => {
+    const d = {}; for (const k of SYNC) { const v = get(k); if (v !== null) d[k] = v; }
+    const b = beaten(); if (b.length) d.beaten = b; else delete d.beaten;
+    return d;
+  };
   const fp = d => JSON.stringify(SYNC.map(k => d[k] === undefined ? null : d[k]));
   // two copies of the progress joined so that nothing either device did is lost
   function merge(a, b) {
@@ -45,6 +55,8 @@ const Account = (() => {
       out.tsume3 = Object.assign({}, m, { best: Math.max((ta && ta.best) || 0, (tb && tb.best) || 0),
         seen: [...new Set([].concat((ta && ta.seen) || [], (tb && tb.seen) || []))].slice(-3000) });
     }
+    if (a.beaten || b.beaten) out.beaten = [...new Set([].concat(a.beaten || [], b.beaten || []))];
+    if (a.avatar || b.avatar) out.avatar = a.avatar || b.avatar; // this device's choice wins
     if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
     return out;
   }
@@ -173,12 +185,13 @@ const Account = (() => {
     me = null; remember(); lastErr = ""; onChange();
     if (t) api("logout", { token: t }).catch(() => {});
   }
+  const avatarSrc = () => { const a = get("avatar"); return a && beaten().includes(a) ? `chars/${a}_face.jpg` : "menu/guest.png"; };
   const timeTH = t => new Date(t).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
   // the card at the top of the Profile page
   function card() {
     if (!me) return `<div class="acct-box"><div class="t"><b>เก็บความคืบหน้าไว้ในแอคเคาท์</b><span>ล็อกอินแล้วประวัติเกม ระดับที่สอบได้ และด่านโจทย์ จะตามไปทุกเครื่อง</span>${lastErr ? `<span class="bad">${esc(lastErr)}</span>` : ""}</div>
       <div class="pf-btns"><button class="pf-an" data-acct="signup">สมัคร</button><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div></div>`;
-    return `<div class="acct-box in"><div class="t"><b>👤 ${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
+    return `<div class="acct-box in"><button class="acct-av" data-soc="avatar" title="เปลี่ยนรูปโปรไฟล์"><img src="${avatarSrc()}" alt="" width="160" height="160"><i>เปลี่ยนรูป</i></button><div class="t"><b>${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
       <div class="pf-btns"><button class="pf-an" data-acct="logout">ออกจากระบบ</button></div></div>`;
   }
   document.addEventListener("click", e => {
@@ -187,11 +200,33 @@ const Account = (() => {
     if (a === "logout") logout(); else open(a);
   });
 
+  // ---------- world chat ----------
+  // On the real site a WebSocket to the Worker (/api/chat): it is open only while the chat screen is, and sends the last
+  // 50 messages on connect. The private preview page provides window.ACCT_CHAT instead.
+  function chatOpen(onEvent) {
+    if (window.ACCT_CHAT) return window.ACCT_CHAT.open(onEvent);
+    let ws = null, closed = false, wait = 1000, timer = 0;
+    const url = (BASE ? BASE.replace(/^http/, "ws") : (location.protocol === "https:" ? "wss://" : "ws://") + location.host) + "/api/chat";
+    const connect = () => {
+      if (closed) return;
+      try { ws = new WebSocket(url); } catch (e) { onEvent({ state: "off" }); return; }
+      ws.onopen = () => { wait = 1000; onEvent({ state: "on" }); };
+      ws.onmessage = e => { let m = null; try { m = JSON.parse(e.data); } catch (x) {} if (m) onEvent(m); };
+      ws.onclose = () => { if (closed) return; onEvent({ state: "off" }); timer = setTimeout(connect, wait); wait = Math.min(wait * 2, 30000); };
+    };
+    connect();
+    return {
+      send: t => { if (!me) return false; if (!ws || ws.readyState !== 1) return false; ws.send(JSON.stringify({ token: me.token, t })); return true; },
+      close: () => { closed = true; clearTimeout(timer); try { ws && ws.close(); } catch (e) {} }
+    };
+  }
+
   function init(cb) {
     onChange = cb || onChange;
     pull();
     setInterval(() => { if (!document.hidden) push(); }, 20e3);
     document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
   }
-  return { init, card, open, push, merge, name: () => me && me.name, useBackend: f => { api = f; } };
+  return { init, card, open, push, merge, beaten, chatOpen, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+    call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
 })();

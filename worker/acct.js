@@ -4,6 +4,8 @@
 // on top of the artifact's database: `store` only needs get(key) / put(key, value) / del(key) with JSON values.
 //   user:  "u:" + lower-case name -> { name, salt, hash, rsalt, rhash, data, ver, created, updated, fails, lockUntil }
 //   login: "s:" + sha256(token)   -> { u: lower-case name, at }
+//   "lb":   leaderboard, { e: { lower-case name -> { n: name, r: best exam rank, a: avatar, g: games, w: wins } } }
+//   "chat": world chat, { m: [last 50 messages { id, n, r, a, t, at }] }
 // Passwords and recovery codes are kept only as PBKDF2-SHA256 hashes with a random salt each.
 const ITER = 100000;                 // PBKDF2 rounds (the most WebCrypto allows on Workers)
 const MAX_FAILS = 5, LOCK_MS = 5 * 60e3; // five wrong passwords in a row lock the name for five minutes
@@ -23,6 +25,21 @@ const sha = async s => hex(await crypto.subtle.digest("SHA-256", enc.encode(s)))
 function same(a, b) { if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; }
 const newToken = () => btoa(String.fromCharCode(...rand(32))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 function newRecovery() { const r = rand(12); let s = ""; for (let i = 0; i < 12; i++) { if (i && i % 4 === 0) s += "-"; s += RC[r[i] % RC.length]; } return s; }
+const CHAT_KEEP = 50, CHAT_LEN = 200, CHAT_GAP = 1500; // messages kept, characters per message, ms between one player's messages
+// what other players see of an account, worked out from its saved progress: best exam rank, games and wins among the
+// last 100, and the profile picture, which must be a character the player has beaten
+function summary(data) {
+  let d = null; try { d = data ? JSON.parse(data) : null; } catch (e) {}
+  d = d || {};
+  const hist = Array.isArray(d.history) ? d.history : [];
+  let r = d.bestRank && typeof d.bestRank.rank === "number" ? d.bestRank.rank : null;
+  for (const h of hist) if (h && typeof h.rank === "number" && (r === null || h.rank > r)) r = h.rank;
+  const beaten = new Set(Array.isArray(d.beaten) ? d.beaten : []);
+  for (const h of hist) if (h && h.won && typeof h.char === "string") beaten.add(h.char);
+  const a = typeof d.avatar === "string" && /^[a-z]{2,12}$/.test(d.avatar) && beaten.has(d.avatar) ? d.avatar : null;
+  return { r: r === null ? null : Math.round(r * 10) / 10, a, g: hist.length, w: hist.filter(h => h && h.won).length };
+}
+const cleanText = t => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g, " ").replace(/\s+/g, " ").trim().slice(0, CHAT_LEN);
 const cleanCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(.{4})(?=.)/g, "$1-");
 
 export function makeAccounts(store) {
@@ -40,6 +57,16 @@ export function makeAccounts(store) {
     if (!s) return null;
     return await store.get("u:" + s.u);
   }
+  // the leaderboard row of one account, rewritten only when something on it changed
+  async function board(u) {
+    const sum = summary(u.data), lb = (await store.get("lb")) || { e: {} }, k = ukey(u.name).slice(2);
+    const row = { n: u.name, r: sum.r, a: sum.a, g: sum.g, w: sum.w };
+    if (JSON.stringify(lb.e[k]) === JSON.stringify(row)) return;
+    lb.e[k] = row;
+    await store.put("lb", lb);
+  }
+  const order = (x, y) => (y.r ?? -99) - (x.r ?? -99) || y.w - x.w || (x.n < y.n ? -1 : 1);
+  const lastSaid = new Map(); // name -> time of the last chat message (memory only)
   const dataOf = v => { if (v == null) return null; const s = JSON.stringify(v); return s.length > MAX_DATA ? undefined : s; };
   const out = (u, token, extra) => Object.assign({ token, name: u.name, data: u.data ? JSON.parse(u.data) : null, ver: u.ver }, extra);
   const ops = {
@@ -53,6 +80,7 @@ export function makeAccounts(store) {
       const u = { name, salt, hash: await pbkdf2(pass, salt), rsalt, rhash: await pbkdf2(recovery.replace(/-/g, ""), rsalt),
         data, ver: 1, created: Date.now(), updated: Date.now(), fails: 0, lockUntil: 0 };
       await store.put(ukey(name), u);
+      await board(u);
       return ok(out(u, await session(u), { recovery }));
     },
     async login(b) {
@@ -102,7 +130,36 @@ export function makeAccounts(store) {
       const data = dataOf(b.data); if (data === undefined) return err(413, "ข้อมูลใหญ่เกินไป");
       u.data = data; u.ver++; u.updated = Date.now();
       await store.put(ukey(u.name), u);
+      await board(u);
       return ok({ ver: u.ver });
+    },
+    // top 100 players: best exam rank first (players without an exam last), then wins; plus the asking player's place
+    async board(b) {
+      const lb = (await store.get("lb")) || { e: {} };
+      const all = Object.values(lb.e).sort(order);
+      const u = b.token ? await byToken(b.token) : null;
+      const at = u ? all.findIndex(x => x.n === u.name) : -1;
+      return ok({ list: all.slice(0, 100), total: all.length, me: at < 0 ? null : Object.assign({ pos: at + 1 }, all[at]) });
+    },
+    async chat() {
+      const c = (await store.get("chat")) || { m: [] };
+      return ok({ m: c.m });
+    },
+    async say(b) {
+      const u = await byToken(b.token);
+      if (!u) return err(401, "หมดเวลาเข้าสู่ระบบ กรุณาล็อกอินใหม่");
+      const t = cleanText(b.t);
+      if (!t) return err(400, "พิมพ์ข้อความก่อนนะ");
+      const now = Date.now(), k = ukey(u.name);
+      if (now - (lastSaid.get(k) || 0) < CHAT_GAP) return err(429, "ส่งเร็วเกินไป รอสักครู่");
+      lastSaid.set(k, now);
+      if (lastSaid.size > 5000) lastSaid.clear();
+      const sum = summary(u.data);
+      const msg = { id: hex(rand(6)), n: u.name, r: sum.r, a: sum.a, t, at: now };
+      const c = (await store.get("chat")) || { m: [] };
+      c.m.push(msg); c.m = c.m.slice(-CHAT_KEEP);
+      await store.put("chat", c);
+      return ok({ msg });
     },
     async logout(b) {
       if (typeof b.token === "string") await store.del("s:" + await sha(b.token));

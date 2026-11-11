@@ -936,6 +936,8 @@
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
+    // characters ever beaten (profile pictures unlock from these; the history keeps only 100 games)
+    if (humanWon) { const bt = load("beaten", []); if (!bt.includes(CHARS[gameChar].id)) save("beaten", bt.concat(CHARS[gameChar].id)); }
     Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
@@ -2112,7 +2114,9 @@
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
-    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
+    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
+    { id: "ranking", t: "LEADERBOARD", s: "อันดับผู้เล่นทั้งหมด เรียงตามระดับฝีมือ" },
+    { id: "chat", t: "WORLD CHAT", s: "คุยกับผู้เล่นคนอื่นทั่วโลก" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
@@ -2133,14 +2137,17 @@
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
     $("mnWhoName").textContent = Account.name() || "GUEST";
+    const av = Account.avatarSrc(); $("mnWhoImg").src = av; $("mnWhoImg").classList.toggle("face", av !== "menu/guest.png");
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); for (const id of ["menu", "home", "prof", "chat", "lb", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
-  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); });
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // chat, leaderboard and the profile picture picker (src/social.js)
+  Social.init({ CHARS, rankName, hideScreens, showMenu, blip, onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -2153,6 +2160,8 @@
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+    else if (go === "ranking") Social.openBoard();
+    else if (go === "chat") Social.openChat();
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first

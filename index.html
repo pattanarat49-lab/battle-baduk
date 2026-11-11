@@ -318,7 +318,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
 .mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
 .mn-title i { font-style: normal; } .mn-title .w { display: none; }
-.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(6, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(8, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
 #menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
   border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
 #menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
@@ -339,7 +339,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
 /* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
 @media (min-aspect-ratio: 5/4) {
-  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, minmax(0, 1fr)); }
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, minmax(0, 1fr)); }
   #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
   .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
   .mn-title .n { display: none; } .mn-title .w { display: inline; }
@@ -609,6 +609,48 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .acct-card input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
 .acct-msg { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--muted); text-align: left !important; }
 .acct-msg.ok { color: var(--fg); }
+/* account avatar, world chat, leaderboard, avatar picker (src/social.js) */
+.acct-av { position: relative; padding: 0; min-height: 0; border: 2px solid var(--wood); border-radius: 0; background: none; width: 56px; height: 56px; flex: none; overflow: hidden; }
+.acct-av img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.acct-av i { position: absolute; left: 0; right: 0; bottom: 0; font-style: normal; font-size: 10px; background: rgba(0, 0, 0, .65); color: var(--fg); text-align: center; }
+.chat { display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; }
+.chat[hidden] { display: none; }
+.ch-state { font-size: 13px; font-weight: 400; color: #7fd48a; margin-left: 6px; }
+.ch-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 8px; }
+.ch-empty { color: var(--muted); text-align: center; margin: 30px 0; }
+.ch-msg { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 8px; align-items: start; }
+.ch-msg img { width: 36px; height: 36px; border: 2px solid var(--wood); display: block; }
+.ch-b { background: var(--surface); padding: 6px 10px; border-radius: 0 10px 10px 10px; min-width: 0; }
+.ch-msg.me .ch-b { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent); }
+.ch-who { font-size: 13px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.ch-who b { color: var(--accent); }
+.ch-rank, .lb-rank { font-size: 12px; padding: 0 6px; border-radius: 6px; background: var(--accent); color: var(--accent-fg); font-weight: 600; white-space: nowrap; }
+.ch-rank.no, .lb-rank.no { background: var(--bg-2); color: var(--muted); font-weight: 400; }
+.ch-who time { margin-left: auto; font-size: 11px; color: var(--muted); }
+.ch-t { overflow-wrap: anywhere; white-space: pre-wrap; }
+.ch-err { min-height: 1.2em; margin: 2px 0; font-size: 13px; color: #ff9b8a; }
+.ch-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.ch-form[hidden], .ch-login[hidden] { display: none; }
+.ch-form input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-width: 0; }
+.ch-login { display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--surface); padding: 10px 12px; margin-bottom: 8px; }
+.lb-me { display: flex; gap: 10px; align-items: center; justify-content: flex-start; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.lb-me b { color: var(--accent); font-size: 18px; }
+.lb-list { display: grid; gap: 4px; }
+.lb-row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
+.lb-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
+.lb-pos { font-family: var(--f-px); font-weight: 700; font-size: 18px; text-align: center; color: var(--muted); }
+.lb-row.top1 .lb-pos { color: #f5c542; } .lb-row.top2 .lb-pos { color: #d9dde0; } .lb-row.top3 .lb-pos { color: #d08a4c; }
+.lb-row img { width: 40px; height: 40px; border: 2px solid var(--wood); display: block; }
+.lb-name { min-width: 0; } .lb-name b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-name small { font-size: 12px; color: var(--muted); }
+.av-card { width: min(520px, 100%); max-width: 100%; max-height: 88dvh; overflow-y: auto; }
+.av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin-bottom: 8px; min-width: 0; }
+.av-pick { display: grid; gap: 4px; justify-items: center; padding: 6px 2px; min-height: 0; min-width: 0; width: 100%; box-sizing: border-box; overflow: hidden; background: var(--bg-2); border: 2px solid transparent; border-radius: 8px; font-size: 12px; }
+.av-pick img { width: 52px; height: 52px; display: block; border: 2px solid var(--wood); }
+.av-pick span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.av-pick.on { border-color: var(--accent); background: var(--surface-2); }
+.av-pick.lock { opacity: .45; } .av-pick.lock img { filter: grayscale(1); }
+.mn-who img.face { border: 3px solid var(--wood); box-sizing: border-box; border-radius: 0; }
 .acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
@@ -709,7 +751,7 @@ body.coaching .app .quote { display: none; }
   <div class="mn-petals" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <header class="mn-bar">
     <h1 class="mn-name">BADUK BATTLE</h1>
-    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="tutorial">TUTORIAL</button></nav>
+    <nav class="mn-nav" aria-label="ทางลัด"><button aria-current="page">HOME</button><button data-mn="play">PLAY</button><button data-mn="profile">PROFILE</button><button data-mn="exam">RANK</button><button data-mn="tutorial">TUTORIAL</button><button data-mn="ranking">RANKING</button><button data-mn="chat">CHAT</button></nav>
     <div class="mn-tools">
       <button class="mn-tool" data-mn="profile" aria-label="โปรไฟล์"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M3 0h4v1h1v4h-1v1h-4v-1h-1v-4h1zM1 7h8v1h1v2h-10v-2h1z"/></svg></button>
       <button class="mn-tool" id="mnGear" aria-label="ตั้งค่า" aria-expanded="false"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v1h1v-1h1v1h1v1h-1v1h1v1h1v2h-1v1h-1v1h1v1h-1v1h-1v-1h-1v1h-2v-1h-1v1h-1v-1h-1v-1h1v-1h-1v-1h-1v-2h1v-1h1v-1h-1v-1h1v-1h1v1h1zM4 4v2h2v-2z"/></svg></button>
@@ -718,7 +760,7 @@ body.coaching .app .quote { display: none; }
   </header>
   <div class="mn-main">
     <aside class="mn-side" aria-label="ผู้เล่น">
-      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b id="mnWhoName">GUEST</b><span id="mnWhoSub">-</span></div></div>
+      <div class="mn-who"><img id="mnWhoImg" src="menu/guest.png" alt="" width="78" height="79"><div><b id="mnWhoName">GUEST</b><span id="mnWhoSub">-</span></div></div>
       <div class="mn-stats">
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 0h6v1h2v3h-1v1h-2v1h-1v2h2v2h-6v-2h2v-2h-1v-1h-2v-1h-1v-3h2zM1 2v1h1v-1zM8 2v1h1v-1z"/></svg><small>RANK</small><b id="mnRank">-</b></div>
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v3h4v1h-1v1h-1v1h1v4h-1v-1h-2v-1h-2v1h-2v1h-1v-4h1v-1h-1v-1h-1v-1h4z"/></svg><small>WIN</small><b id="mnWin">-</b></div>
@@ -753,6 +795,32 @@ body.coaching .app .quote { display: none; }
   </div>
   <div id="pfBody"></div>
 </section>
+
+<section class="prof chat" id="chat" hidden>
+  <div class="an-head">
+    <button class="an-back" id="chBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · WORLD CHAT</div><h1>แชทโลก <small id="chState" class="ch-state"></small></h1></div>
+  </div>
+  <div class="ch-list" id="chList" aria-live="polite"></div>
+  <p class="ch-err" id="chErr" aria-live="assertive"></p>
+  <form class="ch-form" id="chForm" hidden><input id="chText" maxlength="200" placeholder="พิมพ์ข้อความ…" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">ส่ง</button></form>
+  <div class="ch-login" id="chLogin" hidden><span>ล็อกอินก่อนถึงจะพิมพ์คุยได้</span><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>
+</section>
+
+<section class="prof" id="lb" hidden>
+  <div class="an-head">
+    <button class="an-back" id="lbBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · LEADERBOARD</div><h1>อันดับผู้เล่น</h1></div>
+  </div>
+  <div id="lbBody"></div>
+</section>
+
+<div class="sure" id="avDlg" hidden><div class="sure-card acct-card av-card" role="dialog" aria-labelledby="avT">
+  <button class="acct-x" id="avX" aria-label="ปิด">✕</button>
+  <p id="avT"><b>PROFILE PICTURE</b>เลือกรูปโปรไฟล์</p>
+  <div class="av-grid" id="avGrid"></div>
+  <p class="acct-msg" id="avNote"></p>
+</div></div>
 
 <section class="home" id="home" hidden>
   <div class="hm-top"><button class="hm-back" id="hmBack">← กลับ</button><div class="logo logo-sm">Baduk Battle</div><span></span></div>
@@ -4189,7 +4257,7 @@ const Coach = (function () {
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep"];
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -4206,7 +4274,17 @@ const Account = (() => {
   };
 
   // ---------- progress ----------
-  const collect = () => { const d = {}; for (const k of SYNC) { const v = get(k); if (v !== null) d[k] = v; } return d; };
+  // every character the player has ever beaten (the history keeps only 100 games, so the list is kept apart)
+  function beaten() {
+    const b = new Set(Array.isArray(get("beaten")) ? get("beaten") : []);
+    for (const h of get("history") || []) if (h && h.won && h.char) b.add(h.char);
+    return [...b];
+  }
+  const collect = () => {
+    const d = {}; for (const k of SYNC) { const v = get(k); if (v !== null) d[k] = v; }
+    const b = beaten(); if (b.length) d.beaten = b; else delete d.beaten;
+    return d;
+  };
   const fp = d => JSON.stringify(SYNC.map(k => d[k] === undefined ? null : d[k]));
   // two copies of the progress joined so that nothing either device did is lost
   function merge(a, b) {
@@ -4230,6 +4308,8 @@ const Account = (() => {
       out.tsume3 = Object.assign({}, m, { best: Math.max((ta && ta.best) || 0, (tb && tb.best) || 0),
         seen: [...new Set([].concat((ta && ta.seen) || [], (tb && tb.seen) || []))].slice(-3000) });
     }
+    if (a.beaten || b.beaten) out.beaten = [...new Set([].concat(a.beaten || [], b.beaten || []))];
+    if (a.avatar || b.avatar) out.avatar = a.avatar || b.avatar; // this device's choice wins
     if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
     return out;
   }
@@ -4358,12 +4438,13 @@ const Account = (() => {
     me = null; remember(); lastErr = ""; onChange();
     if (t) api("logout", { token: t }).catch(() => {});
   }
+  const avatarSrc = () => { const a = get("avatar"); return a && beaten().includes(a) ? `chars/${a}_face.jpg` : "menu/guest.png"; };
   const timeTH = t => new Date(t).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
   // the card at the top of the Profile page
   function card() {
     if (!me) return `<div class="acct-box"><div class="t"><b>เก็บความคืบหน้าไว้ในแอคเคาท์</b><span>ล็อกอินแล้วประวัติเกม ระดับที่สอบได้ และด่านโจทย์ จะตามไปทุกเครื่อง</span>${lastErr ? `<span class="bad">${esc(lastErr)}</span>` : ""}</div>
       <div class="pf-btns"><button class="pf-an" data-acct="signup">สมัคร</button><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div></div>`;
-    return `<div class="acct-box in"><div class="t"><b>👤 ${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
+    return `<div class="acct-box in"><button class="acct-av" data-soc="avatar" title="เปลี่ยนรูปโปรไฟล์"><img src="${avatarSrc()}" alt="" width="160" height="160"><i>เปลี่ยนรูป</i></button><div class="t"><b>${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
       <div class="pf-btns"><button class="pf-an" data-acct="logout">ออกจากระบบ</button></div></div>`;
   }
   document.addEventListener("click", e => {
@@ -4372,13 +4453,132 @@ const Account = (() => {
     if (a === "logout") logout(); else open(a);
   });
 
+  // ---------- world chat ----------
+  // On the real site a WebSocket to the Worker (/api/chat): it is open only while the chat screen is, and sends the last
+  // 50 messages on connect. The private preview page provides window.ACCT_CHAT instead.
+  function chatOpen(onEvent) {
+    if (window.ACCT_CHAT) return window.ACCT_CHAT.open(onEvent);
+    let ws = null, closed = false, wait = 1000, timer = 0;
+    const url = (BASE ? BASE.replace(/^http/, "ws") : (location.protocol === "https:" ? "wss://" : "ws://") + location.host) + "/api/chat";
+    const connect = () => {
+      if (closed) return;
+      try { ws = new WebSocket(url); } catch (e) { onEvent({ state: "off" }); return; }
+      ws.onopen = () => { wait = 1000; onEvent({ state: "on" }); };
+      ws.onmessage = e => { let m = null; try { m = JSON.parse(e.data); } catch (x) {} if (m) onEvent(m); };
+      ws.onclose = () => { if (closed) return; onEvent({ state: "off" }); timer = setTimeout(connect, wait); wait = Math.min(wait * 2, 30000); };
+    };
+    connect();
+    return {
+      send: t => { if (!me) return false; if (!ws || ws.readyState !== 1) return false; ws.send(JSON.stringify({ token: me.token, t })); return true; },
+      close: () => { closed = true; clearTimeout(timer); try { ws && ws.close(); } catch (e) {} }
+    };
+  }
+
   function init(cb) {
     onChange = cb || onChange;
     pull();
     setInterval(() => { if (!document.hidden) push(); }, 20e3);
     document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
   }
-  return { init, card, open, push, merge, name: () => me && me.name, useBackend: f => { api = f; } };
+  return { init, card, open, push, merge, beaten, chatOpen, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+    call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
+})();
+
+// Player-to-player screens built on accounts (src/account.js): world chat (name + best exam rank on every message),
+// the leaderboard (best exam rank, then wins), and the profile picture picker (characters the player has beaten).
+const Social = (() => {
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, onAvatar }
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const charOf = id => D.CHARS.find(c => c.id === id);
+  const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
+  const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่สอบ";
+  const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
+
+  // ---------- world chat ----------
+  let conn = null, msgs = [], seen = new Set();
+  function line(m) {
+    const mine = m.n === Account.name();
+    const at = new Date(m.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+    return `<div class="ch-msg${mine ? " me" : ""}"><img src="${face(m.a)}" alt="" width="160" height="160"><div class="ch-b">
+      <div class="ch-who"><b>${esc(m.n)}</b> <span class="ch-rank${typeof m.r === "number" ? "" : " no"}">${esc(rankOf(m.r))}</span><time>${at}</time></div>
+      <div class="ch-t">${esc(m.t)}</div></div></div>`;
+  }
+  function render(stick) {
+    const box = $("chList"), atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    box.innerHTML = msgs.length ? msgs.map(line).join("") : `<p class="ch-empty">ยังไม่มีข้อความ ทักทายคนอื่นเป็นคนแรกเลย!</p>`;
+    if (stick || atEnd) box.scrollTop = box.scrollHeight;
+  }
+  function add(m) { if (!m || seen.has(m.id)) return; seen.add(m.id); msgs.push(m); msgs = msgs.slice(-100); }
+  function syncForm() {
+    const on = !!Account.name();
+    $("chForm").hidden = !on; $("chLogin").hidden = on;
+  }
+  function openChat() {
+    show("chat"); syncForm();
+    $("chState").textContent = "กำลังเชื่อมต่อ…";
+    msgs = []; seen = new Set(); render(true);
+    if (conn) conn.close();
+    conn = Account.chatOpen(ev => {
+      if (ev.state) $("chState").textContent = ev.state === "on" ? "● ออนไลน์" : "ขาดการเชื่อมต่อ กำลังลองใหม่…";
+      if (ev.hist) { $("chState").textContent = "● ออนไลน์"; ev.hist.forEach(add); render(true); }
+      if (ev.msg) { add(ev.msg); render(ev.msg.n === Account.name()); }
+      if (ev.error) { $("chErr").textContent = ev.error; setTimeout(() => { $("chErr").textContent = ""; }, 3000); }
+    });
+  }
+  function closeChat() { if (conn) { conn.close(); conn = null; } }
+  async function send() {
+    const t = $("chText").value.trim();
+    if (!t || !conn) return;
+    const ok = await conn.send(t);
+    if (ok === false) { $("chErr").textContent = "ยังไม่ได้เชื่อมต่อ ลองอีกครั้ง"; return; }
+    $("chText").value = "";
+  }
+
+  // ---------- leaderboard ----------
+  async function openBoard() {
+    show("lb");
+    $("lbBody").innerHTML = `<p class="note">กำลังโหลด…</p>`;
+    let r;
+    try { r = await Account.call("board", {}); } catch (e) { r = null; }
+    if (!r || r.status !== 200) { $("lbBody").innerHTML = `<p class="pf-empty">โหลดอันดับไม่ได้ ลองใหม่อีกครั้ง</p>`; return; }
+    const { list, total, me } = r.body;
+    const row = (x, i) => `<div class="lb-row${me && x.n === me.n ? " me" : ""}${i < 3 ? " top" + (i + 1) : ""}"><span class="lb-pos">${i + 1}</span>
+      <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}</b><small>ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
+      <span class="lb-rank${typeof x.r === "number" ? "" : " no"}">${esc(rankOf(x.r))}</span></div>`;
+    let h = me ? `<div class="lb-me">อันดับของคุณ <b>#${me.pos}</b> จาก ${total} คน · ${esc(rankOf(me.r))}</div>`
+      : Account.name() ? "" : `<div class="lb-me">ล็อกอินในหน้า PROFILE เพื่อขึ้นกระดานอันดับ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
+    h += list.length ? `<div class="lb-list">${list.map(row).join("")}</div>` : `<p class="pf-empty">ยังไม่มีผู้เล่นในกระดาน สมัครแอคเคาท์แล้วเป็นคนแรกเลย</p>`;
+    h += `<p class="note" style="margin-top:8px">เรียงตามระดับที่ดีที่สุดจากการสอบกับฮิคารุ (RANK TEST) ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่สอบอยู่ท้ายตาราง</p>`;
+    $("lbBody").innerHTML = h;
+  }
+
+  // ---------- profile picture ----------
+  function openAvatar() {
+    const won = new Set(Account.beaten()), cur = Account.avatarSrc();
+    const list = D.CHARS.filter(c => !c.tutorial);
+    $("avGrid").innerHTML = `<button class="av-pick${cur === "menu/guest.png" ? " on" : ""}" data-av=""><img src="menu/guest.png" alt="" width="160" height="160"><span>ไม่ใช้รูป</span></button>` +
+      list.map(c => { const ok = won.has(c.id);
+        return `<button class="av-pick${ok ? "" : " lock"}${cur === `chars/${c.id}_face.jpg` ? " on" : ""}" data-av="${c.id}"${ok ? "" : " disabled"}><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><span>${ok ? esc(c.name) : "🔒 " + esc(c.name)}</span></button>`; }).join("");
+    $("avNote").textContent = won.size ? `ปลดล็อกแล้ว ${list.filter(c => won.has(c.id)).length} จาก ${list.length} ตัว · ชนะตัวละครไหนก็ใช้รูปตัวนั้นได้` : "ยังไม่ได้ชนะตัวละครไหนเลย ลองไปชนะใน PLAY WITH AI ก่อนนะ";
+    $("avDlg").hidden = false;
+  }
+
+  function init(deps) {
+    D = deps;
+    $("chBack").onclick = () => { D.blip(660); closeChat(); D.showMenu(); };
+    $("lbBack").onclick = () => { D.blip(660); D.showMenu(); };
+    $("chForm").onsubmit = e => { e.preventDefault(); send(); };
+    $("avX").onclick = () => { $("avDlg").hidden = true; };
+    $("avDlg").addEventListener("click", e => {
+      if (e.target === $("avDlg")) { $("avDlg").hidden = true; return; }
+      const b = e.target.closest("button[data-av]"); if (!b || b.disabled) return;
+      try { if (b.dataset.av) localStorage.setItem("gonn.avatar", JSON.stringify(b.dataset.av)); else localStorage.removeItem("gonn.avatar"); } catch (x) {}
+      $("avDlg").hidden = true; D.blip(880); Account.push(); D.onAvatar();
+    });
+    document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("button[data-soc]"); if (b && b.dataset.soc === "avatar") openAvatar(); });
+  }
+  return { init, openChat, openBoard, openAvatar, closeChat, refresh: () => { if (!$("chat").hidden) { syncForm(); render(); } } };
 })();
 
 </script>
@@ -5270,7 +5470,7 @@ const Account = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "56dbcea7ba";
+  const BUILD = "11f2ba9957";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -5321,6 +5521,8 @@ const Account = (() => {
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
+    // characters ever beaten (profile pictures unlock from these; the history keeps only 100 games)
+    if (humanWon) { const bt = load("beaten", []); if (!bt.includes(CHARS[gameChar].id)) save("beaten", bt.concat(CHARS[gameChar].id)); }
     Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
@@ -6497,7 +6699,9 @@ const Account = (() => {
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "tutorial", t: "TUTORIAL", s: "คัมภีร์สอนมือใหม่ เริ่มจากศูนย์บนกระดาน 9×9" },
-    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" }
+    { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
+    { id: "ranking", t: "LEADERBOARD", s: "อันดับผู้เล่นทั้งหมด เรียงตามระดับฝีมือ" },
+    { id: "chat", t: "WORLD CHAT", s: "คุยกับผู้เล่นคนอื่นทั่วโลก" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="menu/${m.id}.png" alt=""></span><i class="mn-div"></i>
@@ -6518,14 +6722,17 @@ const Account = (() => {
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
     $("mnWhoName").textContent = Account.name() || "GUEST";
+    const av = Account.avatarSrc(); $("mnWhoImg").src = av; $("mnWhoImg").classList.toggle("face", av !== "menu/guest.png");
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
-  function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); for (const id of ["menu", "home", "prof", "chat", "lb", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
-  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); });
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // chat, leaderboard and the profile picture picker (src/social.js)
+  Social.init({ CHARS, rankName, hideScreens, showMenu, blip, onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -6538,6 +6745,8 @@ const Account = (() => {
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
+    else if (go === "ranking") Social.openBoard();
+    else if (go === "chat") Social.openChat();
   });
   $("hmBack").onclick = () => { blip(660); showMenu(); };
   // back from a game goes to the character select (the rank test's own screen in exam mode); a game in progress asks first
