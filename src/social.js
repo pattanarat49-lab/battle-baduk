@@ -64,7 +64,7 @@ const Social = (() => {
     let h = me ? `<div class="lb-me">อันดับของคุณ <b>#${me.pos}</b> จาก ${total} คน · ${esc(rankOf(me.r))}</div>`
       : Account.name() ? "" : `<div class="lb-me">ล็อกอินในหน้า PROFILE เพื่อขึ้นกระดานอันดับ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
     h += list.length ? `<div class="lb-list">${list.map(row).join("")}</div>` : `<p class="pf-empty">ยังไม่มีผู้เล่นในกระดาน สมัครแอคเคาท์แล้วเป็นคนแรกเลย</p>`;
-    h += `<p class="note" style="margin-top:8px">เรียงตามเรตติ้ง ซึ่งขึ้นลงตามผลแพ้ชนะกับ AI, เล่นออนไลน์ และสอบวัดระดับ ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่มีระดับอยู่ท้ายตาราง</p>`;
+    h += `<p class="note" style="margin-top:8px">เรียงตามเรตติ้ง (เริ่มจากผลสอบกับฮิคารุที่ดีที่สุด แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์) ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่มีระดับอยู่ท้ายตาราง</p>`;
     $("lbBody").innerHTML = h;
   }
 

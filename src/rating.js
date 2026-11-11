@@ -1,6 +1,6 @@
-// The player's skill rating, moved by every finished game (against the AI, online) and by rank tests.
+// The player's skill rating: the best rank test, plus or minus every finished game since (against the AI, online).
 // Elo on the EGF scale: 1 kyu = 2000, 1 dan = 2100, 15 kyu = 600; one rank = 100 points (about a 64% win rate).
-// Kept in localStorage gonn.rating { R, n: games counted, hist: [{ at, R, d: change, k: "ai"|"online"|"exam", o: opponent, w: won }] }
+// Kept in localStorage gonn.rating { R, n: games counted, base: best exam rank it starts from, hist: [{ at, R, d: change, k: "ai"|"online"|"exam", o: opponent, w: won }] }
 // and synced with the account like the rest of the progress (src/account.js).
 const Rating = (() => {
   const KEY = "gonn.rating", START = 600, KEEP = 300;
@@ -27,13 +27,22 @@ const Rating = (() => {
     put(cur);
     return cur;
   }
-  // a rank test is a direct measure: a new player starts there, later tests pull the rating halfway toward it
-  function exam(est, at) {
-    const cur = get(), Re = toR(est);
-    const R = !cur || cur.n < 5 ? Re : Math.round((cur.R + Re) / 2);
-    const v = cur || { R, n: 0, hist: [] };
-    const d = R - v.R; v.R = R;
-    v.hist.push({ at: at || Date.now(), R, d, k: "exam", o: "ฮิคารุ (สอบวัดระดับ)", w: null });
+  // the best rank test is the starting point (owner 2026-11-11): the rating is that rank plus whatever the games played
+  // since that test added or took away. A better test result moves the base up; a worse one leaves it.
+  // best = { rank, at } (the player's best exam). Also fixes up ratings made before this rule.
+  function anchor(best) {
+    if (!best || typeof best.rank !== "number") return get();
+    const cur = get();
+    if (cur && typeof cur.base === "number" && best.rank <= cur.base) return cur;
+    const v = cur || { R: START, n: 0, hist: [] }, at = best.at || Date.now();
+    const since = v.hist.filter(h => h.k !== "exam" && h.at > at).reduce((a, h) => a + (h.d || 0), 0);
+    const R = Math.max(100, Math.min(2900, toR(best.rank) + since)), d = R - v.R;
+    v.R = R; v.base = best.rank; v.n = Math.max(v.n, 5); // a tested player is not a newcomer: normal steps from here
+    v.hist = v.hist.filter(h => !(h.k === "exam" && h.at >= at));
+    v.hist.push({ at, R: toR(best.rank), d, k: "exam", o: "ฮิคารุ (สอบวัดระดับ)", w: null });
+    v.hist.sort((x, y) => x.at - y.at);
+    // later points on the graph follow the new base
+    let r = toR(best.rank); for (const h of v.hist) if (h.at > at) { r = Math.max(100, Math.min(2900, r + (h.d || 0))); h.R = r; }
     v.hist = v.hist.slice(-KEEP);
     put(v);
     return v;
@@ -44,8 +53,11 @@ const Rating = (() => {
     const main = (b.n || 0) > (a.n || 0) || ((b.n || 0) === (a.n || 0) && (last(b) > last(a))) ? b : a;
     const seen = new Set(), hist = [];
     for (const h of (a.hist || []).concat(b.hist || []).sort((x, y) => x.at - y.at)) { const k = h.at + ":" + h.k; if (!seen.has(k)) { seen.add(k); hist.push(h); } }
-    return { R: main.R, n: Math.max(a.n || 0, b.n || 0), hist: hist.slice(-KEEP) };
+    const base = Math.max(typeof a.base === "number" ? a.base : -99, typeof b.base === "number" ? b.base : -99);
+    const out = { R: main.R, n: Math.max(a.n || 0, b.n || 0), hist: hist.slice(-KEEP) };
+    if (base > -99) out.base = base;
+    return out;
   }
   const last = v => v.hist && v.hist.length ? v.hist[v.hist.length - 1].at : 0;
-  return { get, toR, toRank, parseRank, update, exam, merge, START, rank: () => { const v = get(); return v ? toRank(v.R) : null; } };
+  return { get, toR, toRank, parseRank, update, anchor, merge, START, rank: () => { const v = get(); return v ? toRank(v.R) : null; } };
 })();
