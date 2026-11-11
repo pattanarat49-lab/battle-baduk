@@ -1,7 +1,7 @@
 // LEARN: a Duolingo-style course for beginners and young children.
 // A path of lessons (small tasks on 5x5 / 7x7 boards) and boss stages (capture-go against a character),
 // spoken by Hikaru from pre-recorded voice files (learn/voice/<hash>.mp3), with happy / sad sound effects,
-// hearts per lesson, stars, XP and a daily streak. Self-contained: its own rules board, no AI network.
+// stars, XP and a daily streak. Self-contained: its own rules board, no AI network.
 const Learn = (function () {
   // ---------- rules ----------
   const P = (s, N) => (N - parseInt(s.slice(1), 10)) * N + (s.charCodeAt(0) - 97); // "c3" -> index, row 1 at the bottom
@@ -716,7 +716,7 @@ const Learn = (function () {
   function lessonShell(body, foot) {
     const pct = Math.round(S.done / S.total * 100);
     return `<div class="ln-top lesson"><button class="ln-x" data-act="quit" aria-label="ออก">✕</button><div class="ln-prog"><i style="width:${pct}%"></i></div>
-      <span class="ln-hearts${S.hurt ? " hurt" : ""}"><img class="ln-ic " src="learn/icon_heart.png" alt=""> ${S.hearts}</span><button class="ln-voice" data-act="voice" aria-label="เสียงพูด"><img class="ln-ic${voiceOn ? "" : " off"}" src="learn/icon_voice.png" alt=""></button></div>
+      <span class="ln-hearts"></span><button class="ln-voice" data-act="voice" aria-label="เสียงพูด"><img class="ln-ic${voiceOn ? "" : " off"}" src="learn/icon_voice.png" alt=""></button></div>
       <div class="ln-stage">${body}</div>${foot || ""}`;
   }
   function talk(face, name, text, boss) {
@@ -786,13 +786,12 @@ const Learn = (function () {
     confetti(12);
   }
   function wrong(pick) {
-    S.state = "fb"; S.miss++; S.hearts--; S.hurt = true;
+    S.state = "fb"; S.miss++; // no hearts: a wrong answer never ends the lesson (owner, 2026-11-11)
     S.queue.push(S.queue.shift()); // ask it again at the end, like Duolingo
     const o = OOPS[(Math.random() * OOPS.length) | 0], hint = S.it.hint || ""; S.pose = any(MOOD.oops);
-    SFX.bad(); later(SFX.heart, 500);
+    SFX.bad();
     if (hint) speakPair(o, plain(hint)); else speak(o, 200);
     renderLesson({ ok: false, title: o, text: rich(hint), pick });
-    if (S.hearts <= 0) later(outOfHearts, 1500);
   }
   // the "oops" line and the hint are two files, played one after the other
   function speakPair(a, b) {
@@ -927,7 +926,7 @@ const Learn = (function () {
       <button class="ln-btn big ${f.won ? "pri" : "red"}" data-act="${f.won ? "bossdone" : "retry"}">${f.won ? "ต่อไป" : "ลองใหม่"}</button></div></div>`;
     else foot = `<div class="ln-sheet"><div class="in"><span class="ln-turn">${f.turn === 1 ? "ตาเรา (ดำ)" : bo.name + " กำลังคิด…"}</span><span></span></div></div>`;
     S.total = 1; S.done = f.won ? 1 : 0;
-    $("learn").innerHTML = lessonShell(body, foot).replace(/<span class="ln-hearts[^<]*<\/span>/, `<span class="ln-boss-t">${l.t}</span>`);
+    $("learn").innerHTML = lessonShell(body, foot).replace('<span class="ln-hearts"></span>', `<span class="ln-boss-t">${l.t}</span>`);
     $("learn").className = "learn lesson fight";
     drawBoard();
     if (S.typed !== f.line) { S.typed = f.line; typeIn($("learn").querySelector(".ln-bub p")); }
@@ -1036,7 +1035,7 @@ const Learn = (function () {
       `<div class="ln-boardbox"><svg id="lnBoard" role="img" aria-label="กระดาน"></svg></div>` + opts;
     const foot = `<div class="ln-sheet"><div class="in"><span class="ln-turn">${G.on ? "ตอบผิด เสียเวลา 3 วินาที" : "ตอบข้อแรกเพื่อเริ่มจับเวลา"}</span><span></span></div></div>`;
     S.total = G.secs; S.done = G.left;
-    $("learn").innerHTML = lessonShell(body, foot).replace(/<span class="ln-hearts[^<]*<img[^>]*>[^<]*<\/span>/, `<span class="ln-gscore" id="lnGs">★ ${G.score}</span>`);
+    $("learn").innerHTML = lessonShell(body, foot).replace('<span class="ln-hearts"></span>', `<span class="ln-gscore" id="lnGs">★ ${G.score}</span>`);
     $("learn").className = "learn lesson game";
     drawBoard();
     if (!G.on && S.typed !== g.say) { S.typed = g.say; typeIn($("learn").querySelector(".ln-bub p")); }
@@ -1082,7 +1081,7 @@ const Learn = (function () {
     prog.best = prog.best || {}; const old = prog.best[l.id] || 0, isBest = G.score > old; if (isBest) prog.best[l.id] = G.score;
     endGame(l, stars, [["คะแนน", G.score], ["สถิติดีที่สุด", Math.max(old, G.score)]], isBest && old ? "สถิติใหม่! เก่งขึ้นแล้วนะ" : stars < 3 ? `ได้ ${th[Math.min(2, stars)]} คะแนน จะได้ดาวเพิ่มอีกดวง` : "ได้สามดาวเต็มเลย สุดยอด", isBest && old ? LINES.best : LINES.time);
   }
-  const gameShell = (l, body, foot, chip, done, total) => { S.total = total; S.done = done; return lessonShell(`<div class="ln-label game">✦ มินิเกม · ${GAMES[l.game].name}</div>` + body, foot).replace(/<span class="ln-hearts[^<]*<img[^>]*>[^<]*<\/span>/, `<span class="ln-gscore" id="lnGs">${chip}</span>`); };
+  const gameShell = (l, body, foot, chip, done, total) => { S.total = total; S.done = done; return lessonShell(`<div class="ln-label game">✦ มินิเกม · ${GAMES[l.game].name}</div>` + body, foot).replace('<span class="ln-hearts"></span>', `<span class="ln-gscore" id="lnGs">${chip}</span>`); };
 
   // ---- trap: a runaway white stone heads for the edge; fence it in (loose nets beat chasing)
   const onEdge = (i, N) => { const x = i % N, y = (i / N) | 0; return !x || !y || x === N - 1 || y === N - 1; };
@@ -1247,7 +1246,7 @@ const Learn = (function () {
       if (act === "voice") { voiceOn = !voiceOn; try { localStorage.setItem("gonn.learnVoice", voiceOn ? "1" : "0"); } catch (e) {} if (!voiceOn) stopVoice(); t.querySelector("img").classList.toggle("off", !voiceOn); return; }
       if (act === "again") return S.view === "fight" ? speak(S.fight.line, 0, S.fight.boss) : S.view === "game" ? speak(GAMES[S.game.mode].say) : S.view === "tf" ? speak(S.tf.q[0]) : ["trap", "match"].includes(S.view) ? speak(GAMES[ALL[S.lesson].game].say) : speak(S.it.say);
       if (act === "trapnext") return trapRound();
-      if (act === "next") { SFX.tap(); if (S.state === "fb" && S.hearts <= 0) return; if (S.state === "info") { S.queue.shift(); S.done++; } return nextItem(); }
+      if (act === "next") { SFX.tap(); if (S.state === "info") { S.queue.shift(); S.done++; } return nextItem(); }
       if (act === "hint") { S.hintShown = true; S.usedHint = true; S.pose = "point"; if (S.it.ans && !["stone"].includes(S.it.t)) S.ring = L(S.it.ans, S.it.n || 5).slice(0, 1); SFX.tap(); renderLesson(); return speak(S.it.hint); }
       if (act === "skip") { S.queue.push(S.queue.shift()); return nextItem(); }
       if (act === "quit" || act === "path") { SFX.tap(); return renderPath(); }
