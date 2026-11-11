@@ -936,6 +936,7 @@
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
+    Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
@@ -945,7 +946,7 @@
     grading.then(() => {
       const r = examResult(ex, len);
       if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); Account.push(); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -2131,12 +2132,15 @@
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    $("mnWhoName").textContent = Account.name() || "GUEST";
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
+  // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -2167,7 +2171,7 @@
     const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
     const charOf = id => CHARS.find(c => c.id === id);
     const wins = hist.filter(h => h.won).length;
-    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+    let h = Account.card() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     const ranked = bestRank(hist);
     const g = pausedGame();
@@ -2196,7 +2200,7 @@
       return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
         <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
         <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
-      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+      <p class="note" style="margin-top:6px">${Account.name() ? "ประวัติเก็บไว้ในแอคเคาท์ของคุณ" : "ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"} เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
   }
   $("pfBody").addEventListener("click", e => {

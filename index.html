@@ -592,6 +592,24 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .sure-card p { margin: 0 0 14px; font-size: 16px; color: var(--fg); text-align: center; }
 .sure-card p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 4px; font-size: 18px; }
 .sure .actions { padding: 0; }
+/* player accounts (src/account.js): card on the Profile page and the sign-in dialog */
+.acct-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.acct-box .t { min-width: 0; flex: 1 1 200px; } .acct-box .t b { display: block; font-weight: 700; color: var(--accent); }
+.acct-box .t span { display: block; font-size: 13px; color: var(--muted); }
+.acct-box .bad, .acct-msg.bad { color: #ff9b8a; }
+.acct-card { position: relative; text-align: left; }
+.acct-x { position: absolute; top: 6px; right: 6px; min-height: 32px; min-width: 32px; padding: 0; background: none; border: 0; font-size: 18px; color: var(--muted); }
+.acct-tabs { margin-bottom: 12px; } .acct-tabs button { font-size: 14px; }
+.acct-card form { display: grid; gap: 10px; }
+.acct-card form .actions button { width: 100%; }
+.acct-card .acct-msg strong { color: var(--accent); }
+.acct-card label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+.acct-card label[hidden] { display: none; }
+.acct-card input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+.acct-card input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.acct-msg { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--muted); text-align: left !important; }
+.acct-msg.ok { color: var(--fg); }
+.acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
 .end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
@@ -700,7 +718,7 @@ body.coaching .app .quote { display: none; }
   </header>
   <div class="mn-main">
     <aside class="mn-side" aria-label="ผู้เล่น">
-      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b>GUEST</b><span id="mnWhoSub">-</span></div></div>
+      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b id="mnWhoName">GUEST</b><span id="mnWhoSub">-</span></div></div>
       <div class="mn-stats">
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 0h6v1h2v3h-1v1h-2v1h-1v2h2v2h-6v-2h2v-2h-1v-1h-2v-1h-1v-3h2zM1 2v1h1v-1zM8 2v1h1v-1z"/></svg><small>RANK</small><b id="mnRank">-</b></div>
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v3h4v1h-1v1h-1v1h1v4h-1v-1h-2v-1h-2v1h-2v1h-1v-4h1v-1h-1v-1h-1v-1h4z"/></svg><small>WIN</small><b id="mnWin">-</b></div>
@@ -4165,6 +4183,204 @@ const Coach = (function () {
   return api;
 })();
 
+// Player accounts (name + password): the Profile page signs in, and the player's progress then follows them to any device.
+// Synced: game history (100 most recent), best exam rank, tsumego progress, tutorial step. Not synced: a paused game and
+// settings (sound, board size), which belong to the device.
+// Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
+// Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
+const Account = (() => {
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep"];
+  const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
+  const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
+  let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
+  let onChange = () => {}, busy = false, lastErr = "";
+
+  const host = location.hostname;
+  const BASE = /github\.io$/.test(host) ? "https://battle-baduk.battlebaduk.workers.dev" : "";
+  // the private preview page sets window.ACCT_BACKEND (same server code, kept in the artifact's database)
+  let api = window.ACCT_BACKEND || async function (op, body) {
+    // text/plain keeps the request simple (no CORS preflight) when the page is on another host
+    const r = await fetch(BASE + "/api/acct/" + op, { method: "POST", body: JSON.stringify(body), headers: { "content-type": "text/plain" } });
+    let j = null; try { j = await r.json(); } catch (e) {}
+    return { status: r.status, body: j || { error: "เซิร์ฟเวอร์ตอบกลับผิดพลาด (" + r.status + ")" } };
+  };
+
+  // ---------- progress ----------
+  const collect = () => { const d = {}; for (const k of SYNC) { const v = get(k); if (v !== null) d[k] = v; } return d; };
+  const fp = d => JSON.stringify(SYNC.map(k => d[k] === undefined ? null : d[k]));
+  // two copies of the progress joined so that nothing either device did is lost
+  function merge(a, b) {
+    a = a || {}; b = b || {};
+    const out = {};
+    const ha = Array.isArray(a.history) ? a.history : [], hb = Array.isArray(b.history) ? b.history : [];
+    if (ha.length || hb.length) {
+      const by = new Map();
+      for (const h of ha.concat(hb)) {
+        if (!h || !h.id) continue;
+        const o = by.get(h.id);
+        if (!o || (typeof h.rank === "number" && typeof o.rank !== "number")) by.set(h.id, h);
+      }
+      out.history = [...by.values()].sort((x, y) => (y.at || 0) - (x.at || 0)).slice(0, 100);
+    }
+    const ra = a.bestRank, rb = b.bestRank;
+    if (ra || rb) out.bestRank = !ra ? rb : !rb ? ra : (rb.rank > ra.rank ? rb : ra);
+    const ta = a.tsume3, tb = b.tsume3;
+    if (ta || tb) {
+      const m = !ta ? tb : !tb ? ta : ((tb.solved || 0) > (ta.solved || 0) ? tb : ta);
+      out.tsume3 = Object.assign({}, m, { best: Math.max((ta && ta.best) || 0, (tb && tb.best) || 0),
+        seen: [...new Set([].concat((ta && ta.seen) || [], (tb && tb.seen) || []))].slice(-3000) });
+    }
+    if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
+    return out;
+  }
+  function apply(d) { for (const k of SYNC) put(k, d[k] === undefined ? null : d[k]); }
+
+  // ---------- talking to the server ----------
+  const remember = () => put("acct", me);
+  function signedIn(r) {
+    const merged = merge(collect(), r.data);
+    apply(merged);
+    me = { token: r.token, name: r.name, ver: r.ver, sent: fp(r.data || {}), at: Date.now() };
+    remember();
+    onChange();
+    return push();
+  }
+  async function push() {
+    if (!me || busy) return;
+    const d = collect(), f = fp(d);
+    if (f === me.sent) return;
+    busy = true;
+    try {
+      for (let i = 0; i < 3; i++) {
+        const r = await api("save", { token: me.token, ver: me.ver, data: d });
+        if (r.status === 200) { me.ver = r.body.ver; me.sent = f; me.at = Date.now(); lastErr = ""; remember(); break; }
+        if (r.status === 409) { // another device saved first: take its copy in and try again
+          const m = merge(collect(), r.body.data); apply(m); me.ver = r.body.ver; remember(); onChange();
+          Object.assign(d, m); continue;
+        }
+        if (r.status === 401) { me = null; remember(); lastErr = r.body.error; onChange(); break; }
+        lastErr = r.body.error || "บันทึกไม่สำเร็จ"; break;
+      }
+    } catch (e) { lastErr = "ออฟไลน์อยู่ จะบันทึกให้เมื่อกลับมาออนไลน์"; }
+    finally { busy = false; onChange(); }
+  }
+  // on page load: take in what other devices saved since this one last looked
+  async function pull() {
+    if (!me) return;
+    try {
+      const r = await api("load", { token: me.token });
+      if (r.status === 401) { me = null; remember(); lastErr = r.body.error; onChange(); return; }
+      if (r.status !== 200) return;
+      if (r.body.ver !== me.ver) { apply(merge(collect(), r.body.data)); me.ver = r.body.ver; me.sent = fp(r.body.data || {}); remember(); onChange(); }
+      me.at = Date.now(); remember();
+      await push();
+    } catch (e) {}
+  }
+
+  // ---------- the sign-in dialog ----------
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  let tab = "login";
+  function dialog() {
+    if ($("acct")) return;
+    const d = document.createElement("div");
+    d.className = "sure acct"; d.id = "acct"; d.hidden = true;
+    d.innerHTML = `<div class="sure-card acct-card" role="dialog" aria-labelledby="acT">
+      <button class="acct-x" id="acX" aria-label="ปิด">✕</button>
+      <p id="acT"><b>ACCOUNT</b></p>
+      <div class="seg acct-tabs" id="acTabs"><button data-t="login">เข้าสู่ระบบ</button><button data-t="signup">สมัครใหม่</button><button data-t="recover">ลืมรหัส</button></div>
+      <form id="acForm" autocomplete="on">
+        <label>ชื่อผู้ใช้<input id="acName" name="username" autocomplete="username" maxlength="16" autocapitalize="off" spellcheck="false" required></label>
+        <label id="acCodeL">รหัสกู้คืน<input id="acCode" autocomplete="off" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></label>
+        <label><span id="acPassT">รหัสผ่าน</span><input id="acPass" type="password" name="password" maxlength="64" required></label>
+        <label id="acPass2L">ใส่รหัสผ่านอีกครั้ง<input id="acPass2" type="password" maxlength="64" autocomplete="new-password"></label>
+        <p class="acct-msg" id="acMsg" aria-live="polite"></p>
+        <div class="actions"><button type="submit" class="primary" id="acGo">เข้าสู่ระบบ</button></div>
+      </form>
+      <div id="acDone" hidden>
+        <p class="acct-msg ok">สำเร็จแล้ว! เก็บ <strong>รหัสกู้คืน</strong> นี้ไว้ให้ดี (จด หรือแคปหน้าจอ) ถ้าลืมรหัสผ่าน ใช้รหัสนี้ตั้งรหัสใหม่ได้ และจะไม่แสดงอีก</p>
+        <div class="acct-code" id="acRec"></div>
+        <div class="actions two"><button id="acCopy">คัดลอก</button><button class="primary" id="acOk">จดไว้แล้ว</button></div>
+      </div></div>`;
+    document.body.appendChild(d);
+    d.addEventListener("click", e => { if (e.target === d && $("acDone").hidden) close(); });
+    $("acX").onclick = () => close();
+    $("acTabs").onclick = e => { const b = e.target.closest("button[data-t]"); if (b) setTab(b.dataset.t); };
+    $("acForm").onsubmit = e => { e.preventDefault(); submit(); };
+    $("acCopy").onclick = () => { try { navigator.clipboard.writeText($("acRec").textContent); $("acCopy").textContent = "คัดลอกแล้ว"; } catch (e) {} };
+    $("acOk").onclick = () => close();
+  }
+  function setTab(t) {
+    tab = t;
+    for (const b of $("acTabs").children) b.setAttribute("aria-pressed", String(b.dataset.t === t));
+    $("acCodeL").hidden = t !== "recover";
+    $("acPass2L").hidden = t === "login";
+    $("acPassT").textContent = t === "recover" ? "รหัสผ่านใหม่" : "รหัสผ่าน";
+    $("acPass").autocomplete = t === "login" ? "current-password" : "new-password";
+    $("acGo").textContent = { login: "เข้าสู่ระบบ", signup: "สมัครและเก็บความคืบหน้า", recover: "ตั้งรหัสผ่านใหม่" }[t];
+    $("acMsg").textContent = t === "signup" ? "ชื่อ 3–16 ตัว (ไทย อังกฤษ ตัวเลข _) · รหัสผ่านอย่างน้อย 6 ตัว · ไม่ต้องใช้อีเมล" : "";
+    $("acMsg").className = "acct-msg";
+  }
+  function open(t) {
+    dialog();
+    $("acForm").hidden = false; $("acDone").hidden = true; $("acTabs").hidden = false;
+    $("acPass").value = $("acPass2").value = $("acCode").value = "";
+    setTab(t || "login");
+    $("acct").hidden = false;
+    $("acName").focus();
+  }
+  function close() { if ($("acct")) $("acct").hidden = true; onChange(); }
+  const say = (m, ok) => { $("acMsg").textContent = m; $("acMsg").className = "acct-msg" + (ok ? " ok" : " bad"); };
+  async function submit() {
+    const name = $("acName").value.trim(), pass = $("acPass").value;
+    if (tab !== "login" && pass !== $("acPass2").value) return say("รหัสผ่านสองช่องไม่ตรงกัน");
+    if (tab === "recover" && !$("acCode").value.trim()) return say("ใส่รหัสกู้คืนที่ได้ตอนสมัคร");
+    $("acGo").disabled = true; say("กำลังเชื่อมต่อ…", true);
+    try {
+      const body = tab === "signup" ? { name, pass, data: collect() } : tab === "recover" ? { name, pass, code: $("acCode").value } : { name, pass };
+      const r = await api(tab, body);
+      if (r.status !== 200) { say(r.body.error || "ไม่สำเร็จ ลองใหม่อีกครั้ง"); return; }
+      await signedIn(r.body);
+      if (r.body.recovery) {
+        $("acForm").hidden = true; $("acTabs").hidden = true; $("acDone").hidden = false;
+        $("acRec").textContent = r.body.recovery; $("acCopy").textContent = "คัดลอก";
+      } else close();
+    } catch (e) { say("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง"); }
+    finally { $("acGo").disabled = false; }
+  }
+  async function logout() {
+    const t = me && me.token;
+    await push();
+    // the progress is safe in the account, so it leaves this device with the player (the next person starts clean);
+    // when the last save did not go through it stays here instead
+    if (me && me.sent !== fp(collect())) { lastErr = "ยังบันทึกล่าสุดไม่สำเร็จ ลองออกจากระบบอีกครั้งตอนออนไลน์"; onChange(); return; }
+    apply({});
+    me = null; remember(); lastErr = ""; onChange();
+    if (t) api("logout", { token: t }).catch(() => {});
+  }
+  const timeTH = t => new Date(t).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  // the card at the top of the Profile page
+  function card() {
+    if (!me) return `<div class="acct-box"><div class="t"><b>เก็บความคืบหน้าไว้ในแอคเคาท์</b><span>ล็อกอินแล้วประวัติเกม ระดับที่สอบได้ และด่านโจทย์ จะตามไปทุกเครื่อง</span>${lastErr ? `<span class="bad">${esc(lastErr)}</span>` : ""}</div>
+      <div class="pf-btns"><button class="pf-an" data-acct="signup">สมัคร</button><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div></div>`;
+    return `<div class="acct-box in"><div class="t"><b>👤 ${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
+      <div class="pf-btns"><button class="pf-an" data-acct="logout">ออกจากระบบ</button></div></div>`;
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest("button[data-acct]"); if (!b) return;
+    const a = b.dataset.acct;
+    if (a === "logout") logout(); else open(a);
+  });
+
+  function init(cb) {
+    onChange = cb || onChange;
+    pull();
+    setInterval(() => { if (!document.hidden) push(); }, 20e3);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
+  }
+  return { init, card, open, push, merge, name: () => me && me.name, useBackend: f => { api = f; } };
+})();
+
 </script>
 <script>
 (function () {
@@ -5054,7 +5270,7 @@ const Coach = (function () {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "9d22635e97";
+  const BUILD = "56dbcea7ba";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -5105,6 +5321,7 @@ const Coach = (function () {
     const id = gameId, hist = load("history", []).filter(h => h.id !== id);
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs() });
     save("history", hist.slice(0, 100));
+    Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
     const ev = { type: "end", game: gameId, char: CHARS[gameChar].id, winner: humanWon ? "human" : "ai", how, moves: history.length, state: snapshot() };
@@ -5114,7 +5331,7 @@ const Coach = (function () {
     grading.then(() => {
       const r = examResult(ex, len);
       if (EXAMBOT !== null) window.MATCH_RESULT = { bot: CHARS[EXAMBOT].id, rank: CHARS[EXAMBOT].rank, est: r.est, score: r.score, graded: r.graded, notBest: r.notBest, how, botWon: humanWon, margin: ex.margin ?? margin ?? null, moves: len, color: human === BLACK ? "b" : "w" };
-      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); }
+      if (r.est !== null) { const hs = load("history", []), h = hs.find(x => x.id === ev.game); if (h) { h.rank = r.est; save("history", hs); } const b = load("bestRank", null); if (!b || r.est > b.rank) save("bestRank", { rank: r.est, at: Date.now() }); Account.push(); }
       track(Object.assign(ev, { exam: { graded: r.graded, notBest: Math.round(r.notBest * 10) / 10, score: Math.round(r.score * 1000) / 1000, rank: r.est === null ? null : Math.round(r.est * 10) / 10 } }));
     });
   }
@@ -6300,12 +6517,15 @@ const Coach = (function () {
     $("mnWin").textContent = hist.length ? `${wins} / ${hist.length}` : "-";
     $("mnTime").textContent = secs ? (secs >= 3600 ? `${Math.floor(secs / 3600)} ชม. ${Math.round(secs % 3600 / 60)} นาที` : `${Math.max(1, Math.round(secs / 60))} นาที`) : "-";
     $("mnWhoSub").textContent = hist.length ? `เล่นแล้ว ${hist.length} เกม` : "-";
+    $("mnWhoName").textContent = Account.name() || "GUEST";
     const sub = $("mnList").querySelector('[data-mn="profile"] small');
     sub.textContent = pausedGame() ? "มีเกมที่เล่นค้างไว้ กดเพื่อเล่นต่อ" : MENU[0].s;
   }
   function hideScreens() { for (const id of ["menu", "home", "prof", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
+  // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -6336,7 +6556,7 @@ const Coach = (function () {
     const hist = load("history", []).filter(h => CHARS.some(c => c.id === h.char));
     const charOf = id => CHARS.find(c => c.id === id);
     const wins = hist.filter(h => h.won).length;
-    let h = `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+    let h = Account.card() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     const ranked = bestRank(hist);
     const g = pausedGame();
@@ -6365,7 +6585,7 @@ const Coach = (function () {
       return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>vs ${c.name}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
         <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""} · ${when}</div></div>
         <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
-      <p class="note" style="margin-top:6px">ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น เก็บ 100 เกมล่าสุด</p>`;
+      <p class="note" style="margin-top:6px">${Account.name() ? "ประวัติเก็บไว้ในแอคเคาท์ของคุณ" : "ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"} เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
   }
   $("pfBody").addEventListener("click", e => {

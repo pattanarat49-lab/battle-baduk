@@ -592,6 +592,24 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .sure-card p { margin: 0 0 14px; font-size: 16px; color: var(--fg); text-align: center; }
 .sure-card p b { display: block; font-family: var(--f-px); letter-spacing: .06em; color: var(--accent); margin-bottom: 4px; font-size: 18px; }
 .sure .actions { padding: 0; }
+/* player accounts (src/account.js): card on the Profile page and the sign-in dialog */
+.acct-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
+.acct-box .t { min-width: 0; flex: 1 1 200px; } .acct-box .t b { display: block; font-weight: 700; color: var(--accent); }
+.acct-box .t span { display: block; font-size: 13px; color: var(--muted); }
+.acct-box .bad, .acct-msg.bad { color: #ff9b8a; }
+.acct-card { position: relative; text-align: left; }
+.acct-x { position: absolute; top: 6px; right: 6px; min-height: 32px; min-width: 32px; padding: 0; background: none; border: 0; font-size: 18px; color: var(--muted); }
+.acct-tabs { margin-bottom: 12px; } .acct-tabs button { font-size: 14px; }
+.acct-card form { display: grid; gap: 10px; }
+.acct-card form .actions button { width: 100%; }
+.acct-card .acct-msg strong { color: var(--accent); }
+.acct-card label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+.acct-card label[hidden] { display: none; }
+.acct-card input { font: inherit; font-size: 16px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+.acct-card input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+.acct-msg { margin: 0; min-height: 1.2em; font-size: 13px; color: var(--muted); text-align: left !important; }
+.acct-msg.ok { color: var(--fg); }
+.acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
 .end-ask p { margin: 0 0 12px; font-size: 15px; color: var(--fg); }
@@ -700,7 +718,7 @@ body.coaching .app .quote { display: none; }
   </header>
   <div class="mn-main">
     <aside class="mn-side" aria-label="ผู้เล่น">
-      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b>GUEST</b><span id="mnWhoSub">-</span></div></div>
+      <div class="mn-who"><img src="menu/guest.png" alt="" width="78" height="79"><div><b id="mnWhoName">GUEST</b><span id="mnWhoSub">-</span></div></div>
       <div class="mn-stats">
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 0h6v1h2v3h-1v1h-2v1h-1v2h2v2h-6v-2h2v-2h-1v-1h-2v-1h-1v-3h2zM1 2v1h1v-1zM8 2v1h1v-1z"/></svg><small>RANK</small><b id="mnRank">-</b></div>
         <div class="mn-stat"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M4 0h2v3h4v1h-1v1h-1v1h1v4h-1v-1h-2v-1h-2v1h-2v1h-1v-4h1v-1h-1v-1h-1v-1h4z"/></svg><small>WIN</small><b id="mnWin">-</b></div>

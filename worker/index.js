@@ -2,9 +2,11 @@
 // POST /api/event  {type: "start"|"move"|"end", game, player, char, size, color, winner, how, moves, state}
 // GET  /stats      summary page and games in progress,  GET /api/stats  the same numbers as JSON
 // GET  /watch?g=…  live board of one game,  GET /api/game?g=…  its latest position
+// POST /api/acct/<signup|login|recover|load|save|logout>  player accounts (worker/acct.js), in their own Durable Object
 // GET  /api/cancel  always {n: 0}, without touching the Durable Object: game pages opened before the cancel button was removed still poll it
 import { DurableObject } from "cloudflare:workers";
 import { WATCH } from "./watch.js";
+import { makeAccounts } from "./acct.js";
 
 const CHARS = {
   michio: "ครูมิชิโอะ", mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
@@ -332,6 +334,33 @@ ${matchSection(s, ago)}
 </main><script>setInterval(() => { if (!document.hidden) location.reload(); }, 60000);</script></body></html>`;
 }
 
+// Player accounts, kept apart from Stats so they never touch its tables. One row per account and one per login,
+// written only on sign-up, login and when progress is saved (after a game, a solved problem); reads are by primary key.
+export class Accounts extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    const sql = ctx.storage.sql;
+    sql.exec("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT)");
+    this.handle = makeAccounts({
+      get: async k => { const r = sql.exec("SELECT v FROM kv WHERE k = ?", k).toArray()[0]; return r ? JSON.parse(r.v) : null; },
+      put: async (k, v) => { sql.exec("INSERT INTO kv (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v", k, JSON.stringify(v)); },
+      del: async k => { sql.exec("DELETE FROM kv WHERE k = ?", k); }
+    });
+    // wrong passwords per address over 10 minutes, in memory only: guessing across many names gets slowed down too
+    this.bad = new Map();
+  }
+  async call(op, body, ip) {
+    const now = Date.now(), b = this.bad.get(ip);
+    if (b && now - b.at < 10 * 60e3 && b.n >= 30) return { status: 429, body: { error: "ลองผิดหลายครั้งเกินไป รอสักครู่แล้วลองใหม่" } };
+    const r = await this.handle(op, body);
+    if (r.status === 401 && (op === "login" || op === "recover")) {
+      const v = b && now - b.at < 10 * 60e3 ? b : { at: now, n: 0 }; v.n++; this.bad.set(ip, v);
+      if (this.bad.size > 5000) this.bad.clear();
+    }
+    return r;
+  }
+}
+
 export default {
   // an error shows its message instead of Cloudflare's bare "Error 1101", so a failure can be read off the page
   async fetch(req, env) {
@@ -355,6 +384,17 @@ async function handle(req, env) {
     if (!e) return new Response("bad event", { status: 400, headers: CORS });
     await stub().record(e);
     return new Response(null, { status: 204, headers: CORS });
+  }
+  if (url.pathname.startsWith("/api/acct/")) {
+    if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+    if (req.method !== "POST") return new Response("method", { status: 405, headers: CORS });
+    const text = await req.text();
+    if (text.length > 2e6) return Response.json({ error: "ข้อมูลใหญ่เกินไป" }, { status: 413, headers: CORS });
+    let body = null;
+    try { body = JSON.parse(text); } catch (e) {}
+    const acct = env.ACCOUNTS.get(env.ACCOUNTS.idFromName("accounts"));
+    const r = await acct.call(url.pathname.slice(10), body, req.headers.get("cf-connecting-ip") || "");
+    return Response.json(r.body, { status: r.status, headers: { ...CORS, "cache-control": "no-store" } });
   }
   const html = body => new Response(body, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
   if (url.pathname === "/api/chars") {
