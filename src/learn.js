@@ -569,7 +569,7 @@ const Learn = (function () {
     else h += `<div class="ln-shopgrid">${SHOP.map(it => `<div class="ln-item"><img src="${it.img}" alt=""><b>${it.t}</b>${owns(it.id) ? `<span class="own">มีแล้ว</span>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`).join("")}</div>`;
     $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, 0);
   }
-  const unlocked = k => !!ALL[k]; // every lesson is open: players may jump to any topic (owner, 2026-11-08)
+  const unlocked = k => !!ALL[k] && (k === 0 || !!prog.stars[ALL[k].id] || !!prog.stars[ALL[k - 1].id]); // one at a time: a lesson opens when the one before it is passed (owner, 2026-11-11)
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
 
   // ---------- sound: effects made with WebAudio, speech from files ----------
