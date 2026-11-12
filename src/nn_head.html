@@ -333,6 +333,10 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-go svg { width: clamp(16px, min(16cqh, 4.6cqw), 30px); height: auto; display: block; fill: var(--mn-ink); shape-rendering: crispEdges; }
 #menu .mn-item:disabled { opacity: 1; cursor: default; background: #afafa3; }
 #menu .mn-item:disabled .mn-div { background: #c6c4b6; }
+.news-card { text-align: center; } .news-card .news-new { display: inline-block; font-size: 20px; color: #fff; background: #b5482f; padding: 4px 12px; margin-bottom: 10px; }
+.news-card img { display: block; width: 120px; height: auto; margin: 0 auto 10px; image-rendering: pixelated; }
+.news-card ul { text-align: left; margin: 0 0 14px; padding-left: 20px; font-size: 14px; line-height: 1.7; color: var(--fg); }
+.news-btns { display: grid; gap: 8px; } .news-btns button { min-height: 46px; font-size: 15px; }
 .mn-rec { font-style: normal; font-size: .55em; letter-spacing: .06em; color: #b5482f; vertical-align: .15em; }
 .mn-soon { justify-self: start; font-family: var(--f-px); font-weight: 700; font-size: clamp(10px, min(9cqh, 2.6cqw), 15px); letter-spacing: .1em; color: #33454a; background: #cdccc0; padding: .35em .9em; border-radius: 3px; margin-top: min(2cqh, 4px); }
 .mn-foot { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0; font-size: 12px; color: #aab5b2; text-align: center; }
@@ -1332,6 +1336,13 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
 </section>
 
 <div class="vd" id="vd" hidden></div>
+<div class="sure" id="news" hidden><div class="sure-card news-card" role="dialog" aria-labelledby="newsT">
+  <b class="px news-new">NEW!</b>
+  <img src="menu/joseki.png" alt="" width="170" height="155">
+  <p id="newsT"><b>JOSEKI</b>โหมดคลังโจเซกิมาแล้ว</p>
+  <ul><li>รวม 752 โจเซกิจากเกมจริงของมืออาชีพและ AI</li><li>กดดูทีละตาได้ทุกรูป</li><li>มีป้ายบอกว่าแบบไหนนิยมในยุคนี้</li></ul>
+  <div class="news-btns"><button class="primary" id="newsGo">ลองเลย</button><button id="newsX">ไว้ทีหลัง</button></div>
+</div></div>
 <div class="sure" id="sure" hidden><div class="sure-card" role="alertdialog" aria-labelledby="sureT">
   <p id="sureT"></p>
   <div class="actions two"><button id="sureNo">ยกเลิก</button><button id="sureOk" class="primary">ยืนยัน</button></div>
