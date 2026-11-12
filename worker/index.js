@@ -374,6 +374,7 @@ ${matchSection(s, ago)}
 // Player accounts, chat, leaderboard, online rooms and live games (worker/hub.js), kept apart from Stats so they never
 // touch its tables. Rows are written on sign-up, login, saves, chat messages and online moves; reads are by primary key.
 // Live positions of games against the AI ("lv…" keys) stay in memory only: they change every move and are not worth a row.
+const CODE = "2026-11-12c"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
 export class Accounts extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -430,6 +431,8 @@ export class Accounts extends DurableObject {
   // the chat screen subscribes to "online" and gets the new count whenever someone arrives or leaves
   async webSocketClose(ws, code) { try { ws.close(code, "bye"); } catch (e) {} this.leaving = ws; await this.push(["online"]); this.leaving = null; }
   async webSocketError(ws) { this.leaving = ws; await this.push(["online"]); this.leaving = null; }
+  // GET /api/online: the count without a socket, and which server code this object is running (to check a deploy)
+  info() { return { n: this.ctx.getWebSockets().filter(w => w.readyState === 1).length, code: CODE }; }
   async value(k) {
     if (k === "here") return null;
     if (k === "online") return { n: this.ctx.getWebSockets().filter(w => w !== this.leaving && w.readyState === 1).length };
@@ -471,6 +474,10 @@ async function handle(req, env) {
     if (!e) return new Response("bad event", { status: 400, headers: CORS });
     await stub().record(e);
     return new Response(null, { status: 204, headers: CORS });
+  }
+  if (url.pathname === "/api/online") {
+    let r; try { r = await env.ACCOUNTS.get(env.ACCOUNTS.idFromName("accounts")).info(); } catch (e) { r = { error: String(e && e.message || e) }; }
+    return Response.json({ worker: CODE, ...r }, { headers: { ...CORS, "cache-control": "no-store" } });
   }
   if (url.pathname === "/api/ws") return env.ACCOUNTS.get(env.ACCOUNTS.idFromName("accounts")).fetch(req);
   if (url.pathname.startsWith("/api/acct/")) {
