@@ -1,4 +1,4 @@
-# Fetches a few extra public game records (by id) into kifu-extra/ for the KIFU library; src/tools/kifu_build.py reads that folder too.
+# Fetches the public Korea Prime Minister's Cup game records into kifu-extra/kpmc.jsonl for the KIFU library; src/tools/kifu_build.py reads that folder too.
 name: Fetch extra kifu
 on:
   push:
@@ -13,14 +13,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          mkdir -p kifu-extra/kpmc
-          for p in $(seq 1 102); do
-            curl -sSL -m 30 -A "Mozilla/5.0 (kifu library)" "https://kpmc.kbaduk.or.kr/us/gibo?page=$p" -o "kifu-extra/kpmc/list-$p.html" || echo "failed $p"
-            sleep 0.5
-          done
-          curl -sSL -m 30 -A "Mozilla/5.0 (kifu library)" "https://kpmc.kbaduk.or.kr/us/gibo/1666" -o kifu-extra/kpmc/game-1666.html || true
-          rm -f kifu-extra/kpmc-list.html
-          grep -li "Karuehawanit\|Wichrich" kifu-extra/kpmc/*.html || true
+          python3 - <<'PY'
+          import re, json, html, time, urllib.request
+          from concurrent.futures import ThreadPoolExecutor
+          def get(i):
+              for k in range(3):
+                  try:
+                      rq = urllib.request.Request("https://kpmc.kbaduk.or.kr/us/gibo/%d" % i, headers={"User-Agent": "Mozilla/5.0 (kifu library)"})
+                      t = urllib.request.urlopen(rq, timeout=30).read().decode("utf-8", "replace")
+                      break
+                  except Exception as e:
+                      t = ""; time.sleep(2)
+              time.sleep(0.3)
+              m = re.search(r'<canvas id="giboCanvas"[^>]*>(.*?)</canvas>', t, re.S)
+              if not m: return None
+              def f(k):
+                  x = re.search(r"<strong>%s:</strong>(.*?)<" % k, t, re.S)
+                  return html.unescape(x[1]).replace("\xa0", " ").strip() if x else ""
+              h = re.search(r'view-title">\s*<h2>(.*?)</h2>', t, re.S)
+              return {"id": i, "ev": html.unescape(h[1]).strip() if h else "", "b": f("black"), "w": f("white"), "re": f("result"), "dt": f("date"), "sgf": m[1].strip()}
+          with ThreadPoolExecutor(3) as ex:
+              out = [r for r in ex.map(get, range(1, 1720)) if r]
+          with open("kifu-extra/kpmc.jsonl", "w", encoding="utf-8") as fh:
+              for r in out: fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+          print(len(out), "games")
+          PY
+          git rm -rq kifu-extra/kpmc
           ls -la kifu-extra
           git config user.name "github-actions[bot]"
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
