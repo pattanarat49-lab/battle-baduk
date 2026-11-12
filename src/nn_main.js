@@ -2286,9 +2286,9 @@
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   // the announcement of the newest mode: a pop-up the first time the menu is seen (once per browser), after the
   // first-visit welcome when that one is up
-  const NEWS = "newsJoseki";
+  const NEWS = "newsKifu";
   $("newsX").onclick = () => { $("news").hidden = true; };
-  $("newsGo").onclick = () => { $("news").hidden = true; unlockAudio(); blip(880); hideScreens(); trackMode("joseki"); Joseki.open(); };
+  $("newsGo").onclick = () => { $("news").hidden = true; unlockAudio(); blip(880); hideScreens(); trackMode("kifu"); Kifu.open(); };
   if (!MATCH && EXAMBOT === null && !load(NEWS, 0)) (function news(settled) {
     // one more round after the loading screen goes, so the welcome (which waits on it too) is up first
     if (!$("splash").hidden || document.querySelector(".sure:not([hidden]):not(#news)")) return setTimeout(news, 400);
