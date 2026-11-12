@@ -8,6 +8,8 @@ const Kifu = (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const BASE = "kifu/", N = 19, PAGE = 50;
+  // the game numbers move when the library is rebuilt: change this with every new kifu/ so no browser mixes old and new files
+  const VER = "?v=2";
   let IDX = null, M = null, loading = null, metaDone = 0, metaWait = null, wired = false;
   const shards = new Map();
 
@@ -50,7 +52,7 @@ const Kifu = (() => {
   const pname = i => P(i)[0];
   function fetchIndex() {
     if (IDX) return Promise.resolve(IDX);
-    if (!loading) loading = fetch(BASE + "index.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => {
+    if (!loading) loading = fetch(BASE + "index.json" + VER).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => {
       IDX = d;
       d.players.forEach((p, i) => { p.i = i; p.key = fold([p[0], p[6], p[7]].join("|")); });
       d.events.forEach((e, i) => { e.i = i + 1; e.key = fold(e[0]); });
@@ -64,7 +66,7 @@ const Kifu = (() => {
     const n = IDX.n;
     M = { d: new Int32Array(n), b: new Uint16Array(n), w: new Uint16Array(n), e: new Uint16Array(n), q: new Uint16Array(n), n: new Uint16Array(n), h: new Uint8Array(n), r: new Array(n) };
     metaDone = 0;
-    metaWait = Promise.all(Array.from({ length: IDX.parts }, (_, k) => fetch(`${BASE}meta-${k}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(part => {
+    metaWait = Promise.all(Array.from({ length: IDX.parts }, (_, k) => fetch(`${BASE}meta-${k}.json${VER}`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(part => {
       const o = k * IDX.per;
       for (const f of ["d", "b", "w", "e", "q", "n", "h"]) M[f].set(part[f], o);
       for (let i = 0; i < part.r.length; i++) M.r[o + i] = part.r[i];
@@ -89,7 +91,7 @@ const Kifu = (() => {
   const gamesOf = (ix, k) => ix.out.subarray(ix.start[k], ix.pos[k]);
   function fetchGame(id) {
     const s = (id / IDX.shard) | 0;
-    if (!shards.has(s)) shards.set(s, fetch(`${BASE}g/${String(s).padStart(4, "0")}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { shards.delete(s); throw e; }));
+    if (!shards.has(s)) shards.set(s, fetch(`${BASE}g/${String(s).padStart(4, "0")}.json${VER}`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { shards.delete(s); throw e; }));
     return shards.get(s).then(rows => rows[id % IDX.shard]);
   }
   // letters only, lower case, so "Yi Ch'ang-ho", "lee changho" and "อี ชางโฮ" are all found as typed
