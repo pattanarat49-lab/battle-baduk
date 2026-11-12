@@ -2183,6 +2183,8 @@
   Tsumego.ai = () => engineReady ? AI : null;
   Tsumego.sound = () => { unlockAudio(); clack(); };
   Tsumego.onBack = () => showMenu();
+  Joseki.sound = () => { unlockAudio(); clack(); };
+  Joseki.onBack = () => showMenu();
   Analysis.onPhoto = () => trackMode("photo", true);
   // ---------- main menu and profile ----------
   const MENU = [
@@ -2191,6 +2193,7 @@
     { id: "play", t: "PLAY WITH AI", s: `เลือกคู่แข่ง ${CHARS.filter(c => !c.tutorial && !c.exam).length} ตัวละคร` },
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
+    { id: "joseki", t: "JOSEKI", rec: "NEW", s: "คลังโจเซกิจากเกมจริง ดูว่ายุคนี้นิยมแบบไหน" },
     { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
     { id: "online", t: "PLAY ONLINE", s: "เล่นกับคนจริง สร้างห้องหรือกด Join" },
     { id: "watch", t: "WATCH", s: "ดูเกมที่คนอื่นกำลังเล่นอยู่แบบสด ๆ" },
@@ -2226,7 +2229,7 @@
     // LEARN: progress line (its "RECOMMEND FOR BEGINNER" tag always shows, owner 2026-11-11)
     $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
   }
-  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel", "jsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
@@ -2272,6 +2275,18 @@
   Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
+  // the announcement of the newest mode: a pop-up the first time the menu is seen (once per browser), after the
+  // first-visit welcome when that one is up
+  const NEWS = "newsJoseki";
+  $("newsX").onclick = () => { $("news").hidden = true; };
+  $("newsGo").onclick = () => { $("news").hidden = true; unlockAudio(); blip(880); hideScreens(); trackMode("joseki"); Joseki.open(); };
+  if (!MATCH && EXAMBOT === null && !load(NEWS, 0)) (function news(settled) {
+    // one more round after the loading screen goes, so the welcome (which waits on it too) is up first
+    if (!$("splash").hidden || document.querySelector(".sure:not([hidden]):not(#news)")) return setTimeout(news, 400);
+    if (!settled) return setTimeout(news, 800, true);
+    if ($("menu").hidden) return;
+    save(NEWS, 1); $("news").hidden = false;
+  })();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -2283,6 +2298,7 @@
     else if (go === "analysis") { hideScreens(); trackMode("analysis"); Analysis.open({ n: 19, moves: [], from: "menu" }); }
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
+    else if (go === "joseki") { hideScreens(); trackMode("joseki"); Joseki.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
     else if (go === "learn") { hideScreens(); trackMode("learn"); trackLearnBackfill(); Learn.open(); }
     else if (go === "online") Online.openLobby("play");
