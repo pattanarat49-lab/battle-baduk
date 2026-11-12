@@ -28,20 +28,22 @@ const Social = (() => {
     const on = !!Account.name();
     $("chForm").hidden = !on; $("chLogin").hidden = on;
   }
-  let off = null, offState = null;
+  let off = null, offState = null, offOnline = null, online = null, connState = "wait";
+  const showState = () => { $("chState").textContent = connState === "on" ? `● ออนไลน์${online ? ` ${online} คน` : ""}` : connState === "off" ? "ขาดการเชื่อมต่อ กำลังลองใหม่…" : "กำลังเชื่อมต่อ…"; };
   function openChat() {
     show("chat"); syncForm();
-    $("chState").textContent = "กำลังเชื่อมต่อ…";
+    connState = "wait"; online = null; showState();
     msgs = []; seen = new Set(); render(true);
     closeChat();
-    offState = Hub.onState(s => { $("chState").textContent = s === "on" ? "● ออนไลน์" : "ขาดการเชื่อมต่อ กำลังลองใหม่…"; });
+    offState = Hub.onState(s => { connState = s === "on" ? "on" : "off"; showState(); });
+    if (!window.ACCT_HUB) offOnline = Hub.sub("online", v => { online = v && typeof v.n === "number" ? v.n : null; showState(); });
     off = Hub.sub("chat", list => {
-      $("chState").textContent = "● ออนไลน์";
+      connState = "on"; showState();
       const mine = (list || []).some(m => !seen.has(m.id) && m.n === Account.name());
       (list || []).forEach(add); render(mine);
     });
   }
-  function closeChat() { if (off) { off(); off = null; } if (offState) { offState(); offState = null; } }
+  function closeChat() { if (off) { off(); off = null; } if (offState) { offState(); offState = null; } if (offOnline) { offOnline(); offOnline = null; } }
   async function send() {
     const t = $("chText").value.trim();
     if (!t) return;

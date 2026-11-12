@@ -6238,20 +6238,22 @@ const Social = (() => {
     const on = !!Account.name();
     $("chForm").hidden = !on; $("chLogin").hidden = on;
   }
-  let off = null, offState = null;
+  let off = null, offState = null, offOnline = null, online = null, connState = "wait";
+  const showState = () => { $("chState").textContent = connState === "on" ? `● ออนไลน์${online ? ` ${online} คน` : ""}` : connState === "off" ? "ขาดการเชื่อมต่อ กำลังลองใหม่…" : "กำลังเชื่อมต่อ…"; };
   function openChat() {
     show("chat"); syncForm();
-    $("chState").textContent = "กำลังเชื่อมต่อ…";
+    connState = "wait"; online = null; showState();
     msgs = []; seen = new Set(); render(true);
     closeChat();
-    offState = Hub.onState(s => { $("chState").textContent = s === "on" ? "● ออนไลน์" : "ขาดการเชื่อมต่อ กำลังลองใหม่…"; });
+    offState = Hub.onState(s => { connState = s === "on" ? "on" : "off"; showState(); });
+    if (!window.ACCT_HUB) offOnline = Hub.sub("online", v => { online = v && typeof v.n === "number" ? v.n : null; showState(); });
     off = Hub.sub("chat", list => {
-      $("chState").textContent = "● ออนไลน์";
+      connState = "on"; showState();
       const mine = (list || []).some(m => !seen.has(m.id) && m.n === Account.name());
       (list || []).forEach(add); render(mine);
     });
   }
-  function closeChat() { if (off) { off(); off = null; } if (offState) { offState(); offState = null; } }
+  function closeChat() { if (off) { off(); off = null; } if (offState) { offState(); offState = null; } if (offOnline) { offOnline(); offOnline = null; } }
   async function send() {
     const t = $("chText").value.trim();
     if (!t) return;
@@ -7563,7 +7565,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "463135e07d";
+  const BUILD = "f6cffd4032";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -8882,6 +8884,8 @@ const Online = (() => {
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
   Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  // one socket per open page, so the server can say how many people are online (shown in WORLD CHAT)
+  if (!window.ACCT_HUB && !MATCH && EXAMBOT === null) Hub.sub("here", () => {});
   // first visit: offer an account once the loading screen is gone
   if (!MATCH && EXAMBOT === null) (function welcome() { if (!$("splash").hidden) return setTimeout(welcome, 300); if (!$("menu").hidden) Account.welcome(); })();
   // PLAY ONLINE and WATCH (src/online.js); the count after both players pass uses KataGo like the games against the AI
