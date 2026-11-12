@@ -407,6 +407,7 @@ export class Accounts extends DurableObject {
     const pair = new WebSocketPair();
     this.ctx.acceptWebSocket(pair[1]);
     pair[1].serializeAttachment({ subs: [], ip: req.headers.get("cf-connecting-ip") || "" });
+    await this.push(["online"]);
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
   async webSocketMessage(ws, data) {
@@ -414,7 +415,7 @@ export class Accounts extends DurableObject {
     if (!m || typeof m !== "object") return;
     const att = ws.deserializeAttachment() || { subs: [] };
     if (Array.isArray(m.sub)) {
-      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
+      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|online|here|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
       ws.serializeAttachment(att);
       for (const k of att.subs) ws.send(JSON.stringify({ k, v: await this.value(k), now: Date.now() }));
       return;
@@ -425,8 +426,15 @@ export class Accounts extends DurableObject {
       ws.send(JSON.stringify({ re: m.re, status: r.status, body: r.body, now: Date.now() }));
     }
   }
-  webSocketClose(ws, code) { try { ws.close(code, "bye"); } catch (e) {} }
-  async value(k) { return k === "chat" ? (((await this.store.get("chat")) || { m: [] }).m) : await this.store.get(k); }
+  // every open page keeps one socket (it subscribes to "here"), so the number of sockets is the number of people online;
+  // the chat screen subscribes to "online" and gets the new count whenever someone arrives or leaves
+  async webSocketClose(ws, code) { try { ws.close(code, "bye"); } catch (e) {} this.leaving = ws; await this.push(["online"]); this.leaving = null; }
+  async webSocketError(ws) { this.leaving = ws; await this.push(["online"]); this.leaving = null; }
+  async value(k) {
+    if (k === "here") return null;
+    if (k === "online") return { n: this.ctx.getWebSockets().filter(w => w !== this.leaving && w.readyState === 1).length };
+    return k === "chat" ? (((await this.store.get("chat")) || { m: [] }).m) : await this.store.get(k);
+  }
   async push(keys) {
     const socks = this.ctx.getWebSockets(), cache = new Map();
     for (const w of socks) {
