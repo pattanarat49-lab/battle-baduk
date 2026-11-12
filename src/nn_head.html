@@ -650,7 +650,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .lb-me { display: flex; gap: 10px; align-items: center; justify-content: flex-start; flex-wrap: wrap; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 10px 12px; margin-bottom: 12px; }
 .lb-me b { color: var(--accent); font-size: 18px; }
 .lb-list { display: grid; gap: 4px; }
-.lb-row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
+.lb-row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
 .lb-row.me { box-shadow: inset 0 0 0 2px var(--accent); }
 .lb-pos { font-family: var(--f-px); font-weight: 700; font-size: 18px; text-align: center; color: var(--muted); }
 .lb-row.top1 .lb-pos { color: #f5c542; } .lb-row.top2 .lb-pos { color: #d9dde0; } .lb-row.top3 .lb-pos { color: #d08a4c; }
@@ -708,6 +708,10 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .acct-why { margin: 0 0 14px; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.6; }
 .acct-wel-btns { display: grid; gap: 8px; } .acct-wel-btns button { width: 100%; }
 .acct-wel-btns .acct-guest { background: none; border: 1px dashed var(--line); color: var(--fg); }
+.lb-row[data-player] { cursor: pointer; } .lb-row[data-player]:hover, .lb-row[data-player]:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); outline: none; }
+.lb-go { color: var(--muted); font-size: 18px; margin-left: 4px; }
+.ch-who b[data-player] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.pl-top .acct-av { cursor: default; }
 .acct-code { font-family: ui-monospace, monospace; font-size: 22px; letter-spacing: .08em; text-align: center; padding: 12px; margin: 10px 0 14px; background: var(--bg); border: 2px dashed var(--accent); color: var(--accent); user-select: all; }
 .end-ask { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 30; width: min(440px, calc(100vw - 32px)); box-sizing: border-box;
   background: #112b33; border: 2px solid var(--accent); border-radius: 10px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5); animation: endAskIn .25s ease-out; }
@@ -1103,6 +1107,13 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     <div><div class="px">BADUK BATTLE · LEADERBOARD</div><h1>อันดับผู้เล่น</h1></div>
   </div>
   <div id="lbBody"></div>
+</section>
+<section class="prof" id="pl" hidden>
+  <div class="an-head">
+    <button class="an-back" id="plBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · PLAYER</div><h1 id="plName">ผู้เล่น</h1></div>
+  </div>
+  <div id="plBody"></div>
 </section>
 
 <div class="sure" id="avDlg" hidden><div class="sure-card acct-card av-card" role="dialog" aria-labelledby="avT">
