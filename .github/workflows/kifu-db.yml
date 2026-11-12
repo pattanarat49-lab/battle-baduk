@@ -20,7 +20,7 @@ jobs:
             unzip -oq "k/y/$f.zip" -d k/y
           done
       - name: Build
-        run: python3 -I src/tools/kifu_build.py k/br/games k/y/pro1940-1999.txt "k/y/pro2000+.txt" kifu
+        run: python3 -I src/tools/kifu_build.py k/br/games k/y/pro1940-1999.txt "k/y/pro2000+.txt" kifu kifu-extra
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"

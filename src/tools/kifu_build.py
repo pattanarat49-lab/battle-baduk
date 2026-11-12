@@ -7,7 +7,8 @@ A game found in both (same first 70 moves, in any of the 8 orientations) is kept
 names it carries tell which spellings are the same person ("Lee Sedol" = "Yi Se-tol").
 Output: kifu/index.json (players, events, counts), kifu/meta-N.json (one row of columns per game, oldest first),
 kifu/g/NNNN.json (moves and details of SHARD games each).
-usage: python3 -I kifu_build.py <brouwer games dir> <pro1940-1999.txt> <pro2000+.txt> <out dir>"""
+usage: python3 -I kifu_build.py <brouwer games dir> <pro1940-1999.txt> <pro2000+.txt> <out dir> [<kifu-extra dir>]
+kifu-extra holds records from neither source: *.sgf, and kpmc.jsonl (the Korea Prime Minister's Cup site, one game a line)."""
 import collections, difflib, json, os, re, sys
 
 SHARD = 500
@@ -97,6 +98,7 @@ ALIASES = [
     ["Shin Jinseo", "Shin Jin Seo", "Sin Chin-seo"],
     ["Go Seigen", "Wu Qingyuan"],
     ["Vorawat Charoensitthisathien", "Charoensitthisathien Vorawat"],
+    ["Wichrich Karuehawanit", "Wichrich"],
 ]
 # shown names for well-known players, with the Thai name (found by the search too)
 FAMOUS = {
@@ -125,7 +127,7 @@ COUNTRY = {  # where the name alone would say otherwise
     "Michael Redmond": "JP", "Go Seigen": "JP", "Rin Kaiho": "JP", "Cho Chikun": "JP", "Hans Pietsch": "JP", "Catalin Taranu": "JP", "Antti Törmänen": "JP",
     "Zhou Junxun": "TW", "Lin Zhihan": "TW", "Chen Shiyuan": "TW", "Xu Haohong": "TW", "Wang Yuanjun": "TW", "Lin Junyan": "TW", "Xiao Zhenghao": "TW",
     "Hei Jiajia": "TW", "Lai Junfu": "TW", "Lin Lixiang": "TW", "Jian Jingting": "TW", "Chen Qirui": "TW", "Xu Jiayuan": "TW", "Lin Shixun": "TW",
-    "Pongsakarn Sornarra": "TH", "Thanapol Tiawattananont": "TH", "Vorawat Tanapatsopol": "TH", "Rit Bencharit": "TH", "Krit Jamkachornkiat": "TH", "Vorawat Charoensitthisathien": "TH", "Husdin Aekasinghachai": "TH", "Korsak Chairasmisak": "TH", "Paisal Thunthadaluk": "TH", "V. Ngamjarassrivichai": "TH", "Choltit Rattanasetyut": "TH", "Nitipone Aroonphaichitra": "TH", "Ruechagorn Trairatananusor": "TH", "Taechaamnuayvit Nuttakrit": "TH", "Thanomnual Leekulpitak": "TH",
+    "Wichrich Karuehawanit": "TH", "Chen Yi-Tien": "TW", "Chan Nai San": "XX", "Ham Youngwoo": "KR", "Sai Kiyonari": "JP", "Pongsakarn Sornarra": "TH", "Thanapol Tiawattananont": "TH", "Vorawat Tanapatsopol": "TH", "Rit Bencharit": "TH", "Krit Jamkachornkiat": "TH", "Vorawat Charoensitthisathien": "TH", "Husdin Aekasinghachai": "TH", "Korsak Chairasmisak": "TH", "Paisal Thunthadaluk": "TH", "V. Ngamjarassrivichai": "TH", "Choltit Rattanasetyut": "TH", "Nitipone Aroonphaichitra": "TH", "Ruechagorn Trairatananusor": "TH", "Taechaamnuayvit Nuttakrit": "TH", "Thanomnual Leekulpitak": "TH",
     "CrazyStone": "AI", "DolBaram": "AI", "Zen19X": "AI", "Zen19S": "AI", "DarkForest": "AI", "Many Faces of Go": "AI", "Goemate": "AI", "SilverIgo": "AI", "Go++": "AI", "Go4++": "AI", "AyaMC": "AI", "Nomitan": "AI", "GLOBIS-AQZ": "AI", "deepmind": "AI",
     "Rui Naiwei": "CN", "Kim In": "KR", "Shi Yue": "CN", "Jimmy Cha": "KR", "Jiang Zhujiu": "CN",
 }
@@ -189,7 +191,7 @@ EVTAG = [  # (tag, pattern): the first that fits
     ("f", r"Women|Female|Senko|Tachiaoi|Bingsheng|Wu Qingyuan Cup|Go Seigen Cup|Queen|Kakusei.*F|Saikyo.*W"),
     ("intl", r"Samsung|LG Cup|Fujitsu|Ing Cup|Chunlan|Mlily|Bailing|SGW|Nongshim|Nong Shim|Asian TV|Japan-China|China-Japan|Toyota|BC Card|Globis|Xinao|Limin|"
              r"Zhonghuan|Tianfu|Nie Weiping|World|International|Jinlong|Kuksu Mountains|Tong Yang|Tongyang|Japan-Korea|Korea-|China-Korea|Shinhan|Okage|Ibero"),
-    ("ama", r"Prime Minister|Amateur|Pro-Ama|Student"),
+    ("ama", r"Korea Prime Minister|Amateur|Pro-Ama|Student|BadukLab"),
     ("big", r"^(Honinbo|Judan|Kisei|Oza|Meijin|Tengen|Gosei|Old Meijin)$"),
     ("tv", r"NHK|Ryusei|Hayago|NEC|JAL|Agon|Lightning|Daiwa|TV"),
 ]
@@ -250,15 +252,56 @@ def line(mv):
     return "".join(out)
 
 
-def main(brdir, y1, y2, outdir):
+# ---------- extra records (kifu-extra/) ----------
+KPMC_CC = {"korea": "KR", "japan": "JP", "china": "CN", "chinesetaipei": "TW", "taiwan": "TW", "thailand": "TH"}
+
+
+def kpmc_name(n):
+    n = re.sub(r"\s*\(.*$", "", n or "").strip()
+    return " ".join(w.capitalize() if w.isupper() and len(w) > 2 else w for w in n.split())
+
+
+def kpmc(row):
+    """one line of kifu-extra/kpmc.jsonl -> (root, moves, {name: country})"""
+    t = row["sgf"]
+    mv = [(c, v) for c, v in re.findall(r";\s*([BW])\[([a-s]{2})?\]", t)]
+    cc = {}
+    names = []
+    for k, f in (("PB", "b"), ("PW", "w")):
+        n = kpmc_name(row[f]); names.append(n)
+        m = re.search(k + r"\[[^\]_]*_([^\]]+)\]", t)
+        if m and n: cc[n] = KPMC_CC.get(re.sub(r"[^a-z]", "", m.group(1).lower()), "XX")
+    rk = lambda f: (re.search(r"\((\d)[Dd]\)", row[f]) or [0, ""])[1]
+    m = re.search(r"(\d+)(?:st|nd|rd|th)|제\s*(\d+)\s*회|(\d+)회", row["ev"])
+    no = int(next(x for x in m.groups() if x)) if m else 0
+    ro = re.sub(r"^.*?(KPMC|국무총리배)\s*(세계아마바둑선수권대회)?\s*", "", row["ev"]).strip()
+    ro = re.sub(r"^Round\s*(\d+)R?$", r"Round \1", ro)
+    ro = re.sub(r"^(\d+)라운드$", r"Round \1", ro)
+    ro = re.sub(r"^(\d+)R$", r"Round \1", ro)
+    r = re.match(r"([BW]) w(?:ins|on) by (.+)$", row["re"].strip().replace(",", "."))
+    if not r:  # the Korean pages: "146수 백불계승", "238수 흑23.5집승", "흑 반집승"
+        k = re.search(r"([백흑])\s*(불계|시간|반집|[\d.]+\s*집(?:반)?)\s*승", row["re"])
+        if k:
+            x = k.group(2)
+            pts = "R" if x == "불계" else "T" if x == "시간" else "0.5" if x == "반집" else re.sub(r"\s*집", "", x).replace("반", ".5")
+            r = re.match(r"(.) w(?:ins|on) by (.+)$", ("W" if k.group(1) == "백" else "B") + " wins by " + pts)
+    res = (r.group(1) + "+" + ("R" if r.group(2).lower().startswith("res") else "T" if r.group(2).lower().startswith("time") else r.group(2))) if r else ""
+    ord_ = lambda n: "%d%s" % (n, "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th"))
+    root = {"PB": names[0], "PW": names[1], "BR": rk("b") and rk("b") + "d ama" or "ama", "WR": rk("w") and rk("w") + "d ama" or "ama", "DT": row["dt"],
+            "EV": (ord_(no) + " " if no else "") + "Korea Prime Minister's Cup", "RO": ro, "PC": "Korea", "KM": "6.5", "RE": res}
+    return root, mv, cc
+
+
+def main(brdir, y1, y2, outdir, extra=None):
     games = []  # dicts
     seen = {}
-    dups = []; raw = collections.Counter()
+    dups = []; raw = collections.Counter(); xraw = collections.Counter()
     def add(src, path, root, mv):
         if (root.get("SZ") or "19").strip() != "19" or len(mv) < 30: return
         b, w = clean(root.get("PB")), clean(root.get("PW"))
         if not b or not w: return
         k = gkey(mv); raw[b] += 1; raw[w] += 1
+        if src == "x": xraw[b] += 1; xraw[w] += 1
         if k in seen:
             o = seen[k]
             if o["b"] != b or o["w"] != w: dups.append((o["b"], o["w"], b, w))
@@ -289,7 +332,19 @@ def main(brdir, y1, y2, outdir):
             if l.startswith("(;"):
                 r = parse(l)
                 if r: add("y", "", r[0], r[1])
-    print("games", len(games), "from Brouwer", nb, "added from yenw", len(games) - nb)
+    ny = len(games); xcc = {}
+    if extra and os.path.isdir(extra):
+        for f in sorted(os.listdir(extra)):
+            p = os.path.join(extra, f)
+            if f.endswith(".sgf"):
+                r = parse(open(p, encoding="utf-8", errors="replace").read())
+                if r: add("x", "", r[0], r[1])
+            elif f.endswith(".jsonl"):
+                for l in open(p, encoding="utf-8"):
+                    root, mv, cc = kpmc(json.loads(l))
+                    add("x", "", root, mv)
+                    for n, c in cc.items(): xcc.setdefault(clean(n), collections.Counter())[c] += 1
+    print("games", len(games), "from Brouwer", nb, "added from yenw", ny - nb, "extra", len(games) - ny)
 
     # ---------- who is who ----------
     par = {}
@@ -326,6 +381,13 @@ def main(brdir, y1, y2, outdir):
     for n in raw:
         if n.isascii() and not is_group(n) and not re.search(r"[\d(){}]|[SJ]r\.?$", n) and len(norm(n)) >= 6: byn[norm(n)].append(n)
     for ns in byn.values():
+        for n in ns[1:]: par[find(n)] = find(ns[0])
+    # the extra records write one name both ways round (Kawaguchi Tsubasa, Tsubasa Kawaguchi)
+    byw = collections.defaultdict(list)
+    for n in xraw:
+        ws = sorted(re.sub(r"[^a-z ]", "", n.lower().replace("-", " ")).split())
+        if n.isascii() and len(ws) >= 2 and len("".join(ws)) >= 8: byw[" ".join(ws)].append(n)
+    for ns in byw.values():
         for n in ns[1:]: par[find(n)] = find(ns[0])
     cnt = collections.Counter(); cntb = collections.Counter()
     for i, g in enumerate(games):
@@ -364,11 +426,18 @@ def main(brdir, y1, y2, outdir):
         if p["grp"]: p["cc"] = ""; continue
         cc = COUNTRY.get(c)
         if not cc:
+            # the country the player entered an international amateur event for
+            x = collections.Counter()
+            for n in var[c]: x.update(xcc.get(n, {}))
+            if x: cc = x.most_common(1)[0][0]
+            # an amateur known from those events only: the shape of the name says little, so no country
+            elif all(xraw[n] >= raw[n] for n in var[c]): cc = "?"
+        if not cc:
             nc = name_country(var[c])
             if p["jp"] >= 5 and p["jp"] >= .5 * p["br"]: cc = "JP"
             elif p["y1"] and p["y1"] < 1900 and nc != "CN": cc = "JP"
             else: cc = nc or ("XX" if c.isascii() else "")
-        p["cc"] = cc
+        p["cc"] = "" if cc == "?" else cc
         # amateur: mostly amateur ranks and never a pro dan
         p["lvl"] = p["rk"] if p["rk"] else (20 if p["ama"] and p["ama"] >= .5 * p["n"] else 0)
     order = sorted(P, key=lambda c: (-P[c]["n"], c))
@@ -425,4 +494,4 @@ def main(brdir, y1, y2, outdir):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:5])
+    main(*sys.argv[1:6])
