@@ -167,7 +167,9 @@ const Joseki = (() => {
     })(DATA.t, []);
     return out;
   }
-  const UI = { tab: "list", fam: "all", sort: 2, only: "", shown: 60, path: [], from: null };
+  const UI = { tab: "list", fam: "all", sort: 2, only: "", shown: 60, path: [], line: null };
+  // the sequence opened from the list, while the board is still on its way: the next move along it, or null
+  const lineNext = () => { const l = UI.line, p = UI.path; return l && p.length < l.length && p.every((m, i) => m === l[i]) ? l[p.length] : null; };
   function renderList() {
     if (!LINES) LINES = buildLines();
     let ls = LINES.filter(l => UI.fam === "all" || l.path[0] === UI.fam);
@@ -193,12 +195,16 @@ const Joseki = (() => {
     const often = ([m, c]) => ERA.some((e, k) => n[k] >= 15 && c[k] / n[k] >= .01) || moveTag(n, c).t;
     const ch = UI.rare ? all : all.filter(often), rare = all.length - ch.length;
     const opts = ch.map(([m, c], i) => ({ m, c, l: m === "tt" ? "–" : (i < 26 ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i] : "·"), tag: moveTag(n, c) }));
-    const marks = opts.filter(o => o.m !== "tt").map(o => ({ m: o.m, l: o.l, c: o.tag.c || "plain" }));
+    const ln = lineNext();
+    const marks = opts.filter(o => o.m !== "tt").map(o => ({ m: o.m, l: o.l, c: (o.tag.c || "plain") + (o.m === ln ? " line" : "") }));
     const st = stonesOf(path), who = st.next > 0 ? "ดำ" : "ขาว";
     $("jsBoard").innerHTML = boardSVG(path, { marks, cls: "js-big" });
-    const nm = path.length ? titleOf(path) : "เลือกตาแรกของมุม";
+    const onLine = UI.line && UI.line.length >= path.length && path.every((m, i) => m === UI.line[i]);
+    const nm = onLine ? titleOf(UI.line) : path.length ? titleOf(path) : "เลือกตาแรกของมุม";
     $("jsName").innerHTML = path.length ? `<small>${FAM[path[0]]}</small>${nm}` : nm;
     const t = path.length ? total(n) : 0, ends = path.length ? n[3] / Math.max(1, t) : 0;
+    $("jsStep").hidden = !onLine;
+    if (onLine) $("jsStep").innerHTML = `ตา <b>${path.length}</b> / ${UI.line.length}${path.length === UI.line.length ? " · ครบรูปแล้ว" : ` · กด "ต่อไป" เพื่อวางตาที่ ${path.length + 1}`}`;
     $("jsInfo").innerHTML = path.length
       ? `ตำแหน่งนี้พบ <b>${t.toLocaleString()}</b> ครั้ง (${ERA.map((e, k) => `${e.t} ${n[k].toLocaleString()}`).join(" · ")})` +
         (st.away.length ? `<br>ตา ${st.away.join(", ")} เล่นที่อื่นบนกระดาน` : "") +
@@ -212,7 +218,8 @@ const Joseki = (() => {
     }).join("") + (rare ? `<button class="js-more" id="jsRare">ดูตาที่พบน้อยอีก ${rare} ตา</button>` : "");
     if (rare) $("jsRare").onclick = () => { UI.rare = true; renderExplore(); };
     $("jsBack1").disabled = $("jsHome").disabled = !path.length;
-    $("jsBest").disabled = !opts.length;
+    $("jsBest").disabled = !opts.length && !ln;
+    $("jsBest").textContent = ln ? "ต่อไป ▶" : "ตาที่นิยมสุด ▶";
   }
   function go(m) { if (api.sound) api.sound(); UI.path = UI.path.concat(m); UI.rare = false; renderExplore(); }
   function show() {
@@ -230,13 +237,16 @@ const Joseki = (() => {
     $("jsSort").onchange = e => { UI.sort = +e.target.value; UI.shown = 60; renderList(); };
     $("jsOnly").onchange = e => { UI.only = e.target.value; UI.shown = 60; renderList(); };
     $("jsList").addEventListener("click", e => { const b = e.target.closest(".js-card"); if (!b) return;
-      UI.path = LINES[+b.dataset.i].path.slice(); UI.tab = "exp"; show(); window.scrollTo(0, 0); });
+      UI.line = LINES[+b.dataset.i].path.slice(); UI.path = UI.line.slice(0, 1); UI.rare = false; UI.tab = "exp"; show(); window.scrollTo(0, 0); });
     $("jsNext").addEventListener("click", e => { const b = e.target.closest(".js-opt"); if (b) go(b.dataset.m); });
     $("jsBoard").addEventListener("click", e => { const g = e.target.closest(".js-mk"); if (g) go(g.dataset.m); });
     $("jsBack1").onclick = () => { UI.path = UI.path.slice(0, -1); UI.rare = false; renderExplore(); };
-    $("jsHome").onclick = () => { UI.path = []; UI.rare = false; renderExplore(); };
+    $("jsHome").onclick = () => { UI.path = UI.line ? UI.line.slice(0, 1) : []; UI.rare = false; renderExplore(); };
+    // the explorer tab on its own starts from an empty corner
+    $("jsTabExp").addEventListener("click", () => { if (UI.line && !UI.path.length) UI.line = null; });
     // the move played most in the AI era (or in any era when the AIs have no games here)
     $("jsBest").onclick = () => {
+      const ln = lineNext(); if (ln) return go(ln);
       const n = UI.path.length ? nodeAt(UI.path) : DATA.t, ch = Object.entries(kids(n)).filter(([m]) => UI.path.length || FAM[m]);
       if (!ch.length) return;
       ch.sort((a, b) => (b[1][2] - a[1][2]) || (total(b[1]) - total(a[1])));

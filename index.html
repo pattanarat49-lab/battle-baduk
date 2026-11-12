@@ -440,6 +440,8 @@ body.menuing { padding: 0; background: #0e272d; }
 .js-mk { cursor: pointer; } .js-mk circle { fill: rgba(243, 234, 216, .82); stroke: #2a1a0b; stroke-width: .05; } .js-mk text { fill: #2a1a0b; }
 .js-mk.hot circle { fill: #e3b06a; } .js-mk.new circle { fill: #57c26b; } .js-mk.old circle { fill: #b9a89c; }
 .js-mk:hover circle { stroke-width: .1; }
+.js-mk.line circle { stroke: #e0533d; stroke-width: .12; }
+.js-step { margin: 0; font-size: 16px; } .js-step b { font-family: var(--f-px); font-size: 22px; color: var(--accent); }
 .js-side { display: grid; gap: 10px; min-width: 0; align-content: start; }
 .js-name { margin: 0; font-size: 20px; line-height: 1.35; } .js-name small { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
 .js-info { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); } .js-info b { color: var(--fg); } .js-end { color: #57c26b !important; }
@@ -1283,6 +1285,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     <div class="js-boardbox"><div id="jsBoard"></div></div>
     <div class="js-side">
       <h2 class="js-name" id="jsName"></h2>
+      <p class="js-step" id="jsStep" hidden></p>
       <p class="js-info" id="jsInfo"></p>
       <div class="js-nav"><button id="jsHome" title="เริ่มใหม่">⏮ เริ่ม</button><button id="jsBack1">◀ ย้อน</button><button id="jsBest" class="primary">ตาที่นิยมสุด ▶</button></div>
       <div class="js-turn" id="jsTurn"></div>
@@ -5575,7 +5578,9 @@ const Joseki = (() => {
     })(DATA.t, []);
     return out;
   }
-  const UI = { tab: "list", fam: "all", sort: 2, only: "", shown: 60, path: [], from: null };
+  const UI = { tab: "list", fam: "all", sort: 2, only: "", shown: 60, path: [], line: null };
+  // the sequence opened from the list, while the board is still on its way: the next move along it, or null
+  const lineNext = () => { const l = UI.line, p = UI.path; return l && p.length < l.length && p.every((m, i) => m === l[i]) ? l[p.length] : null; };
   function renderList() {
     if (!LINES) LINES = buildLines();
     let ls = LINES.filter(l => UI.fam === "all" || l.path[0] === UI.fam);
@@ -5601,12 +5606,16 @@ const Joseki = (() => {
     const often = ([m, c]) => ERA.some((e, k) => n[k] >= 15 && c[k] / n[k] >= .01) || moveTag(n, c).t;
     const ch = UI.rare ? all : all.filter(often), rare = all.length - ch.length;
     const opts = ch.map(([m, c], i) => ({ m, c, l: m === "tt" ? "–" : (i < 26 ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i] : "·"), tag: moveTag(n, c) }));
-    const marks = opts.filter(o => o.m !== "tt").map(o => ({ m: o.m, l: o.l, c: o.tag.c || "plain" }));
+    const ln = lineNext();
+    const marks = opts.filter(o => o.m !== "tt").map(o => ({ m: o.m, l: o.l, c: (o.tag.c || "plain") + (o.m === ln ? " line" : "") }));
     const st = stonesOf(path), who = st.next > 0 ? "ดำ" : "ขาว";
     $("jsBoard").innerHTML = boardSVG(path, { marks, cls: "js-big" });
-    const nm = path.length ? titleOf(path) : "เลือกตาแรกของมุม";
+    const onLine = UI.line && UI.line.length >= path.length && path.every((m, i) => m === UI.line[i]);
+    const nm = onLine ? titleOf(UI.line) : path.length ? titleOf(path) : "เลือกตาแรกของมุม";
     $("jsName").innerHTML = path.length ? `<small>${FAM[path[0]]}</small>${nm}` : nm;
     const t = path.length ? total(n) : 0, ends = path.length ? n[3] / Math.max(1, t) : 0;
+    $("jsStep").hidden = !onLine;
+    if (onLine) $("jsStep").innerHTML = `ตา <b>${path.length}</b> / ${UI.line.length}${path.length === UI.line.length ? " · ครบรูปแล้ว" : ` · กด "ต่อไป" เพื่อวางตาที่ ${path.length + 1}`}`;
     $("jsInfo").innerHTML = path.length
       ? `ตำแหน่งนี้พบ <b>${t.toLocaleString()}</b> ครั้ง (${ERA.map((e, k) => `${e.t} ${n[k].toLocaleString()}`).join(" · ")})` +
         (st.away.length ? `<br>ตา ${st.away.join(", ")} เล่นที่อื่นบนกระดาน` : "") +
@@ -5620,7 +5629,8 @@ const Joseki = (() => {
     }).join("") + (rare ? `<button class="js-more" id="jsRare">ดูตาที่พบน้อยอีก ${rare} ตา</button>` : "");
     if (rare) $("jsRare").onclick = () => { UI.rare = true; renderExplore(); };
     $("jsBack1").disabled = $("jsHome").disabled = !path.length;
-    $("jsBest").disabled = !opts.length;
+    $("jsBest").disabled = !opts.length && !ln;
+    $("jsBest").textContent = ln ? "ต่อไป ▶" : "ตาที่นิยมสุด ▶";
   }
   function go(m) { if (api.sound) api.sound(); UI.path = UI.path.concat(m); UI.rare = false; renderExplore(); }
   function show() {
@@ -5638,13 +5648,16 @@ const Joseki = (() => {
     $("jsSort").onchange = e => { UI.sort = +e.target.value; UI.shown = 60; renderList(); };
     $("jsOnly").onchange = e => { UI.only = e.target.value; UI.shown = 60; renderList(); };
     $("jsList").addEventListener("click", e => { const b = e.target.closest(".js-card"); if (!b) return;
-      UI.path = LINES[+b.dataset.i].path.slice(); UI.tab = "exp"; show(); window.scrollTo(0, 0); });
+      UI.line = LINES[+b.dataset.i].path.slice(); UI.path = UI.line.slice(0, 1); UI.rare = false; UI.tab = "exp"; show(); window.scrollTo(0, 0); });
     $("jsNext").addEventListener("click", e => { const b = e.target.closest(".js-opt"); if (b) go(b.dataset.m); });
     $("jsBoard").addEventListener("click", e => { const g = e.target.closest(".js-mk"); if (g) go(g.dataset.m); });
     $("jsBack1").onclick = () => { UI.path = UI.path.slice(0, -1); UI.rare = false; renderExplore(); };
-    $("jsHome").onclick = () => { UI.path = []; UI.rare = false; renderExplore(); };
+    $("jsHome").onclick = () => { UI.path = UI.line ? UI.line.slice(0, 1) : []; UI.rare = false; renderExplore(); };
+    // the explorer tab on its own starts from an empty corner
+    $("jsTabExp").addEventListener("click", () => { if (UI.line && !UI.path.length) UI.line = null; });
     // the move played most in the AI era (or in any era when the AIs have no games here)
     $("jsBest").onclick = () => {
+      const ln = lineNext(); if (ln) return go(ln);
       const n = UI.path.length ? nodeAt(UI.path) : DATA.t, ch = Object.entries(kids(n)).filter(([m]) => UI.path.length || FAM[m]);
       if (!ch.length) return;
       ch.sort((a, b) => (b[1][2] - a[1][2]) || (total(b[1]) - total(a[1])));
@@ -7909,7 +7922,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "5ab2246589";
+  const BUILD = "090e3bca05";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;

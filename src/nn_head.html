@@ -440,6 +440,8 @@ body.menuing { padding: 0; background: #0e272d; }
 .js-mk { cursor: pointer; } .js-mk circle { fill: rgba(243, 234, 216, .82); stroke: #2a1a0b; stroke-width: .05; } .js-mk text { fill: #2a1a0b; }
 .js-mk.hot circle { fill: #e3b06a; } .js-mk.new circle { fill: #57c26b; } .js-mk.old circle { fill: #b9a89c; }
 .js-mk:hover circle { stroke-width: .1; }
+.js-mk.line circle { stroke: #e0533d; stroke-width: .12; }
+.js-step { margin: 0; font-size: 16px; } .js-step b { font-family: var(--f-px); font-size: 22px; color: var(--accent); }
 .js-side { display: grid; gap: 10px; min-width: 0; align-content: start; }
 .js-name { margin: 0; font-size: 20px; line-height: 1.35; } .js-name small { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
 .js-info { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); } .js-info b { color: var(--fg); } .js-end { color: #57c26b !important; }
@@ -1283,6 +1285,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     <div class="js-boardbox"><div id="jsBoard"></div></div>
     <div class="js-side">
       <h2 class="js-name" id="jsName"></h2>
+      <p class="js-step" id="jsStep" hidden></p>
       <p class="js-info" id="jsInfo"></p>
       <div class="js-nav"><button id="jsHome" title="เริ่มใหม่">⏮ เริ่ม</button><button id="jsBack1">◀ ย้อน</button><button id="jsBest" class="primary">ตาที่นิยมสุด ▶</button></div>
       <div class="js-turn" id="jsTurn"></div>
