@@ -148,6 +148,25 @@ export function makeAccounts(store) {
       const at = u ? all.findIndex(x => x.n === u.name) : -1;
       return ok({ list: all.slice(0, 100), total: all.length, me: at < 0 ? null : Object.assign({ pos: at + 1 }, all[at]) });
     },
+    // another player's public profile (from the leaderboard or chat): rank and rating graph, best exam, record against
+    // each opponent and the last 30 games with their moves for the analysis board; no token needed
+    async player(b) {
+      const u = typeof b.n === "string" && b.n.length <= 32 ? await store.get(ukey(b.n)) : null;
+      if (!u) return err(404, "ไม่พบผู้เล่นนี้");
+      let d = null; try { d = u.data ? JSON.parse(u.data) : null; } catch (e) {}
+      d = d || {};
+      const s = summary(u.data), hist = (Array.isArray(d.history) ? d.history : []).filter(h => h && typeof h === "object");
+      let best = d.bestRank && typeof d.bestRank.rank === "number" ? { rank: d.bestRank.rank, at: d.bestRank.at } : null;
+      for (const h of hist) if (typeof h.rank === "number" && (!best || h.rank > best.rank)) best = { rank: h.rank, at: h.at };
+      const by = {};
+      for (const h of hist) if (typeof h.char === "string") { const v = by[h.char] || (by[h.char] = { g: 0, w: 0 }); v.g++; if (h.won) v.w++; }
+      const games = hist.slice(0, 30).map(h => ({ id: h.id, at: h.at, char: h.char, n: h.n, human: h.human, won: !!h.won, how: h.how, margin: h.margin,
+        moves: Array.isArray(h.moves) ? h.moves.slice(0, 800) : [], rank: h.rank, dR: h.dR,
+        opp: h.opp && typeof h.opp === "object" ? { n: String(h.opp.n || "").slice(0, 16), r: h.opp.r, a: h.opp.a } : undefined }));
+      const rv = d.rating && typeof d.rating === "object" && Array.isArray(d.rating.hist) && s.R !== null ? { R: s.R, n: d.rating.n | 0, base: d.rating.base,
+        hist: d.rating.hist.slice(-300).map(h => ({ at: h.at, R: h.R, d: h.d, k: h.k, o: String(h.o || "").slice(0, 24), w: h.w })) } : null;
+      return ok({ n: u.name, a: s.a, r: s.r, R: s.R, g: s.g, w: s.w, best, by, games, rating: rv, since: u.created });
+    },
     async chat() {
       const c = (await store.get("chat")) || { m: [] };
       return ok({ m: c.m });

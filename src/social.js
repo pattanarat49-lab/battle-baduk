@@ -1,7 +1,7 @@
 // Player-to-player screens built on accounts (src/account.js): world chat (name + rank from the rating on every message),
 // the leaderboard (rating, then wins), and the profile picture picker (characters the player has beaten).
 const Social = (() => {
-  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, onAvatar }
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, openPlayer, onAvatar }
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
@@ -15,7 +15,7 @@ const Social = (() => {
     const mine = m.n === Account.name();
     const at = new Date(m.at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
     return `<div class="ch-msg${mine ? " me" : ""}"><img src="${face(m.a)}" alt="" width="160" height="160"><div class="ch-b">
-      <div class="ch-who"><b>${esc(m.n)}</b> <span class="ch-rank${typeof m.r === "number" ? "" : " no"}">${esc(rankOf(m.r))}</span><time>${at}</time></div>
+      <div class="ch-who"><b data-player="${esc(m.n)}" role="button" tabindex="0">${esc(m.n)}</b> <span class="ch-rank${typeof m.r === "number" ? "" : " no"}">${esc(rankOf(m.r))}</span><time>${at}</time></div>
       <div class="ch-t">${esc(m.t)}</div></div></div>`;
   }
   function render(stick) {
@@ -58,13 +58,13 @@ const Social = (() => {
     try { r = await Account.call("board", {}); } catch (e) { r = null; }
     if (!r || r.status !== 200) { $("lbBody").innerHTML = `<p class="pf-empty">โหลดอันดับไม่ได้ ลองใหม่อีกครั้ง</p>`; return; }
     const { list, total, me } = r.body;
-    const row = (x, i) => `<div class="lb-row${me && x.n === me.n ? " me" : ""}${i < 3 ? " top" + (i + 1) : ""}"><span class="lb-pos">${i + 1}</span>
+    const row = (x, i) => `<div class="lb-row${me && x.n === me.n ? " me" : ""}${i < 3 ? " top" + (i + 1) : ""}" data-player="${esc(x.n)}" role="button" tabindex="0" aria-label="ดูโปรไฟล์ ${esc(x.n)}"><span class="lb-pos">${i + 1}</span>
       <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}</b><small>${typeof x.R === "number" ? `เรตติ้ง ${x.R} · ` : ""}ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
-      <span class="lb-rank${typeof x.r === "number" ? "" : " no"}">${esc(rankOf(x.r))}</span></div>`;
+      <span class="lb-rank${typeof x.r === "number" ? "" : " no"}">${esc(rankOf(x.r))}</span><span class="lb-go" aria-hidden="true">›</span></div>`;
     let h = me ? `<div class="lb-me">อันดับของคุณ <b>#${me.pos}</b> จาก ${total} คน · ${esc(rankOf(me.r))}</div>`
       : Account.name() ? "" : `<div class="lb-me">ล็อกอินในหน้า PROFILE เพื่อขึ้นกระดานอันดับ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
     h += list.length ? `<div class="lb-list">${list.map(row).join("")}</div>` : `<p class="pf-empty">ยังไม่มีผู้เล่นในกระดาน สมัครแอคเคาท์แล้วเป็นคนแรกเลย</p>`;
-    h += `<p class="note" style="margin-top:8px">เรียงตามเรตติ้ง (เริ่มจากผลสอบกับฮิคารุที่ดีที่สุด แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์) ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่มีระดับอยู่ท้ายตาราง</p>`;
+    h += `<p class="note" style="margin-top:8px">กดที่ชื่อเพื่อดูโปรไฟล์ ประวัติเกม และกราฟฝีมือ · เรียงตามเรตติ้ง (เริ่มจากผลสอบกับฮิคารุที่ดีที่สุด แล้วบวกลบตามผลแพ้ชนะกับ AI และเล่นออนไลน์) ถ้าเท่ากันดูจำนวนชนะ · คนที่ยังไม่มีระดับอยู่ท้ายตาราง</p>`;
     $("lbBody").innerHTML = h;
   }
 
@@ -84,6 +84,11 @@ const Social = (() => {
     $("chBack").onclick = () => { D.blip(660); closeChat(); D.showMenu(); };
     $("lbBack").onclick = () => { D.blip(660); D.showMenu(); };
     $("chForm").onsubmit = e => { e.preventDefault(); send(); };
+    // a name on the leaderboard or in the chat opens that player's profile
+    const go = (e, from) => { const t = e.target.closest && e.target.closest("[data-player]"); if (!t) return; D.blip(880); if (from === "chat") closeChat(); D.openPlayer(t.dataset.player, from); };
+    $("lbBody").addEventListener("click", e => go(e, "ranking"));
+    $("chList").addEventListener("click", e => go(e, "chat"));
+    for (const [id, from] of [["lbBody", "ranking"], ["chList", "chat"]]) $(id).addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { if (e.target.closest("[data-player]")) e.preventDefault(); go(e, from); } });
     $("avX").onclick = () => { $("avDlg").hidden = true; };
     $("avDlg").addEventListener("click", e => {
       if (e.target === $("avDlg")) { $("avDlg").hidden = true; return; }

@@ -2195,6 +2195,7 @@
   Analysis.onBack = from => {
     if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
     else if (from === "prof") showProfile();
+    else if (from === "player" && plData) showPlayer(plData.n, plFrom);
     else showMenu();
   };
   Tsumego.E = E;
@@ -2244,7 +2245,7 @@
     // LEARN: progress line (its "RECOMMEND FOR BEGINNER" tag always shows, owner 2026-11-11)
     $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
   }
-  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
@@ -2287,7 +2288,7 @@
   }
   Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead });
   // chat, leaderboard and the profile picture picker (src/social.js)
-  Social.init({ CHARS, rankName, hideScreens, showMenu, blip, onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
+  Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
   $("menu").addEventListener("click", e => {
@@ -2319,6 +2320,28 @@
     return g;
   }
   function showProfile() { hideScreens(); $("prof").hidden = false; renderProfile(); window.scrollTo(0, 0); }
+  // the record against each character (and online), from a Map char id -> { g, w }
+  function statRows(by) {
+    const row = (img, name, sub, v) => `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${name}</b> <span class="note" style="display:inline">${sub}</span>
+        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`;
+    return `<div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => row(`chars/${c.id}_face.jpg`, c.name, c.rank, by.get(c.id))).join("") +
+      (by.has("online") ? row("menu/online.png", "เล่นออนไลน์", "กับผู้เล่นคนอื่น", by.get("online")) : "") + `</div>`;
+  }
+  const escH = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  // one finished game in a history list; mine = the viewer's own history (another player's reads ถือ, not คุณถือ)
+  function gameRow(x, i, mine) {
+    const on = x.char === "online", c = on ? null : CHARS.find(ch => ch.id === x.char);
+    if (!on && !c) return "";
+    const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? (on ? " (คู่แข่งยอมแพ้)" : " (AI ยอมแพ้)") : mine ? " (คุณยอมแพ้)" : " (ยอมแพ้)") : "");
+    const opp = on ? x.opp || {} : null;
+    const img = on ? (opp.a && CHARS.some(ch => ch.id === opp.a) ? `chars/${opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
+    const who = on ? `vs ${escH(opp.n || "?")}</b> <span class="note" style="display:inline">ออนไลน์${typeof opp.r === "number" ? " · " + rankName(opp.r) : ""}</span><b>` : `vs ${c.name}`;
+    const dR = typeof x.dR === "number" ? ` · <span class="pf-dr ${x.dR >= 0 ? "up" : "dn"}">เรตติ้ง ${x.dR >= 0 ? "+" : "−"}${Math.abs(x.dR)}</span>` : "";
+    return `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${who}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
+        <div>${x.n}×${x.n} · ${mine ? "คุณ" : ""}ถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${(x.moves || []).length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""}${dR} · ${when}</div></div>
+        <button class="pf-an" data-${mine ? "an" : "pan"}="${i}">วิเคราะห์</button></div>`;
+  }
   function renderProfile() {
     const hist = load("history", []).filter(isRec);
     const charOf = id => CHARS.find(c => c.id === id);
@@ -2347,29 +2370,16 @@
     }
     const by = new Map();
     for (const x of hist) { const v = by.get(x.char) || { g: 0, w: 0 }; v.g++; if (x.won) v.w++; by.set(x.char, v); }
-    h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div><div class="pf-rows">` + CHARS.filter(c => by.has(c.id)).map(c => { const v = by.get(c.id);
-      return `<div class="pf-row"><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><div class="t"><b>${c.name}</b> <span class="note" style="display:inline">${c.rank}</span>
-        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`; }).join("") +
-      (by.has("online") ? (v => `<div class="pf-row"><img src="menu/online.png" alt="" width="160" height="160"><div class="t"><b>เล่นออนไลน์</b> <span class="note" style="display:inline">กับผู้เล่นคนอื่น</span>
-        <div class="pf-bar"><i style="width:${v.w / v.g * 100}%"></i></div></div><div class="pf-wl">ชนะ ${v.w} · แพ้ ${v.g - v.w}</div></div>`)(by.get("online")) : "") + `</div>`;
-    const escH = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
-    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => { const on = x.char === "online", c = on ? null : charOf(x.char);
-      const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-      const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? (on ? " (คู่แข่งยอมแพ้)" : " (AI ยอมแพ้)") : " (คุณยอมแพ้)") : "");
-      const img = on ? (x.opp.a && charOf(x.opp.a) ? `chars/${x.opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
-      const who = on ? `vs ${escH(x.opp.n)}</b> <span class="note" style="display:inline">ออนไลน์${typeof x.opp.r === "number" ? " · " + rankName(x.opp.r) : ""}</span><b>` : `vs ${c.name}`;
-      const dR = typeof x.dR === "number" ? ` · <span class="pf-dr ${x.dR >= 0 ? "up" : "dn"}">เรตติ้ง ${x.dR >= 0 ? "+" : "−"}${Math.abs(x.dR)}</span>` : "";
-      return `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${who}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
-        <div>${x.n}×${x.n} · คุณถือ${x.human === WHITE ? "ขาว" : "ดำ"} · ${x.moves.length} ตา · ${how}${typeof x.rank === "number" ? " · สอบได้ " + rankName(x.rank) : ""}${dR} · ${when}</div></div>
-        <button class="pf-an" data-an="${i}">วิเคราะห์</button></div>`; }).join("") + `</div>
+    h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div>` + statRows(by);
+    h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-rows">` + hist.slice(0, 30).map((x, i) => gameRow(x, i, true)).join("") + `</div>
       <p class="note" style="margin-top:6px">${Account.name() ? "ประวัติเก็บไว้ในแอคเคาท์ของคุณ" : "ประวัติเก็บไว้ในเบราว์เซอร์นี้เท่านั้น"} เก็บ 100 เกมล่าสุด</p>`;
     $("pfBody").innerHTML = h;
     drawRating();
   }
   // the rating over time: one line, one point per counted game or rank test, the rank names on the left;
   // pointing at it shows that game (drawn at the box's real width so the text stays readable on a phone)
-  function drawRating() {
-    const box = $("pfGraph"), v = Rating.get(); if (!box || !v || !v.hist.length) return;
+  function drawRating(v = Rating.get(), box = $("pfGraph")) {
+    if (!box || !v || !v.hist || !v.hist.length) return;
     const H = 190, W = Math.max(260, box.clientWidth), L = 64, Rt = 14, T = 12, B = 24;
     const pts = v.hist.map(h => ({ R: h.R, h }));
     pts.unshift({ R: v.hist[0].R - (v.hist[0].d || 0), h: null }); // where the rating stood before the first counted game
@@ -2403,6 +2413,41 @@
     });
     svg.addEventListener("pointerleave", hide);
   }
+  // another player's profile (from RANKING or the chat): their rank, rating graph, record and last 30 games
+  let plData = null, plFrom = "ranking";
+  async function showPlayer(name, from) {
+    plFrom = from || "ranking"; plData = null;
+    hideScreens(); $("pl").hidden = false; window.scrollTo(0, 0);
+    $("plName").textContent = name;
+    $("plBody").innerHTML = `<p class="note">กำลังโหลด…</p>`;
+    let r = null; try { r = await Account.call("player", { n: name }); } catch (e) {}
+    if ($("pl").hidden) return;
+    if (!r || r.status !== 200) { $("plBody").innerHTML = `<p class="pf-empty">${r && r.body && r.body.error ? escH(r.body.error) : "โหลดโปรไฟล์ไม่ได้ ลองใหม่อีกครั้ง"}</p>`; return; }
+    const p = plData = r.body, rt = p.rating;
+    const face = p.a && CHARS.some(c => c.id === p.a) ? `chars/${p.a}_face.jpg` : "menu/guest.png";
+    const loss = p.g - p.w;
+    let h = `<div class="acct-box in pl-top"><span class="acct-av"><img src="${face}" alt="" width="160" height="160"></span><div class="t"><b>${escH(p.n)}${p.n === Account.name() ? " (คุณ)" : ""}</b>
+      <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div></div>`;
+    h += `<div class="pf-tiles"><div class="pf-tile"><b>${p.g}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${p.w}</b><span>ชนะ</span></div>
+      <div class="pf-tile"><b>${loss}</b><span>แพ้</span></div><div class="pf-tile"><b>${p.g ? Math.round(p.w / p.g * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
+    h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rankName(Rating.toRank(rt.R))}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
+      <span class="note">${typeof rt.base === "number" ? `เริ่มจากผลสอบที่ดีที่สุด (${rankName(rt.base)}) แล้วบวกลบตามผลแพ้ชนะหลังจากนั้น` : "ขึ้นลงตามผลแพ้ชนะกับ AI และเล่นออนไลน์"}</span></div><div id="plGraph" class="pf-graph"></div></div>`
+      : `<div class="pf-rank"><span class="note" style="display:block">ผู้เล่นคนนี้ยังไม่มีเรตติ้ง</span></div>`);
+    h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${p.best ? `<span class="exam-rank">ประมาณ ${rankName(p.best.rank)}</span>${p.best.at ? `<span class="note">สอบกับฮิคารุเมื่อ ${new Date(p.best.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>` : ""}`
+      : `<span class="note" style="display:block">ยังไม่เคยสอบกับฮิคารุ</span>`}</div>`;
+    const by = new Map(Object.entries(p.by || {}));
+    if (by.size) h += `<div class="pf-h">สถิติกับแต่ละตัวละคร</div>` + statRows(by);
+    h += `<div class="pf-h">เกมล่าสุด</div>` + (p.games.length ? `<div class="pf-rows">${p.games.map((x, i) => gameRow(x, i, false)).join("")}</div>` : `<div class="pf-empty">ยังไม่มีเกมที่เล่นจบ</div>`);
+    $("plBody").innerHTML = h;
+    drawRating(rt, $("plGraph"));
+  }
+  $("plBack").onclick = () => { blip(660); if (plFrom === "chat") Social.openChat(); else Social.openBoard(); };
+  $("plBody").addEventListener("click", e => {
+    const b = e.target.closest("button[data-pan]"); if (!b || !plData) return;
+    const x = plData.games[+b.dataset.pan]; if (!x) return;
+    unlockAudio(); blip(880); hideScreens(); trackMode("analysis");
+    Analysis.open({ n: x.n, moves: x.moves, human: x.human, at: 0, from: "player" });
+  });
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     if (b.id === "pfResume") {
