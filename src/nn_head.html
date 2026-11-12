@@ -840,8 +840,19 @@ body.learning { overflow: hidden; }
 .ln-shopempty b { color: var(--ln-ink); font-size: 18px; }
 .ln-shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .ln-item { border: 2px solid var(--ln-line); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.ln-item img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; }
+.ln-item img { width: 96px; height: 96px; border-radius: 12px; object-fit: cover; }
 .ln-item .own { color: var(--ln-green-d); font-weight: 600; }
+.ln-item.on { border-color: var(--ln-green); background: #f3ffe6; }
+.ln-item .tag { font-size: 12px; border-radius: 999px; padding: 1px 10px; background: #eee; color: #777; }
+.ln-item .tag.t-cool { background: #e4ecff; color: #3558c8; } .ln-item .tag.t-cute { background: #ffe6ef; color: #d6497a; } .ln-item .tag.t-fine { background: #e9f6e4; color: #3f8a3a; }
+.ln-item .ln-btn { width: 100%; padding: 8px 6px; } .ln-item .ln-btn:disabled { opacity: .45; }
+.ln-item .own { min-height: 40px; display: flex; align-items: center; }
+.ln-shopnote { color: var(--ln-sub); font-size: 14px; margin-top: 18px; }
+.pf-skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.pf-skin { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 2px solid var(--line); border-radius: 10px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.pf-skin img { width: 64px; height: 64px; border-radius: 8px; }
+.pf-skin.on { border-color: var(--accent); } .pf-skin.on span::before { content: "✓ "; color: var(--accent); }
+.pf-skinsub { font-size: 13px; opacity: .75; margin: 10px 0 6px; }
 .ln-voice { border: 2px solid var(--ln-line); background: #fff; border-radius: 12px; padding: 3px 8px; font-size: 16px; }
 .ln-prog { flex: 1; height: 16px; border-radius: 99px; background: var(--ln-line); overflow: hidden; }
 .ln-prog i { display: block; height: 100%; border-radius: 99px; background: var(--ln-green); box-shadow: inset 0 4px 0 -1px rgba(255,255,255,.35); transition: width .4s ease; min-width: 16px; }

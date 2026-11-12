@@ -4,7 +4,7 @@
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn"];
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn", "skin"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -66,6 +66,7 @@ const Account = (() => {
       out.learn = { stars: mx(x.stars, y.stars), best: mx(x.best, y.best), xp: Math.max(x.xp || 0, y.xp || 0), spent: Math.max(x.spent || 0, y.spent || 0),
         owned: [...new Set([].concat(x.owned || [], y.owned || []))], streak: late.streak || 0, day: late.day || "" };
     }
+    if (a.skin || b.skin) out.skin = Object.assign({}, b.skin, a.skin); // equipped stone and board skins (src/skins.js): this device's choice wins
     if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
     return out;
   }
