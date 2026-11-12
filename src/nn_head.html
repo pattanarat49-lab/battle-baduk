@@ -318,7 +318,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
 .mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
 .mn-title i { font-style: normal; } .mn-title .w { display: none; }
-.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(10, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(12, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
 #menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
   border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
 #menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
@@ -343,7 +343,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
 /* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
 @media (min-aspect-ratio: 5/4) {
-  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, minmax(0, 1fr)); }
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, minmax(0, 1fr)); }
   #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
   .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
   .mn-title .n { display: none; } .mn-title .w { display: inline; }
@@ -465,6 +465,75 @@ body.menuing { padding: 0; background: #0e272d; }
 .js-bar em { position: absolute; left: 4px; top: 0; font-style: normal; font-size: 10px; line-height: 12px; color: #f3ead8; text-shadow: 0 0 2px #000; }
 .js-legend .js-bar { display: inline-block; }
 @media (max-width: 420px) { .js-opt { grid-template-columns: 28px minmax(0, 1fr) 110px; } .js-card { grid-template-columns: 80px minmax(0, 1fr); } .js-mini { width: 80px; height: 80px; } }
+
+/* ---------- kifu: the library of game records (src/kifu.js) ---------- */
+.kifu { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
+#ksel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+#ksel button { font-weight: 400; }
+.kf-total { margin: -4px 0 12px; font-size: 13px; color: var(--muted); }
+.kf-search { display: block; width: 100%; box-sizing: border-box; min-height: 52px; padding: 10px 14px; font: inherit; font-size: 17px; background: var(--bg-2); color: var(--fg); border: 2px solid var(--accent); border-radius: 6px; }
+.kf-search::placeholder { color: var(--muted); opacity: .8; }
+.kf-search.sm { min-height: 44px; font-size: 15px; border: 1px solid var(--line); }
+.kf-row { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; }
+.kf-lab { flex: none; width: 58px; font-size: 13px; color: var(--muted); }
+.kf-row button { flex: none; min-height: 36px; padding: 4px 12px; font-size: 14px; white-space: nowrap; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 18px; }
+.kf-row button small { color: var(--muted); font-size: 11px; margin-left: 2px; }
+.kf-row button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700 !important; } .kf-row button.on small { color: inherit; }
+.kf-filters { display: grid; gap: 2px; margin: 10px 0; }
+.kf-legends button { border-color: var(--accent); color: var(--accent); background: none; }
+.kf-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 8px; max-width: 560px; }
+.kf-tabs button { min-height: 44px; font-size: 15px; background: var(--surface); color: var(--fg); border: 2px solid var(--line); }
+.kf-tabs button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700 !important; }
+.kf-bar { display: flex; align-items: center; gap: 12px; min-height: 32px; margin-bottom: 8px; font-size: 14px; color: var(--muted); }
+.kf-bar button { min-height: 32px; padding: 2px 10px; font-size: 13px; margin-left: auto; }
+.kf-list { display: grid; gap: 8px; }
+.kf-plist { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.kf-p { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; min-height: 64px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.kf-p:hover, .kf-g:hover { border-color: var(--accent); }
+.kf-flag { font-size: 24px; text-align: center; line-height: 1; }
+.kf-pb { display: grid; gap: 1px; min-width: 0; } .kf-pb b { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .kf-pb small { font-size: 13px; color: var(--accent); }
+.kf-meta { font-size: 12px; color: var(--muted); }
+.kf-n { display: grid; justify-items: end; font-size: 11px; color: var(--muted); } .kf-n b { font-family: var(--f-px); font-size: 20px; color: var(--fg); line-height: 1; }
+.kf-g { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; grid-template-areas: "d vs res" "d ev res"; gap: 2px 12px; align-items: center; text-align: left; padding: 8px 12px; min-height: 56px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.kf-d { grid-area: d; font-size: 13px; color: var(--muted); } .kf-vs { grid-area: vs; display: flex; flex-wrap: wrap; gap: 2px 14px; min-width: 0; font-size: 15px; }
+.kf-ev { grid-area: ev; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kf-res { grid-area: res; font-family: var(--f-px); font-size: 15px; white-space: nowrap; text-align: right; } .kf-res small { display: block; font-size: 11px; color: var(--muted); }
+.kf-res.w { color: #7ddc8f; } .kf-res.l { color: #f08a6c; }
+.kf-s { display: inline-flex; align-items: center; gap: 6px; min-width: 0; } .kf-s em { font-style: normal; font-size: 12px; color: var(--muted); }
+.kf-s i, .kf-who i { flex: none; width: 13px; height: 13px; border-radius: 50%; background: #111; box-shadow: 0 0 0 1px #000; } .kf-s.w i, .kf-who.w i { background: #f6f1e6; box-shadow: 0 0 0 1px #9c917e; }
+.kf-s.win { font-weight: 700; color: var(--accent); }
+.kf-empty { padding: 18px 0; font-size: 15px; }
+@media (max-width: 520px) { .kf-g { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "vs res" "ev res" "d res"; } .kf-vs { flex-direction: column; } .kf-lab { width: 50px; } }
+.kf-ph { display: grid; gap: 8px; margin-bottom: 10px; }
+.kf-ph h2 { margin: 0; font-size: 26px; line-height: 1.3; } .kf-ph h2 small { display: block; font-size: 15px; color: var(--accent); font-weight: 400; }
+.kf-ph p { margin: 0; font-size: 14px; line-height: 1.7; color: var(--muted); } .kf-ph p b { color: var(--fg); }
+.kf-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+.kf-stat span { display: grid; justify-items: center; padding: 8px 4px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.kf-stat b { font-family: var(--f-px); font-size: 24px; color: var(--fg); line-height: 1.1; }
+.kf-game { display: grid; gap: 14px; }
+@media (min-width: 860px) { .kf-game { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
+.kf-boardbox { display: grid; gap: 8px; justify-items: center; min-width: 0; }
+#kfBoard { width: 100%; max-width: min(100%, 78vh); height: auto; display: block; box-shadow: 0 0 0 6px var(--wood-dark); cursor: pointer; touch-action: manipulation; }
+.kf-num { font: 700 .5px var(--f-body); text-anchor: middle; dominant-baseline: middle; pointer-events: none; } .kf-num.s2 { font-size: .44px; } .kf-num.s3 { font-size: .34px; }
+.kf-players { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: min(100%, 78vh); }
+.kf-who { display: flex; align-items: center; gap: 8px; text-align: left; padding: 6px 10px; min-height: 48px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); min-width: 0; }
+.kf-who span { display: grid; min-width: 0; } .kf-who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; } .kf-who small { font-size: 12px; color: var(--muted); }
+.kf-who i { width: 18px; height: 18px; }
+.kf-step { margin: 0; font-size: 15px; text-align: center; } .kf-step b { color: var(--accent); }
+.kf-ctl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: min(100%, 78vh); }
+.kf-ctl button { min-height: 52px; font-size: 20px; } .kf-ctl .big { font-size: 22px; background: var(--accent); color: var(--accent-fg); border: 0; }
+.kf-ctl .big:disabled { opacity: .45; }
+#kfSlide { width: 100%; max-width: min(100%, 78vh); accent-color: var(--accent); height: 28px; }
+.kf-side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.kf-info { margin: 0; display: grid; gap: 4px; padding: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; }
+.kf-info div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px; } .kf-info dt { color: var(--muted); } .kf-info dd { margin: 0; overflow-wrap: anywhere; } .kf-info p { margin: 4px 0 0; }
+.kf-caps { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
+.kf-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .kf-tools button, .kf-tools select { min-height: 44px; font-size: 14px; }
+.kf-tools select { font: inherit; font-size: 14px; padding: 6px 8px; background: var(--bg-2); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+.kf-tools button.on { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+#kfAi { grid-column: 1 / -1; min-height: 54px; font-size: 16px; font-weight: 700 !important; background: var(--accent); color: var(--accent-fg); border: 0; }
+#kfAi:disabled { opacity: .5; }
+.kf-hint { font-size: 12px; color: var(--muted); margin: 0; text-align: center; }
 
 /* ---------- profile: games played in this browser ---------- */
 .prof { max-width: 860px; margin: 0 auto; padding-bottom: 32px; }
@@ -1319,6 +1388,57 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   <div class="actions two"><button id="phCancel">ยกเลิก</button><button id="phOk" class="primary">วิเคราะห์ตำแหน่งนี้</button></div>
 </div></div>
 <input type="file" id="anFile" accept="image/*" hidden>
+<section class="kifu" id="ksel" hidden>
+  <div class="an-head">
+    <button class="an-back" id="kfBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · KIFU</div><h1 id="kfTitle">คลังคิฟุ</h1></div>
+  </div>
+  <div id="kfHome">
+    <p class="kf-total" id="kfTotal">บันทึกเกมมืออาชีพตั้งแต่ยุคโบราณถึงปัจจุบัน</p>
+    <input class="kf-search" id="kfQ" type="search" autocomplete="off" enterkeyhint="search" placeholder="🔍 พิมพ์ชื่อผู้เล่น เช่น Lee Sedol, ชูซากุ, Iyama" aria-label="ค้นหาชื่อผู้เล่น">
+    <div class="kf-row kf-legends" id="kfLegends"></div>
+    <div class="kf-tabs" id="kfTabs"><button data-tab="players" class="on">ผู้เล่น</button><button data-tab="games">เกม</button><button data-tab="events">รายการแข่ง</button></div>
+    <div class="kf-filters" id="kfFilters">
+      <div class="kf-row"><span class="kf-lab">ยุค</span><span class="kf-row" id="kfEra" style="padding:0"></span></div>
+      <div class="kf-row" id="kfRowCc"><span class="kf-lab">ประเทศ</span><span class="kf-row" id="kfCc" style="padding:0"></span></div>
+      <div class="kf-row" id="kfRowLvl"><span class="kf-lab">ระดับ</span><span class="kf-row" id="kfLvl" style="padding:0"></span></div>
+      <div class="kf-row" id="kfRowTag" hidden><span class="kf-lab">ประเภท</span><span class="kf-row" id="kfTag" style="padding:0"></span></div>
+    </div>
+    <div class="kf-bar"><span id="kfCount"></span><button id="kfClear" hidden>✕ ล้างตัวกรอง</button></div>
+    <div class="kf-list" id="kfList"></div>
+    <p class="ts-dim ts-credit">ข้อมูลจากคลังเกมสาธารณะของ Andries Brouwer (ศตวรรษที่ 17 – ปัจจุบัน) และชุดเกมมืออาชีพ 1940–2017 ของ yenw/computer-go-dataset รวมกันแล้วตัดเกมซ้ำ ประเทศจัดจากชื่อและรายการที่ลงแข่ง ระดับคือดั้งสูงสุดที่พบในบันทึก จึงอาจคลาดเคลื่อนได้บ้าง</p>
+  </div>
+  <div id="kfPage" hidden>
+    <div class="kf-ph"><h2 id="kfPName"></h2><p id="kfPInfo"></p><div class="kf-stat" id="kfPStat"></div></div>
+    <div class="kf-row" id="kfRivals"></div>
+    <div class="kf-row" id="kfPYears"></div>
+    <input class="kf-search sm" id="kfPq" type="search" autocomplete="off" placeholder="ค้นคู่แข่งหรือรายการแข่ง" aria-label="ค้นในรายการเกม">
+    <div class="kf-bar"><span id="kfPCount"></span></div>
+    <div class="kf-list kf-glist" id="kfPList"></div>
+  </div>
+  <div class="kf-game" id="kfGame" hidden>
+    <div class="kf-boardbox">
+      <div class="kf-players"><button class="kf-who b" id="kfGB"></button><button class="kf-who w" id="kfGW"></button></div>
+      <svg id="kfBoard" viewBox="-.75 -.75 19.5 19.5" role="img" aria-label="กระดานคิฟุ แตะครึ่งขวาเพื่อไปตาถัดไป ครึ่งซ้ายเพื่อย้อน"></svg>
+      <p class="kf-step" id="kfStep" aria-live="polite"></p>
+      <input type="range" id="kfSlide" min="0" max="0" value="0" aria-label="เลื่อนไปตาที่ต้องการ">
+      <div class="kf-ctl"><button id="kfFirst" aria-label="ตาแรก">⏮</button><button id="kfPrev" class="big" aria-label="ย้อนหนึ่งตา">◀</button><button id="kfNext" class="big" aria-label="ไปหนึ่งตา">▶</button><button id="kfLast" aria-label="ตาสุดท้าย">⏭</button></div>
+      <p class="kf-hint">แตะครึ่งขวาของกระดาน = ตาถัดไป · ครึ่งซ้าย = ย้อน · คีย์บอร์ดใช้ ← →</p>
+    </div>
+    <div class="kf-side">
+      <div class="kf-tools">
+        <button id="kfAi">🤖 วิเคราะห์ตานี้ด้วย AI (ANALYSIS)</button>
+        <button id="kfPlay">▶ เล่นอัตโนมัติ</button>
+        <select id="kfSpeed" aria-label="ความเร็ว"><option value="1600">ช้า</option><option value="900" selected>ปกติ</option><option value="400">เร็ว</option></select>
+        <button id="kfNums">เลขลำดับตา</button><button id="kfSgf">⬇ ไฟล์ SGF</button>
+      </div>
+      <p class="kf-caps">หมากที่จับได้ · ดำ <b id="kfCapB">0</b> · ขาว <b id="kfCapW">0</b></p>
+      <dl class="kf-info" id="kfGInfo"></dl>
+      <div class="kf-tools"><button id="kfGPrev">← เกมก่อนหน้า</button><button id="kfGNext">เกมถัดไป →</button></div>
+    </div>
+  </div>
+</section>
+
 <section class="anal" id="anel" hidden>
   <div class="an-head">
     <button class="an-back" id="anBack">← กลับ</button>

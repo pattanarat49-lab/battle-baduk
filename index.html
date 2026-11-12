@@ -318,7 +318,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-title::before, .mn-title::after { content: ""; width: clamp(50px, 10vw, 110px); height: 2px; background: #7d8e8b; flex: none; }
 .mn-title span::before, .mn-title span::after { content: ""; display: inline-block; vertical-align: middle; width: .3em; height: .3em; box-sizing: border-box; border: max(2px, .07em) solid var(--mn-cream); margin: 0 .9em; position: relative; top: -.08em; }
 .mn-title i { font-style: normal; } .mn-title .w { display: none; }
-.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(10, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
+.mn-list { min-height: 0; display: grid; grid-template-rows: repeat(12, minmax(0, 1fr)); gap: clamp(8px, calc(var(--u) * 2), 24px); }
 #menu .mn-item { container-type: size; min-height: 0; display: grid; grid-template-columns: 31% auto minmax(0, 1fr) auto; align-items: center; padding: 0; border: 0;
   border-radius: clamp(4px, calc(var(--u) * .8), 8px); background: var(--mn-card); color: var(--mn-ink); text-align: left; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); transition: transform .08s, filter .15s; }
 #menu .mn-item:hover:not(:disabled) { filter: brightness(1.04); }
@@ -343,7 +343,7 @@ body.menuing { padding: 0; background: #0e272d; }
 .mn-foot::before, .mn-foot::after { content: ""; flex: 0 1 80px; height: 2px; background: var(--mn-line); }
 /* wide screens: two columns of cards, the nav in the top bar, and the player card at the left when there is room */
 @media (min-aspect-ratio: 5/4) {
-  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, minmax(0, 1fr)); }
+  .mn-list { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, minmax(0, 1fr)); }
   #menu .mn-item { grid-template-columns: 31% auto minmax(0, 1fr) auto; }
   .mn-ic { padding: 0 2cqw 0 3cqw; } .mn-ic img { max-height: 76cqh; }
   .mn-title .n { display: none; } .mn-title .w { display: inline; }
@@ -465,6 +465,75 @@ body.menuing { padding: 0; background: #0e272d; }
 .js-bar em { position: absolute; left: 4px; top: 0; font-style: normal; font-size: 10px; line-height: 12px; color: #f3ead8; text-shadow: 0 0 2px #000; }
 .js-legend .js-bar { display: inline-block; }
 @media (max-width: 420px) { .js-opt { grid-template-columns: 28px minmax(0, 1fr) 110px; } .js-card { grid-template-columns: 80px minmax(0, 1fr); } .js-mini { width: 80px; height: 80px; } }
+
+/* ---------- kifu: the library of game records (src/kifu.js) ---------- */
+.kifu { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
+#ksel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+#ksel button { font-weight: 400; }
+.kf-total { margin: -4px 0 12px; font-size: 13px; color: var(--muted); }
+.kf-search { display: block; width: 100%; box-sizing: border-box; min-height: 52px; padding: 10px 14px; font: inherit; font-size: 17px; background: var(--bg-2); color: var(--fg); border: 2px solid var(--accent); border-radius: 6px; }
+.kf-search::placeholder { color: var(--muted); opacity: .8; }
+.kf-search.sm { min-height: 44px; font-size: 15px; border: 1px solid var(--line); }
+.kf-row { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: thin; }
+.kf-lab { flex: none; width: 58px; font-size: 13px; color: var(--muted); }
+.kf-row button { flex: none; min-height: 36px; padding: 4px 12px; font-size: 14px; white-space: nowrap; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 18px; }
+.kf-row button small { color: var(--muted); font-size: 11px; margin-left: 2px; }
+.kf-row button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700 !important; } .kf-row button.on small { color: inherit; }
+.kf-filters { display: grid; gap: 2px; margin: 10px 0; }
+.kf-legends button { border-color: var(--accent); color: var(--accent); background: none; }
+.kf-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 8px; max-width: 560px; }
+.kf-tabs button { min-height: 44px; font-size: 15px; background: var(--surface); color: var(--fg); border: 2px solid var(--line); }
+.kf-tabs button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700 !important; }
+.kf-bar { display: flex; align-items: center; gap: 12px; min-height: 32px; margin-bottom: 8px; font-size: 14px; color: var(--muted); }
+.kf-bar button { min-height: 32px; padding: 2px 10px; font-size: 13px; margin-left: auto; }
+.kf-list { display: grid; gap: 8px; }
+.kf-plist { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.kf-p { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; min-height: 64px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.kf-p:hover, .kf-g:hover { border-color: var(--accent); }
+.kf-flag { font-size: 24px; text-align: center; line-height: 1; }
+.kf-pb { display: grid; gap: 1px; min-width: 0; } .kf-pb b { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .kf-pb small { font-size: 13px; color: var(--accent); }
+.kf-meta { font-size: 12px; color: var(--muted); }
+.kf-n { display: grid; justify-items: end; font-size: 11px; color: var(--muted); } .kf-n b { font-family: var(--f-px); font-size: 20px; color: var(--fg); line-height: 1; }
+.kf-g { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; grid-template-areas: "d vs res" "d ev res"; gap: 2px 12px; align-items: center; text-align: left; padding: 8px 12px; min-height: 56px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.kf-d { grid-area: d; font-size: 13px; color: var(--muted); } .kf-vs { grid-area: vs; display: flex; flex-wrap: wrap; gap: 2px 14px; min-width: 0; font-size: 15px; }
+.kf-ev { grid-area: ev; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kf-res { grid-area: res; font-family: var(--f-px); font-size: 15px; white-space: nowrap; text-align: right; } .kf-res small { display: block; font-size: 11px; color: var(--muted); }
+.kf-res.w { color: #7ddc8f; } .kf-res.l { color: #f08a6c; }
+.kf-s { display: inline-flex; align-items: center; gap: 6px; min-width: 0; } .kf-s em { font-style: normal; font-size: 12px; color: var(--muted); }
+.kf-s i, .kf-who i { flex: none; width: 13px; height: 13px; border-radius: 50%; background: #111; box-shadow: 0 0 0 1px #000; } .kf-s.w i, .kf-who.w i { background: #f6f1e6; box-shadow: 0 0 0 1px #9c917e; }
+.kf-s.win { font-weight: 700; color: var(--accent); }
+.kf-empty { padding: 18px 0; font-size: 15px; }
+@media (max-width: 520px) { .kf-g { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "vs res" "ev res" "d res"; } .kf-vs { flex-direction: column; } .kf-lab { width: 50px; } }
+.kf-ph { display: grid; gap: 8px; margin-bottom: 10px; }
+.kf-ph h2 { margin: 0; font-size: 26px; line-height: 1.3; } .kf-ph h2 small { display: block; font-size: 15px; color: var(--accent); font-weight: 400; }
+.kf-ph p { margin: 0; font-size: 14px; line-height: 1.7; color: var(--muted); } .kf-ph p b { color: var(--fg); }
+.kf-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+.kf-stat span { display: grid; justify-items: center; padding: 8px 4px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.kf-stat b { font-family: var(--f-px); font-size: 24px; color: var(--fg); line-height: 1.1; }
+.kf-game { display: grid; gap: 14px; }
+@media (min-width: 860px) { .kf-game { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
+.kf-boardbox { display: grid; gap: 8px; justify-items: center; min-width: 0; }
+#kfBoard { width: 100%; max-width: min(100%, 78vh); height: auto; display: block; box-shadow: 0 0 0 6px var(--wood-dark); cursor: pointer; touch-action: manipulation; }
+.kf-num { font: 700 .5px var(--f-body); text-anchor: middle; dominant-baseline: middle; pointer-events: none; } .kf-num.s2 { font-size: .44px; } .kf-num.s3 { font-size: .34px; }
+.kf-players { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: min(100%, 78vh); }
+.kf-who { display: flex; align-items: center; gap: 8px; text-align: left; padding: 6px 10px; min-height: 48px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); min-width: 0; }
+.kf-who span { display: grid; min-width: 0; } .kf-who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; } .kf-who small { font-size: 12px; color: var(--muted); }
+.kf-who i { width: 18px; height: 18px; }
+.kf-step { margin: 0; font-size: 15px; text-align: center; } .kf-step b { color: var(--accent); }
+.kf-ctl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; max-width: min(100%, 78vh); }
+.kf-ctl button { min-height: 52px; font-size: 20px; } .kf-ctl .big { font-size: 22px; background: var(--accent); color: var(--accent-fg); border: 0; }
+.kf-ctl .big:disabled { opacity: .45; }
+#kfSlide { width: 100%; max-width: min(100%, 78vh); accent-color: var(--accent); height: 28px; }
+.kf-side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.kf-info { margin: 0; display: grid; gap: 4px; padding: 12px; background: var(--surface); border: 1px solid var(--line); font-size: 14px; }
+.kf-info div { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px; } .kf-info dt { color: var(--muted); } .kf-info dd { margin: 0; overflow-wrap: anywhere; } .kf-info p { margin: 4px 0 0; }
+.kf-caps { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
+.kf-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .kf-tools button, .kf-tools select { min-height: 44px; font-size: 14px; }
+.kf-tools select { font: inherit; font-size: 14px; padding: 6px 8px; background: var(--bg-2); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+.kf-tools button.on { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+#kfAi { grid-column: 1 / -1; min-height: 54px; font-size: 16px; font-weight: 700 !important; background: var(--accent); color: var(--accent-fg); border: 0; }
+#kfAi:disabled { opacity: .5; }
+.kf-hint { font-size: 12px; color: var(--muted); margin: 0; text-align: center; }
 
 /* ---------- profile: games played in this browser ---------- */
 .prof { max-width: 860px; margin: 0 auto; padding-bottom: 32px; }
@@ -1319,6 +1388,57 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
   <div class="actions two"><button id="phCancel">ยกเลิก</button><button id="phOk" class="primary">วิเคราะห์ตำแหน่งนี้</button></div>
 </div></div>
 <input type="file" id="anFile" accept="image/*" hidden>
+<section class="kifu" id="ksel" hidden>
+  <div class="an-head">
+    <button class="an-back" id="kfBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · KIFU</div><h1 id="kfTitle">คลังคิฟุ</h1></div>
+  </div>
+  <div id="kfHome">
+    <p class="kf-total" id="kfTotal">บันทึกเกมมืออาชีพตั้งแต่ยุคโบราณถึงปัจจุบัน</p>
+    <input class="kf-search" id="kfQ" type="search" autocomplete="off" enterkeyhint="search" placeholder="🔍 พิมพ์ชื่อผู้เล่น เช่น Lee Sedol, ชูซากุ, Iyama" aria-label="ค้นหาชื่อผู้เล่น">
+    <div class="kf-row kf-legends" id="kfLegends"></div>
+    <div class="kf-tabs" id="kfTabs"><button data-tab="players" class="on">ผู้เล่น</button><button data-tab="games">เกม</button><button data-tab="events">รายการแข่ง</button></div>
+    <div class="kf-filters" id="kfFilters">
+      <div class="kf-row"><span class="kf-lab">ยุค</span><span class="kf-row" id="kfEra" style="padding:0"></span></div>
+      <div class="kf-row" id="kfRowCc"><span class="kf-lab">ประเทศ</span><span class="kf-row" id="kfCc" style="padding:0"></span></div>
+      <div class="kf-row" id="kfRowLvl"><span class="kf-lab">ระดับ</span><span class="kf-row" id="kfLvl" style="padding:0"></span></div>
+      <div class="kf-row" id="kfRowTag" hidden><span class="kf-lab">ประเภท</span><span class="kf-row" id="kfTag" style="padding:0"></span></div>
+    </div>
+    <div class="kf-bar"><span id="kfCount"></span><button id="kfClear" hidden>✕ ล้างตัวกรอง</button></div>
+    <div class="kf-list" id="kfList"></div>
+    <p class="ts-dim ts-credit">ข้อมูลจากคลังเกมสาธารณะของ Andries Brouwer (ศตวรรษที่ 17 – ปัจจุบัน) และชุดเกมมืออาชีพ 1940–2017 ของ yenw/computer-go-dataset รวมกันแล้วตัดเกมซ้ำ ประเทศจัดจากชื่อและรายการที่ลงแข่ง ระดับคือดั้งสูงสุดที่พบในบันทึก จึงอาจคลาดเคลื่อนได้บ้าง</p>
+  </div>
+  <div id="kfPage" hidden>
+    <div class="kf-ph"><h2 id="kfPName"></h2><p id="kfPInfo"></p><div class="kf-stat" id="kfPStat"></div></div>
+    <div class="kf-row" id="kfRivals"></div>
+    <div class="kf-row" id="kfPYears"></div>
+    <input class="kf-search sm" id="kfPq" type="search" autocomplete="off" placeholder="ค้นคู่แข่งหรือรายการแข่ง" aria-label="ค้นในรายการเกม">
+    <div class="kf-bar"><span id="kfPCount"></span></div>
+    <div class="kf-list kf-glist" id="kfPList"></div>
+  </div>
+  <div class="kf-game" id="kfGame" hidden>
+    <div class="kf-boardbox">
+      <div class="kf-players"><button class="kf-who b" id="kfGB"></button><button class="kf-who w" id="kfGW"></button></div>
+      <svg id="kfBoard" viewBox="-.75 -.75 19.5 19.5" role="img" aria-label="กระดานคิฟุ แตะครึ่งขวาเพื่อไปตาถัดไป ครึ่งซ้ายเพื่อย้อน"></svg>
+      <p class="kf-step" id="kfStep" aria-live="polite"></p>
+      <input type="range" id="kfSlide" min="0" max="0" value="0" aria-label="เลื่อนไปตาที่ต้องการ">
+      <div class="kf-ctl"><button id="kfFirst" aria-label="ตาแรก">⏮</button><button id="kfPrev" class="big" aria-label="ย้อนหนึ่งตา">◀</button><button id="kfNext" class="big" aria-label="ไปหนึ่งตา">▶</button><button id="kfLast" aria-label="ตาสุดท้าย">⏭</button></div>
+      <p class="kf-hint">แตะครึ่งขวาของกระดาน = ตาถัดไป · ครึ่งซ้าย = ย้อน · คีย์บอร์ดใช้ ← →</p>
+    </div>
+    <div class="kf-side">
+      <div class="kf-tools">
+        <button id="kfAi">🤖 วิเคราะห์ตานี้ด้วย AI (ANALYSIS)</button>
+        <button id="kfPlay">▶ เล่นอัตโนมัติ</button>
+        <select id="kfSpeed" aria-label="ความเร็ว"><option value="1600">ช้า</option><option value="900" selected>ปกติ</option><option value="400">เร็ว</option></select>
+        <button id="kfNums">เลขลำดับตา</button><button id="kfSgf">⬇ ไฟล์ SGF</button>
+      </div>
+      <p class="kf-caps">หมากที่จับได้ · ดำ <b id="kfCapB">0</b> · ขาว <b id="kfCapW">0</b></p>
+      <dl class="kf-info" id="kfGInfo"></dl>
+      <div class="kf-tools"><button id="kfGPrev">← เกมก่อนหน้า</button><button id="kfGNext">เกมถัดไป →</button></div>
+    </div>
+  </div>
+</section>
+
 <section class="anal" id="anel" hidden>
   <div class="an-head">
     <button class="an-back" id="anBack">← กลับ</button>
@@ -4905,7 +5025,7 @@ const Analysis = (function () {
     const g = gameMove(); if (g !== null) list.push([`ตาที่เดินจริง (${name(g)}) เป็นไง?`, "played"]);
     if (ST.at > ST.floor && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
     list.push(["ตอนนี้ใครได้เปรียบ?", "status"]);
-    if (ST.floor) list.push(["📷 อ่านรูปใหม่", "photo"]);
+    if (ST.photo) list.push(["📷 อ่านรูปใหม่", "photo"]);
     if (ST.game && ST.game.moves.length > 10) list.push(["จุดพลาดในเกมนี้", "mistakes"]);
     if (ST.game && !onGameLine()) list.push(["↩ กลับเส้นเกมจริง", "back"]);
     setChips(list);
@@ -4957,7 +5077,7 @@ const Analysis = (function () {
     const why = list.map((m, i) => reasons(moves, m, evs[i].evB, evs[i].evA, evs[i].evP, evs[i].evPm));
     r.why = why;
     const pos = why[0].filter(x => !x.neg).slice(0, 3);
-    let h = `<b>${ST.floor ? "" : `ตาที่ ${ST.at + 1} · `}${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
+    let h = `<b>${ST.photo ? "" : `ตาที่ ${ST.at + 1} · `}${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
     h += `<span class="an-dim">อ่านไป ${s.visits.toLocaleString()} รูปแบบ ตัวเลือกที่น่าสนใจ ${r.cands.length} จุด วงบนกระดาน (ตัวเลขบน = % ชนะ, ล่าง = แต้มนำ)</span>`;
     if (best.move === PASS) { say(h + `<p>★ ตอนนี้แนะนำให้<b>ผ่าน</b> ไม่มีจุดไหนได้แต้มเพิ่มแล้ว</p>`); chipsFor(); return; }
     h += `<p><span class="an-tag best">★ ตาแนะนำ ${name(best.move)}</span> ชนะ ${pct(best.winrate)}% · ${pos.map(x => esc(x.t)).join(" · ")}</p>`;
@@ -5283,7 +5403,7 @@ const Analysis = (function () {
     const n = g.n || 19;
     ST = { n, b0: new Board(n), line: (g.moves || []).slice(), at: 0, game: g.moves && g.moves.length ? { moves: g.moves.slice(), human: g.human || 0 } : null,
       res: null, pv: null, own: null, ghost: null, running: false, live: null, win: null, lead: null, pla: BLACK, auto: ST ? ST.auto : false, from: g.from || (ST && ST.from) };
-    ST.floor = g.setup ? ST.line.length : 0; if (g.setup) ST.game = null;
+    ST.floor = g.setup ? ST.line.length : (g.floor || 0); ST.photo = !!g.setup; if (g.setup) ST.game = null; // floor: handicap stones of a game record, not to be stepped back through
     ST.at = g.at === undefined ? ST.line.length : Math.max(ST.floor, Math.min(ST.line.length, g.at));
     $("anChat").innerHTML = "";
     $("anBoard").setAttribute("viewBox", `-1.1 -1.1 ${n + 1.2} ${n + 1.2}`);
@@ -5858,6 +5978,412 @@ const Joseki = (() => {
     window.scrollTo(0, 0);
   };
   api._lines = () => (LINES || (LINES = buildLines())).length; // for tests
+  return api;
+})();
+
+// KIFU: a library of game records, from the 17th century to this year, to search by player and step through move by
+// move. The data is static files under kifu/ (built by src/tools/kifu_build.py): index.json has the players and events,
+// meta-N.json one row of columns per game (oldest first), g/NNNN.json the moves of a few hundred games each, fetched
+// when a game is opened. Nothing goes through the Worker.
+const Kifu = (() => {
+  "use strict";
+  const api = {}; // the game may set api.sound(), api.onBack(), api.analyse({ moves, at, floor }) and api.E (the engine, for analysis)
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const BASE = "kifu/", N = 19, PAGE = 50;
+  let IDX = null, M = null, loading = null, metaDone = 0, metaWait = null, wired = false;
+  const shards = new Map();
+
+  // ---------- categories ----------
+  const ERAS = [
+    { id: "", t: "ทุกยุค" },
+    { id: "edo", t: "โบราณ–เอโดะ", s: "ก่อน 1868", a: 0, b: 1867 },
+    { id: "meiji", t: "เมจิ–ก่อนสงคราม", s: "1868–1945", a: 1868, b: 1945 },
+    { id: "showa", t: "หลังสงคราม", s: "1946–1979", a: 1946, b: 1979 },
+    { id: "e80", t: "ยุค 80–90", s: "1980–1999", a: 1980, b: 1999 },
+    { id: "e00", t: "ก่อน AI", s: "2000–2015", a: 2000, b: 2015 },
+    { id: "ai", t: "ยุค AI", s: "2016–ปัจจุบัน", a: 2016, b: 9999 }
+  ];
+  const CC = { JP: ["🇯🇵", "ญี่ปุ่น"], KR: ["🇰🇷", "เกาหลี"], CN: ["🇨🇳", "จีน"], TW: ["🇹🇼", "ไต้หวัน"], XX: ["🌍", "ชาติอื่น ๆ"], AI: ["🤖", "AI"], "": ["", "ไม่ระบุ"] };
+  const CCS = ["", "JP", "KR", "CN", "TW", "XX", "AI"];
+  const LEVELS = [
+    { id: "", t: "ทุกระดับ" }, { id: "9", t: "9 ดั้ง", a: 9, b: 9 }, { id: "7", t: "7–8 ดั้ง", a: 7, b: 8 }, { id: "5", t: "5–6 ดั้ง", a: 5, b: 6 },
+    { id: "1", t: "1–4 ดั้ง", a: 1, b: 4 }, { id: "ama", t: "สมัครเล่นระดับสูง", a: 20, b: 29 }
+  ];
+  const EVTAGS = [
+    { id: "", t: "ทุกรายการ" }, { id: "big", t: "แชมป์ใหญ่ญี่ปุ่น" }, { id: "intl", t: "นานาชาติ" }, { id: "f", t: "หญิง" }, { id: "tv", t: "ทีวี / หมากเร็ว" },
+    { id: "old", t: "ยุคโบราณ" }, { id: "ama", t: "สมัครเล่น" }, { id: "ai", t: "คน vs AI" }
+  ];
+  const LEGENDS = ["Honinbo Dosaku", "Honinbo Shusaku", "Honinbo Shusai", "Go Seigen", "Sakata Eio", "Cho Chikun", "Cho Hunhyun", "Lee Changho", "Lee Sedol",
+    "Gu Li", "Ke Jie", "Iyama Yuta", "Park Junghwan", "Shin Jinseo", "AlphaGo"];
+  const MONTHS = ["", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  const dateText = d => { if (!d) return "ไม่ทราบวันที่"; const y = (d / 10000) | 0, m = ((d / 100) | 0) % 100, dd = d % 100; return (dd ? dd + " " : "") + (m ? MONTHS[m] + " " : "") + y; };
+  const lvlText = l => !l ? "" : l <= 9 ? l + " ดั้ง" : "สมัครเล่น";
+  // a rank in a game record: 1-9 pro dan, 10 a title holder, 20+ amateur, 30 insei
+  const rankText = r => !r ? "" : r <= 9 ? r + "p" : r === 10 ? "แชมป์" : r === 30 ? "อินเซ" : r > 20 ? (r - 20) + "d สมัครเล่น" : "สมัครเล่น";
+  function resultText(r) {
+    if (r === "0") return "เสมอ (จิโกะ)"; if (r === "V") return "ไม่มีผล"; if (!r || r === "?") return "ไม่ทราบผล";
+    const who = r[0] === "B" ? "ดำชนะ" : "ขาวชนะ", x = r.slice(2);
+    return who + (x === "R" ? " (อีกฝ่ายยอมแพ้)" : x === "T" ? " (หมดเวลา)" : x === "F" ? " (ผิดกติกา)" : x ? ` ${x} แต้ม` : "");
+  }
+  const resultShort = r => r === "0" ? "เสมอ" : r === "V" || r === "?" || !r ? "–" : (r[0] === "B" ? "ดำ" : "ขาว") + r.slice(1);
+
+  // ---------- data ----------
+  const P = i => IDX.players[i]; // [name, cc, level, games, first year, last year, other spellings, Thai name, group?]
+  const pname = i => P(i)[0];
+  function fetchIndex() {
+    if (IDX) return Promise.resolve(IDX);
+    if (!loading) loading = fetch(BASE + "index.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(d => {
+      IDX = d;
+      d.players.forEach((p, i) => { p.i = i; p.key = fold([p[0], p[6], p[7]].join("|")); });
+      d.events.forEach((e, i) => { e.i = i + 1; e.key = fold(e[0]); });
+      return d;
+    }).catch(e => { loading = null; throw e; });
+    return loading;
+  }
+  // the rows of every game, in parts fetched side by side; lists that need them wait on this
+  function fetchMeta() {
+    if (metaWait) return metaWait;
+    const n = IDX.n;
+    M = { d: new Int32Array(n), b: new Uint16Array(n), w: new Uint16Array(n), e: new Uint16Array(n), q: new Uint16Array(n), n: new Uint16Array(n), h: new Uint8Array(n), r: new Array(n) };
+    metaDone = 0;
+    metaWait = Promise.all(Array.from({ length: IDX.parts }, (_, k) => fetch(`${BASE}meta-${k}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(part => {
+      const o = k * IDX.per;
+      for (const f of ["d", "b", "w", "e", "q", "n", "h"]) M[f].set(part[f], o);
+      for (let i = 0; i < part.r.length; i++) M.r[o + i] = part.r[i];
+      metaDone++; const el = $("kfLoad"); if (el) el.textContent = `กำลังโหลดรายการเกม ${Math.round(100 * metaDone / IDX.parts)}%`;
+    }))).then(() => { index(); return M; }).catch(e => { metaWait = null; throw e; });
+    return metaWait;
+  }
+  // every player's games (ids ascending = oldest first), and every event's
+  let byP = null, byE = null;
+  function index() {
+    const n = IDX.n, np = IDX.players.length, ne = IDX.events.length + 1;
+    const build = (cols, size) => {
+      const cnt = new Int32Array(size + 1);
+      for (const c of cols) for (let i = 0; i < n; i++) cnt[c[i] + 1]++;
+      for (let i = 0; i < size; i++) cnt[i + 1] += cnt[i];
+      const pos = cnt.slice(0, size), out = new Int32Array(cnt[size]);
+      for (let i = 0; i < n; i++) for (const c of cols) { if (cols.length > 1 && c === cols[1] && cols[0][i] === c[i]) continue; out[pos[c[i]]++] = i; }
+      return { start: cnt, pos, out };
+    };
+    byP = build([M.b, M.w], np); byE = build([M.e], ne);
+  }
+  const gamesOf = (ix, k) => ix.out.subarray(ix.start[k], ix.pos[k]);
+  function fetchGame(id) {
+    const s = (id / IDX.shard) | 0;
+    if (!shards.has(s)) shards.set(s, fetch(`${BASE}g/${String(s).padStart(4, "0")}.json`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).catch(e => { shards.delete(s); throw e; }));
+    return shards.get(s).then(rows => rows[id % IDX.shard]);
+  }
+  // letters only, lower case, so "Yi Ch'ang-ho", "lee changho" and "อี ชางโฮ" are all found as typed
+  function fold(s) { return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/['’`.\-]/g, "").replace(/\s+/g, " "); }
+  const match = (key, q) => q.every(t => key.includes(t));
+
+  // ---------- state ----------
+  const UI = { view: "home", tab: "players", q: "", era: "", cc: "", lvl: "", tag: "", shown: PAGE, stack: [], player: null, event: null, list: null, pq: "", pshown: PAGE, pyear: "" };
+  const G = { id: -1, moves: [], at: 0, nums: false, timer: null, info: null, ctx: null };
+  const era = () => ERAS.find(e => e.id === UI.era);
+  const lvl = () => LEVELS.find(l => l.id === UI.lvl);
+  const inLvl = (v, L) => !L.id || (L.id === "ama" ? v >= 20 && v < 30 : v >= L.a && v <= L.b);
+
+  // ---------- home ----------
+  const chips = (list, cur, attr, label) => list.map(x => `<button data-${attr}="${x.id}" class="${x.id === cur ? "on" : ""}">${label(x)}</button>`).join("");
+  function playerList() {
+    const q = fold(UI.q).split(" ").filter(Boolean), E = era(), L = lvl();
+    return IDX.players.filter(p => !p[8] && (!UI.cc || p[1] === UI.cc) && inLvl(p[2], L) && (!E.id || (p[4] && p[4] <= E.b && p[5] >= E.a)) && (!q.length || match(p.key, q)));
+  }
+  function eventList() {
+    const q = fold(UI.q).split(" ").filter(Boolean), E = era();
+    return IDX.events.filter(e => (!UI.tag || e[4] === UI.tag) && (!E.id || (e[2] && e[2] <= E.b && e[3] >= E.a)) && (!q.length || match(e.key, q)));
+  }
+  // games newest first that fit the filters; with a search, games of the players it finds
+  function gameList(max) {
+    const q = fold(UI.q).split(" ").filter(Boolean), E = era(), L = lvl(), out = [];
+    let ok = null;
+    if (q.length) { ok = new Uint8Array(IDX.players.length); for (const p of IDX.players) if (match(p.key, q)) ok[p.i] = 1; }
+    let total = 0;
+    for (let i = IDX.n - 1; i >= 0; i--) {
+      const y = (M.d[i] / 10000) | 0;
+      if (E.id && (!y || y < E.a || y > E.b)) { if (E.id && y && y < E.a) break; continue; }
+      if (ok && !ok[M.b[i]] && !ok[M.w[i]]) continue;
+      if (UI.cc && P(M.b[i])[1] !== UI.cc && P(M.w[i])[1] !== UI.cc) continue;
+      if (L.id) { const q2 = M.q[i]; if (!inLvl(q2 >> 5, L) && !inLvl(q2 & 31, L)) continue; }
+      total++; if (out.length < max) out.push(i);
+    }
+    return { out, total };
+  }
+  const pcard = p => `<button class="kf-p" data-p="${p.i}"><span class="kf-flag">${CC[p[1]][0] || "·"}</span><span class="kf-pb"><b>${esc(p[0])}</b>${p[7] ? `<small>${esc(p[7])}</small>` : ""}
+    <span class="kf-meta">${[CC[p[1]][1], lvlText(p[2]), p[4] ? (p[4] === p[5] ? p[4] : `${p[4]}–${p[5]}`) : ""].filter(Boolean).join(" · ")}</span></span><span class="kf-n"><b>${p[3].toLocaleString()}</b>เกม</span></button>`;
+  function grow(g, me) { // one game as a row; me: the player whose page it is on
+    const b = M.b[g], w = M.w[g], r = M.r[g], q = M.q[g], win = r && r[1] === "+" ? r[0] : "", e = M.e[g];
+    const side = (i, rk, c) => `<span class="kf-s ${c}${win === (c === "b" ? "B" : "W") ? " win" : ""}"><i></i>${esc(pname(i))}${rankText(rk) ? ` <em>${rankText(rk)}</em>` : ""}</span>`;
+    let res = `<span class="kf-res">${resultShort(r)}</span>`;
+    if (me !== undefined && win) { const won = (win === "B") === (b === me); res = `<span class="kf-res ${won ? "w" : "l"}">${won ? "ชนะ" : "แพ้"} <small>${esc(resultShort(r))}</small></span>`; }
+    return `<button class="kf-g" data-g="${g}"><span class="kf-d">${dateText(M.d[g])}</span><span class="kf-vs">${side(b, q >> 5, "b")}${side(w, q & 31, "w")}</span>
+      <span class="kf-ev">${[e ? esc(IDX.events[e - 1][0]) : "", M.h[g] ? `ต่อ ${M.h[g]} เม็ด` : "", `${M.n[g]} ตา`].filter(Boolean).join(" · ")}</span>${res}</button>`;
+  }
+  const more = (left, id) => left > 0 ? `<button class="js-more" id="${id}">ดูเพิ่ม (เหลือ ${left.toLocaleString()})</button>` : "";
+  const empty = t => `<p class="ts-dim kf-empty">${t}</p>`;
+  function renderHome() {
+    $("kfEra").innerHTML = chips(ERAS, UI.era, "era", x => x.s ? `${x.t} <small>${x.s}</small>` : x.t);
+    $("kfCc").innerHTML = chips(CCS.map(id => ({ id })), UI.cc, "cc", x => x.id ? `${CC[x.id][0]} ${CC[x.id][1]}` : "ทุกประเทศ");
+    $("kfLvl").innerHTML = chips(LEVELS, UI.lvl, "lvl", x => x.t);
+    $("kfTag").innerHTML = chips(EVTAGS, UI.tag, "tag", x => x.t);
+    for (const b of $("kfTabs").children) b.classList.toggle("on", b.dataset.tab === UI.tab);
+    $("kfRowCc").hidden = $("kfRowLvl").hidden = UI.tab === "events"; $("kfRowTag").hidden = UI.tab !== "events";
+    const any = UI.q || UI.era || UI.cc || UI.lvl || (UI.tab === "events" && UI.tag);
+    $("kfClear").hidden = !any;
+    $("kfLegends").hidden = !!any || UI.tab !== "players";
+    const box = $("kfList");
+    if (UI.tab === "players") {
+      const ls = playerList();
+      $("kfCount").textContent = `${ls.length.toLocaleString()} คน`;
+      box.className = "kf-list kf-plist";
+      box.innerHTML = ls.length ? ls.slice(0, UI.shown).map(pcard).join("") + more(ls.length - UI.shown, "kfMore") : empty("ไม่พบผู้เล่นที่ตรงกับคำค้นหรือหมวดที่เลือก ลองสะกดแบบอื่นหรือกด “ล้างตัวกรอง”");
+    } else if (UI.tab === "events") {
+      const ls = eventList();
+      $("kfCount").textContent = `${ls.length.toLocaleString()} รายการ`;
+      box.className = "kf-list kf-plist";
+      box.innerHTML = ls.length ? ls.slice(0, UI.shown).map(e => `<button class="kf-p" data-e="${e.i}"><span class="kf-flag">🏆</span><span class="kf-pb"><b>${esc(e[0])}</b>
+        <span class="kf-meta">${e[2] ? (e[2] === e[3] ? e[2] : `${e[2]}–${e[3]}`) : ""}</span></span><span class="kf-n"><b>${e[1].toLocaleString()}</b>เกม</span></button>`).join("") + more(ls.length - UI.shown, "kfMore")
+        : empty("ไม่พบรายการแข่งที่ตรงกับคำค้น");
+    } else {
+      box.className = "kf-list kf-glist";
+      if (!byP) { box.innerHTML = `<p class="ts-dim" id="kfLoad">กำลังโหลดรายการเกม…</p>`; $("kfCount").textContent = ""; fetchMeta().then(() => { if (UI.view === "home" && UI.tab === "games") renderHome(); }).catch(failed); return; }
+      const { out, total } = gameList(UI.shown);
+      $("kfCount").textContent = `${total.toLocaleString()} เกม (ใหม่สุดก่อน)`;
+      box.innerHTML = out.length ? out.map(g => grow(g)).join("") + more(total - out.length, "kfMore") : empty("ไม่พบเกมที่ตรงกับคำค้นหรือหมวดที่เลือก");
+      UI.list = out;
+    }
+    const m = $("kfMore"); if (m) m.onclick = () => { UI.shown += PAGE * 2; renderHome(); };
+  }
+  const failed = () => { const el = $("kfLoad") || $("kfList"); if (el) el.innerHTML = "โหลดข้อมูลไม่สำเร็จ ลองเปิดใหม่อีกครั้ง"; };
+
+  // ---------- one player, one event ----------
+  function renderPlayer() {
+    const p = P(UI.player), box = $("kfPList");
+    $("kfPName").innerHTML = `${CC[p[1]][0] ? CC[p[1]][0] + " " : ""}${esc(p[0])}${p[7] ? `<small>${esc(p[7])}</small>` : ""}`;
+    const also = p[6] ? p[6].split("|").filter(a => !/[()]/.test(a)).slice(0, 5) : [];
+    $("kfPInfo").innerHTML = [CC[p[1]][1] !== "ไม่ระบุ" ? `สังกัด/ประเทศ: <b>${CC[p[1]][1]}</b>` : "", p[2] ? `ระดับสูงสุดในบันทึก: <b>${lvlText(p[2])}</b>` : "", p[4] ? `ช่วงปีที่มีเกม: <b>${p[4]}–${p[5]}</b>` : "",
+      also.length ? `สะกดแบบอื่น: ${also.map(esc).join(", ")}` : ""].filter(Boolean).join("<br>");
+    if (!byP) { box.innerHTML = `<p class="ts-dim" id="kfLoad">กำลังโหลดรายการเกม…</p>`; $("kfPStat").innerHTML = ""; $("kfRivals").innerHTML = ""; $("kfPCount").textContent = ""; fetchMeta().then(() => { if (UI.view === "player") renderPlayer(); }).catch(failed); return; }
+    const all = gamesOf(byP, UI.player), me = UI.player;
+    let win = 0, loss = 0; const opp = new Map(), years = new Map();
+    for (const g of all) {
+      const r = M.r[g], iB = M.b[g] === me, o = iB ? M.w[g] : M.b[g];
+      if (r && r[1] === "+" && o !== me) { if ((r[0] === "B") === iB) win++; else loss++; }
+      if (o !== me) opp.set(o, (opp.get(o) || 0) + 1);
+      const dec = Math.floor(M.d[g] / 100000) * 10; if (dec) years.set(dec, (years.get(dec) || 0) + 1);
+    }
+    $("kfPStat").innerHTML = `<span><b>${all.length.toLocaleString()}</b>เกม</span><span><b>${win.toLocaleString()}</b>ชนะ</span><span><b>${loss.toLocaleString()}</b>แพ้</span><span><b>${win + loss ? Math.round(100 * win / (win + loss)) : 0}%</b>อัตราชนะ</span>`;
+    const rivals = [...opp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    $("kfRivals").innerHTML = rivals.length ? `<span class="kf-lab">คู่ที่เจอบ่อย</span>` + rivals.map(([o, c]) => `<button data-rv="${o}" class="${UI.rival === o ? "on" : ""}">${esc(pname(o))} <small>${c}</small></button>`).join("") : "";
+    const decs = [...years.keys()].sort((a, b) => a - b);
+    $("kfPYears").innerHTML = decs.length > 1 ? `<button data-y="" class="${UI.pyear === "" ? "on" : ""}">ทุกปี</button>` + decs.map(y => `<button data-y="${y}" class="${UI.pyear === y ? "on" : ""}">${y}s</button>`).join("") : "";
+    const q = fold(UI.pq).split(" ").filter(Boolean);
+    const ls = [];
+    for (let k = all.length - 1; k >= 0; k--) {
+      const g = all[k], o = M.b[g] === me ? M.w[g] : M.b[g];
+      if (UI.rival !== undefined && UI.rival !== null && o !== UI.rival) continue;
+      if (UI.pyear !== "" && Math.floor(M.d[g] / 100000) * 10 !== UI.pyear) continue;
+      if (q.length && !match(P(o).key, q) && !(M.e[g] && match(IDX.events[M.e[g] - 1].key, q))) continue;
+      ls.push(g);
+    }
+    $("kfPCount").textContent = `${ls.length.toLocaleString()} เกม (ใหม่สุดก่อน)`;
+    box.innerHTML = ls.length ? ls.slice(0, UI.pshown).map(g => grow(g, me)).join("") + more(ls.length - UI.pshown, "kfPMore") : empty("ไม่มีเกมที่ตรงกับตัวกรอง");
+    UI.list = ls;
+    const m = $("kfPMore"); if (m) m.onclick = () => { UI.pshown += PAGE * 2; renderPlayer(); };
+  }
+  function renderEvent() {
+    const e = IDX.events[UI.event - 1], box = $("kfPList");
+    $("kfPName").innerHTML = `🏆 ${esc(e[0])}`;
+    $("kfPInfo").innerHTML = e[2] ? `ช่วงปีที่มีเกม: <b>${e[2]}–${e[3]}</b>` : "";
+    $("kfRivals").innerHTML = "";
+    if (!byE) { box.innerHTML = `<p class="ts-dim" id="kfLoad">กำลังโหลดรายการเกม…</p>`; $("kfPStat").innerHTML = ""; $("kfPCount").textContent = ""; fetchMeta().then(() => { if (UI.view === "event") renderEvent(); }).catch(failed); return; }
+    const all = gamesOf(byE, UI.event), years = new Map();
+    for (const g of all) { const y = (M.d[g] / 10000) | 0; if (y) years.set(y, (years.get(y) || 0) + 1); }
+    $("kfPStat").innerHTML = `<span><b>${all.length.toLocaleString()}</b>เกม</span><span><b>${years.size}</b>ปี</span>`;
+    const ys = [...years.keys()].sort((a, b) => b - a);
+    $("kfPYears").innerHTML = ys.length > 1 ? `<button data-y="" class="${UI.pyear === "" ? "on" : ""}">ทุกปี</button>` + ys.map(y => `<button data-y="${y}" class="${UI.pyear === y ? "on" : ""}">${y}</button>`).join("") : "";
+    const q = fold(UI.pq).split(" ").filter(Boolean), ls = [];
+    for (let k = all.length - 1; k >= 0; k--) {
+      const g = all[k];
+      if (UI.pyear !== "" && ((M.d[g] / 10000) | 0) !== UI.pyear) continue;
+      if (q.length && !match(P(M.b[g]).key, q) && !match(P(M.w[g]).key, q)) continue;
+      ls.push(g);
+    }
+    $("kfPCount").textContent = `${ls.length.toLocaleString()} เกม (ใหม่สุดก่อน)`;
+    box.innerHTML = ls.length ? ls.slice(0, UI.pshown).map(g => grow(g)).join("") + more(ls.length - UI.pshown, "kfPMore") : empty("ไม่มีเกมที่ตรงกับตัวกรอง");
+    UI.list = ls;
+    const m = $("kfPMore"); if (m) m.onclick = () => { UI.pshown += PAGE * 2; renderEvent(); };
+  }
+
+  // ---------- the game viewer ----------
+  // the position after `at` moves: stones, the number on each, and the captures so far
+  function position(at) {
+    const b = new Int8Array(N * N), num = new Int16Array(N * N), cap = [0, 0, 0];
+    const nb = p => { const x = p % N, y = (p / N) | 0, o = []; if (x) o.push(p - 1); if (x < N - 1) o.push(p + 1); if (y) o.push(p - N); if (y < N - 1) o.push(p + N); return o; };
+    const dead = p => { const c = b[p], g = [p], seen = new Set(g); for (let i = 0; i < g.length; i++) for (const q of nb(g[i])) { if (!b[q]) return null; if (b[q] === c && !seen.has(q)) { seen.add(q); g.push(q); } } return g; };
+    for (const p of G.ab) b[p] = 1; for (const p of G.aw) b[p] = 2;
+    let c = G.first, last = -1;
+    for (let k = 0; k < at; k++) {
+      const p = G.moves[k]; last = p;
+      if (p >= 0 && !b[p]) {
+        b[p] = c; num[p] = k + 1;
+        for (const q of nb(p)) if (b[q] === 3 - c) { const g = dead(q); if (g) { cap[c] += g.length; for (const s of g) { b[s] = 0; num[s] = 0; } } }
+        const me = dead(p); if (me) for (const s of me) { b[s] = 0; num[s] = 0; }
+      }
+      c = 3 - c;
+    }
+    return { b, num, cap, last, next: c };
+  }
+  function drawBoard() {
+    const { b, num, cap, last, next } = position(G.at), s = [];
+    s.push(`<rect x="-.75" y="-.75" width="19.5" height="19.5" rx=".15" fill="var(--wood)"/>`);
+    for (let k = 0; k < N; k++) s.push(`<path d="M0 ${k}H18M${k} 0V18" stroke="#4a2a12" stroke-width="${k === 0 || k === 18 ? .07 : .04}" fill="none"/>`);
+    for (const x of [3, 9, 15]) for (const y of [3, 9, 15]) s.push(`<circle cx="${x}" cy="${y}" r=".11" fill="#4a2a12"/>`);
+    for (let p = 0; p < N * N; p++) {
+      if (!b[p]) continue; const x = p % N, y = (p / N) | 0, k = num[p];
+      s.push(`<circle cx="${x}" cy="${y}" r=".47" fill="url(#kfG${b[p] === 1 ? "b" : "w"})" stroke="${b[p] === 1 ? "#000" : "#9c917e"}" stroke-width=".02"/>`);
+      if (G.nums && k) s.push(`<text x="${x}" y="${y + .04}" class="kf-num${k > 99 ? " s3" : k > 9 ? " s2" : ""}" fill="${p === last ? "#e0533d" : b[p] === 1 ? "#f3ead8" : "#1a1208"}">${k}</text>`);
+      else if (p === last) s.push(`<circle cx="${x}" cy="${y}" r=".2" fill="none" stroke="${b[p] === 1 ? "#f3ead8" : "#2a1a0b"}" stroke-width=".08"/>`);
+    }
+    $("kfBoard").innerHTML = `<defs><radialGradient id="kfGb" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#5b5b5b"/><stop offset="1" stop-color="#0d0d0d"/></radialGradient>
+      <radialGradient id="kfGw" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#cfc6b4"/></radialGradient></defs>${s.join("")}`;
+    const tot = G.moves.length, passed = G.at && last < 0;
+    $("kfStep").innerHTML = `ตา <b>${G.at}</b> / ${tot}${passed ? " · ผ่าน" : ""}${G.at === tot ? ` · จบเกม: <b>${resultText(M.r[G.id])}</b>` : ` · ตาต่อไป${next === 1 ? "ดำ" : "ขาว"}`}`;
+    $("kfCapB").textContent = cap[1]; $("kfCapW").textContent = cap[2];
+    $("kfSlide").max = tot; $("kfSlide").value = G.at;
+    $("kfFirst").disabled = $("kfPrev").disabled = G.at === 0; $("kfNext").disabled = $("kfLast").disabled = G.at === tot;
+  }
+  function goTo(k, quiet) { const t = Math.max(0, Math.min(G.moves.length, k)); if (t === G.at) return; const fwd = t === G.at + 1; G.at = t; if (fwd && !quiet && api.sound && G.moves[t - 1] >= 0) api.sound(); drawBoard(); }
+  function play(on) {
+    clearInterval(G.timer); G.timer = null;
+    if (on) { if (G.at >= G.moves.length) goTo(0, true); G.timer = setInterval(() => { if (G.at >= G.moves.length) return play(false); goTo(G.at + 1); }, +$("kfSpeed").value); }
+    $("kfPlay").textContent = G.timer ? "⏸ หยุด" : "▶ เล่นอัตโนมัติ"; $("kfPlay").classList.toggle("on", !!G.timer);
+  }
+  const pts = s => { const o = []; for (let i = 0; i + 1 < s.length; i += 2) o.push(s[i] === "." ? -1 : (s.charCodeAt(i + 1) - 97) * N + (s.charCodeAt(i) - 97)); return o; };
+  async function openGame(id, ctx) {
+    play(false);
+    G.id = id; G.ctx = ctx || null; G.at = 0; G.moves = []; G.ab = []; G.aw = []; G.first = 1; G.info = null;
+    show("game");
+    const b = M.b[id], w = M.w[id], q = M.q[id];
+    $("kfGB").innerHTML = `<i></i><span><b>${esc(pname(b))}</b><small>ดำ${rankText(q >> 5) ? " · " + rankText(q >> 5) : ""}</small></span>`; $("kfGB").dataset.p = b;
+    $("kfGW").innerHTML = `<i></i><span><b>${esc(pname(w))}</b><small>ขาว${rankText(q & 31) ? " · " + rankText(q & 31) : ""}</small></span>`; $("kfGW").dataset.p = w;
+    $("kfGInfo").innerHTML = `<span class="ts-dim">กำลังโหลดเกม…</span>`; $("kfBoard").innerHTML = ""; $("kfStep").textContent = "";
+    const pos = ctx ? ctx.indexOf(id) : -1;
+    $("kfGPrev").disabled = pos <= 0; $("kfGNext").disabled = pos < 0 || pos >= ctx.length - 1;
+    let row;
+    try { row = await fetchGame(id); } catch (e) { $("kfGInfo").innerHTML = "โหลดเกมไม่สำเร็จ ลองใหม่อีกครั้ง"; return; }
+    if (G.id !== id) return;
+    const x = row[1] || {};
+    G.moves = pts(row[0]); G.ab = pts(x.ab || ""); G.aw = pts(x.aw || ""); G.first = x.f === "W" ? 2 : 1; G.info = x;
+    const e = M.e[id], name = (i, raw) => raw && raw !== pname(i) ? ` <small>(ในบันทึก: ${esc(raw)})</small>` : "";
+    const rowsI = [["รายการ", x.e ? esc(x.e) : e ? esc(IDX.events[e - 1][0]) : ""], ["รอบ", esc(x.r || "")], ["วันที่", dateText(M.d[id])], ["สถานที่", esc(x.p || "")],
+      ["ผล", `<b>${resultText(M.r[id])}</b>`], ["โคมิ", esc(x.k || "")], ["แต้มต่อ", G.ab.length ? `${G.ab.length} เม็ด` : ""], ["จำนวนตา", `${G.moves.length}`]].filter(r => r[1]);
+    $("kfGInfo").innerHTML = rowsI.map(r => `<div><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join("") + (x.bn || x.wn ? `<p class="ts-dim">${name(b, x.bn)}${name(w, x.wn)}</p>` : "");
+    $("kfAi").disabled = !api.analyse || G.aw.length > 0;
+    drawBoard(); window.scrollTo(0, 0);
+  }
+  // the game as moves for the analysis board: handicap stones first, with white passing between them
+  function forAnalysis() {
+    const mv = [];
+    G.ab.forEach((p, i) => { if (i) mv.push(-1); mv.push(p); });
+    const floor = mv.length;
+    if (G.ab.length ? G.first === 1 : G.first === 2) mv.push(-1);
+    const lead = mv.length;
+    return { moves: mv.concat(G.moves), at: lead + G.at, floor: G.ab.length ? lead : 0, lead };
+  }
+  function sgf() {
+    const id = G.id, x = G.info || {}, L = p => String.fromCharCode(97 + p % N) + String.fromCharCode(97 + ((p / N) | 0)), d = M.d[id];
+    const e = s => String(s).replace(/[\\\]]/g, "\\$&");
+    const dt = d ? `${(d / 10000) | 0}${((d / 100) | 0) % 100 ? "-" + String(((d / 100) | 0) % 100).padStart(2, "0") + (d % 100 ? "-" + String(d % 100).padStart(2, "0") : "") : ""}` : "";
+    let s = `(;GM[1]FF[4]SZ[19]PB[${e(x.bn || pname(M.b[id]))}]PW[${e(x.wn || pname(M.w[id]))}]` + (x.e ? `EV[${e(x.e)}]` : "") + (x.r ? `RO[${e(x.r)}]` : "") + (dt ? `DT[${dt}]` : "") + (x.k ? `KM[${e(x.k)}]` : "") +
+      (M.r[id] && M.r[id] !== "?" ? `RE[${M.r[id] === "V" ? "Void" : M.r[id]}]` : "") + (G.ab.length ? `HA[${G.ab.length}]AB${G.ab.map(p => `[${L(p)}]`).join("")}` : "") + (G.aw.length ? `AW${G.aw.map(p => `[${L(p)}]`).join("")}` : "");
+    let c = G.first; for (const p of G.moves) { s += `;${c === 1 ? "B" : "W"}[${p < 0 ? "" : L(p)}]`; c = 3 - c; }
+    return s + ")";
+  }
+
+  // ---------- moving between the views ----------
+  function show(view) {
+    UI.view = view;
+    $("kfHome").hidden = view !== "home"; $("kfPage").hidden = view !== "player" && view !== "event"; $("kfGame").hidden = view !== "game";
+    $("kfTitle").textContent = view === "game" ? "ดูเกม" : view === "player" ? "ผู้เล่น" : view === "event" ? "รายการแข่ง" : "คลังคิฟุ";
+    $("kfPq").placeholder = view === "event" ? "ค้นชื่อผู้เล่นในรายการนี้" : "ค้นคู่แข่งหรือรายการแข่ง";
+  }
+  function render() { if (UI.view === "home") renderHome(); else if (UI.view === "player") renderPlayer(); else if (UI.view === "event") renderEvent(); }
+  const snap = () => ({ view: UI.view, player: UI.player, event: UI.event, pq: UI.pq, pshown: UI.pshown, pyear: UI.pyear, rival: UI.rival, y: window.scrollY, game: G.id, ctx: G.ctx, at: G.at });
+  function push() { UI.stack.push(snap()); }
+  function openPlayer(i) { push(); play(false); Object.assign(UI, { player: i, pq: "", pshown: PAGE, pyear: "", rival: null }); $("kfPq").value = ""; show("player"); renderPlayer(); window.scrollTo(0, 0); }
+  function openEvent(i) { push(); play(false); Object.assign(UI, { event: i, pq: "", pshown: PAGE, pyear: "", rival: null }); $("kfPq").value = ""; show("event"); renderEvent(); window.scrollTo(0, 0); }
+  function back() {
+    play(false);
+    const s = UI.stack.pop();
+    if (!s) { $("ksel").hidden = true; if (api.onBack) api.onBack(); return; }
+    if (s.view === "game") { openGame(s.game, s.ctx).then(() => goTo(s.at, true)); return; }
+    Object.assign(UI, { player: s.player, event: s.event, pq: s.pq, pshown: s.pshown, pyear: s.pyear, rival: s.rival }); $("kfPq").value = s.pq;
+    show(s.view); render(); window.scrollTo(0, s.y);
+  }
+
+  function wire() {
+    wired = true;
+    $("kfBack").onclick = back;
+    let t = 0;
+    $("kfQ").addEventListener("input", e => { clearTimeout(t); t = setTimeout(() => { UI.q = e.target.value.trim(); UI.shown = PAGE; renderHome(); }, 140); });
+    $("kfPq").addEventListener("input", e => { clearTimeout(t); t = setTimeout(() => { UI.pq = e.target.value.trim(); UI.pshown = PAGE; render(); }, 140); });
+    $("kfTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return; UI.tab = b.dataset.tab; UI.shown = PAGE; renderHome(); });
+    $("kfFilters").addEventListener("click", e => {
+      const b = e.target.closest("button"); if (!b) return;
+      for (const k of ["era", "cc", "lvl", "tag"]) if (b.dataset[k] !== undefined) UI[k] = b.dataset[k];
+      UI.shown = PAGE; renderHome();
+    });
+    $("kfClear").onclick = () => { Object.assign(UI, { q: "", era: "", cc: "", lvl: "", tag: "", shown: PAGE }); $("kfQ").value = ""; renderHome(); };
+    $("kfLegends").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (b) openPlayer(+b.dataset.p); });
+    const pick = e => {
+      const p = e.target.closest("[data-p]"), ev = e.target.closest("[data-e]"), g = e.target.closest("[data-g]");
+      if (p) openPlayer(+p.dataset.p); else if (ev) openEvent(+ev.dataset.e); else if (g) { push(); openGame(+g.dataset.g, UI.list ? Array.from(UI.list) : null); }
+    };
+    $("kfList").addEventListener("click", pick); $("kfPList").addEventListener("click", pick);
+    $("kfRivals").addEventListener("click", e => { const b = e.target.closest("[data-rv]"); if (!b) return; const o = +b.dataset.rv; UI.rival = UI.rival === o ? null : o; UI.pshown = PAGE; renderPlayer(); });
+    $("kfPYears").addEventListener("click", e => { const b = e.target.closest("[data-y]"); if (!b) return; UI.pyear = b.dataset.y === "" ? "" : +b.dataset.y; UI.pshown = PAGE; render(); });
+    $("kfFirst").onclick = () => { play(false); goTo(0); }; $("kfPrev").onclick = () => { play(false); goTo(G.at - 1); };
+    $("kfNext").onclick = () => { play(false); goTo(G.at + 1); }; $("kfLast").onclick = () => { play(false); goTo(G.moves.length); };
+    $("kfSlide").addEventListener("input", e => { play(false); goTo(+e.target.value, true); });
+    $("kfPlay").onclick = () => play(!G.timer);
+    $("kfSpeed").onchange = () => { if (G.timer) play(true); };
+    $("kfNums").onclick = () => { G.nums = !G.nums; $("kfNums").classList.toggle("on", G.nums); drawBoard(); };
+    // the right half of the board steps forward, the left half back
+    $("kfBoard").addEventListener("click", e => { const r = $("kfBoard").getBoundingClientRect(); play(false); goTo(G.at + (e.clientX - r.left > r.width / 2 ? 1 : -1)); });
+    $("kfGB").onclick = $("kfGW").onclick = e => openPlayer(+e.currentTarget.dataset.p);
+    $("kfGPrev").onclick = () => { const c = G.ctx, i = c.indexOf(G.id); if (i > 0) openGame(c[i - 1], c); };
+    $("kfGNext").onclick = () => { const c = G.ctx, i = c.indexOf(G.id); if (i >= 0 && i < c.length - 1) openGame(c[i + 1], c); };
+    $("kfAi").onclick = () => { if (!api.analyse || !G.moves.length) return; play(false); const a = forAnalysis(); $("ksel").hidden = true; api.analyse(a); };
+    $("kfSgf").onclick = () => {
+      const a = document.createElement("a"), id = G.id, nm = `${pname(M.b[id])} vs ${pname(M.w[id])} ${(M.d[id] / 10000) | 0 || ""}`.trim().replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_");
+      a.href = URL.createObjectURL(new Blob([sgf()], { type: "application/x-go-sgf" })); a.download = nm + ".sgf"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    };
+    document.addEventListener("keydown", e => {
+      if ($("ksel").hidden || UI.view !== "game" || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+      if (e.key === "ArrowRight") { play(false); goTo(G.at + 1); } else if (e.key === "ArrowLeft") { play(false); goTo(G.at - 1); }
+      else if (e.key === "Home") { play(false); goTo(0); } else if (e.key === "End") { play(false); goTo(G.moves.length); } else return;
+      e.preventDefault();
+    });
+  }
+  api.open = async () => {
+    if (!wired) wire();
+    $("ksel").hidden = false; UI.stack = []; show("home"); window.scrollTo(0, 0);
+    if (!IDX) $("kfList").innerHTML = `<p class="ts-dim">กำลังโหลดคลังคิฟุ…</p>`;
+    try {
+      await fetchIndex();
+      $("kfTotal").textContent = `${IDX.n.toLocaleString()} เกม · ผู้เล่น ${IDX.players.filter(p => !p[8]).length.toLocaleString()} คน · ${IDX.events.length.toLocaleString()} รายการแข่ง`;
+      const by = new Map(IDX.players.map(p => [p[0], p]));
+      $("kfLegends").innerHTML = `<span class="kf-lab">ตำนาน</span>` + LEGENDS.filter(n => by.has(n)).map(n => { const p = by.get(n); return `<button data-p="${p.i}">${esc((p[7] || p[0]).replace(/\s*\(.*\)/, ""))}</button>`; }).join("");
+      renderHome(); fetchMeta().catch(() => {});
+    } catch (e) { $("kfList").innerHTML = `<p class="ts-dim">โหลดข้อมูลไม่สำเร็จ ลองเปิดใหม่อีกครั้ง</p>`; }
+  };
+  // back from the analysis board: the game is where it was left
+  api.resume = () => { $("ksel").hidden = false; show("game"); drawBoard(); window.scrollTo(0, 0); };
+  api._state = () => ({ UI, G, IDX, M }); // for tests
   return api;
 })();
 
@@ -8103,7 +8629,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "73ba50da27";
+  const BUILD = "e395fb03a5";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -9348,6 +9874,7 @@ const Online = (() => {
   Analysis.onBack = from => {
     if (from === "game" && board) { $("game").hidden = false; document.body.classList.add("playing"); window.scrollTo(0, 0); resize(); render(); }
     else if (from === "prof") showProfile();
+    else if (from === "kifu") Kifu.resume();
     else if (from === "player" && plData) showPlayer(plData.n, plFrom);
     else showMenu();
   };
@@ -9357,6 +9884,13 @@ const Online = (() => {
   Tsumego.onBack = () => showMenu();
   Joseki.sound = () => { unlockAudio(); clack(); };
   Joseki.onBack = () => showMenu();
+  // KIFU (src/kifu.js): the library of game records; its AI button opens the game on the analysis board at the move shown
+  Kifu.sound = () => { unlockAudio(); clack(); };
+  Kifu.onBack = () => showMenu();
+  Kifu.analyse = g => {
+    const b = new Board(19), mv = g.moves.map(p => p < 0 ? PASS : b.pt(p % 19, (p / 19) | 0));
+    trackMode("analysis"); Analysis.open({ n: 19, moves: mv, at: g.at, floor: g.floor, from: "kifu" });
+  };
   Analysis.onPhoto = () => trackMode("photo", true);
   // ---------- main menu and profile ----------
   const MENU = [
@@ -9366,6 +9900,7 @@ const Online = (() => {
     { id: "analysis", t: "ANALYSIS", s: "วิเคราะห์เกมกับ AI พร้อมบอกเหตุผล" },
     { id: "tsume", t: "TSUMEGO", s: "โจทย์ฝึกอ่านหมาก 6 คิว – 4 ดั้ง" },
     { id: "joseki", t: "JOSEKI", rec: "NEW", s: "คลังโจเซกิจากเกมจริง ดูว่ายุคนี้นิยมแบบไหน" },
+    { id: "kifu", t: "KIFU", rec: "NEW", s: "คลังเกมมืออาชีพ 130,000+ เกม ค้นชื่อผู้เล่นได้" },
     { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
     { id: "online", t: "PLAY ONLINE", s: "เล่นกับคนจริง สร้างห้องหรือกด Join" },
     { id: "watch", t: "WATCH", s: "ดูเกมที่คนอื่นกำลังเล่นอยู่แบบสด ๆ" },
@@ -9401,7 +9936,7 @@ const Online = (() => {
     // LEARN: progress line (its "RECOMMEND FOR BEGINNER" tag always shows, owner 2026-11-11)
     $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
   }
-  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel", "jsel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel", "jsel", "ksel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
@@ -9471,6 +10006,7 @@ const Online = (() => {
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "joseki") { hideScreens(); trackMode("joseki"); Joseki.open(); }
+    else if (go === "kifu") { hideScreens(); trackMode("kifu"); Kifu.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
     else if (go === "learn") { hideScreens(); trackMode("learn"); trackLearnBackfill(); Learn.open(); }
     else if (go === "online") Online.openLobby("play");
