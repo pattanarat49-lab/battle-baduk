@@ -206,7 +206,7 @@ const Analysis = (function () {
     const g = gameMove(); if (g !== null) list.push([`ตาที่เดินจริง (${name(g)}) เป็นไง?`, "played"]);
     if (ST.at > ST.floor && ST.line[ST.at - 1] !== PASS && (!ST.game || !onGameLine())) list.push([`ตาที่เพิ่งลอง (${name(ST.line[ST.at - 1])}) ดีไหม?`, "tried"]);
     list.push(["ตอนนี้ใครได้เปรียบ?", "status"]);
-    if (ST.floor) list.push(["📷 อ่านรูปใหม่", "photo"]);
+    if (ST.photo) list.push(["📷 อ่านรูปใหม่", "photo"]);
     if (ST.game && ST.game.moves.length > 10) list.push(["จุดพลาดในเกมนี้", "mistakes"]);
     if (ST.game && !onGameLine()) list.push(["↩ กลับเส้นเกมจริง", "back"]);
     setChips(list);
@@ -258,7 +258,7 @@ const Analysis = (function () {
     const why = list.map((m, i) => reasons(moves, m, evs[i].evB, evs[i].evA, evs[i].evP, evs[i].evPm));
     r.why = why;
     const pos = why[0].filter(x => !x.neg).slice(0, 3);
-    let h = `<b>${ST.floor ? "" : `ตาที่ ${ST.at + 1} · `}${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
+    let h = `<b>${ST.photo ? "" : `ตาที่ ${ST.at + 1} · `}${CN[c]}เดิน</b> ${CN[c]}โอกาสชนะ ${pct(s.winrate)}% (${leadText(c, s.searchLead)})<br>`;
     h += `<span class="an-dim">อ่านไป ${s.visits.toLocaleString()} รูปแบบ ตัวเลือกที่น่าสนใจ ${r.cands.length} จุด วงบนกระดาน (ตัวเลขบน = % ชนะ, ล่าง = แต้มนำ)</span>`;
     if (best.move === PASS) { say(h + `<p>★ ตอนนี้แนะนำให้<b>ผ่าน</b> ไม่มีจุดไหนได้แต้มเพิ่มแล้ว</p>`); chipsFor(); return; }
     h += `<p><span class="an-tag best">★ ตาแนะนำ ${name(best.move)}</span> ชนะ ${pct(best.winrate)}% · ${pos.map(x => esc(x.t)).join(" · ")}</p>`;
@@ -584,7 +584,7 @@ const Analysis = (function () {
     const n = g.n || 19;
     ST = { n, b0: new Board(n), line: (g.moves || []).slice(), at: 0, game: g.moves && g.moves.length ? { moves: g.moves.slice(), human: g.human || 0 } : null,
       res: null, pv: null, own: null, ghost: null, running: false, live: null, win: null, lead: null, pla: BLACK, auto: ST ? ST.auto : false, from: g.from || (ST && ST.from) };
-    ST.floor = g.setup ? ST.line.length : 0; if (g.setup) ST.game = null;
+    ST.floor = g.setup ? ST.line.length : (g.floor || 0); ST.photo = !!g.setup; if (g.setup) ST.game = null; // floor: handicap stones of a game record, not to be stepped back through
     ST.at = g.at === undefined ? ST.line.length : Math.max(ST.floor, Math.min(ST.line.length, g.at));
     $("anChat").innerHTML = "";
     $("anBoard").setAttribute("viewBox", `-1.1 -1.1 ${n + 1.2} ${n + 1.2}`);

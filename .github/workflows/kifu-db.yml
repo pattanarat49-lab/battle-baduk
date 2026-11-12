@@ -1,0 +1,30 @@
+# Rebuilds the KIFU library (kifu/) from its two public sources with src/tools/kifu_build.py and commits the result.
+# The game records themselves are not stored in the repository, only the files the page reads.
+name: Build kifu library
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download
+        run: |
+          set -e
+          mkdir -p k/br k/y
+          curl -fsSL https://homepages.cwi.nl/~aeb/go/games/games.tgz | tar -xz -C k/br
+          for f in pro1940-1999 pro2000+; do
+            curl -fsSL "https://raw.githubusercontent.com/yenw/computer-go-dataset/master/Professional/$f.zip" -o "k/y/$f.zip"
+            unzip -oq "k/y/$f.zip" -d k/y
+          done
+      - name: Build
+        run: python3 -I src/tools/kifu_build.py k/br/games k/y/pro1940-1999.txt "k/y/pro2000+.txt" kifu
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          git add kifu
+          git commit -m "Rebuild kifu library" || exit 0
+          git pull --rebase origin ${GITHUB_REF_NAME} && git push origin HEAD:${GITHUB_REF_NAME}
