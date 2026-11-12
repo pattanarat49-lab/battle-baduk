@@ -96,6 +96,7 @@ ALIASES = [
     ["AlphaGo", "Alphago", "AlphaGo Lee", "AlphaGo Master", "Master", "Magist", "AlphaGo Zero"],
     ["Shin Jinseo", "Shin Jin Seo", "Sin Chin-seo"],
     ["Go Seigen", "Wu Qingyuan"],
+    ["Vorawat Charoensitthisathien", "Charoensitthisathien Vorawat"],
 ]
 # shown names for well-known players, with the Thai name (found by the search too)
 FAMOUS = {
@@ -124,6 +125,8 @@ COUNTRY = {  # where the name alone would say otherwise
     "Michael Redmond": "JP", "Go Seigen": "JP", "Rin Kaiho": "JP", "Cho Chikun": "JP", "Hans Pietsch": "JP", "Catalin Taranu": "JP", "Antti Törmänen": "JP",
     "Zhou Junxun": "TW", "Lin Zhihan": "TW", "Chen Shiyuan": "TW", "Xu Haohong": "TW", "Wang Yuanjun": "TW", "Lin Junyan": "TW", "Xiao Zhenghao": "TW",
     "Hei Jiajia": "TW", "Lai Junfu": "TW", "Lin Lixiang": "TW", "Jian Jingting": "TW", "Chen Qirui": "TW", "Xu Jiayuan": "TW", "Lin Shixun": "TW",
+    "Pongsakarn Sornarra": "TH", "Thanapol Tiawattananont": "TH", "Vorawat Tanapatsopol": "TH", "Rit Bencharit": "TH", "Krit Jamkachornkiat": "TH", "Vorawat Charoensitthisathien": "TH", "Husdin Aekasinghachai": "TH", "Korsak Chairasmisak": "TH", "Paisal Thunthadaluk": "TH", "V. Ngamjarassrivichai": "TH", "Choltit Rattanasetyut": "TH", "Nitipone Aroonphaichitra": "TH", "Ruechagorn Trairatananusor": "TH", "Taechaamnuayvit Nuttakrit": "TH", "Thanomnual Leekulpitak": "TH",
+    "CrazyStone": "AI", "DolBaram": "AI", "Zen19X": "AI", "Zen19S": "AI", "DarkForest": "AI", "Many Faces of Go": "AI", "Goemate": "AI", "SilverIgo": "AI", "Go++": "AI", "Go4++": "AI", "AyaMC": "AI", "Nomitan": "AI", "GLOBIS-AQZ": "AI", "deepmind": "AI",
     "Rui Naiwei": "CN", "Kim In": "KR", "Shi Yue": "CN", "Jimmy Cha": "KR", "Jiang Zhujiu": "CN",
 }
 KR_SUR = set("""kim lee yi park pak choi ch'oe cho jo kang yun yoon jang chang shin sin han seo song hong an ahn heo hur mok won weon na paek baek

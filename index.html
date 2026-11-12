@@ -6004,8 +6004,8 @@ const Kifu = (() => {
     { id: "e00", t: "ก่อน AI", s: "2000–2015", a: 2000, b: 2015 },
     { id: "ai", t: "ยุค AI", s: "2016–ปัจจุบัน", a: 2016, b: 9999 }
   ];
-  const CC = { JP: ["🇯🇵", "ญี่ปุ่น"], KR: ["🇰🇷", "เกาหลี"], CN: ["🇨🇳", "จีน"], TW: ["🇹🇼", "ไต้หวัน"], XX: ["🌍", "ชาติอื่น ๆ"], AI: ["🤖", "AI"], "": ["", "ไม่ระบุ"] };
-  const CCS = ["", "JP", "KR", "CN", "TW", "XX", "AI"];
+  const CC = { JP: ["🇯🇵", "ญี่ปุ่น"], KR: ["🇰🇷", "เกาหลี"], CN: ["🇨🇳", "จีน"], TW: ["🇹🇼", "ไต้หวัน"], TH: ["🇹🇭", "ไทย"], XX: ["🌍", "ชาติอื่น ๆ"], AI: ["🤖", "AI"], "": ["", "ไม่ระบุ"] };
+  const CCS = ["", "JP", "KR", "CN", "TW", "TH", "XX", "AI"];
   const LEVELS = [
     { id: "", t: "ทุกระดับ" }, { id: "9", t: "9 ดั้ง", a: 9, b: 9 }, { id: "7", t: "7–8 ดั้ง", a: 7, b: 8 }, { id: "5", t: "5–6 ดั้ง", a: 5, b: 6 },
     { id: "1", t: "1–4 ดั้ง", a: 1, b: 4 }, { id: "ama", t: "สมัครเล่นระดับสูง", a: 20, b: 29 }
@@ -8629,7 +8629,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "e395fb03a5";
+  const BUILD = "162e8ce7d5";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
