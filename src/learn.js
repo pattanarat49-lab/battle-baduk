@@ -55,7 +55,7 @@ const Learn = (function () {
         { t: "info", n: 5, say: "สวัสดีครับ ผมชื่อ**ฮิคารุ** วันนี้เรามาเล่นหมากล้อมกันนะ หมากล้อมมีหมากสองสี คือสีดำกับสีขาว" },
         { t: "info", n: 5, b: "c3 b4", w: "d2", say: "หมากต้องวางบน**จุดที่เส้นตัดกัน** ไม่ได้วางในช่องนะ วางแล้วก็อยู่ตรงนั้นเลย ไม่เดินไปไหน" },
         { t: "any", n: 5, say: "ลองแตะกระดาน วางหมากดำสักเม็ดสิ ตรงไหนก็ได้" },
-        { t: "tap", n: 5, ring: "b4", ans: "b4", say: "เก่งมาก ทีนี้วางหมากตรงวงกลมสีส้มนะ", hint: "มองหาวงกลมสีส้มบนกระดาน" },
+        { t: "tap", n: 5, ring: "b4", ans: "b4", say: "เก่งมาก ทีนี้วางหมากตรงวงกลมสีฟ้านะ", hint: "มองหาวงกลมสีฟ้าบนกระดาน" },
         { t: "choice", n: 5, opts: ["⚫ สีดำ", "⚪ สีขาว"], ok: 0, say: "ใครได้เดินก่อน สีดำหรือสีขาว", hint: "ในหมากล้อม สีดำเดินก่อนเสมอ" },
         { t: "tap", n: 5, ans: "a1 a5 e1 e5", say: "ลองวางหมากที่มุมกระดานดูสิ มุมไหนก็ได้", hint: "มุมคือจุดที่เส้นขอบสองเส้นมาชนกัน" }
       ] },
@@ -645,6 +645,7 @@ const Learn = (function () {
   const clearT = () => { S.timers.forEach(clearTimeout); S.timers = []; };
 
   function stoneSVG(i, c, N, cls = "") { return `<circle class="${cls}" cx="${i % N}" cy="${(i / N) | 0}" r=".46" fill="url(#lnG${c})" stroke="${c === 1 ? "#000" : "#9c917e"}" stroke-width=".03"/>`; }
+  const RING = "#1565ff";
   function drawBoard() {
     const b = S.b, N = b.N, s = [], xy = i => [i % N, (i / N) | 0], it = S.it || {};
     s.push(`<defs><radialGradient id="lnG1" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#5b5b5b"/><stop offset="1" stop-color="#0d0d0d"/></radialGradient>
@@ -656,11 +657,13 @@ const Learn = (function () {
     for (const p of L(it.dot, N)) s.push(`<circle cx="${p % N}" cy="${(p / N) | 0}" r=".28" fill="#ff9600" opacity=".85"/>`);
     if (N === 5) s.push(`<circle cx="2" cy="2" r=".1" fill="#5a3a1a"/>`);
     if (it.shade) { const own = b.area(); for (let i = 0; i < N * N; i++) if (own[i]) s.push(`<rect x="${i % N - .18}" y="${((i / N) | 0) - .18}" width=".36" height=".36" rx=".05" fill="${own[i] === 1 ? "#1a1a1a" : "#fbf7ee"}" stroke="#5a3a1a" stroke-width=".02"/>`); }
-    if (it.lib && S.state !== "demo") for (const i of b.group(P(it.lib, N)).libs) { const [x, y] = xy(i); s.push(`<circle class="ln-pulse" cx="${x}" cy="${y}" r=".22" fill="none" stroke="#ff9600" stroke-width=".08"/>`); }
+    if (it.lib && S.state !== "demo") for (const i of b.group(P(it.lib, N)).libs) { const [x, y] = xy(i); s.push(`<g class="ln-pulse"><circle cx="${x}" cy="${y}" r=".22" fill="none" stroke="#fff" stroke-width=".16"/><circle cx="${x}" cy="${y}" r=".22" fill="none" stroke="${RING}" stroke-width=".08"/></g>`); }
     for (const i of S.found) { const [x, y] = xy(i); s.push(`<circle class="ln-new" cx="${x}" cy="${y}" r=".24" fill="#58cc02"/>`); }
     for (const [i, c] of S.gone) s.push(stoneSVG(i, c, N, "ln-gone"));
     for (let i = 0; i < N * N; i++) if (b.a[i]) s.push(stoneSVG(i, b.a[i], N, i === S.last ? "ln-new" : ""));
-    for (const i of S.ring) { const [x, y] = xy(i); s.push(`<circle class="ln-pulse" cx="${x}" cy="${y}" r=".4" fill="none" stroke="#ff9600" stroke-width=".09"/>`); }
+    // rings are blue with a white edge so they stand out on the wooden board, thicker on 13 and 19 lines (owner 2026-11-12: orange blended in)
+    const rw = N >= 13 ? .2 : .1, ring = (x, y, r, w) => `<g class="ln-pulse"><circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="#fff" stroke-width="${w + .1}"/><circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${RING}" stroke-width="${w}"/></g>`;
+    for (const i of S.ring) { const [x, y] = xy(i); s.push(ring(x, y, N >= 13 ? .52 : .4, rw)); }
     if (S.last >= 0 && b.a[S.last]) { const [x, y] = xy(S.last); s.push(`<circle cx="${x}" cy="${y}" r=".15" fill="none" stroke="${b.a[S.last] === 1 ? "#f3ead8" : "#2a1a0b"}" stroke-width=".07"/>`); }
     for (const i of S.x) { const [x, y] = xy(i); s.push(`<g stroke="#ff4b4b" stroke-width=".12" stroke-linecap="round"><line x1="${x - .22}" y1="${y - .22}" x2="${x + .22}" y2="${y + .22}"/><line x1="${x + .22}" y1="${y - .22}" x2="${x - .22}" y2="${y + .22}"/></g>`); }
     // zoom: "a1 k10" shows only that corner-to-corner part of the board (big real-game positions)
