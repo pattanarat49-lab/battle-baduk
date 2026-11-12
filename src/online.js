@@ -242,21 +242,16 @@ const Online = (() => {
       stones = []; for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) { const c = b.color[b.pt(i, y)]; stones.push(c === D.BLACK ? 1 : c === D.WHITE ? 2 : 0); }
       const lm = G.live.moves[G.live.moves.length - 1]; last = lm >= 0 ? lm : -1; }
     const cell = sz / (n + 1);
-    x.fillStyle = "#dcb57a"; x.fillRect(0, 0, sz, sz);
-    x.strokeStyle = "#3b2a17"; x.lineWidth = 1;
+    const skin = Skins.cur(); // the player's stone and board skins (src/skins.js)
+    x.drawImage(Skins.boardLayer(cv.width), 0, 0, sz, sz);
+    x.strokeStyle = skin.board.line; x.lineWidth = 1;
     for (let i = 0; i < n; i++) {
       x.beginPath(); x.moveTo(cell, cell * (i + 1)); x.lineTo(cell * n, cell * (i + 1)); x.stroke();
       x.beginPath(); x.moveTo(cell * (i + 1), cell); x.lineTo(cell * (i + 1), cell * n); x.stroke();
     }
-    x.fillStyle = "#3b2a17";
+    x.fillStyle = skin.board.star;
     for (const i of STAR[n] || []) for (const j of STAR[n] || []) { if (n === 9 && (i === 4) !== (j === 4)) continue; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), Math.max(2, cell * 0.1), 0, 7); x.fill(); }
-    const stone = (i, j, c, alpha) => {
-      const cx = cell * (i + 1), cy = cell * (j + 1), r = cell * 0.47;
-      x.globalAlpha = alpha || 1;
-      const g = x.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
-      if (c === 1) { g.addColorStop(0, "#666"); g.addColorStop(1, "#111"); } else { g.addColorStop(0, "#fff"); g.addColorStop(1, "#cfcfc6"); }
-      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); x.globalAlpha = 1;
-    };
+    const stone = (i, j, c, alpha) => Skins.drawStone(x, cell * (i + 1), cell * (j + 1), cell * 0.47, c, alpha && alpha < 1 ? alpha : null);
     if (stones) stones.forEach((c, k) => { if (c) stone(k % n, Math.floor(k / n), c, dead && dead.has(k) ? 0.4 : 1); });
     if (last >= 0 && stones) { const i = last % n, j = Math.floor(last / n); x.strokeStyle = stones[last] === 1 ? "#fff" : "#000"; x.lineWidth = 2; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), cell * 0.22, 0, 7); x.stroke(); }
     if (G && G.ghost) stone(G.ghost[0], G.ghost[1], G.me === "b" ? 1 : 2, 0.55);

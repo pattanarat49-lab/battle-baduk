@@ -1947,31 +1947,10 @@
   window.addEventListener("resize", () => { if (board) resize(); });
   if (window.ResizeObserver) new ResizeObserver(() => { if (board && !$("game").hidden) resize(); }).observe(cv.parentElement);
 
-  let grain = null, grainKey = "";
-  function woodLayer(W) {
-    if (grainKey === String(W)) return grain;
-    const c = document.createElement("canvas"); c.width = c.height = W; const x = c.getContext("2d");
-    const lg = x.createLinearGradient(0, 0, W, W); lg.addColorStop(0, "#e6c07a"); lg.addColorStop(.5, "#ddb267"); lg.addColorStop(1, "#cf9f52");
-    x.fillStyle = lg; x.fillRect(0, 0, W, W);
-    let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < 90; i++) {
-      const y0 = r() * W, amp = 3 + r() * 10, f = 0.002 + r() * 0.006;
-      x.strokeStyle = `rgba(120,72,20,${0.04 + r() * 0.07})`; x.lineWidth = 0.6 + r() * 2.2 * (W / 800);
-      x.beginPath();
-      for (let px = 0; px <= W; px += 8) { const py = y0 + Math.sin(px * f + i) * amp; px ? x.lineTo(px, py) : x.moveTo(px, py); }
-      x.stroke();
-    }
-    grain = c; grainKey = String(W); return c;
-  }
-  function drawStone(cx, cy, r, color, alpha) {
-    g.save(); g.globalAlpha = alpha == null ? 1 : alpha;
-    if (alpha == null) { g.fillStyle = "rgba(40,22,0,.35)"; g.beginPath(); g.arc(cx + r * .08, cy + r * .12, r, 0, 7); g.fill(); }
-    const gr = g.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r);
-    if (color === BLACK) { gr.addColorStop(0, "#6b6b6b"); gr.addColorStop(.45, "#202020"); gr.addColorStop(1, "#050505"); }
-    else { gr.addColorStop(0, "#ffffff"); gr.addColorStop(.6, "#ecebe5"); gr.addColorStop(1, "#bdbcb3"); }
-    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
-    g.restore();
-  }
+  // the board background and the stones come from the equipped skins (src/skins.js)
+  const woodLayer = W => Skins.boardLayer(W);
+  function drawStone(cx, cy, r, color, alpha) { Skins.drawStone(g, cx, cy, r, color === BLACK ? 1 : 2, alpha); }
+  Skins.onChange(() => { if (board && !$("game").hidden) drawBoard(); });
   function drawBoard() {
     if (!board) return;
     // while reviewing, draw the position after move reviewAt, without the scoring marks or hints
@@ -1983,18 +1962,19 @@
     g.drawImage(woodLayer(W), 0, 0);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const cell = S / (n + 1), P = i => cell * (i + 1);
-    g.strokeStyle = "rgba(42,29,12,.85)"; g.lineWidth = Math.max(0.8, cell / 34);
+    const ink = Skins.cur().board;
+    g.strokeStyle = ink.line; g.lineWidth = Math.max(0.8, cell / 34);
     g.beginPath();
     for (let i = 0; i < n; i++) { g.moveTo(P(0), P(i)); g.lineTo(P(n - 1), P(i)); g.moveTo(P(i), P(0)); g.lineTo(P(i), P(n - 1)); }
     g.stroke();
     g.lineWidth = Math.max(1.4, cell / 18); g.strokeRect(P(0), P(0), P(n - 1) - P(0), P(n - 1) - P(0));
     const stars = n === 19 ? [3, 9, 15] : n === 13 ? [3, 6, 9] : [2, 4, 6];
-    g.fillStyle = "#2a1d0c";
+    g.fillStyle = ink.star;
     for (const a of stars) for (const b of stars) {
       if (n === 9 && (a === 4) !== (b === 4)) continue;
       g.beginPath(); g.arc(P(a), P(b), Math.max(2, cell * .11), 0, 7); g.fill();
     }
-    g.fillStyle = "rgba(42,29,12,.75)"; g.font = `500 ${Math.max(8, cell * .34)}px "IBM Plex Mono", monospace`;
+    g.fillStyle = ink.label; g.font = `500 ${Math.max(8, cell * .34)}px "IBM Plex Mono", monospace`;
     g.textAlign = "center"; g.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
       g.fillText(LETTERS[i], P(i), cell * .42); g.fillText(LETTERS[i], P(i), S - cell * .42);
@@ -2147,6 +2127,7 @@
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Learn.onHome = () => showMenu();
+  Learn.onShopBack = () => showProfile();
   Learn.onBook = () => { tutorFrom = "menu"; Tutorial.open(); };
   Learn.muted = () => !soundOn;
   Learn.onPlay = () => Tutorial.onPlay();
@@ -2382,6 +2363,9 @@
       : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (ถ้ายังไม่เคยสอบเริ่มที่ 15 คิว ถ้าสอบแล้วเริ่มจากผลสอบที่ดีที่สุด)</span></div>`);
     h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
+    const skinRow = list => `<div class="pf-skins">${list.filter(k => Skins.owned(k.id)).map(k => `<button class="pf-skin${Skins.equipped(k.id) ? " on" : ""}" data-skin="${k.id}"><img src="${Skins.thumb(k.id)}" alt="" width="64" height="64"><span>${k.t}</span></button>`).join("")}</div>`;
+    h += `<div class="pf-h">สกินหมากและกระดาน</div><div class="pf-skinsub">หมาก</div>${skinRow(Skins.STONES)}<div class="pf-skinsub">กระดาน</div>${skinRow(Skins.BOARDS)}
+      <div class="pf-btns" style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="pf-an primary" id="pfShop">ไปที่ Shop</button><span class="note">มี ${Learn.xp()} XP · ซื้อสกินเพิ่มด้วย XP จากโหมด LEARN</span></div>`;
     if (!hist.length) {
       h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
       $("pfBody").innerHTML = h; drawRating(); return;
@@ -2468,6 +2452,8 @@
   });
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.skin !== undefined) { Skins.equip(b.dataset.skin); blip(880); renderProfile(); return; }
+    if (b.id === "pfShop") { unlockAudio(); blip(880); hideScreens(); Learn.openShop(); return; }
     if (b.id === "pfResume") {
       const g = pausedGame(); unlockAudio(); blip(880);
       const ch = g && CHARS.find(c => c.id === g.char);

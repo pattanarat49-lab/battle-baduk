@@ -554,27 +554,33 @@ const Learn = (function () {
   }
   // ---------- XP shop: XP earned in lessons buys things (items come later; owner 2026-11-11) ----------
   // an item: { id, t: name, img, cost, kind: "avatar" | ... }; bought ids are kept in prog.owned, XP spent in prog.spent
-  const SHOP = [];
+  const SHOP = typeof Skins !== "undefined" ? Skins.ALL.filter(x => x.cost > 0) : []; // stone and board skins (src/skins.js)
   const xpLeft = () => Math.max(0, (prog.xp || 0) - (prog.spent || 0));
   const owns = id => (prog.owned || []).includes(id);
+  // buying an item puts it on straight away; the Profile and this shop can switch back (owner 2026-11-12)
   function buy(id) {
     const it = SHOP.find(x => x.id === id); if (!it || owns(id) || xpLeft() < it.cost) return SFX.bad && SFX.bad();
-    prog.spent = (prog.spent || 0) + it.cost; prog.owned = (prog.owned || []).concat(id); saveP(); SFX.tap(); renderShop();
+    prog.spent = (prog.spent || 0) + it.cost; prog.owned = (prog.owned || []).concat(id); saveP(); Skins.equip(id); SFX.good(); confetti(14); renderShop(true);
   }
-  function renderShop() {
+  function renderShop(stay) {
     S.view = "shop"; clearT(); stopVoice();
-    let h = head() + `<div class="ln-shop"><button class="ln-btn ln-shopback" data-act="path">← กลับไปบทเรียน</button>
-      <div class="ln-shophead"><img src="learn/icon_star.png" alt=""><div><small>XP ที่ใช้ได้</small><b>${xpLeft()} XP</b><small>สะสมทั้งหมด ${prog.xp || 0} XP</small></div></div>
-      <h2>ร้านค้า</h2>`;
-    if (!SHOP.length) h += `<div class="ln-shopempty"><img src="${TEACH.pose("read")}" alt=""><b>ยังไม่มีของในร้าน</b><span>เก็บ XP จากการทำบทเรียนไว้ก่อนนะ เร็วๆ นี้จะมีของให้แลก เช่น รูปโปรไฟล์</span></div>`;
-    else h += `<div class="ln-shopgrid">${SHOP.map(it => `<div class="ln-item"><img src="${it.img}" alt=""><b>${it.t}</b>${owns(it.id) ? `<span class="own">มีแล้ว</span>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`).join("")}</div>`;
-    $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, 0);
+    const y = window.scrollY;
+    let h = head() + `<div class="ln-shop"><button class="ln-btn ln-shopback" data-act="${S.shopFrom === "prof" ? "shopback" : "path"}">← ${S.shopFrom === "prof" ? "กลับไปโปรไฟล์" : "กลับไปบทเรียน"}</button>
+      <div class="ln-shophead"><img src="learn/icon_star.png" alt=""><div><small>XP ที่ใช้ได้</small><b>${xpLeft()} XP</b><small>สะสมทั้งหมด ${prog.xp || 0} XP · ได้ XP จากการผ่านบทเรียน</small></div></div>`;
+    const card = it => {
+      const have = !it.cost || owns(it.id), on = Skins.equipped(it.id);
+      return `<div class="ln-item${on ? " on" : ""}"><img src="${Skins.thumb(it.id)}" alt=""><b>${it.t}</b><small class="tag t-${it.tag === "เท่" ? "cool" : it.tag === "น่ารัก" ? "cute" : it.tag === "สวย" ? "fine" : "base"}">${it.tag}</small>${
+        on ? `<span class="own">✓ ใช้อยู่</span>` : have ? `<button class="ln-btn" data-equip="${it.id}">ใช้สกินนี้</button>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`;
+    };
+    for (const [kind, title, list] of [["stone", "สกินหมาก", Skins.STONES], ["board", "สกินกระดาน", Skins.BOARDS]]) h += `<h2>${title}</h2><div class="ln-shopgrid">${list.map(card).join("")}</div>`;
+    h += `<p class="ln-shopnote">สกินใช้กับกระดานตอนเล่นกับ AI และเล่นออนไลน์ ซื้อแล้วใส่ให้ทันที เปลี่ยนได้ที่นี่หรือในหน้า Profile</p>`;
+    $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, stay ? y : 0);
   }
   const unlocked = k => !!ALL[k] && (k === 0 || !!prog.stars[ALL[k].id] || !!prog.stars[ALL[k - 1].id]); // one at a time: a lesson opens when the one before it is passed (owner, 2026-11-11)
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
 
   // ---------- sound: effects made with WebAudio, speech from files ----------
-  const api = { onHome: null, onPlay: null, onBook: null, onClear: null, muted: () => false, voiceDir: "learn/voice/" };
+  const api = { onHome: null, onPlay: null, onBook: null, onClear: null, onShopBack: null, muted: () => false, voiceDir: "learn/voice/" };
   let ac = null, voiceOn = true, audio = null;
   try { voiceOn = localStorage.getItem("gonn.learnVoice") !== "0"; } catch (e) {}
   function ctx() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch (e) {} return ac; }
@@ -1256,8 +1262,10 @@ const Learn = (function () {
       if (act === "quit" || act === "path") { SFX.tap(); return renderPath(); }
       if (act === "retry") return openLesson(S.lesson);
       if (act === "bossdone") { finish(ALL[S.lesson].id, 3, 30); return renderPath(); }
-      if (act === "shop") { SFX.tap(); return renderShop(); }
+      if (act === "shop") { SFX.tap(); S.shopFrom = null; return renderShop(); }
       if (t.dataset.buy !== undefined) return buy(t.dataset.buy);
+      if (t.dataset.equip !== undefined) { Skins.equip(t.dataset.equip); SFX.tap(); return renderShop(true); }
+      if (act === "shopback") { S.shopFrom = null; close(); return api.onShopBack && api.onShopBack(); }
       if (act === "home") { close(); return api.onHome && api.onHome(); }
       if (act === "play") { close(); return api.onPlay && api.onPlay(); }
       if (act === "book") { close(); return api.onBook && api.onBook(); }
@@ -1270,6 +1278,9 @@ const Learn = (function () {
     $("learn").hidden = false; document.body.classList.add("learning"); window.scrollTo(0, 0);
     renderPath();
   };
+  // the shop opened straight from the Profile
+  api.openShop = function () { api.open(); S.shopFrom = "prof"; renderShop(); };
+  api.xp = () => { const p = loadP(); return Math.max(0, (p.xp || 0) - (p.spent || 0)); };
   // a line for the main menu card
   api.summary = function () {
     prog = loadP(); const cur = current(), s = liveStreak();

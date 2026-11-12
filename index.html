@@ -902,8 +902,19 @@ body.learning { overflow: hidden; }
 .ln-shopempty b { color: var(--ln-ink); font-size: 18px; }
 .ln-shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .ln-item { border: 2px solid var(--ln-line); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.ln-item img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; }
+.ln-item img { width: 96px; height: 96px; border-radius: 12px; object-fit: cover; }
 .ln-item .own { color: var(--ln-green-d); font-weight: 600; }
+.ln-item.on { border-color: var(--ln-green); background: #f3ffe6; }
+.ln-item .tag { font-size: 12px; border-radius: 999px; padding: 1px 10px; background: #eee; color: #777; }
+.ln-item .tag.t-cool { background: #e4ecff; color: #3558c8; } .ln-item .tag.t-cute { background: #ffe6ef; color: #d6497a; } .ln-item .tag.t-fine { background: #e9f6e4; color: #3f8a3a; }
+.ln-item .ln-btn { width: 100%; padding: 8px 6px; } .ln-item .ln-btn:disabled { opacity: .45; }
+.ln-item .own { min-height: 40px; display: flex; align-items: center; }
+.ln-shopnote { color: var(--ln-sub); font-size: 14px; margin-top: 18px; }
+.pf-skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.pf-skin { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border: 2px solid var(--line); border-radius: 10px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.pf-skin img { width: 64px; height: 64px; border-radius: 8px; }
+.pf-skin.on { border-color: var(--accent); } .pf-skin.on span::before { content: "✓ "; color: var(--accent); }
+.pf-skinsub { font-size: 13px; opacity: .75; margin: 10px 0 6px; }
 .ln-voice { border: 2px solid var(--ln-line); background: #fff; border-radius: 12px; padding: 3px 8px; font-size: 16px; }
 .ln-prog { flex: 1; height: 16px; border-radius: 99px; background: var(--ln-line); overflow: hidden; }
 .ln-prog i { display: block; height: 100%; border-radius: 99px; background: var(--ln-green); box-shadow: inset 0 4px 0 -1px rgba(255,255,255,.35); transition: width .4s ease; min-width: 16px; }
@@ -2732,6 +2743,158 @@ function GoNNAI(E, F, net) {
 
 </script>
 <script>
+// Stone and board skins: bought with LEARN XP in the shop (src/learn.js), equipped there or in the Profile (owner, 2026-11-12).
+// Used by the boards people play on: the AI game (nn_main.js) and online play (online.js). Lessons, Analysis and Tsumego keep the classic look.
+// Bought ids live in gonn.learn.owned (synced with the account); the two equipped ids in gonn.skin = { stone, board } (account key "skin").
+const Skins = (function () {
+  const heart = (x, cx, cy, s) => { x.beginPath(); x.moveTo(cx, cy + s * .9); x.bezierCurveTo(cx - s * 1.5, cy - s * .1, cx - s * .75, cy - s * 1.15, cx, cy - s * .35); x.bezierCurveTo(cx + s * .75, cy - s * 1.15, cx + s * 1.5, cy - s * .1, cx, cy + s * .9); x.fill(); };
+  const paw = (x, cx, cy, s) => {
+    x.beginPath(); x.ellipse(cx, cy + s * .35, s * .62, s * .5, 0, 0, 7); x.fill();
+    for (const [dx, dy] of [[-.72, -.25], [-.26, -.72], [.26, -.72], [.72, -.25]]) { x.beginPath(); x.ellipse(cx + dx * s, cy + dy * s, s * .22, s * .27, 0, 0, 7); x.fill(); }
+  };
+  const ball = (x, cx, cy, r, stops, hx = .35, hy = .4) => { const g = x.createRadialGradient(cx - r * hx, cy - r * hy, r * .1, cx, cy, r); stops.forEach(([o, c]) => g.addColorStop(o, c)); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); };
+  const rim = (x, cx, cy, r, col, w) => { x.strokeStyle = col; x.lineWidth = Math.max(1, r * w); x.beginPath(); x.arc(cx, cy, r - x.lineWidth / 2, 0, 7); x.stroke(); };
+  const B = [[0, "#6b6b6b"], [.45, "#202020"], [1, "#050505"]], Wt = [[0, "#ffffff"], [.6, "#ecebe5"], [1, "#bdbcb3"]];
+  // paint(ctx, cx, cy, r, black): the stone itself; the shadow and transparency are handled by drawStone
+  const STONES = [
+    { id: "s_classic", t: "คลาสสิก", tag: "ดั้งเดิม", cost: 0, paint: (x, cx, cy, r, b) => ball(x, cx, cy, r, b ? B : Wt) },
+    { id: "s_neon", t: "นีออน", tag: "เท่", cost: 150, paint: (x, cx, cy, r, b) => {
+      ball(x, cx, cy, r, b ? [[0, "#3a4a6b"], [.5, "#131a2e"], [1, "#05070f"]] : [[0, "#ffffff"], [.65, "#f1eefc"], [1, "#cfc6ea"]]);
+      rim(x, cx, cy, r, b ? "#35e6ff" : "#ff4fd8", .13); } },
+    { id: "s_fireice", t: "ไฟกับน้ำแข็ง", tag: "เท่", cost: 250, paint: (x, cx, cy, r, b) => {
+      if (b) { ball(x, cx, cy, r, [[0, "#ff9a3c"], [.3, "#8a2408"], [.7, "#2a0703"], [1, "#0a0101"]]); rim(x, cx, cy, r, "rgba(255,110,40,.75)", .07); }
+      else { ball(x, cx, cy, r, [[0, "#ffffff"], [.55, "#e2f4ff"], [1, "#8fc8ee"]]); rim(x, cx, cy, r, "rgba(70,150,215,.8)", .07); } } },
+    { id: "s_galaxy", t: "กาแล็กซี", tag: "เท่", cost: 300, paint: (x, cx, cy, r, b) => {
+      if (b) {
+        ball(x, cx, cy, r, [[0, "#7a5cc4"], [.45, "#2a1a5e"], [1, "#07041c"]]);
+        let s = ((cx * 31 + cy * 17) | 0) + 11; const rnd = () => (s = (s * 16807 + 7) % 2147483647) / 2147483647;
+        x.fillStyle = "rgba(255,255,255,.9)";
+        for (let i = 0; i < 7; i++) { const a = rnd() * 6.283, d = Math.sqrt(rnd()) * r * .78; x.beginPath(); x.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, Math.max(.5, r * (.03 + rnd() * .04)), 0, 7); x.fill(); }
+      } else {
+        ball(x, cx, cy, r, [[0, "#ffffff"], [.6, "#f3efe0"], [1, "#c9c3ae"]]);
+        x.fillStyle = "rgba(150,142,120,.28)";
+        for (const [dx, dy, k] of [[.3, .25, .2], [-.3, .38, .13], [.05, -.4, .11], [-.42, -.12, .09]]) { x.beginPath(); x.arc(cx + dx * r, cy + dy * r, k * r, 0, 7); x.fill(); }
+      } } },
+    { id: "s_heart", t: "หัวใจลูกกวาด", tag: "น่ารัก", cost: 150, paint: (x, cx, cy, r, b) => {
+      ball(x, cx, cy, r, b ? [[0, "#9a5a86"], [.5, "#4a1f3c"], [1, "#22091a"]] : [[0, "#ffffff"], [.6, "#ffe9f0"], [1, "#f6b9cb"]]);
+      x.fillStyle = b ? "#ff8fb8" : "#ff5c8d"; heart(x, cx, cy + r * .04, r * .36); } },
+    { id: "s_paw", t: "อุ้งเท้าแมว", tag: "น่ารัก", cost: 200, paint: (x, cx, cy, r, b) => {
+      ball(x, cx, cy, r, b ? [[0, "#6a6a70"], [.5, "#2a2a30"], [1, "#0c0c10"]] : [[0, "#ffffff"], [.6, "#fff6e6"], [1, "#e6d2b0"]]);
+      x.fillStyle = b ? "#ffa3bd" : "#c98a5e"; paw(x, cx, cy, r * .5); } },
+    { id: "s_jade", t: "หยกกับมุก", tag: "สวย", cost: 300, paint: (x, cx, cy, r, b) => {
+      if (b) { ball(x, cx, cy, r, [[0, "#7fd0a6"], [.4, "#1f6b4c"], [1, "#062a1c"]]); rim(x, cx, cy, r, "rgba(210,175,90,.9)", .06); }
+      else { ball(x, cx, cy, r, [[0, "#ffffff"], [.5, "#fbf6ec"], [.85, "#e9dcc6"], [1, "#cdb88f"]]); rim(x, cx, cy, r, "rgba(196,160,80,.95)", .06); } } },
+  ];
+
+  const rng = seed => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
+  const fillGrad = (x, W, cols) => { const lg = x.createLinearGradient(0, 0, W, W); cols.forEach((c, i) => lg.addColorStop(i / (cols.length - 1), c)); x.fillStyle = lg; x.fillRect(0, 0, W, W); };
+  const grainLines = (x, W, rgb, n, a0) => {
+    const r = rng(7);
+    for (let i = 0; i < n; i++) {
+      const y0 = r() * W, amp = 3 + r() * 10, f = 0.002 + r() * 0.006;
+      x.strokeStyle = `rgba(${rgb},${a0 + r() * 0.07})`; x.lineWidth = 0.6 + r() * 2.2 * (W / 800);
+      x.beginPath();
+      for (let px = 0; px <= W; px += 8) { const py = y0 + Math.sin(px * f + i) * amp; px ? x.lineTo(px, py) : x.moveTo(px, py); }
+      x.stroke();
+    }
+  };
+  // paint(ctx, W): the whole board background, W pixels square. line / star / label: ink colours. dark: black stones get a light edge.
+  const BOARDS = [
+    { id: "b_classic", t: "ไม้คลาสสิก", tag: "ดั้งเดิม", cost: 0, line: "rgba(42,29,12,.85)", star: "#2a1d0c", label: "rgba(42,29,12,.75)", flat: "#dcb57a",
+      paint: (x, W) => { fillGrad(x, W, ["#e6c07a", "#ddb267", "#cf9f52"]); grainLines(x, W, "120,72,20", 90, .04); } },
+    { id: "b_night", t: "ท้องฟ้าราตรี", tag: "เท่", cost: 200, dark: true, line: "rgba(214,230,250,.8)", star: "#e8f1ff", label: "rgba(214,230,250,.8)", flat: "#3c5878",
+      paint: (x, W) => {
+        fillGrad(x, W, ["#4a6a90", "#3a5676", "#2c4462"]); const r = rng(23);
+        for (let i = 0; i < 130; i++) { x.fillStyle = `rgba(255,255,255,${.12 + r() * .35})`; x.beginPath(); x.arc(r() * W, r() * W, (.4 + r() * 1.3) * W / 800, 0, 7); x.fill(); } } },
+    { id: "b_cyber", t: "ไซเบอร์", tag: "เท่", cost: 300, dark: true, line: "rgba(110,240,255,.9)", star: "#ff5fd8", label: "rgba(150,240,255,.85)", flat: "#463a72",
+      paint: (x, W) => {
+        fillGrad(x, W, ["#54468a", "#43376f", "#33295a"]);
+        const g = x.createRadialGradient(W / 2, W / 2, W * .1, W / 2, W / 2, W * .75); g.addColorStop(0, "rgba(255,95,216,.16)"); g.addColorStop(1, "rgba(95,240,255,.10)"); x.fillStyle = g; x.fillRect(0, 0, W, W);
+        x.strokeStyle = "rgba(255,255,255,.05)"; x.lineWidth = 1; for (let y = 0; y < W; y += Math.max(3, W / 160)) { x.beginPath(); x.moveTo(0, y); x.lineTo(W, y); x.stroke(); } } },
+    { id: "b_sakura", t: "ซากุระ", tag: "น่ารัก", cost: 200, line: "rgba(140,62,92,.8)", star: "#8c3e5c", label: "rgba(140,62,92,.8)", flat: "#f6cdd8",
+      paint: (x, W) => {
+        fillGrad(x, W, ["#fbdde5", "#f6cbd7", "#efb5c6"]); const r = rng(5);
+        for (let i = 0; i < 46; i++) {
+          const px = r() * W, py = r() * W, s = (5 + r() * 9) * W / 800, a = r() * 6.283;
+          x.save(); x.translate(px, py); x.rotate(a); x.fillStyle = `rgba(255,255,255,${.35 + r() * .3})`;
+          x.beginPath(); x.moveTo(0, -s); x.bezierCurveTo(s * .9, -s * .5, s * .6, s * .8, 0, s); x.bezierCurveTo(-s * .6, s * .8, -s * .9, -s * .5, 0, -s); x.fill(); x.restore();
+        } } },
+    { id: "b_mint", t: "มิ้นต์ลายจุด", tag: "น่ารัก", cost: 150, line: "rgba(38,98,84,.8)", star: "#266254", label: "rgba(38,98,84,.8)", flat: "#bfe6d3",
+      paint: (x, W) => {
+        fillGrad(x, W, ["#d2f0e2", "#bfe6d3", "#a9dcc4"]); const st = W / 14; x.fillStyle = "rgba(255,255,255,.4)";
+        for (let j = 0; j * st < W + st; j++) for (let i = 0; i * st < W + st; i++) { x.beginPath(); x.arc(i * st + (j % 2 ? st / 2 : 0), j * st, st * .13, 0, 7); x.fill(); } } },
+    { id: "b_bamboo", t: "ป่าไผ่", tag: "สวย", cost: 200, line: "rgba(34,60,22,.85)", star: "#223c16", label: "rgba(34,60,22,.8)", flat: "#b4cc8e",
+      paint: (x, W) => {
+        fillGrad(x, W, ["#c3d99c", "#b1ca8a", "#9dba76"]); const k = 9, w = W / k, r = rng(41);
+        for (let i = 0; i < k; i++) {
+          const g = x.createLinearGradient(i * w, 0, (i + 1) * w, 0); g.addColorStop(0, "rgba(60,95,30,.16)"); g.addColorStop(.5, "rgba(255,255,255,.14)"); g.addColorStop(1, "rgba(60,95,30,.16)");
+          x.fillStyle = g; x.fillRect(i * w, 0, w, W);
+          x.strokeStyle = "rgba(60,95,30,.28)"; x.lineWidth = Math.max(1, W / 420);
+          for (let y = r() * W * .3; y < W; y += W * (.22 + r() * .14)) { x.beginPath(); x.moveTo(i * w + 1, y); x.lineTo((i + 1) * w - 1, y); x.stroke(); }
+        } } },
+    { id: "b_walnut", t: "ไม้วอลนัท", tag: "สวย", cost: 300, line: "rgba(28,14,4,.9)", star: "#1c0e04", label: "rgba(28,14,4,.8)", flat: "#b07c48",
+      paint: (x, W) => { fillGrad(x, W, ["#bd8a54", "#ad7a46", "#996538"]); grainLines(x, W, "60,28,6", 130, .06); } },
+  ];
+
+  const ALL = STONES.map(s => Object.assign(s, { kind: "stone" })).concat(BOARDS.map(b => Object.assign(b, { kind: "board" })));
+  const byId = id => ALL.find(s => s.id === id);
+  const read = k => { try { return JSON.parse(localStorage.getItem("gonn." + k) || "null"); } catch (e) { return null; } };
+  const owned = id => { const it = byId(id); if (!it) return false; if (!it.cost) return true; const p = read("learn"); return !!(p && Array.isArray(p.owned) && p.owned.includes(id)); };
+  // what is equipped now; an id that is not owned (another device, signed out) falls back to the classic one
+  function cur() {
+    const e = read("skin") || {};
+    const s = byId(e.stone), b = byId(e.board);
+    return { stone: s && s.kind === "stone" && owned(s.id) ? s : STONES[0], board: b && b.kind === "board" && owned(b.id) ? b : BOARDS[0] };
+  }
+  const listeners = [];
+  function equip(id) {
+    const it = byId(id); if (!it || !owned(id)) return false;
+    const e = read("skin") || {}; e[it.kind] = id;
+    try { localStorage.setItem("gonn.skin", JSON.stringify(e)); } catch (err) {}
+    try { if (window.Account) Account.push(); } catch (err) {}
+    listeners.forEach(f => { try { f(); } catch (err) {} });
+    return true;
+  }
+  const equipped = id => { const c = cur(); return c.stone.id === id || c.board.id === id; };
+
+  // color: 1 black, 2 white. alpha null: a solid stone with its shadow; a number: see-through, no shadow
+  function drawStone(x, cx, cy, r, color, alpha, skin, board) {
+    const sk = skin || cur().stone, bd = board || cur().board, black = color === 1;
+    x.save(); x.globalAlpha = alpha == null ? 1 : alpha;
+    if (alpha == null) { x.fillStyle = bd.dark ? "rgba(0,0,10,.4)" : "rgba(40,22,0,.35)"; x.beginPath(); x.arc(cx + r * .08, cy + r * .12, r, 0, 7); x.fill(); }
+    sk.paint(x, cx, cy, r, black);
+    if (bd.dark && black) { x.strokeStyle = "rgba(255,255,255,.4)"; x.lineWidth = Math.max(.8, r * .05); x.beginPath(); x.arc(cx, cy, r - x.lineWidth / 2, 0, 7); x.stroke(); }
+    x.restore();
+  }
+  let layer = null, layerKey = "";
+  function boardLayer(W, board) {
+    const bd = board || cur().board, key = bd.id + ":" + W;
+    if (!board && key === layerKey) return layer;
+    const c = document.createElement("canvas"); c.width = c.height = W; bd.paint(c.getContext("2d"), W);
+    if (!board) { layer = c; layerKey = key; }
+    return c;
+  }
+  // a small picture for the shop and the Profile: a corner of a board with one stone of each colour
+  const thumbs = {};
+  function thumb(id) {
+    if (thumbs[id]) return thumbs[id];
+    const it = byId(id); if (!it) return "";
+    try {
+      const W = 168, c = document.createElement("canvas"); c.width = c.height = W; const x = c.getContext("2d");
+      const bd = it.kind === "board" ? it : BOARDS[0], sk = it.kind === "stone" ? it : STONES[0], cell = W / 3, P = i => cell * (i + .5);
+      x.drawImage(boardLayer(W * 2, bd), 0, 0, W, W, 0, 0, W, W);
+      x.strokeStyle = bd.line; x.lineWidth = 1.6; x.beginPath();
+      for (let i = 0; i < 3; i++) { x.moveTo(0, P(i)); x.lineTo(W, P(i)); x.moveTo(P(i), 0); x.lineTo(P(i), W); }
+      x.stroke();
+      const big = it.kind === "stone";
+      if (big) { drawStone(x, P(0) + cell * .28, P(1), cell * .62, 1, null, sk, bd); drawStone(x, P(2) - cell * .28, P(1), cell * .62, 2, null, sk, bd); }
+      else { drawStone(x, P(0), P(1), cell * .46, 1, null, sk, bd); drawStone(x, P(1), P(1), cell * .46, 2, null, sk, bd); drawStone(x, P(1), P(0), cell * .46, 1, null, sk, bd); drawStone(x, P(2), P(2), cell * .46, 2, null, sk, bd); }
+      return thumbs[id] = c.toDataURL("image/png");
+    } catch (e) { return ""; }
+  }
+  return { STONES, BOARDS, ALL, byId, owned, cur, equip, equipped, drawStone, boardLayer, thumb, onChange: f => listeners.push(f) };
+})();
+
 // Tutorial ("คัมภีร์สอนเล่น"): step-by-step lessons on a 9x9 board for people who have never played.
 // Uncle Win teaches, Mek asks the beginner's questions. Self-contained: its own tiny rules board, no AI.
 const Tutorial = (function () {
@@ -3593,27 +3756,33 @@ const Learn = (function () {
   }
   // ---------- XP shop: XP earned in lessons buys things (items come later; owner 2026-11-11) ----------
   // an item: { id, t: name, img, cost, kind: "avatar" | ... }; bought ids are kept in prog.owned, XP spent in prog.spent
-  const SHOP = [];
+  const SHOP = typeof Skins !== "undefined" ? Skins.ALL.filter(x => x.cost > 0) : []; // stone and board skins (src/skins.js)
   const xpLeft = () => Math.max(0, (prog.xp || 0) - (prog.spent || 0));
   const owns = id => (prog.owned || []).includes(id);
+  // buying an item puts it on straight away; the Profile and this shop can switch back (owner 2026-11-12)
   function buy(id) {
     const it = SHOP.find(x => x.id === id); if (!it || owns(id) || xpLeft() < it.cost) return SFX.bad && SFX.bad();
-    prog.spent = (prog.spent || 0) + it.cost; prog.owned = (prog.owned || []).concat(id); saveP(); SFX.tap(); renderShop();
+    prog.spent = (prog.spent || 0) + it.cost; prog.owned = (prog.owned || []).concat(id); saveP(); Skins.equip(id); SFX.good(); confetti(14); renderShop(true);
   }
-  function renderShop() {
+  function renderShop(stay) {
     S.view = "shop"; clearT(); stopVoice();
-    let h = head() + `<div class="ln-shop"><button class="ln-btn ln-shopback" data-act="path">← กลับไปบทเรียน</button>
-      <div class="ln-shophead"><img src="learn/icon_star.png" alt=""><div><small>XP ที่ใช้ได้</small><b>${xpLeft()} XP</b><small>สะสมทั้งหมด ${prog.xp || 0} XP</small></div></div>
-      <h2>ร้านค้า</h2>`;
-    if (!SHOP.length) h += `<div class="ln-shopempty"><img src="${TEACH.pose("read")}" alt=""><b>ยังไม่มีของในร้าน</b><span>เก็บ XP จากการทำบทเรียนไว้ก่อนนะ เร็วๆ นี้จะมีของให้แลก เช่น รูปโปรไฟล์</span></div>`;
-    else h += `<div class="ln-shopgrid">${SHOP.map(it => `<div class="ln-item"><img src="${it.img}" alt=""><b>${it.t}</b>${owns(it.id) ? `<span class="own">มีแล้ว</span>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`).join("")}</div>`;
-    $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, 0);
+    const y = window.scrollY;
+    let h = head() + `<div class="ln-shop"><button class="ln-btn ln-shopback" data-act="${S.shopFrom === "prof" ? "shopback" : "path"}">← ${S.shopFrom === "prof" ? "กลับไปโปรไฟล์" : "กลับไปบทเรียน"}</button>
+      <div class="ln-shophead"><img src="learn/icon_star.png" alt=""><div><small>XP ที่ใช้ได้</small><b>${xpLeft()} XP</b><small>สะสมทั้งหมด ${prog.xp || 0} XP · ได้ XP จากการผ่านบทเรียน</small></div></div>`;
+    const card = it => {
+      const have = !it.cost || owns(it.id), on = Skins.equipped(it.id);
+      return `<div class="ln-item${on ? " on" : ""}"><img src="${Skins.thumb(it.id)}" alt=""><b>${it.t}</b><small class="tag t-${it.tag === "เท่" ? "cool" : it.tag === "น่ารัก" ? "cute" : it.tag === "สวย" ? "fine" : "base"}">${it.tag}</small>${
+        on ? `<span class="own">✓ ใช้อยู่</span>` : have ? `<button class="ln-btn" data-equip="${it.id}">ใช้สกินนี้</button>` : `<button class="ln-btn pri" data-buy="${it.id}"${xpLeft() < it.cost ? " disabled" : ""}>${it.cost} XP</button>`}</div>`;
+    };
+    for (const [kind, title, list] of [["stone", "สกินหมาก", Skins.STONES], ["board", "สกินกระดาน", Skins.BOARDS]]) h += `<h2>${title}</h2><div class="ln-shopgrid">${list.map(card).join("")}</div>`;
+    h += `<p class="ln-shopnote">สกินใช้กับกระดานตอนเล่นกับ AI และเล่นออนไลน์ ซื้อแล้วใส่ให้ทันที เปลี่ยนได้ที่นี่หรือในหน้า Profile</p>`;
+    $("learn").innerHTML = h + `</div>`; $("learn").className = "learn shop"; window.scrollTo(0, stay ? y : 0);
   }
   const unlocked = k => !!ALL[k] && (k === 0 || !!prog.stars[ALL[k].id] || !!prog.stars[ALL[k - 1].id]); // one at a time: a lesson opens when the one before it is passed (owner, 2026-11-11)
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
 
   // ---------- sound: effects made with WebAudio, speech from files ----------
-  const api = { onHome: null, onPlay: null, onBook: null, onClear: null, muted: () => false, voiceDir: "learn/voice/" };
+  const api = { onHome: null, onPlay: null, onBook: null, onClear: null, onShopBack: null, muted: () => false, voiceDir: "learn/voice/" };
   let ac = null, voiceOn = true, audio = null;
   try { voiceOn = localStorage.getItem("gonn.learnVoice") !== "0"; } catch (e) {}
   function ctx() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch (e) {} return ac; }
@@ -4295,8 +4464,10 @@ const Learn = (function () {
       if (act === "quit" || act === "path") { SFX.tap(); return renderPath(); }
       if (act === "retry") return openLesson(S.lesson);
       if (act === "bossdone") { finish(ALL[S.lesson].id, 3, 30); return renderPath(); }
-      if (act === "shop") { SFX.tap(); return renderShop(); }
+      if (act === "shop") { SFX.tap(); S.shopFrom = null; return renderShop(); }
       if (t.dataset.buy !== undefined) return buy(t.dataset.buy);
+      if (t.dataset.equip !== undefined) { Skins.equip(t.dataset.equip); SFX.tap(); return renderShop(true); }
+      if (act === "shopback") { S.shopFrom = null; close(); return api.onShopBack && api.onShopBack(); }
       if (act === "home") { close(); return api.onHome && api.onHome(); }
       if (act === "play") { close(); return api.onPlay && api.onPlay(); }
       if (act === "book") { close(); return api.onBook && api.onBook(); }
@@ -4309,6 +4480,9 @@ const Learn = (function () {
     $("learn").hidden = false; document.body.classList.add("learning"); window.scrollTo(0, 0);
     renderPath();
   };
+  // the shop opened straight from the Profile
+  api.openShop = function () { api.open(); S.shopFrom = "prof"; renderShop(); };
+  api.xp = () => { const p = loadP(); return Math.max(0, (p.xp || 0) - (p.spent || 0)); };
   // a line for the main menu card
   api.summary = function () {
     prog = loadP(); const cur = current(), s = liveStreak();
@@ -6344,7 +6518,7 @@ const Hub = window.ACCT_HUB || (() => {
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn"];
+  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn", "skin"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -6406,6 +6580,7 @@ const Account = (() => {
       out.learn = { stars: mx(x.stars, y.stars), best: mx(x.best, y.best), xp: Math.max(x.xp || 0, y.xp || 0), spent: Math.max(x.spent || 0, y.spent || 0),
         owned: [...new Set([].concat(x.owned || [], y.owned || []))], streak: late.streak || 0, day: late.day || "" };
     }
+    if (a.skin || b.skin) out.skin = Object.assign({}, b.skin, a.skin); // equipped stone and board skins (src/skins.js): this device's choice wins
     if (a.tutStep != null || b.tutStep != null) out.tutStep = Math.max(+a.tutStep || 0, +b.tutStep || 0);
     return out;
   }
@@ -6925,21 +7100,16 @@ const Online = (() => {
       stones = []; for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) { const c = b.color[b.pt(i, y)]; stones.push(c === D.BLACK ? 1 : c === D.WHITE ? 2 : 0); }
       const lm = G.live.moves[G.live.moves.length - 1]; last = lm >= 0 ? lm : -1; }
     const cell = sz / (n + 1);
-    x.fillStyle = "#dcb57a"; x.fillRect(0, 0, sz, sz);
-    x.strokeStyle = "#3b2a17"; x.lineWidth = 1;
+    const skin = Skins.cur(); // the player's stone and board skins (src/skins.js)
+    x.drawImage(Skins.boardLayer(cv.width), 0, 0, sz, sz);
+    x.strokeStyle = skin.board.line; x.lineWidth = 1;
     for (let i = 0; i < n; i++) {
       x.beginPath(); x.moveTo(cell, cell * (i + 1)); x.lineTo(cell * n, cell * (i + 1)); x.stroke();
       x.beginPath(); x.moveTo(cell * (i + 1), cell); x.lineTo(cell * (i + 1), cell * n); x.stroke();
     }
-    x.fillStyle = "#3b2a17";
+    x.fillStyle = skin.board.star;
     for (const i of STAR[n] || []) for (const j of STAR[n] || []) { if (n === 9 && (i === 4) !== (j === 4)) continue; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), Math.max(2, cell * 0.1), 0, 7); x.fill(); }
-    const stone = (i, j, c, alpha) => {
-      const cx = cell * (i + 1), cy = cell * (j + 1), r = cell * 0.47;
-      x.globalAlpha = alpha || 1;
-      const g = x.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
-      if (c === 1) { g.addColorStop(0, "#666"); g.addColorStop(1, "#111"); } else { g.addColorStop(0, "#fff"); g.addColorStop(1, "#cfcfc6"); }
-      x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); x.globalAlpha = 1;
-    };
+    const stone = (i, j, c, alpha) => Skins.drawStone(x, cell * (i + 1), cell * (j + 1), cell * 0.47, c, alpha && alpha < 1 ? alpha : null);
     if (stones) stones.forEach((c, k) => { if (c) stone(k % n, Math.floor(k / n), c, dead && dead.has(k) ? 0.4 : 1); });
     if (last >= 0 && stones) { const i = last % n, j = Math.floor(last / n); x.strokeStyle = stones[last] === 1 ? "#fff" : "#000"; x.lineWidth = 2; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), cell * 0.22, 0, 7); x.stroke(); }
     if (G && G.ghost) stone(G.ghost[0], G.ghost[1], G.me === "b" ? 1 : 2, 0.55);
@@ -7933,7 +8103,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "fd720105c3";
+  const BUILD = "73ba50da27";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -8949,31 +9119,10 @@ const Online = (() => {
   window.addEventListener("resize", () => { if (board) resize(); });
   if (window.ResizeObserver) new ResizeObserver(() => { if (board && !$("game").hidden) resize(); }).observe(cv.parentElement);
 
-  let grain = null, grainKey = "";
-  function woodLayer(W) {
-    if (grainKey === String(W)) return grain;
-    const c = document.createElement("canvas"); c.width = c.height = W; const x = c.getContext("2d");
-    const lg = x.createLinearGradient(0, 0, W, W); lg.addColorStop(0, "#e6c07a"); lg.addColorStop(.5, "#ddb267"); lg.addColorStop(1, "#cf9f52");
-    x.fillStyle = lg; x.fillRect(0, 0, W, W);
-    let s = 7; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
-    for (let i = 0; i < 90; i++) {
-      const y0 = r() * W, amp = 3 + r() * 10, f = 0.002 + r() * 0.006;
-      x.strokeStyle = `rgba(120,72,20,${0.04 + r() * 0.07})`; x.lineWidth = 0.6 + r() * 2.2 * (W / 800);
-      x.beginPath();
-      for (let px = 0; px <= W; px += 8) { const py = y0 + Math.sin(px * f + i) * amp; px ? x.lineTo(px, py) : x.moveTo(px, py); }
-      x.stroke();
-    }
-    grain = c; grainKey = String(W); return c;
-  }
-  function drawStone(cx, cy, r, color, alpha) {
-    g.save(); g.globalAlpha = alpha == null ? 1 : alpha;
-    if (alpha == null) { g.fillStyle = "rgba(40,22,0,.35)"; g.beginPath(); g.arc(cx + r * .08, cy + r * .12, r, 0, 7); g.fill(); }
-    const gr = g.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r);
-    if (color === BLACK) { gr.addColorStop(0, "#6b6b6b"); gr.addColorStop(.45, "#202020"); gr.addColorStop(1, "#050505"); }
-    else { gr.addColorStop(0, "#ffffff"); gr.addColorStop(.6, "#ecebe5"); gr.addColorStop(1, "#bdbcb3"); }
-    g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
-    g.restore();
-  }
+  // the board background and the stones come from the equipped skins (src/skins.js)
+  const woodLayer = W => Skins.boardLayer(W);
+  function drawStone(cx, cy, r, color, alpha) { Skins.drawStone(g, cx, cy, r, color === BLACK ? 1 : 2, alpha); }
+  Skins.onChange(() => { if (board && !$("game").hidden) drawBoard(); });
   function drawBoard() {
     if (!board) return;
     // while reviewing, draw the position after move reviewAt, without the scoring marks or hints
@@ -8985,18 +9134,19 @@ const Online = (() => {
     g.drawImage(woodLayer(W), 0, 0);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     const cell = S / (n + 1), P = i => cell * (i + 1);
-    g.strokeStyle = "rgba(42,29,12,.85)"; g.lineWidth = Math.max(0.8, cell / 34);
+    const ink = Skins.cur().board;
+    g.strokeStyle = ink.line; g.lineWidth = Math.max(0.8, cell / 34);
     g.beginPath();
     for (let i = 0; i < n; i++) { g.moveTo(P(0), P(i)); g.lineTo(P(n - 1), P(i)); g.moveTo(P(i), P(0)); g.lineTo(P(i), P(n - 1)); }
     g.stroke();
     g.lineWidth = Math.max(1.4, cell / 18); g.strokeRect(P(0), P(0), P(n - 1) - P(0), P(n - 1) - P(0));
     const stars = n === 19 ? [3, 9, 15] : n === 13 ? [3, 6, 9] : [2, 4, 6];
-    g.fillStyle = "#2a1d0c";
+    g.fillStyle = ink.star;
     for (const a of stars) for (const b of stars) {
       if (n === 9 && (a === 4) !== (b === 4)) continue;
       g.beginPath(); g.arc(P(a), P(b), Math.max(2, cell * .11), 0, 7); g.fill();
     }
-    g.fillStyle = "rgba(42,29,12,.75)"; g.font = `500 ${Math.max(8, cell * .34)}px "IBM Plex Mono", monospace`;
+    g.fillStyle = ink.label; g.font = `500 ${Math.max(8, cell * .34)}px "IBM Plex Mono", monospace`;
     g.textAlign = "center"; g.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
       g.fillText(LETTERS[i], P(i), cell * .42); g.fillText(LETTERS[i], P(i), S - cell * .42);
@@ -9149,6 +9299,7 @@ const Online = (() => {
   let tutorFrom = "home";
   Tutorial.onHome = () => { if (tutorFrom === "menu") { tutorFrom = "home"; showMenu(); } else showHome(); };
   Learn.onHome = () => showMenu();
+  Learn.onShopBack = () => showProfile();
   Learn.onBook = () => { tutorFrom = "menu"; Tutorial.open(); };
   Learn.muted = () => !soundOn;
   Learn.onPlay = () => Tutorial.onPlay();
@@ -9384,6 +9535,9 @@ const Online = (() => {
       : `<div class="pf-rank"><span class="note" style="display:block">ยังไม่มีเรตติ้ง เล่นกับตัวละคร AI, เล่นออนไลน์ หรือสอบกับฮิคารุจนจบกระดาน แล้วระดับฝีมือจะขึ้นที่นี่ (ถ้ายังไม่เคยสอบเริ่มที่ 15 คิว ถ้าสอบแล้วเริ่มจากผลสอบที่ดีที่สุด)</span></div>`);
     h += `<div class="pf-h">ระดับที่ดีที่สุดจากการสอบ</div><div class="pf-rank">${ranked ? `<span class="exam-rank">ประมาณ ${rankName(ranked.rank)}</span><span class="note">สอบกับฮิคารุเมื่อ ${new Date(ranked.at).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>`
       : `<span class="note" style="display:block">ยังไม่มีผลสอบ ลองเล่นกับฮิคารุ (สอบวัดระดับ) จนจบกระดาน แล้วระดับจะขึ้นที่นี่</span>`}</div>`;
+    const skinRow = list => `<div class="pf-skins">${list.filter(k => Skins.owned(k.id)).map(k => `<button class="pf-skin${Skins.equipped(k.id) ? " on" : ""}" data-skin="${k.id}"><img src="${Skins.thumb(k.id)}" alt="" width="64" height="64"><span>${k.t}</span></button>`).join("")}</div>`;
+    h += `<div class="pf-h">สกินหมากและกระดาน</div><div class="pf-skinsub">หมาก</div>${skinRow(Skins.STONES)}<div class="pf-skinsub">กระดาน</div>${skinRow(Skins.BOARDS)}
+      <div class="pf-btns" style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="pf-an primary" id="pfShop">ไปที่ Shop</button><span class="note">มี ${Learn.xp()} XP · ซื้อสกินเพิ่มด้วย XP จากโหมด LEARN</span></div>`;
     if (!hist.length) {
       h += `<div class="pf-h">เกมล่าสุด</div><div class="pf-empty">ยังไม่มีเกมที่เล่นจบในเบราว์เซอร์นี้ ลองไปที่ PLAY WITH AI แล้วกลับมาดูนะ</div>`;
       $("pfBody").innerHTML = h; drawRating(); return;
@@ -9470,6 +9624,8 @@ const Online = (() => {
   });
   $("pfBody").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.skin !== undefined) { Skins.equip(b.dataset.skin); blip(880); renderProfile(); return; }
+    if (b.id === "pfShop") { unlockAudio(); blip(880); hideScreens(); Learn.openShop(); return; }
     if (b.id === "pfResume") {
       const g = pausedGame(); unlockAudio(); blip(880);
       const ch = g && CHARS.find(c => c.id === g.char);
