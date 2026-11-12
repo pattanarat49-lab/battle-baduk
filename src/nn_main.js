@@ -895,6 +895,19 @@
     } catch (e) {}
   }
   // Analysis / Tsumego use: one event per mode per page load, so going back and forth costs no extra requests
+  // LEARN: one event per lesson passed for the first time (list: [{ id, i, t }]); the first time LEARN opens on a device, its earlier clears are sent as well
+  function trackLearn(list) {
+    if (!STATS_URL || !list || !list.length) return;
+    try {
+      const body = JSON.stringify({ type: "learn", player: playerId, lessons: list.slice(0, 100) });
+      if (!(navigator.sendBeacon && navigator.sendBeacon(STATS_URL, new Blob([body], { type: "text/plain" }))))
+        fetch(STATS_URL, { method: "POST", body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+  function trackLearnBackfill() {
+    try { if (localStorage.getItem("gonn.learnRep")) return; localStorage.setItem("gonn.learnRep", "1"); } catch (e) { return; }
+    trackLearn(Learn.cleared());
+  }
   const modeSeen = new Set();
   function trackMode(mode, every) { // every: count each time (a picture upload), not once per page load
     if (!STATS_URL || (!every && modeSeen.has(mode))) return;
@@ -2137,6 +2150,7 @@
   Learn.onBook = () => { tutorFrom = "menu"; Tutorial.open(); };
   Learn.muted = () => !soundOn;
   Learn.onPlay = () => Tutorial.onPlay();
+  Learn.onClear = list => trackLearn(list);
   Tutorial.onPlay = () => { settings.char = CHARS.findIndex(c => c.id === "mek"); save("charId", "mek"); settings.size = 9; save("size", 9); syncChars(); startGame(); };
   async function startExamBot() {
     if (!(await ensureBrain(CHARS[EXAMBOT]))) return;
@@ -2286,7 +2300,7 @@
     else if (go === "exam") { showHome(true); window.scrollTo(0, 0); }
     else if (go === "tsume") { hideScreens(); trackMode("tsumego"); Tsumego.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
-    else if (go === "learn") { hideScreens(); trackMode("learn"); Learn.open(); }
+    else if (go === "learn") { hideScreens(); trackMode("learn"); trackLearnBackfill(); Learn.open(); }
     else if (go === "online") Online.openLobby("play");
     else if (go === "watch") Online.openLobby("watch");
     else if (go === "ranking") Social.openBoard();

@@ -49,6 +49,11 @@ export class Stats extends DurableObject {
     // Analysis and Tsumego: how many times they were opened and by how many players (one row per mode, one per player and mode)
     this.sql.exec("CREATE TABLE IF NOT EXISTS mode_tally (mode TEXT PRIMARY KEY, opens INTEGER, players INTEGER)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS mode_players (player TEXT, mode TEXT, PRIMARY KEY (player, mode))");
+    // LEARN: each lesson passed for the first time, per device; running totals so the stats page reads only small tables
+    this.sql.exec("CREATE TABLE IF NOT EXISTS learn_done (player TEXT, lesson TEXT, PRIMARY KEY (player, lesson))");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS learn_lessons (lesson TEXT PRIMARY KEY, idx INTEGER, title TEXT, players INTEGER)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS learn_people (player TEXT PRIMARY KEY, n INTEGER)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS learn_hist (n INTEGER PRIMARY KEY, players INTEGER)");
     // AI test matches (two characters, run by .github/workflows/ai-match.yml): kept out of the players' totals
     this.sql.exec("CREATE TABLE IF NOT EXISTS matches (game TEXT PRIMARY KEY, b TEXT, w TEXT, winner TEXT, how TEXT, margin REAL, moves INTEGER, ended INTEGER)");
     this.sql.exec("CREATE INDEX IF NOT EXISTS matches_ended ON matches (ended)");
@@ -116,6 +121,16 @@ export class Stats extends DurableObject {
       if (this.firstTime("INSERT OR IGNORE INTO mode_players VALUES (?, ?)", e.player, e.mode)) this.sql.exec("UPDATE mode_tally SET players = players + 1 WHERE mode = ?", e.mode);
       return;
     }
+    if (e.type === "learn") {
+      for (const l of e.lessons) {
+        if (!this.firstTime("INSERT OR IGNORE INTO learn_done VALUES (?, ?)", e.player, l.id)) continue;
+        this.sql.exec("INSERT INTO learn_lessons VALUES (?, ?, ?, 1) ON CONFLICT(lesson) DO UPDATE SET players = players + 1, idx = excluded.idx, title = excluded.title", l.id, l.i, l.t);
+        const n = this.sql.exec("INSERT INTO learn_people VALUES (?, 1) ON CONFLICT(player) DO UPDATE SET n = n + 1 RETURNING n", e.player).toArray()[0].n;
+        if (n > 1) this.sql.exec("UPDATE learn_hist SET players = players - 1 WHERE n = ?", n - 1);
+        this.sql.exec("INSERT INTO learn_hist VALUES (?, 1) ON CONFLICT(n) DO UPDATE SET players = players + 1", n);
+      }
+      return;
+    }
     if (e.type === "move") { this.saveState(e, false); return; }
     if (e.match) {
       this.saveState(e, e.type === "end");
@@ -174,8 +189,10 @@ export class Stats extends DurableObject {
     const examRanks = this.sql.exec("SELECT r, n FROM exam_ranks ORDER BY r DESC").toArray();
     const examRecent = this.sql.exec("SELECT ended, how, moves, graded, not_best, rank, score FROM exams ORDER BY ended DESC LIMIT 10").toArray();
     const modes = Object.fromEntries(this.sql.exec("SELECT mode, opens, players FROM mode_tally").toArray().map(r => [r.mode, r]));
+    const learn = { lessons: this.sql.exec("SELECT lesson, idx, title, players FROM learn_lessons ORDER BY idx").toArray(),
+      hist: this.sql.exec("SELECT n, players FROM learn_hist WHERE players > 0 ORDER BY n").toArray() };
     const matches = this.sql.exec("SELECT game, b, w, winner, how, margin, moves, ended FROM matches ORDER BY ended DESC LIMIT 40").toArray();
-    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent, modes, matches };
+    return { total, chars: rows, days, live: this.liveGames(), exams, examRanks, examRecent, modes, learn, matches };
   }
 }
 
@@ -195,9 +212,27 @@ function cleanState(s) {
     moves: Array.isArray(s.moves) && s.moves.length <= 1000 && s.moves.every(m => Number.isInteger(m) && m >= -1 && m < s.size * s.size) ? s.moves : null };
 }
 
+// LEARN on /stats: who opened it, who passed lessons, how far they got, and how many passed each lesson
+function learnSection(s) {
+  const L = s.learn || { lessons: [], hist: [] }, o = (s.modes || {}).learn || {};
+  const people = L.hist.reduce((a, r) => a + r.players, 0), clears = L.hist.reduce((a, r) => a + r.n * r.players, 0);
+  const top = Math.max(1, ...L.lessons.map(r => r.players));
+  const hist = L.hist.length ? `<div class="wrap" style="margin-top:10px;padding:8px 14px">${L.hist.map(r => `<div class="day"><span>${r.n} ด่าน</span><i style="width:${Math.max(2, r.players / Math.max(...L.hist.map(x => x.players)) * 100)}%"></i><b>${r.players} คน</b></div>`).join("")}</div>` : "";
+  const table = L.lessons.length ? `<div class="wrap" style="margin-top:10px"><table style="min-width:0"><thead><tr><th style="text-align:left">ด่าน</th><th>ผ่านแล้ว</th><th style="width:40%"></th></tr></thead><tbody>${L.lessons.map(r => `<tr><th>${r.idx + 1}. ${r.title || r.lesson}</th><td>${r.players} คน</td><td><div class="day" style="grid-template-columns:1fr;padding:0"><i style="width:${Math.max(2, r.players / top * 100)}%"></i></div></td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">ยังไม่มีใครผ่านด่าน</p>`;
+  return `<section><h2>Learn (บทเรียน)</h2><div class="tiles"><div class="tile"><b>${o.players || 0} คน</b><span>เคยเปิด Learn (${o.opens || 0} ครั้ง)</span></div>
+<div class="tile"><b>${people} คน</b><span>ผ่านอย่างน้อย 1 ด่าน · รวมผ่าน ${clears} ด่าน${people ? ` · เฉลี่ย ${(clears / people).toFixed(1)} ด่าน/คน` : ""}</span></div></div>
+${people ? `<p class="muted" style="margin:10px 0 0">แต่ละคนผ่านไปกี่ด่าน</p>` : ""}${hist}${table}
+<p class="muted">นับตั้งแต่ 12 พ.ย. 2026 · นับคนตามเครื่อง · ด่านที่ผ่านไว้ก่อนหน้าจะถูกนับเมื่อคนนั้นเปิด Learn ครั้งถัดไป</p></section>`;
+}
 const MODES = new Set(["analysis", "tsumego", "photo", "learn"]); // photo: a board picture uploaded in Analysis
 function clean(b) {
   if (b && b.type === "ping") { const player = id(b.player); return player ? { type: "ping", player } : null; }
+  if (b && b.type === "learn") {
+    const player = id(b.player);
+    const lessons = Array.isArray(b.lessons) ? b.lessons.slice(0, 100).filter(l => l && typeof l.id === "string" && /^[a-z0-9]{1,12}$/.test(l.id) && Number.isInteger(l.i) && l.i >= 0 && l.i < 500)
+      .map(l => ({ id: l.id, i: l.i, t: typeof l.t === "string" ? l.t.replace(/[<>&"'`]/g, "").slice(0, 40) : "" })) : [];
+    return player && lessons.length ? { type: "learn", player, lessons } : null;
+  }
   if (b && b.type === "open") { const player = id(b.player); return player && MODES.has(b.mode) ? { type: "open", player, mode: b.mode } : null; }
   if (!b || !["start", "move", "end"].includes(b.type)) return null;
   const e = { type: b.type, game: id(b.game), player: id(b.player), char: b.char, state: cleanState(b.state) };
@@ -312,6 +347,7 @@ thead th { color: var(--muted); font-weight: 500; font-size: 13px; } tbody th { 
 <section><h2>โหมดอื่น</h2><div class="tiles">${[["analysis", "Analysis (วิเคราะห์เกม)", "เปิด"], ["tsumego", "Tsumego (โจทย์)", "เปิด"], ["learn", "Learn (เรียนแบบ Duolingo)", "เปิด"], ["photo", "อัปโหลดรูปกระดาน (Analysis)", "อัปรูป"]].map(([k, t, v]) => { const m = (s.modes || {})[k] || {};
   return `<div class="tile"><b>${m.players || 0} คน</b><span>${t} · ${v}ทั้งหมด ${m.opens || 0} ครั้ง</span></div>`; }).join("")}</div>
 <p class="muted">นับตั้งแต่ 31 ต.ค. 2026 · นับคนตามเครื่อง · เปิดซ้ำในหน้าเดิมโดยไม่รีเฟรชนับครั้งเดียว · อัปรูปนับเริ่ม 31 ต.ค. และนับทุกครั้งที่อัป</p></section>
+${learnSection(s)}
 <section><h2>สอบวัดระดับ (ฮิคารุ)</h2>
 <div class="tiles"><div class="tile"><b>${s.exams.tests || 0}</b><span>สอบจบแล้ว (${s.exams.players || 0} คน)</span></div>
 <div class="tile"><b>${s.exams.ranked || 0}</b><span>ได้ผลระดับ (เกมยาวอย่างน้อย 100 ตา) · เล่นจนนับแต้ม ${s.exams.full || 0}</span></div></div>

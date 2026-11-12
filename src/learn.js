@@ -547,6 +547,7 @@ const Learn = (function () {
   let prog = { stars: {}, xp: 0, streak: 0, day: "" };
   function liveStreak() { return prog.day === today() || prog.day === yesterday() ? prog.streak : 0; }
   function finish(id, stars, xp) {
+    if (stars > 0 && !prog.stars[id]) try { const k = ALL.findIndex(l => l.id === id); if (api.onClear) api.onClear([{ id, i: k, t: ALL[k] ? ALL[k].t : "" }]); } catch (e) {} // first clear of this lesson, for /stats
     prog.stars[id] = Math.max(prog.stars[id] || 0, stars); prog.xp += xp;
     const t = today(); if (prog.day !== t) { prog.streak = prog.day === yesterday() ? prog.streak + 1 : 1; prog.day = t; }
     saveP();
@@ -573,7 +574,7 @@ const Learn = (function () {
   const current = () => { const k = ALL.findIndex(l => !prog.stars[l.id]); return k < 0 ? ALL.length : k; };
 
   // ---------- sound: effects made with WebAudio, speech from files ----------
-  const api = { onHome: null, onPlay: null, onBook: null, muted: () => false, voiceDir: "learn/voice/" };
+  const api = { onHome: null, onPlay: null, onBook: null, onClear: null, muted: () => false, voiceDir: "learn/voice/" };
   let ac = null, voiceOn = true, audio = null;
   try { voiceOn = localStorage.getItem("gonn.learnVoice") !== "0"; } catch (e) {}
   function ctx() { try { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); } catch (e) {} return ac; }
@@ -1273,6 +1274,8 @@ const Learn = (function () {
     if (!cur) return "เรียนหมากล้อมจากศูนย์ มีเสียงพูด เหมาะกับเด็กและมือใหม่";
     return `เรียนต่อ: ${ALL[cur].t} · ${cur}/${ALL.length} ด่าน${s ? ` · 🔥 ${s} วัน` : ""}`;
   };
+  // lessons already passed on this device (sent to /stats once, so clears from before the counter started are counted too)
+  api.cleared = () => { const st = loadP().stars; return ALL.map((l, i) => ({ id: l.id, i, t: l.t })).filter(l => st[l.id]); };
   api.started = () => Object.keys(loadP().stars).length > 0;
   if (typeof window !== "undefined" && /[?&]lntest/.test(location.search)) { window.__lnItem = () => S.it; window.__lnGame = () => { const G = S.game, p = G && G.p; if (!p) return null; let sol = -1; if (p.check) for (let i = 0; i < p.b.a.length; i++) if (!p.b.a[i] && p.check(i)) { sol = i; break; } return { mode: p.mode, n: p.b.N, num: p.n, sol, on: G.on, over: G.over, score: G.score, left: G.left }; }; window.__lnS = () => ({ view: S.view, trap: S.trap && { state: S.trap.state, at: S.trap.at, round: S.trap.round, score: S.trap.score, a: [...S.b.a] }, match: S.match && S.match.cards.map(c => c.k), tf: S.tf && S.tf.q }); }
   api._test = { Board, P, L, UNITS, ALL, BOSS, SPOKEN, bossTexts, botMove, texts, vkey, GAMES, puzzle, QUIZ, SHAPES, whiteFails, blackWins };
