@@ -13,13 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          mkdir -p kifu-extra
-          for id in 18951391 19455545 20203824 20408053; do
-            curl -fsSL -A "kifu-fetch" "https://online-go.com/api/v1/games/$id/sgf" -o "kifu-extra/ogs-$id.sgf" || echo "failed $id"
-            curl -fsSL -A "kifu-fetch" "https://online-go.com/api/v1/games/$id" -o "kifu-extra/ogs-$id.json" || true
-            sleep 2
+          mkdir -p kifu-extra/kpmc
+          for p in $(seq 1 102); do
+            curl -sSL -m 30 -A "Mozilla/5.0 (kifu library)" "https://kpmc.kbaduk.or.kr/us/gibo?page=$p" -o "kifu-extra/kpmc/list-$p.html" || echo "failed $p"
+            sleep 0.5
           done
-          curl -sSL -A "Mozilla/5.0" "https://kpmc.kbaduk.or.kr/us/gibo" -o kifu-extra/kpmc-list.html || true
+          curl -sSL -m 30 -A "Mozilla/5.0 (kifu library)" "https://kpmc.kbaduk.or.kr/us/gibo/1666" -o kifu-extra/kpmc/game-1666.html || true
+          rm -f kifu-extra/kpmc-list.html
+          grep -li "Karuehawanit\|Wichrich" kifu-extra/kpmc/*.html || true
           ls -la kifu-extra
           git config user.name "github-actions[bot]"
           git config user.email "41898+github-actions[bot]@users.noreply.github.com"
