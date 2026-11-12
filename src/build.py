@@ -16,6 +16,7 @@ page=head+'''<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/d
 '''+open('photo.js').read()+'''
 '''+open('analysis.js').read()+'''
 '''+open('tsumego.js').read()+'''
+'''+open('joseki.js').read()+'''
 '''+open('coach.js').read()+'''
 '''+open('rating.js').read()+'''
 '''+open('hub.js').read()+'''

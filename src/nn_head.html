@@ -404,6 +404,62 @@ body.menuing { padding: 0; background: #0e272d; }
 .ts-btns, .ts-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
 #tsel .ts-btns button, #tsel .ts-nav button { min-height: 44px; font-size: 15px; }
 
+/* ---------- joseki: a list of whole sequences and an explorer, from real games (src/joseki.js) ---------- */
+.joseki { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
+#jsel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
+.js-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 520px; margin-bottom: 14px; }
+.js-tabs button { min-height: 44px; font-size: 15px; background: var(--surface); color: var(--fg); border: 2px solid var(--line); }
+.js-tabs button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700; }
+.js-filter { display: grid; gap: 10px; margin-bottom: 12px; }
+.js-fams { display: flex; flex-wrap: wrap; gap: 6px; }
+.js-fams button { min-height: 36px; padding: 4px 12px; font-size: 14px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.js-fams button.on { background: var(--surface-2); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.js-sel { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; font-size: 14px; }
+.js-sel select { font: inherit; padding: 6px 8px; background: var(--bg-2); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+.js-sel .ts-dim { margin: 0; }
+.js-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
+.js-card { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: center; text-align: left; padding: 10px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); min-height: 0; font-weight: 400; }
+.js-card:hover { border-color: var(--accent); }
+.js-mini { width: 96px; height: 96px; display: block; box-shadow: 0 0 0 3px var(--wood-dark); }
+.js-cbody { display: grid; gap: 3px; min-width: 0; }
+.js-cbody small { color: var(--muted); font-size: 12px; }
+.js-cbody b { font-size: 15px; line-height: 1.35; }
+.js-meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.js-star { color: var(--accent); letter-spacing: 1px; }
+.js-rates { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 12px; color: var(--muted); }
+.js-rates b { color: var(--fg); font-weight: 700; }
+.js-more { grid-column: 1 / -1; min-height: 44px; }
+.js-tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 7px; border-radius: 3px; background: #4b6a6f; color: #f3ead8; white-space: nowrap; }
+.js-tag.hot { background: #e3b06a; color: #2a1a0b; } .js-tag.new { background: #57c26b; color: #0f2a16; } .js-tag.old { background: #6b5a52; color: #e8d8cc; }
+.js-exp { display: grid; gap: 14px; }
+@media (min-width: 820px) { .js-exp { grid-template-columns: minmax(0, 1fr) 400px; align-items: start; } }
+.js-boardbox { display: grid; justify-items: center; min-width: 0; }
+.js-big { width: 100%; max-width: min(100%, 76vh); height: auto; display: block; box-shadow: 0 0 0 6px var(--wood-dark); }
+.js-num { font: 700 .5px var(--f-body); text-anchor: middle; dominant-baseline: middle; }
+.js-num.sm { font-size: .4px; }
+.js-mk { cursor: pointer; } .js-mk circle { fill: rgba(243, 234, 216, .82); stroke: #2a1a0b; stroke-width: .05; } .js-mk text { fill: #2a1a0b; }
+.js-mk.hot circle { fill: #e3b06a; } .js-mk.new circle { fill: #57c26b; } .js-mk.old circle { fill: #b9a89c; }
+.js-mk:hover circle { stroke-width: .1; }
+.js-side { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.js-name { margin: 0; font-size: 20px; line-height: 1.35; } .js-name small { display: block; font-size: 13px; color: var(--muted); font-weight: 400; }
+.js-info { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); } .js-info b { color: var(--fg); } .js-end { color: #57c26b !important; }
+.js-nav { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 8px; } .js-nav button { min-height: 44px; font-size: 14px; }
+.js-turn { font-size: 14px; font-weight: 700; }
+.js-legend { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.js-legend .js-bar { width: 14px; height: 8px; }
+.js-next { display: grid; gap: 6px; }
+.js-opt { display: grid; grid-template-columns: 30px minmax(0, 1fr) 150px; gap: 8px; align-items: center; text-align: left; padding: 8px 10px; min-height: 0; background: var(--surface); color: var(--fg); border: 1px solid var(--line); font-weight: 400; }
+.js-opt:hover { border-color: var(--accent); }
+.js-l { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(243, 234, 216, .82); color: #2a1a0b; font-weight: 700; }
+.js-opt.hot .js-l { background: #e3b06a; } .js-opt.new .js-l { background: #57c26b; } .js-opt.old .js-l { background: #b9a89c; }
+.js-on { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; font-size: 14px; }
+.js-bars { display: grid; gap: 3px; }
+.js-bar { position: relative; display: block; height: 12px; background: rgba(0, 0, 0, .25); border-radius: 2px; overflow: hidden; }
+.js-bar i { position: absolute; inset: 0 auto 0 0; display: block; } .js-bar.e0 i { background: #8a7d72; } .js-bar.e1 i { background: #6aa0b0; } .js-bar.e2 i { background: #57c26b; }
+.js-bar em { position: absolute; left: 4px; top: 0; font-style: normal; font-size: 10px; line-height: 12px; color: #f3ead8; text-shadow: 0 0 2px #000; }
+.js-legend .js-bar { display: inline-block; }
+@media (max-width: 420px) { .js-opt { grid-template-columns: 28px minmax(0, 1fr) 110px; } .js-card { grid-template-columns: 80px minmax(0, 1fr); } .js-mini { width: 80px; height: 80px; } }
+
 /* ---------- profile: games played in this browser ---------- */
 .prof { max-width: 860px; margin: 0 auto; padding-bottom: 32px; }
 .pf-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
@@ -1201,6 +1257,37 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
       <div class="ts-choices" id="tsChoices" hidden></div>
       <div class="ts-btns"><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
       <p class="ts-dim" id="tsSrc"></p>
+    </div>
+  </div>
+</section>
+
+<section class="joseki" id="jsel" hidden>
+  <div class="an-head">
+    <button class="an-back" id="jsBack">← กลับ</button>
+    <div><div class="px">BADUK BATTLE · JOSEKI</div><h1>คลังโจเซกิ</h1></div>
+  </div>
+  <div class="js-tabs" role="tablist"><button id="jsTabList" class="on">รายการโจเซกิ</button><button id="jsTabExp">สำรวจทีละตา</button></div>
+  <div id="jsListBox">
+    <div class="js-filter">
+      <div class="js-fams" id="jsFams"><button data-f="all" class="on">ทั้งหมด</button><button data-f="dd">ดาว 4-4</button><button data-f="dc">โคโมคุ 3-4</button><button data-f="cc">ซันซัง 3-3</button><button data-f="ed">ทาคาโมคุ 5-4</button><button data-f="ec">โมคุฮาสุ 5-3</button></div>
+      <div class="js-sel">
+        <label>เรียงตาม <select id="jsSort"><option value="2">นิยมยุค AI (ยุคนี้)</option><option value="1">นิยมก่อนยุค AI</option><option value="0">นิยมยุคเก่า</option><option value="3">ยาวที่สุด</option></select></label>
+        <label>แสดง <select id="jsOnly"><option value="">ทั้งหมด</option><option value="hot">ยุคนี้นิยม</option><option value="new">มาแรงยุค AI</option><option value="old">ตกยุค</option></select></label>
+        <span id="jsCount" class="ts-dim"></span>
+      </div>
+    </div>
+    <div class="js-list" id="jsList"></div>
+    <p class="ts-dim ts-credit">ข้อมูลจากเกมจริง ไม่ได้ให้ AI คำนวณใหม่: หมากมืออาชีพ 30,901 เกม (1940–1999) และ 42,621 เกม (2000–2016) กับเกมของ AI ระดับสูงสุด 7,259 เกม (2016–2020 เช่น AlphaGo, FineArt, Golaxy ซึ่งหลายเกมเล่นกับมืออาชีพ) จาก computer-go-dataset · ตัวเลขคือจำนวนครั้งต่อ 1,000 เกมของแต่ละยุค · โปรยุคปัจจุบันเล่นตาม AI จึงใช้ยุค AI แทน "ยุคนี้"</p>
+  </div>
+  <div class="js-exp" id="jsExpBox" hidden>
+    <div class="js-boardbox"><div id="jsBoard"></div></div>
+    <div class="js-side">
+      <h2 class="js-name" id="jsName"></h2>
+      <p class="js-info" id="jsInfo"></p>
+      <div class="js-nav"><button id="jsHome" title="เริ่มใหม่">⏮ เริ่ม</button><button id="jsBack1">◀ ย้อน</button><button id="jsBest" class="primary">ตาที่นิยมสุด ▶</button></div>
+      <div class="js-turn" id="jsTurn"></div>
+      <div class="js-legend"><span class="js-bar e0"><i style="width:100%"></i></span> ยุคเก่า <span class="js-bar e1"><i style="width:100%"></i></span> ก่อน AI <span class="js-bar e2"><i style="width:100%"></i></span> ยุค AI · % = สัดส่วนที่ยุคนั้นเลือกตานี้</div>
+      <div class="js-next" id="jsNext"></div>
     </div>
   </div>
 </section>
