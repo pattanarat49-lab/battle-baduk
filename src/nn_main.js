@@ -26,7 +26,8 @@
     ancient: { label: "หมากล้อมโบราณ", opts: {} },
     cosmic: { label: "หมากจักรวาล", opts: {} },
     creative: { label: "สร้างสรรค์", opts: {} },
-    mirror: { label: "หมากกระจก", opts: {} }
+    mirror: { label: "หมากกระจก", opts: {} },
+    pair: { label: "Pair Go · ขั้วตรงข้าม", opts: {} }
   };
   // Strength comes from how much the network reads ahead; ranks are estimates, not measured against people.
   const CHARS = [
@@ -89,6 +90,16 @@
     { id: "todo", en: "TODO", name: "โทโด", country: "ญี่ปุ่น", rank: "1 ดั้งโปร", style: "balance", search: { visits: 4000, timeMs: 10000 },
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
+    // Pair Go (owner 2026-11-13): two brothers share one side and play alternate moves, each with his own brain. Kuro
+    // (7 kyu) samples HumanSL at kyu level and throws himself at the player's stones; Shiro (7 dan) reads with KataGo and
+    // defends. rateAs is the pair's strength for the rating, an estimate between the two. A win unlocks both faces.
+    { id: "kuroshiro", en: "KURO & SHIRO", name: "คุโระ & ชิโระ", country: "ญี่ปุ่น", rank: "7 คิว + 7 ดั้ง", rateAs: "3 คิว", style: "pair", brain: "human", profile: "rank_8k", search: {},
+      pair: [
+        { id: "kuro", name: "คุโระ", rank: "7 คิว", style: "attack", brain: "human", profile: "rank_8k", search: { temperature: 1.25, wild: true } },
+        { id: "shiro", name: "ชิโระ", rank: "7 ดั้ง", style: "defend", search: { visits: 800, timeMs: 10000 } }
+      ],
+      bio: "พี่น้องคู่ Pair Go ที่เป็นขั้วตรงข้ามกันทุกอย่าง สลับกันเดินคนละตา คุโระคนพี่ (7 คิว) อารมณ์ร้อน บ้าต่อสู้ ไม่มีคำว่าถอย พุ่งเข้าชนตัดฟันมั่วๆ อย่างรุนแรง ชิโระคนน้อง (7 ดั้ง) เด็กเงียบๆ ใจเย็น ตั้งรับได้สมบูรณ์แบบ คอยตามเก็บกวาดสิ่งที่พี่ก่อไว้ เถียงกันทั้งเกม ชนะได้จะได้รูปโปรไฟล์ทั้งสองคน",
+      say: { hello: "คุโระ: ลุยเลย! / ชิโระ: ใจเย็นครับพี่", ahead: "", behind: "", win: "", lose: "" } },
     // special characters (Takemiya, Lee Changho, Go Seigen): KataGo b18 (kata1-b18c384nbt, about 50 MB, downloaded
     // the first time one is picked; owner 2026-10-31). Each opens from the real player's games (an opening book built by
     // .github/workflows/kifu-book.yml) and plays in his style after. Shown on the select screen only with ?boss for now.
@@ -315,6 +326,31 @@
       resigned: "ยอมแล้วเหรอ ยังก๊อปไม่ทันมันเลย|ขอบคุณที่เล่นด้วย",
       timeoutWin: "หมดเวลา อันนี้ผมก๊อปไม่ได้นะ|เสียดาย เวลาก็สำคัญ",
       giveUp: "กระจกแตกหมดแล้ว ผมยอม|ยอมครับ ก๊อปต่อไม่ไหวแล้ว"
+    },
+    // a pair's lines are short exchanges: turns split by "//", each starting with K: (Kuro) or S: (Shiro)
+    kuroshiro: {
+      hello: "K:มาเลย! ฉันจะบุกให้กระดานแตก!//S:ใจเย็นครับพี่ ยังไม่ได้วางสักเม็ดเลย|K:เกมนี้ฉันเดินคนเดียวก็ชนะ//S:กติกาคือสลับกันเดินครับพี่ ผมขอโทษแทนเขาด้วยนะครับ|S:ขอคำชี้แนะด้วยครับ//K:ไม่ต้องชี้แนะ! สู้กันเลย!",
+      goodMove: "K:เฮ้ย ตานี้แสบ! ชอบๆ//S:ชมคู่แข่งทำไมครับพี่ ตานั้นเกิดจากช่องที่พี่เปิดไว้|S:ตาดีมากครับ//K:ดีตรงไหน เดี๋ยวฉันตัดให้ดู!|K:โอ๊ย โดนเข้าให้แล้ว//S:ผมเตือนพี่แล้วนะครับว่าตรงนั้นบาง",
+      badMove: "K:ฮ่าๆ พลาดแล้ว! ฆ่าเลย!//S:ไม่ต้องฆ่าครับ แค่เก็บแต้มก็พอ|S:ตานี้ช้าไปนิดครับ//K:ช้าก็โดนฟัน! ตาฉันๆ!|K:เปิดช่องให้เองนะ!//S:พี่ครับ ช่องนั้นผมเป็นคนสร้าง",
+      caught: "K:เฮ้ย! หมากฉันหาย {n} เม็ด!//S:ผมบอกแล้วว่าอย่าพุ่งเข้าไปคนเดียว|S:เสีย {n} เม็ดครับ ฝีมือพี่ทั้งนั้น//K:ก็นายไม่มาช่วย!|K:ไม่เป็นไร! เสียแค่ {n} เม็ด บุกต่อ!//S:…ผมจะซ่อมให้ครับ",
+      capture: "K:กินแล้ว {n} เม็ด! เห็นไหม บุกแล้วได้ผล!//S:ตานั้นผมเป็นคนกินครับพี่|S:เก็บ {n} เม็ดครับ ขอโทษด้วยนะครับ//K:ขอโทษทำไม! ต้องหัวเราะสิ ฮ่าๆๆ|K:ฮ่าๆ {n} เม็ด! อร่อย!//S:พี่ครับ มารยาทด้วย",
+      ahead: "K:เห็นไหม! เพราะฉันบุกไง!//S:เพราะผมตามซ่อมให้ต่างหากครับ|S:ตอนนี้เรานำอยู่ครับ เล่นให้แน่นไว้//K:แน่นทำไม! บุกให้ขาดไปเลย!|K:ชนะแน่! ปิดเกมด้วยการฆ่ากลุ่มใหญ่!//S:ไม่ต้องครับ นับแต้มก็ชนะแล้ว",
+      behind: "S:เราตามอยู่ครับ เพราะตาที่แล้วของพี่//K:ตามก็บุกสิ! ยิ่งตามยิ่งต้องบุก!|K:ไม่เป็นไร! เดี๋ยวฉันฆ่ากลุ่มนั้นให้!//S:กลุ่มนั้นมีสองห้องแล้วครับพี่|S:ผมขอเวลาซ่อมสักสิบตาครับ//K:สิบตา!? ฉันไม่รอ!",
+      comeback: "K:กลับมาแล้ว! พลังแห่งการบุก!//S:พลังแห่งการอดทนของผมครับ|S:เรากลับมานำแล้วครับ//K:เพราะฉัน!//S:…ครับ ตามนั้นก็ได้",
+      humanPass: "K:ผ่านเหรอ! งั้นฉันบุกต่อ!//S:เขาผ่านแปลว่าเกมใกล้จบครับพี่|S:ผ่านแล้วสินะครับ//K:ยังไม่จบ! ยังมีที่ให้ตัดอยู่!",
+      aiPass: "S:ไม่มีตาที่มีค่าแล้วครับ ผ่าน//K:ผ่านได้ไง! ยังไม่ได้ฆ่าใครเลย!|K:ชิ… ผ่านก็ได้//S:พี่ผ่านเป็นด้วยเหรอครับ",
+      ko: "K:โค! สู้โคเลย! ฉันชอบ!//S:ต้องนับที่ขู่ก่อนครับพี่ เรามีน้อยกว่า|S:ยังเก็บคืนไม่ได้ครับ ต้องไปเดินที่อื่นก่อน//K:กติกาบ้าอะไร ฉันจะเก็บเดี๋ยวนี้!",
+      hint: "K:ดูโพยเหรอ! ขี้โกง!//S:ไม่เป็นไรครับ เรียนรู้ได้ก็ดีแล้ว|S:ดูคำแนะนำได้ครับ//K:ดูไปก็ไม่ช่วย เพราะฉันเดินมั่ว ฮ่าๆ",
+      slow: "K:เร็วๆ สิ! ฉันอยากบุกแล้ว!//S:ปล่อยให้เขาคิดเถอะครับพี่ การคิดนานคือมารยาทที่ดี|S:ค่อยๆ คิดได้ครับ//K:ไม่ต้องคิด! เดินเลย!",
+      byoyomi: "K:เวลาหมดแล้ว! รีบๆ!//S:เหลือ 30 วินาทีครับ ตั้งสติดีๆ นะครับ|S:เข้าเบียวโยมิแล้วครับ//K:ดี! ยิ่งรีบยิ่งมัน!",
+      lastPeriod: "S:ครั้งสุดท้ายแล้วครับ ระวังด้วย//K:หมดเวลาไปเลยก็ได้นะ ฮ่าๆ//S:พี่ครับ…|K:เหลือครั้งเดียว! กดดันเข้าไป!//S:อย่าไปกวนเขาครับพี่",
+      aiByo: "S:เวลาเราเหลือน้อยเพราะพี่เถียงผมครับ//K:เพราะนายคิดนานต่างหาก!|K:ไม่ต้องคิด! วางเลย!//S:นั่นแหละครับที่ผมกลัว",
+      mid: "K:ตัดตรงนั้นเลย!//S:ตรงนั้นตัดไม่ได้ครับพี่ มันเป็นบันได//K:งั้นตัดตรงอื่น!|S:พี่ครับ กลุ่มของเรายังไม่มีสองห้อง//K:ห้องอะไร! ฆ่าเขาก่อนเราก็รอด!|K:นายเดินน่าเบื่อชะมัด//S:ส่วนพี่เดินน่ากลัวครับ น่ากลัวสำหรับฝั่งเราเอง|S:หมากล้อมคือความสมดุลครับ//K:หมากล้อมคือสงคราม!|K:ตาที่แล้วของฉันสุดยอดไหม!//S:ผมใช้ไปสามตาเพื่อซ่อมมันครับ|S:ดำกับขาว ร้อนกับเย็น//K:พูดอะไรของนาย เดินได้แล้ว!|K:ถ้าฉันเดินคนเดียวจบไปนานแล้ว//S:ครับ จบแบบแพ้|S:พี่ช่วยถอยสักตาได้ไหมครับ//K:พจนานุกรมฉันไม่มีคำว่าถอย!",
+      win: "K:ชนะ! เพราะฉันบุก!//S:ขอบคุณสำหรับเกมครับ และขอโทษแทนพี่ด้วย|S:เป็นเกมที่ดีครับ//K:ดีสิ! ฉันฟันไปตั้งเยอะ!//S:ผมซ่อมไปเยอะกว่าครับ",
+      lose: "K:แพ้เพราะนายมัวแต่ตั้งรับ!//S:แพ้เพราะพี่ทิ้งหมากไปสามกลุ่มครับ//K:…รูปโปรไฟล์เอาไปเลยทั้งสองคน!|S:คุณเก่งมากครับ รับมือเราสองคนได้พร้อมกัน//K:คราวหน้าฉันจะบุกหนักกว่านี้!",
+      resigned: "K:ยอมแล้วเหรอ! ยังฟันไม่สะใจเลย!//S:ขอบคุณที่เล่นด้วยครับ|S:ขอบคุณสำหรับเกมครับ//K:กลับมาสู้ใหม่นะ!",
+      timeoutWin: "K:หมดเวลา! ชนะแล้ว!//S:ชนะแบบนี้ไม่ต้องดีใจขนาดนั้นครับพี่|S:น่าเสียดายครับ เกมกำลังสนุก//K:ฉันยังไม่ได้ฆ่ากลุ่มนั้นเลย!",
+      giveUp: "S:เราควรยอมแล้วครับพี่//K:ไม่ยอม! ยังบุกได้!//S:ผมยอมแทนครับ ขอบคุณสำหรับเกม|K:ชิ… ยอมก็ได้!//S:พี่ยอมเป็นด้วย ผมประทับใจครับ"
     },
     jay: {
       hello: "เปิดเกมดีๆ ก่อน แล้วค่อยมาสู้กันจริงๆ|สวัสดีครับ วันนี้ขอสู้เต็มที่นะ|ซ้อมกับทีมมหา'ลัยมาทั้งอาทิตย์ มาลองกัน",
@@ -786,7 +822,11 @@
     if (c.coach && Coach.active()) { Coach.say(line.replace("{n}", o.n)); return true; } // the coach talks in her chat
     const q = $("quote");
     q.hidden = false;
-    q.innerHTML = `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
+    q.classList.toggle("duo", !!c.pair);
+    // a pair argues: each turn of the exchange on its own row with the speaker's face
+    q.innerHTML = c.pair ? line.replace("{n}", o.n).split("//").map(t => { const p = c.pair[t[0] === "S" ? 1 : 0];
+      return `<div class="duo-row">${avatarSVG(p)}<span><b class="duo-${p.id}">${p.name}</b>${t.slice(2)}</span></div>`; }).join("")
+      : `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
     q.classList.remove("say"); void q.offsetWidth; q.classList.add("say");
     return true;
   }
@@ -990,7 +1030,7 @@
     // points counted as the character playing weaker; the rank test sets it from the graded rank further down
     let dR;
     if (!exam && EXAMBOT === null) {
-      const ch = CHARS[gameChar], base = Rating.parseRank(ch.levels ? FON_LV[fonLv].name : ch.rank);
+      const ch = CHARS[gameChar], base = Rating.parseRank(ch.levels ? FON_LV[fonLv].name : ch.rateAs || ch.rank);
       if (base !== null) {
         const give = Math.min(9, (handi ? handi - 0.5 : 0) + bonus / 12 * 19 / n);
         const v = Rating.update(Rating.toR(base - give), humanWon, n, "ai", ch.name);
@@ -1002,7 +1042,7 @@
     hist.unshift({ id, at: Date.now(), char: CHARS[gameChar].id, n, human, handi, bonus, komi: KOMI, won: humanWon, how, margin: margin === undefined ? (exam && exam.margin) || null : margin, moves: history.slice(), secs: clockSecs(), dR });
     save("history", hist.slice(0, 100));
     // characters ever beaten (profile pictures unlock from these; the history keeps only 100 games)
-    if (humanWon) { const bt = load("beaten", []); if (!bt.includes(CHARS[gameChar].id)) save("beaten", bt.concat(CHARS[gameChar].id)); }
+    if (humanWon) { const bt = load("beaten", []); const ids = [CHARS[gameChar].id].concat((CHARS[gameChar].pair || []).map(p => p.id)).filter(i => !bt.includes(i)); if (ids.length) save("beaten", bt.concat(ids)); }
     Account.push();
     if (exam) { exam.how = how; exam.won = humanWon; }
     askAnalyze(exam ? grading : null);
@@ -1083,6 +1123,7 @@
       $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
+    showMover();
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now();
     Coach.start(coachOn() ? {} : null);
@@ -1164,6 +1205,7 @@
     board.play(p); history.push(p); hint = null; pending = null; coachMarks = [];
     liveUpdate();
     const took = board.caps[mover] - caps;
+    showMover();
     if (board.passes >= 2) startScoring();
     else if (p === PASS) speak(mover === human ? "humanPass" : "aiPass", { pri: 3, gap: 8 });
     else if (took) speak(mover === human ? "caught" : "capture", { n: took, pri: took >= 3 ? 3 : 1 });
@@ -1205,6 +1247,7 @@
       $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
     }
+    showMover();
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
     lastTick = performance.now();
     saidKinds = new Set(); saidLines = new Set(); spokeAt = -99; lowestAI = 1; humanSince = performance.now(); hopeless = 0; examBehind = 0;
@@ -1574,6 +1617,16 @@
     const mine = ev => ev.loss / (ev.win + ev.loss); // children are evaluated from the player's side
     return mine(em) >= mine(eb) - MIRROR_COST ? p : null;
   }
+  // in a pair the partners take the side's moves in turn: Kuro the 1st, 3rd, 5th..., Shiro the 2nd, 4th, 6th...
+  const moverOf = (ch, len) => ch.pair ? ch.pair[(len >> 1) % 2] : ch;
+  const isFace = id => CHARS.some(c => c.id === id || (c.pair && c.pair.some(p => p.id === id)));
+  // the player bar shows which partner is on move (or just moved)
+  function showMover() {
+    const ch = board && !MATCH && CHARS[gameChar];
+    if (!ch || !ch.pair) return;
+    const len = history.length - (board.toPlay === ai ? 0 : 1), p = moverOf(ch, Math.max(0, len)), k = ai === BLACK ? "B" : "W";
+    $("n" + k).textContent = `${ch.name} · ${p.name}`; $("rk" + k).textContent = `${p.rank} · ${STYLE[p.style].label}`; $("av" + k).innerHTML = avatarSVG(p);
+  }
   async function maybeAI() {
     matchTurn();
     if (!engineReady || over || scoring || board.toPlay !== ai || thinking) return;
@@ -1594,14 +1647,16 @@
     }
     let res;
     try {
-      const brain = await brainFor(CHARS[gameChar]);
+      const mover = moverOf(CHARS[gameChar], moves.length);
+      showMover();
+      const brain = await brainFor(mover);
       if (my !== gen) return;
       res = await brain[exam ? "teach" : "think"](n, moves, KOMI, Object.assign({
         // a big brain evaluates one position at a time: WebAssembly runs out of memory at 8, and on an iPhone GPU batch 4
         // compiled new GPU programs and textures at the first move until Safari closed the page
         batch: brain !== AI ? 1 : evalMs > 300 ? 2 : 8, earlyStop: !(exam && (ai === BLACK ? leadBlack : -leadBlack) < 4), shouldStop: () => my !== gen,
         onProgress: s => { if (my === gen) { think = s; renderStatus(); drawBoard(); } }
-      }, STYLE[CHARS[gameChar].style].opts, searchFor(CHARS[gameChar]), { timeMs: aiBudget(searchFor(CHARS[gameChar]).timeMs || CHARS[gameChar].search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
+      }, STYLE[mover.style].opts, searchFor(mover), { timeMs: aiBudget(searchFor(mover).timeMs || mover.search.timeMs || 9000), hardMs: exam ? aiBudget(20000) : 0, give: examGive(), weak: examWeak() }));
       engineRetries = 0;
     } catch (e) {
       // the network stopped working (see evalMany): rebuild it and search again rather than play a broken answer,
@@ -2353,7 +2408,7 @@
     const when = new Date(x.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
     const how = (HOW[x.how] || "") + (x.how === "score" && x.margin ? ` ${x.margin} แต้ม` : x.how === "resign" ? (x.won ? (on ? " (คู่แข่งยอมแพ้)" : " (AI ยอมแพ้)") : mine ? " (คุณยอมแพ้)" : " (ยอมแพ้)") : "");
     const opp = on ? x.opp || {} : null;
-    const img = on ? (opp.a && CHARS.some(ch => ch.id === opp.a) ? `chars/${opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
+    const img = on ? (opp.a && isFace(opp.a) ? `chars/${opp.a}_face.jpg` : "menu/guest.png") : `chars/${c.id}_face.jpg`;
     const who = on ? `vs ${escH(opp.n || "?")}</b> <span class="note" style="display:inline">ออนไลน์${typeof opp.r === "number" ? " · " + rankName(opp.r) : ""}</span><b>` : `vs ${c.name}`;
     const dR = typeof x.dR === "number" ? ` · <span class="pf-dr ${x.dR >= 0 ? "up" : "dn"}">เรตติ้ง ${x.dR >= 0 ? "+" : "−"}${Math.abs(x.dR)}</span>` : "";
     return `<div class="pf-row"><img src="${img}" alt="" width="160" height="160"><div class="t"><b>${who}</b> <span class="pf-res ${x.won ? "w" : "l"}">${x.won ? "ชนะ" : "แพ้"}</span>
@@ -2445,7 +2500,7 @@
     if ($("pl").hidden) return;
     if (!r || r.status !== 200) { $("plBody").innerHTML = `<p class="pf-empty">${r && r.body && r.body.error ? escH(r.body.error) : "โหลดโปรไฟล์ไม่ได้ ลองใหม่อีกครั้ง"}</p>`; return; }
     const p = plData = r.body, rt = p.rating;
-    const face = p.a && CHARS.some(c => c.id === p.a) ? `chars/${p.a}_face.jpg` : "menu/guest.png";
+    const face = p.a && isFace(p.a) ? `chars/${p.a}_face.jpg` : "menu/guest.png";
     const loss = p.g - p.w;
     let h = `<div class="acct-box in pl-top"><span class="acct-av"><img src="${face}" alt="" width="160" height="160"></span><div class="t"><b>${escH(p.n)}${p.n === Account.name() ? " (คุณ)" : ""}</b>
       <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div></div>`;

@@ -12,7 +12,7 @@ import { makeHub } from "./hub.js";
 const CHARS = {
   michio: "ครูมิชิโอะ", mek: "เมฆ", chai: "ไรเดอร์ชัย", win: "ลุงวิน", ek: "ครูเอก", yuto: "ยูโตะ", joker: "โจ๊กเกอร์",
   chris: "คริส", kai: "ไค", jay: "เจ",
-  weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", sai: "ไซ", takemiya: "ทาเคมิยะ", changho: "อีชางโฮ", seigen: "อู๋ ชิงหยวน", hikaru: "ฮิคารุ"
+  weiqi: "เว่ยฉี", tora: "โทระ", kan: "กัน", todo: "โทโด", kuroshiro: "คุโระ & ชิโระ", sai: "ไซ", takemiya: "ทาเคมิยะ", changho: "อีชางโฮ", seigen: "อู๋ ชิงหยวน", hikaru: "ฮิคารุ"
 };
 const HOWS = new Set(["score", "resign", "timeout"]);
 const id = v => typeof v === "string" && /^[a-z0-9]{6,32}$/.test(v) ? v : null;
