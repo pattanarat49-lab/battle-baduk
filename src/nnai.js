@@ -105,7 +105,9 @@ function GoNNAI(E, F, net) {
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
     root.N = 1; root.W = util(rootEv); root.L = rootEv.lead;
-    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory, opts.follow || 0, opts.soft, opts.wild); return s; }
+    // an attacking or defending style biases the evaluation (pda), so the numbers shown come from an unbiased one:
+    // Kuro and Joker (attack style, sampled moves) otherwise showed themselves about 12 points ahead in an even game
+    if (opts.temperature) { const s = summary(root, base, pdaVal ? await evaluate(n, moves, komi) : rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory, opts.follow || 0, opts.soft, opts.wild); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;

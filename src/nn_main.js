@@ -1122,6 +1122,7 @@
       $("n" + k).textContent = me ? meName() : ch.name;
       $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
+      $("p" + k).classList.remove("duo");
     }
     showMover();
     clocks = { [BLACK]: freshClock(), [WHITE]: freshClock() }; lastTick = performance.now(); renderClocks();
@@ -1246,6 +1247,7 @@
       $("n" + k).textContent = me ? meName() : ch.name;
       $("rk" + k).textContent = me ? meRank() : ch.levels ? `ครูสอน · ${FON_LV[fonLv].name}` : `${ch.rank} · ${ch.country}`;
       $("av" + k).innerHTML = me ? meAv() : avatarSVG(ch);
+      $("p" + k).classList.remove("duo");
     }
     showMover();
     clocks = g.clocks && g.clocks[BLACK] && g.clocks[WHITE] ? g.clocks : { [BLACK]: freshClock(), [WHITE]: freshClock() };
@@ -1620,12 +1622,15 @@
   // in a pair the partners take the side's moves in turn: Kuro the 1st, 3rd, 5th..., Shiro the 2nd, 4th, 6th...
   const moverOf = (ch, len) => ch.pair ? ch.pair[(len >> 1) % 2] : ch;
   const isFace = id => CHARS.some(c => c.id === id || (c.pair && c.pair.some(p => p.id === id)));
-  // the player bar shows which partner is on move (or just moved)
+  // the pair's player card has one box per partner, side by side; a yellow frame marks the one whose move it is
+  // (while the player thinks: the partner who will answer)
   function showMover() {
     const ch = board && !MATCH && CHARS[gameChar];
     if (!ch || !ch.pair) return;
-    const len = history.length - (board.toPlay === ai ? 0 : 1), p = moverOf(ch, Math.max(0, len)), k = ai === BLACK ? "B" : "W";
-    $("n" + k).textContent = `${ch.name} · ${p.name}`; $("rk" + k).textContent = `${p.rank} · ${STYLE[p.style].label}`; $("av" + k).innerHTML = avatarSVG(p);
+    const p = moverOf(ch, history.length + (board.toPlay === ai ? 0 : 1)), k = ai === BLACK ? "B" : "W";
+    $("n" + k).innerHTML = `<span class="duo-tabs">${ch.pair.map(q => `<span class="duo-tab duo-${q.id}${q === p ? " on" : ""}">${avatarSVG(q)}<span><b>${q.name}</b><i>${q.rank}</i></span></span>`).join("")}</span>`;
+    $("rk" + k).textContent = ""; $("av" + k).innerHTML = "";
+    $("p" + k).classList.add("duo");
   }
   async function maybeAI() {
     matchTurn();
