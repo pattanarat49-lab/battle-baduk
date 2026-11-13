@@ -4,7 +4,7 @@
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
 const Account = (() => {
-  const SYNC = ["history", "bestRank", "tsume3", "tutStep", "beaten", "avatar", "rating", "learn", "skin"];
+  const SYNC = ["history", "bestRank", "tsume3", "tsume4", "tutStep", "beaten", "avatar", "rating", "learn", "skin"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
   const put = (k, v) => { try { if (v === null || v === undefined) localStorage.removeItem("gonn." + k); else localStorage.setItem("gonn." + k, JSON.stringify(v)); } catch (e) {} };
   let me = get("acct"); // { token, name, ver, sent: fingerprint of the progress last saved, at: time of the last sync }
@@ -54,6 +54,13 @@ const Account = (() => {
       const m = !ta ? tb : !tb ? ta : ((tb.solved || 0) > (ta.solved || 0) ? tb : ta);
       out.tsume3 = Object.assign({}, m, { best: Math.max((ta && ta.best) || 0, (tb && tb.best) || 0),
         seen: [...new Set([].concat((ta && ta.seen) || [], (tb && tb.seen) || []))].slice(-3000) });
+    }
+    // Tsumego by level and category (src/tsumego.js): per problem the better result (1 first try, 2 later, 3 not yet)
+    const sa = a.tsume4, sb = b.tsume4;
+    if (sa || sb) {
+      const s = Object.assign({}, (sb && sb.s) || {});
+      for (const [k, v] of Object.entries((sa && sa.s) || {})) s[k] = s[k] ? Math.min(s[k], v) : v;
+      out.tsume4 = Object.assign({}, sb, sa, { s });
     }
     if (a.beaten || b.beaten) out.beaten = [...new Set([].concat(a.beaten || [], b.beaten || []))];
     if (a.avatar || b.avatar) out.avatar = a.avatar || b.avatar; // this device's choice wins

@@ -377,16 +377,21 @@ body.menuing { padding: 0; background: #0e272d; }
 /* ---------- tsumego: categories, levels, and one problem at a time ---------- */
 .tsume { max-width: 1120px; margin: 0 auto; padding-bottom: 32px; }
 #tsel .an-back { min-height: 40px; padding: 6px 12px; font-size: 14px; flex: none; }
-.ts-pick { display: grid; gap: 16px; max-width: 640px; }
-.ts-ladder { background: #ede9d7; color: #14262b; border-radius: 10px; padding: 18px 18px 20px; box-shadow: 0 4px 0 rgba(0, 0, 0, .28); display: grid; gap: 8px; }
-.ts-lab { font-size: 14px; color: #33454a; }
-.ts-now { font-family: var(--f-px); font-size: clamp(34px, 9vw, 52px); line-height: 1; letter-spacing: .04em; }
-.ts-steps { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; margin-top: 8px; }
-.ts-steps i { height: 14px; background: #d4cbb4; border-radius: 2px; }
-.ts-steps i.been { background: #9fc98f; } .ts-steps i.now { background: var(--accent); box-shadow: 0 0 0 2px #14262b; }
-.ts-ends { display: flex; justify-content: space-between; font-size: 12px; color: #33454a; }
-.ts-ladder .ts-dim { color: #33454a; }
-#tsel #tsGo { margin-top: 6px; min-height: 48px; font-size: 17px; }
+.ts-pick { display: grid; gap: 12px; max-width: 760px; }
+.ts-lvls { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.ts-lvls button { display: grid; gap: 2px; text-align: left; min-height: 56px; padding: 8px 12px; background: var(--surface); color: var(--fg); border: 2px solid var(--line); }
+.ts-lvls button b { font-size: 16px; } .ts-lvls button small { font-size: 12px; color: var(--muted); }
+.ts-lvls button.on { background: #ede9d7; color: #14262b; border-color: var(--accent); box-shadow: 0 3px 0 rgba(0, 0, 0, .28); }
+.ts-lvls button.on small { color: #33454a; }
+.ts-cats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 520px; }
+.ts-cats button { min-height: 44px; font-size: 15px; background: var(--surface); color: var(--fg); border: 2px solid var(--line); }
+.ts-cats button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 700; }
+#tsel #tsGo { min-height: 48px; font-size: 17px; max-width: 520px; }
+.ts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; }
+.ts-grid button { min-height: 44px; padding: 0; font-size: 14px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); }
+.ts-grid button.ok { background: #2f6b3a; color: #fff; border-color: #57c26b; }
+.ts-grid button.ok2 { background: #7a6420; color: #fff; border-color: #e0b94a; }
+.ts-grid button.ng { background: #6e2a20; color: #fff; border-color: #e0533d; }
 .ts-rules { margin: 0; padding-left: 20px; color: var(--fg); font-size: 14px; line-height: 1.7; }
 .ts-dim { color: var(--muted); font-size: 13px; margin: 6px 0 0; display: block; }
 .ts-credit { margin-top: 18px; }
@@ -394,7 +399,7 @@ body.menuing { padding: 0; background: #0e272d; }
 @media (min-aspect-ratio: 5/4) { .ts-play { grid-template-columns: minmax(0, 1fr) minmax(240px, 40%); align-items: start; } }
 @media (min-width: 900px) { .ts-play { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } }
 .ts-boardbox { display: grid; gap: 8px; justify-items: center; min-width: 0; }
-.ts-bar { width: 100%; max-width: min(100%, 76vh); display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); }
+.ts-bar { width: 100%; max-width: min(100%, 76vh); box-sizing: border-box; padding: 0 6px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--muted); }
 .ts-turn::before { content: ""; display: inline-block; width: 16px; height: 16px; border-radius: 50%; vertical-align: -3px; margin-right: 6px; }
 .ts-turn.b::before { background: radial-gradient(circle at 35% 30%, #6a6a6a, #111 60%); } .ts-turn.w::before { background: radial-gradient(circle at 35% 30%, #fff, #d4d4cc 75%); }
 .ts-turn.b::after { content: "ดำเดินก่อน"; color: var(--fg); } .ts-turn.w::after { content: "ขาวเดินก่อน"; color: var(--fg); }
@@ -1328,21 +1333,19 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     <div><div class="px">BADUK BATTLE · TSUMEGO</div><h1 id="tsTitle">โจทย์ฝึกอ่านหมาก</h1></div>
   </div>
   <div id="tsPick" class="ts-pick">
-    <div class="ts-ladder">
-      <span class="ts-lab">ระดับของคุณตอนนี้</span>
-      <b class="ts-now" id="tsNow">6 คิว</b>
-      <div class="ts-steps" id="tsSteps" aria-hidden="true"></div>
-      <div class="ts-ends"><span>6 คิว</span><span>4 ดั้ง</span></div>
-      <p class="ts-dim" id="tsStats"></p>
-      <button id="tsGo" class="primary">เริ่มที่ 6 คิว</button>
-    </div>
+    <div class="ts-lvls" id="tsLvls"></div>
+    <div class="ts-cats" id="tsCats"></div>
+    <p class="ts-dim" id="tsStats"></p>
+    <button id="tsGo" class="primary">เล่นข้อ 1</button>
+    <div class="ts-grid" id="tsGrid"></div>
     <ul class="ts-rules">
-      <li>โจทย์จะสุ่มมาให้ทีละข้อ คละหมวด ทั้งเป็น-ตาย จับกิน ต่อ-ตัด ทีเด็ด และเอนเกม</li>
-      <li>แต่ละข้อต้องเดินถูก 3 ตา โดย AI ตอบโต้ทุกตา</li>
-      <li>ตอบถูก ขึ้นหนึ่งระดับ ตอบผิด ลงหนึ่งระดับ</li>
-      <li>โจทย์ไม่ซ้ำจนกว่าจะหมดระดับนั้น</li>
+      <li>เลือกระดับและหมวด แล้วกดเลขข้อ หรือกด "เล่น" เพื่อเริ่มข้อที่ยังไม่ได้ทำ</li>
+      <li>แต่ละข้อยาว 3–7 ตา เดินถูกแล้วอีกฝ่ายจะตอบ เราต้องเดินถูกต่อจนจบ</li>
+      <li>ข้อไหนมีตาที่ถูกหลายจุด ทุกจุดนับว่าถูก</li>
+      <li>พื้นที่นอกโจทย์ถือว่าเป็นของฝ่ายที่ล้อมอยู่ ไม่ต้องหนีออกไป และการชนะด้วยโคะไม่นับว่าสำเร็จ</li>
+      <li>สีเลขข้อ: เขียว = ถูกตั้งแต่ครั้งแรก, เหลือง = แก้ได้ทีหลัง, แดง = ยังไม่ผ่าน</li>
     </ul>
-    <p class="ts-dim ts-credit">โจทย์คัดจากชุดโจทย์คลาสสิกของ Ten Thousand Tsumego เฉลยต่อเนื่องและระดับคิดโดย KataGo จึงเป็นค่าประมาณ · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
+    <p class="ts-dim ts-credit">ตำแหน่งโจทย์จากชุดโจทย์คลาสสิกใน Ten Thousand Tsumego · ทุกตาที่ถูกและทุกการตอบโต้คำนวณด้วยโปรแกรมแก้โจทย์ที่ตรวจทุกตาเดินในพื้นที่โจทย์ · ระดับเป็นค่าประมาณ · ความคืบหน้าเก็บไว้ในเบราว์เซอร์นี้</p>
   </div>
   <div class="ts-play" id="tsPlay" hidden>
     <div class="ts-boardbox">
@@ -1351,8 +1354,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     </div>
     <div class="ts-side">
       <div class="ts-say" id="tsSay" aria-live="polite"></div>
-      <div class="ts-choices" id="tsChoices" hidden></div>
-      <div class="ts-btns"><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
+      <div class="ts-btns"><button id="tsRetry" hidden>ลองใหม่</button><button id="tsAns" hidden>ดูเฉลย</button><button id="tsNext" class="primary" hidden>ข้อต่อไป →</button></div>
       <p class="ts-dim" id="tsSrc"></p>
     </div>
   </div>
