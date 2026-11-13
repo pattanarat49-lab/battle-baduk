@@ -873,7 +873,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .quote.duo { flex-direction: column; gap: 4px; align-items: stretch; }
 .duo-row { display: flex; gap: 8px; align-items: flex-start; }
 .duo-row .av { width: 28px; height: 28px; flex: none; display: block; }
-.duo-row:nth-child(even) b { color: #7fb2e6; }
+.quote b.duo-kuro { color: #f2c94c; } .quote b.duo-shiro { color: #7fb2e6; } /* owner: Kuro yellow, Shiro blue */
 .quote.duo span { display: block; -webkit-line-clamp: unset; overflow: visible; }
 .quote.duo b { display: inline; margin-right: 6px; }
 @keyframes say { from { transform: translateY(4px) scale(.97); opacity: .4; } to { transform: none; opacity: 1; } }
@@ -8548,7 +8548,7 @@ const Online = (() => {
     q.classList.toggle("duo", !!c.pair);
     // a pair argues: each turn of the exchange on its own row with the speaker's face
     q.innerHTML = c.pair ? line.replace("{n}", o.n).split("//").map(t => { const p = c.pair[t[0] === "S" ? 1 : 0];
-      return `<div class="duo-row">${avatarSVG(p)}<span><b>${p.name}</b>${t.slice(2)}</span></div>`; }).join("")
+      return `<div class="duo-row">${avatarSVG(p)}<span><b class="duo-${p.id}">${p.name}</b>${t.slice(2)}</span></div>`; }).join("")
       : `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
     q.classList.remove("say"); void q.offsetWidth; q.classList.add("say");
     return true;
@@ -8694,7 +8694,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "cbc52d0dba";
+  const BUILD = "6ee68525fa";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;

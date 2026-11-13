@@ -825,7 +825,7 @@
     q.classList.toggle("duo", !!c.pair);
     // a pair argues: each turn of the exchange on its own row with the speaker's face
     q.innerHTML = c.pair ? line.replace("{n}", o.n).split("//").map(t => { const p = c.pair[t[0] === "S" ? 1 : 0];
-      return `<div class="duo-row">${avatarSVG(p)}<span><b>${p.name}</b>${t.slice(2)}</span></div>`; }).join("")
+      return `<div class="duo-row">${avatarSVG(p)}<span><b class="duo-${p.id}">${p.name}</b>${t.slice(2)}</span></div>`; }).join("")
       : `${avatarSVG(c)}<span><b>${c.name}</b>${line.replace("{n}", o.n)}</span>`;
     q.classList.remove("say"); void q.offsetWidth; q.classList.add("say");
     return true;
