@@ -1664,18 +1664,37 @@
     scoring = { dead: new Set(), loading: true, terr: null };
     render();
     const my = gen;
-    const ev = await AI.evaluate(n, history.slice(), KOMI);
+    const dead = await findDead(board, history.slice(), KOMI);
     if (my !== gen || !scoring) return;
-    const dead = new Set(), seen = new Set();
-    const ownBlack = q => { const [x, y] = board.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
-    for (const p of board.pts) {
-      const c = board.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
-      const chain = chainOf(p); let s = 0;
-      for (const q of chain) { seen.add(q); s += ownBlack(q); }
-      s /= chain.length;
-      if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
-    }
     scoring.dead = dead; scoring.loading = false; render();
+  }
+  // Dead stones from KataGo's ownership, averaged over both sides to move, since one raw evaluation can misread a long
+  // chain. A chain is dead when its stones on average belong to the opponent. Two touching chains of opposite colours
+  // can't both be dead (whoever killed one owns the other), so when they are, the one the network is less sure of lives
+  // (a reported count: a living black wall was marked dead together with the white stones it had captured).
+  async function findDead(b, pts, komi) {
+    const evs = await AI.evalMany(b.n, [pts, pts.concat(PASS)], komi);
+    const ownBlack = q => { const [x, y] = b.xy(q), i = y * 19 + x; let o = 0; for (const ev of evs) o += ev.pla === BLACK ? ev.own[i] : -ev.own[i]; return o / evs.length; };
+    const chains = [], chainAt = new Map();
+    for (const p of b.pts) {
+      const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || chainAt.has(p)) continue;
+      const ch = { c, stones: [p], d: 0 }; chainAt.set(p, ch);
+      for (let i = 0; i < ch.stones.length; i++) for (const d of b.dirs) {
+        const q = ch.stones[i] + d; if (b.color[q] === c && !chainAt.has(q)) { chainAt.set(q, ch); ch.stones.push(q); }
+      }
+      const s = ch.stones.reduce((a, q) => a + ownBlack(q), 0) / ch.stones.length;
+      ch.d = c === BLACK ? -s : s; // above 0: the opponent owns it
+      chains.push(ch);
+    }
+    const dead = new Set(chains.filter(ch => ch.d > 0.3));
+    for (const ch of [...dead].sort((a, b) => b.d - a.d)) {
+      if (!dead.has(ch)) continue;
+      for (const p of ch.stones) for (const d of b.dirs) {
+        const nb = chainAt.get(p + d); if (nb && nb.c !== ch.c && dead.has(nb)) dead.delete(nb);
+      }
+    }
+    const out = new Set(); for (const ch of dead) ch.stones.forEach(q => out.add(q));
+    return out;
   }
   // An open border is an empty point next to stones that neither side clearly owns yet (a gap in a wall, a neutral point),
   // leaving out self-ataris such as a shared liberty in seki. Hikaru (placement test) plays one instead of passing, even
@@ -2251,19 +2270,9 @@
   async function countLead(n2, mv, komi) {
     const b = new Board(n2), pts = [];
     for (const m of mv) { const p = m ? b.pt(m[0], m[1]) : PASS; b.play(p); pts.push(p); }
-    const dead = new Set();
+    let dead = new Set();
     try {
-      if (AI) {
-        const ev = await AI.evaluate(n2, pts, komi), seen = new Set();
-        const ownBlack = q => { const [x, y] = b.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
-        for (const p of b.pts) {
-          const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
-          const chain = [p]; seen.add(p);
-          for (let i = 0; i < chain.length; i++) for (const d of b.dirs) { const q = chain[i] + d; if (b.color[q] === c && !seen.has(q)) { seen.add(q); chain.push(q); } }
-          const s = chain.reduce((a, q) => a + ownBlack(q), 0) / chain.length;
-          if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
-        }
-      }
+      if (AI) dead = await findDead(b, pts, komi);
     } catch (e) { console.error(e); }
     let bl = 0, wh = 0; const seen = new Set();
     for (const p of b.pts) {
