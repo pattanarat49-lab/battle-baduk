@@ -91,12 +91,14 @@
       bio: "นักหมากล้อมมืออาชีพจากญี่ปุ่น อ่านเกมจนหมดเวลาทุกตา เก่งที่สุดในสนาม",
       say: { hello: "...เชิญ", ahead: "จบแล้ว", behind: "อืม", win: "ยังต้องฝึกอีกมาก", lose: "เจ้าคือผู้ที่ข้ารอคอยมานาน" } },
     // Pair Go (owner 2026-11-13): two brothers share one side and play alternate moves, each with his own brain. Kuro
-    // (7 kyu) samples HumanSL at kyu level and throws himself at the player's stones; Shiro (7 dan) reads with KataGo and
-    // defends. rateAs is the pair's strength for the rating, an estimate between the two. A win unlocks both faces.
+    // (7 kyu) samples HumanSL at kyu level and throws himself at the player's stones; Shiro (7 dan) reads with KataGo b18 at
+    // full strength. rateAs is the pair's strength for the rating, an estimate between the two. A win unlocks both faces.
     { id: "kuroshiro", en: "KURO & SHIRO", name: "คุโระ & ชิโระ", country: "ญี่ปุ่น", rank: "7 คิว + 7 ดั้ง", rateAs: "3 คิว", style: "pair", brain: "human", profile: "rank_8k", search: {},
       pair: [
         { id: "kuro", name: "คุโระ", rank: "7 คิว", style: "attack", brain: "human", profile: "rank_8k", search: { temperature: 1.25, wild: true } },
-        { id: "shiro", name: "ชิโระ", rank: "7 ดั้ง", style: "defend", search: { visits: 800, timeMs: 10000 } }
+        // owner 2026-11-13: Shiro at KataGo's full strength (the b18 network the special characters use, reading the whole
+        // time; pda 0 so the defensive style is only a label and costs no strength)
+        { id: "shiro", name: "ชิโระ", rank: "7 ดั้ง", style: "defend", brain: "b18", search: { visits: 100000, timeMs: 15000, pda: 0 } }
       ],
       bio: "พี่น้องคู่ Pair Go ที่เป็นขั้วตรงข้ามกันทุกอย่าง สลับกันเดินคนละตา คุโระคนพี่ (7 คิว) อารมณ์ร้อน บ้าต่อสู้ ไม่มีคำว่าถอย พุ่งเข้าชนตัดฟันมั่วๆ อย่างรุนแรง ชิโระคนน้อง (7 ดั้ง) เด็กเงียบๆ ใจเย็น ตั้งรับได้สมบูรณ์แบบ คอยตามเก็บกวาดสิ่งที่พี่ก่อไว้ เถียงกันทั้งเกม ชนะได้จะได้รูปโปรไฟล์ทั้งสองคน",
       say: { hello: "คุโระ: ลุยเลย! / ชิโระ: ใจเย็นครับพี่", ahead: "", behind: "", win: "", lose: "" } },
@@ -1570,6 +1572,7 @@
   let brainUI = () => {};
   let brainWait = 0;
   async function ensureBrain(ch) {
+    if (ch.pair) { for (const p of ch.pair) if (!(await ensureBrain(p))) return false; return true; } // a pair loads both partners' brains
     if (!ch.brain || (brains[ch.brain] && brains[ch.brain].ai)) return true;
     const my = ++brainWait;
     hideScreens(); $("brainLoad").hidden = false; window.scrollTo(0, 0);
