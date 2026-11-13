@@ -25,6 +25,7 @@ const Account = (() => {
   function beaten() {
     const b = new Set(Array.isArray(get("beaten")) ? get("beaten") : []);
     for (const h of get("history") || []) if (h && h.won && h.char && h.char !== "online") b.add(h.char);
+    if (b.has("kuroshiro")) { b.add("kuro"); b.add("shiro"); } // a win against the pair unlocks both brothers' pictures
     return [...b];
   }
   const collect = () => {

@@ -6,7 +6,7 @@ const Online = (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
-  const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
+  const face = a => a && D.CHARS.some(c => c.id === a || (c.pair && c.pair.some(p => p.id === a))) ? `chars/${a}_face.jpg` : "menu/guest.png";
   const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
   const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
   const mins = s => s >= 60 ? `${s / 60} นาที` : s ? `${s} วิ` : "ไม่มี";

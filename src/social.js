@@ -5,7 +5,7 @@ const Social = (() => {
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
-  const face = a => a && charOf(a) ? `chars/${a}_face.jpg` : "menu/guest.png";
+  const face = a => a && D.CHARS.some(c => c.id === a || (c.pair && c.pair.some(p => p.id === a))) ? `chars/${a}_face.jpg` : "menu/guest.png";
   const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
   const show = id => { D.hideScreens(); $(id).hidden = false; window.scrollTo(0, 0); };
 
@@ -73,7 +73,7 @@ const Social = (() => {
   // ---------- profile picture ----------
   function openAvatar() {
     const won = new Set(Account.beaten()), cur = Account.avatarSrc();
-    const list = D.CHARS.filter(c => !c.tutorial);
+    const list = D.CHARS.filter(c => !c.tutorial).flatMap(c => c.pair || [c]); // a pair gives its two members' pictures
     $("avGrid").innerHTML = `<button class="av-pick${cur === "menu/guest.png" ? " on" : ""}" data-av=""><img src="menu/guest.png" alt="" width="160" height="160"><span>ไม่ใช้รูป</span></button>` +
       list.map(c => { const ok = won.has(c.id);
         return `<button class="av-pick${ok ? "" : " lock"}${cur === `chars/${c.id}_face.jpg` ? " on" : ""}" data-av="${c.id}"${ok ? "" : " disabled"}><img src="chars/${c.id}_face.jpg" alt="" width="160" height="160"><span>${ok ? esc(c.name) : "🔒 " + esc(c.name)}</span></button>`; }).join("");

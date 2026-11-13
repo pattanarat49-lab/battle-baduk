@@ -105,7 +105,7 @@ function GoNNAI(E, F, net) {
     const rootEv = await evaluate(n, moves, komi, pdaFor);
     expandFrom(root, rootEv);
     root.N = 1; root.W = util(rootEv); root.L = rootEv.lead;
-    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory, opts.follow || 0, opts.soft); return s; }
+    if (opts.temperature) { const s = summary(root, base, rootEv); s.move = sampleByPolicy(n, moves, base, rootEv, opts.temperature, opts.blunder || 0, opts.local || 0, opts.noFloat, opts.keepTerritory, opts.follow || 0, opts.soft, opts.wild); return s; }
     let lastReport = 0;
     while (root.N - 1 < maxVisits && Date.now() - t0 < timeMs) {
       if (opts.shouldStop && opts.shouldStop()) break;
@@ -420,7 +420,8 @@ function GoNNAI(E, F, net) {
   // keepTerritory: skip points the network already counts as solidly ours, unless it rates the move as needed there
   // follow: like local, but always answers within this many lines of the opponent's last move, wherever it was
   // soft: a timid player, who leans on his own stones instead of pressing against the opponent's
-  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory, follow, soft) {
+  // wild: a brawler, who plays right up against the opponent's stones (attachments, hanes, cuts) whenever he can
+  function sampleByPolicy(n, moves, base, ev, temp, blunder, local, noFloat, keepTerritory, follow, soft, wild) {
     const last = moves[moves.length - 1];
     const edge = i => onEdge(n, i) && ev.policy[i] < EDGE_NEED;
     // a point already settled for either side (inside a closed area) is a wasted move unless the network wants it;
@@ -429,7 +430,7 @@ function GoNNAI(E, F, net) {
     if (ev.policy[AREA] >= 0.5) return PASS;
     const ownPoint = keepTerritory ? (i => i < AREA && ev.own[i] > 0.8 && ev.policy[i] < 0.1) : null;
     let floating = null, fb = null;
-    if (noFloat || soft) { fb = new Board(n); for (const m of moves) fb.play(m); }
+    if (noFloat || soft || wild) { fb = new Board(n); for (const m of moves) fb.play(m); }
     if (noFloat) {
       floating = i => {
         const x = i % 19, y = (i / 19) | 0;
@@ -483,6 +484,21 @@ function GoNNAI(E, F, net) {
         for (const d of fb.dirs) { const c = fb.color[q + d]; if (c === me) own = true; else if (c === E.BLACK || c === E.WHITE) opp = true; }
         for (const d of fb.diag) if (fb.color[q + d] === me) own = true;
         if (own) p[i] *= 3; else if (opp) p[i] *= 0.3;
+      }
+    }
+    if (wild) {
+      // a move touching the opponent's stones is played five times as often (eight when it also cuts two groups apart),
+      // a quiet move touching only his own stones a third as often; moves that put himself in atari get no bonus
+      const me = fb.toPlay;
+      for (let i = 0; i < AREA; i++) {
+        if (!p[i]) continue;
+        const q = fb.pt(i % 19, (i / 19) | 0), heads = new Set();
+        let own = false;
+        for (const d of fb.dirs) { const c = fb.color[q + d]; if (c === me) own = true; else if (c === E.BLACK || c === E.WHITE) heads.add(fb.head[q + d]); }
+        if (heads.size) {
+          const t = new Board(n); t.copyFrom(fb);
+          if (t.isLegal(q, me)) { t.play(q); if (t.color[q] === me && t.libs(t.head[q], 2) >= 2) p[i] *= heads.size >= 2 ? 8 : 5; }
+        } else if (own && ev.policy[i] < 0.3) p[i] *= 0.3;
       }
     }
     let s = 0; for (let i = 0; i < p.length; i++) s += p[i];
