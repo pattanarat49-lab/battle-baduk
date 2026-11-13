@@ -2,7 +2,7 @@
 // online board, and the spectator view of online games and of games against the AI / rank tests.
 // Server side: worker/online.js through Hub (src/hub.js).
 const Online = (() => {
-  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate }
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate, inGame, leaveAIGame }
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
@@ -52,12 +52,13 @@ const Online = (() => {
     }
     if (lobbyMode !== "play") return;
     const me = Account.name();
-    const open = Object.values(rooms).filter(r => r.st === "open").sort((x, y) => y.at - x.at);
+    // a challenge is only listed for the two players in it
+    const open = Object.values(rooms).filter(r => r.st === "open" && (!r.to || r.to === me || r.host.n === me)).sort((x, y) => y.at - x.at);
     let h = me ? `<button class="px-start ol-new" id="olNew">+ สร้างห้อง</button>`
       : `<div class="lb-me">ล็อกอินก่อนถึงจะสร้างห้องหรือ Join ได้ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
     h += `<div class="pf-h">ห้องที่รอคู่แข่ง</div>`;
     h += open.length ? `<div class="ol-list">${open.map(r => { const mine = r.host.n === me;
-      return `<div class="ol-row${mine ? " me" : ""}"><div class="ol-who">${pRow(r.host)}</div><div class="ol-meta">${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}</div>
+      return `<div class="ol-row${mine ? " me" : ""}"><div class="ol-who">${pRow(r.host)}</div><div class="ol-meta">${r.to ? `<b>คำท้าถึง ${esc(r.to)}</b> · ` : ""}${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}</div>
         ${mine ? `<button class="pf-an" data-enter="${r.id}">ห้องของคุณ</button>` : `<button class="pf-an primary" data-join="${r.id}"${me ? "" : " disabled"}>Join</button>`}</div>`; }).join("")}</div>`
       : `<p class="pf-empty">ยังไม่มีห้องว่าง กด "สร้างห้อง" แล้วรอคนมา Join ได้เลย</p>`;
     const g = playing().filter(x => x.kind === "room");
@@ -67,7 +68,11 @@ const Online = (() => {
 
   // ---------- create a room ----------
   const SET = { size: 19, main: 600, byo: 30, per: 3, pick: "r" };
-  function openNew() {
+  let target = null; // the player being challenged, or null for an open room
+  function openNew(to) {
+    if (to !== undefined) target = to;
+    $("onT").innerHTML = target ? `<b>CHALLENGE</b>ท้าดวล ${esc(target)}` : "<b>NEW ROOM</b>สร้างห้อง";
+    $("onGo").textContent = target ? "ส่งคำท้า" : "สร้างห้อง";
     for (const [k, v] of Object.entries(SET)) for (const b of $("onNew").querySelectorAll(`[data-k="${k}"] button`)) b.setAttribute("aria-pressed", String(b.dataset.v == v));
     $("onPerRow").hidden = !SET.byo;
     $("onErr").textContent = "";
@@ -75,7 +80,7 @@ const Online = (() => {
   }
   async function create() {
     $("onGo").disabled = true; $("onErr").textContent = "กำลังสร้างห้อง…";
-    const r = await Hub.op("create", Object.assign({ token: Account.token() }, SET));
+    const r = await Hub.op("create", Object.assign({ token: Account.token() }, SET, target ? { to: target } : {}));
     $("onGo").disabled = false;
     if (r.status !== 200) { $("onErr").textContent = r.body.error || "สร้างห้องไม่สำเร็จ"; return; }
     $("onNew").hidden = true; enterRoom(r.body.room.id, r.body.room);
@@ -203,7 +208,8 @@ const Online = (() => {
       const host = r.host, guest = r.guest;
       black = r.black ? (r.black === host.n ? host : guest) : host; white = r.white ? (r.white === host.n ? host : guest) : null;
       turn = r.st === "play" ? (r.moves.length % 2 === 0 ? "b" : "w") : null;
-      if (r.st === "open") status = `รอคู่แข่งกด Join · รหัสห้อง <b>${r.id}</b> · ${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}`;
+      if (r.st === "open") status = (r.to ? `ส่งคำท้าถึง <b>${esc(r.to)}</b> แล้ว รอตอบรับ…` : `รอคู่แข่งกด Join · รหัสห้อง <b>${r.id}</b>`) + ` · ${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}`;
+      else if (r.st === "declined") status = `<b>${esc(r.to)}</b> ปฏิเสธคำท้า ลองท้าใหม่ทีหลัง หรือสร้างห้องให้คนอื่น Join ได้`;
       else if (r.st === "play") status = G.me ? (turn === G.me ? "ตาคุณเดิน" : "รอคู่แข่งเดิน…") : `กำลังดู · ตาที่ ${r.moves.length + 1}`;
       else if (r.st === "score") status = "ผ่านกันทั้งคู่ กำลังนับแต้ม…";
       else if (r.res) { const w = r.res.winner === "b" ? "ดำ" : "ขาว", wn = r.res.winner === "b" ? r.black : r.white;
@@ -318,6 +324,45 @@ const Online = (() => {
     if (x.status !== 200) { G.ghost = null; $("ogStatus").textContent = x.body.error || "ส่งตาเดินไม่สำเร็จ"; draw(); }
     else if (x.body.room) setRoom(x.body.room);
   }
+  // ---------- challenges to this player: a bar at the top of every screen with accept / decline ----------
+  let invName = null, invOff = null, invs = [], invGone = new Set();
+  function syncInvites() {
+    const me = Account.name() || null;
+    if (me === invName) return;
+    if (invOff) { invOff(); invOff = null; }
+    invName = me; invs = [];
+    if (me && !window.ACCT_HUB) invOff = Hub.sub("inv:" + me.toLowerCase(), v => { invs = (v && v.list) || []; renderInv(); });
+    renderInv();
+  }
+  function renderInv() {
+    let bar = $("invBar");
+    const now = Hub.now(), list = invs.filter(x => now - x.at < 30 * 60e3 && !invGone.has(x.id) && !(G && G.kind === "room" && G.id === x.id));
+    if (!list.length) { if (bar) bar.hidden = true; return; }
+    if (!bar) {
+      bar = document.createElement("div"); bar.id = "invBar"; bar.className = "inv-bar"; bar.setAttribute("role", "alert");
+      document.body.appendChild(bar);
+      bar.addEventListener("click", e => { const b = e.target.closest("button[data-inv]"); if (b) answer(b.dataset.id, b.dataset.inv === "yes"); });
+    }
+    const x = list[list.length - 1], more = list.length - 1;
+    bar.innerHTML = `<img src="${face(x.from.a)}" alt="" width="160" height="160"><div class="inv-t"><b>${esc(x.from.n)}</b> <span class="ch-rank${typeof x.from.r === "number" ? "" : " no"}">${esc(rankOf(x.from.r))}</span> ท้าดวลคุณ!
+      <small>${x.size}×${x.size} · ${esc(timeText(x))} · ${{ b: "เขาถือดำ", w: "เขาถือขาว", r: "สุ่มสี" }[x.pick] || ""}${more ? ` · และอีก ${more} คำท้า` : ""}</small></div>
+      <div class="inv-b"><button class="pf-an" data-inv="no" data-id="${x.id}">ปฏิเสธ</button><button class="pf-an primary" data-inv="yes" data-id="${x.id}">รับคำท้า</button></div>`;
+    bar.hidden = false;
+  }
+  async function answer(id, yes) {
+    D.blip(yes ? 880 : 660);
+    invGone.add(id); renderInv();
+    if (!yes) { Hub.op("decline", { token: Account.token(), id }); return; }
+    if (D.inGame() && !await D.askSure("รับคำท้า?", "เกมกับ AI ที่เล่นอยู่จะถูกพักไว้ กลับมาเล่นต่อได้จากหน้า PROFILE", "รับคำท้า")) { invGone.delete(id); renderInv(); return; }
+    const r = await Hub.op("join", { token: Account.token(), id });
+    if (r.status !== 200) { await D.askSure("รับคำท้าไม่ได้", r.body.error || "คำท้านี้หมดอายุแล้ว", "ตกลง"); Hub.op("decline", { token: Account.token(), id }); return; }
+    D.leaveAIGame(); enterRoom(id, r.body.room);
+  }
+  function challenge(name) {
+    if (!Account.name()) { Account.open("login"); return; }
+    openNew(name);
+  }
+
   // ---------- a game against the AI tells spectators every move ----------
   function live(gid, s) { if (gid) Hub.op("live", { token: Account.token(), g: gid, s }); }
 
@@ -344,14 +389,15 @@ const Online = (() => {
     });
     $("onGo").onclick = create;
     if (pend().length) setTimeout(() => { if (Account.name()) checkPending(); }, 4000);
+    setTimeout(syncInvites, 1500); setInterval(renderInv, 60e3);
     document.addEventListener("click", e => {
       const b = e.target.closest && e.target.closest("button"); if (!b) return;
-      if (b.id === "olNew") { D.blip(880); openNew(); }
+      if (b.id === "olNew") { D.blip(880); openNew(null); }
       else if (b.dataset.join) { D.blip(880); (async () => { const x = await Hub.op("join", { token: Account.token(), id: b.dataset.join }); if (x.status !== 200) { const e = $("onlErr"); if (e) { e.textContent = x.body.error || "เข้าห้องไม่ได้"; setTimeout(() => { e.textContent = ""; }, 4000); } return; } enterRoom(x.body.room.id, x.body.room); })(); }
       else if (b.dataset.enter) { D.blip(880); enterRoom(b.dataset.enter); }
       else if (b.dataset.watchRoom) { D.blip(880); enterRoom(b.dataset.watchRoom); }
       else if (b.dataset.watchLive) { D.blip(880); watchLive(b.dataset.watchLive); }
     });
   }
-  return { init, openLobby, live, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
+  return { init, openLobby, live, challenge, syncInvites, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
 })();

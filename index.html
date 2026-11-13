@@ -835,6 +835,13 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
 .og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
 .og-act { padding: 0; }
+.inv-bar { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 9000; width: min(560px, calc(100% - 16px)); box-sizing: border-box;
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; background: #112b33; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.45); animation: endAskIn .2s ease-out; }
+.inv-bar[hidden] { display: none; }
+.inv-bar img { width: 44px; height: 44px; border: 2px solid var(--wood); }
+.inv-t { min-width: 0; font-size: 14px; line-height: 1.35; } .inv-t b { color: var(--accent); } .inv-t small { display: block; color: var(--muted); font-size: 12px; }
+.inv-b { display: flex; gap: 6px; } .inv-b button { min-height: 38px; padding: 0 12px; white-space: nowrap; }
+@media (max-width: 480px) { .inv-bar { grid-template-columns: 40px minmax(0, 1fr); } .inv-bar img { width: 40px; height: 40px; } .inv-b { grid-column: 1 / -1; } .inv-b button { flex: 1; } }
 .og-rev { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; }
 .og-nav { display: grid; grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px; gap: 4px; align-items: center; }
 .og-nav button { min-height: 40px; padding: 0; font-size: 16px; } .og-nav button:disabled { opacity: .4; }
@@ -7381,7 +7388,7 @@ const Social = (() => {
 // online board, and the spectator view of online games and of games against the AI / rank tests.
 // Server side: worker/online.js through Hub (src/hub.js).
 const Online = (() => {
-  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate }
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate, inGame, leaveAIGame }
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
@@ -7431,12 +7438,13 @@ const Online = (() => {
     }
     if (lobbyMode !== "play") return;
     const me = Account.name();
-    const open = Object.values(rooms).filter(r => r.st === "open").sort((x, y) => y.at - x.at);
+    // a challenge is only listed for the two players in it
+    const open = Object.values(rooms).filter(r => r.st === "open" && (!r.to || r.to === me || r.host.n === me)).sort((x, y) => y.at - x.at);
     let h = me ? `<button class="px-start ol-new" id="olNew">+ สร้างห้อง</button>`
       : `<div class="lb-me">ล็อกอินก่อนถึงจะสร้างห้องหรือ Join ได้ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
     h += `<div class="pf-h">ห้องที่รอคู่แข่ง</div>`;
     h += open.length ? `<div class="ol-list">${open.map(r => { const mine = r.host.n === me;
-      return `<div class="ol-row${mine ? " me" : ""}"><div class="ol-who">${pRow(r.host)}</div><div class="ol-meta">${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}</div>
+      return `<div class="ol-row${mine ? " me" : ""}"><div class="ol-who">${pRow(r.host)}</div><div class="ol-meta">${r.to ? `<b>คำท้าถึง ${esc(r.to)}</b> · ` : ""}${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}</div>
         ${mine ? `<button class="pf-an" data-enter="${r.id}">ห้องของคุณ</button>` : `<button class="pf-an primary" data-join="${r.id}"${me ? "" : " disabled"}>Join</button>`}</div>`; }).join("")}</div>`
       : `<p class="pf-empty">ยังไม่มีห้องว่าง กด "สร้างห้อง" แล้วรอคนมา Join ได้เลย</p>`;
     const g = playing().filter(x => x.kind === "room");
@@ -7446,7 +7454,11 @@ const Online = (() => {
 
   // ---------- create a room ----------
   const SET = { size: 19, main: 600, byo: 30, per: 3, pick: "r" };
-  function openNew() {
+  let target = null; // the player being challenged, or null for an open room
+  function openNew(to) {
+    if (to !== undefined) target = to;
+    $("onT").innerHTML = target ? `<b>CHALLENGE</b>ท้าดวล ${esc(target)}` : "<b>NEW ROOM</b>สร้างห้อง";
+    $("onGo").textContent = target ? "ส่งคำท้า" : "สร้างห้อง";
     for (const [k, v] of Object.entries(SET)) for (const b of $("onNew").querySelectorAll(`[data-k="${k}"] button`)) b.setAttribute("aria-pressed", String(b.dataset.v == v));
     $("onPerRow").hidden = !SET.byo;
     $("onErr").textContent = "";
@@ -7454,7 +7466,7 @@ const Online = (() => {
   }
   async function create() {
     $("onGo").disabled = true; $("onErr").textContent = "กำลังสร้างห้อง…";
-    const r = await Hub.op("create", Object.assign({ token: Account.token() }, SET));
+    const r = await Hub.op("create", Object.assign({ token: Account.token() }, SET, target ? { to: target } : {}));
     $("onGo").disabled = false;
     if (r.status !== 200) { $("onErr").textContent = r.body.error || "สร้างห้องไม่สำเร็จ"; return; }
     $("onNew").hidden = true; enterRoom(r.body.room.id, r.body.room);
@@ -7582,7 +7594,8 @@ const Online = (() => {
       const host = r.host, guest = r.guest;
       black = r.black ? (r.black === host.n ? host : guest) : host; white = r.white ? (r.white === host.n ? host : guest) : null;
       turn = r.st === "play" ? (r.moves.length % 2 === 0 ? "b" : "w") : null;
-      if (r.st === "open") status = `รอคู่แข่งกด Join · รหัสห้อง <b>${r.id}</b> · ${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}`;
+      if (r.st === "open") status = (r.to ? `ส่งคำท้าถึง <b>${esc(r.to)}</b> แล้ว รอตอบรับ…` : `รอคู่แข่งกด Join · รหัสห้อง <b>${r.id}</b>`) + ` · ${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}`;
+      else if (r.st === "declined") status = `<b>${esc(r.to)}</b> ปฏิเสธคำท้า ลองท้าใหม่ทีหลัง หรือสร้างห้องให้คนอื่น Join ได้`;
       else if (r.st === "play") status = G.me ? (turn === G.me ? "ตาคุณเดิน" : "รอคู่แข่งเดิน…") : `กำลังดู · ตาที่ ${r.moves.length + 1}`;
       else if (r.st === "score") status = "ผ่านกันทั้งคู่ กำลังนับแต้ม…";
       else if (r.res) { const w = r.res.winner === "b" ? "ดำ" : "ขาว", wn = r.res.winner === "b" ? r.black : r.white;
@@ -7697,6 +7710,45 @@ const Online = (() => {
     if (x.status !== 200) { G.ghost = null; $("ogStatus").textContent = x.body.error || "ส่งตาเดินไม่สำเร็จ"; draw(); }
     else if (x.body.room) setRoom(x.body.room);
   }
+  // ---------- challenges to this player: a bar at the top of every screen with accept / decline ----------
+  let invName = null, invOff = null, invs = [], invGone = new Set();
+  function syncInvites() {
+    const me = Account.name() || null;
+    if (me === invName) return;
+    if (invOff) { invOff(); invOff = null; }
+    invName = me; invs = [];
+    if (me && !window.ACCT_HUB) invOff = Hub.sub("inv:" + me.toLowerCase(), v => { invs = (v && v.list) || []; renderInv(); });
+    renderInv();
+  }
+  function renderInv() {
+    let bar = $("invBar");
+    const now = Hub.now(), list = invs.filter(x => now - x.at < 30 * 60e3 && !invGone.has(x.id) && !(G && G.kind === "room" && G.id === x.id));
+    if (!list.length) { if (bar) bar.hidden = true; return; }
+    if (!bar) {
+      bar = document.createElement("div"); bar.id = "invBar"; bar.className = "inv-bar"; bar.setAttribute("role", "alert");
+      document.body.appendChild(bar);
+      bar.addEventListener("click", e => { const b = e.target.closest("button[data-inv]"); if (b) answer(b.dataset.id, b.dataset.inv === "yes"); });
+    }
+    const x = list[list.length - 1], more = list.length - 1;
+    bar.innerHTML = `<img src="${face(x.from.a)}" alt="" width="160" height="160"><div class="inv-t"><b>${esc(x.from.n)}</b> <span class="ch-rank${typeof x.from.r === "number" ? "" : " no"}">${esc(rankOf(x.from.r))}</span> ท้าดวลคุณ!
+      <small>${x.size}×${x.size} · ${esc(timeText(x))} · ${{ b: "เขาถือดำ", w: "เขาถือขาว", r: "สุ่มสี" }[x.pick] || ""}${more ? ` · และอีก ${more} คำท้า` : ""}</small></div>
+      <div class="inv-b"><button class="pf-an" data-inv="no" data-id="${x.id}">ปฏิเสธ</button><button class="pf-an primary" data-inv="yes" data-id="${x.id}">รับคำท้า</button></div>`;
+    bar.hidden = false;
+  }
+  async function answer(id, yes) {
+    D.blip(yes ? 880 : 660);
+    invGone.add(id); renderInv();
+    if (!yes) { Hub.op("decline", { token: Account.token(), id }); return; }
+    if (D.inGame() && !await D.askSure("รับคำท้า?", "เกมกับ AI ที่เล่นอยู่จะถูกพักไว้ กลับมาเล่นต่อได้จากหน้า PROFILE", "รับคำท้า")) { invGone.delete(id); renderInv(); return; }
+    const r = await Hub.op("join", { token: Account.token(), id });
+    if (r.status !== 200) { await D.askSure("รับคำท้าไม่ได้", r.body.error || "คำท้านี้หมดอายุแล้ว", "ตกลง"); Hub.op("decline", { token: Account.token(), id }); return; }
+    D.leaveAIGame(); enterRoom(id, r.body.room);
+  }
+  function challenge(name) {
+    if (!Account.name()) { Account.open("login"); return; }
+    openNew(name);
+  }
+
   // ---------- a game against the AI tells spectators every move ----------
   function live(gid, s) { if (gid) Hub.op("live", { token: Account.token(), g: gid, s }); }
 
@@ -7723,16 +7775,17 @@ const Online = (() => {
     });
     $("onGo").onclick = create;
     if (pend().length) setTimeout(() => { if (Account.name()) checkPending(); }, 4000);
+    setTimeout(syncInvites, 1500); setInterval(renderInv, 60e3);
     document.addEventListener("click", e => {
       const b = e.target.closest && e.target.closest("button"); if (!b) return;
-      if (b.id === "olNew") { D.blip(880); openNew(); }
+      if (b.id === "olNew") { D.blip(880); openNew(null); }
       else if (b.dataset.join) { D.blip(880); (async () => { const x = await Hub.op("join", { token: Account.token(), id: b.dataset.join }); if (x.status !== 200) { const e = $("onlErr"); if (e) { e.textContent = x.body.error || "เข้าห้องไม่ได้"; setTimeout(() => { e.textContent = ""; }, 4000); } return; } enterRoom(x.body.room.id, x.body.room); })(); }
       else if (b.dataset.enter) { D.blip(880); enterRoom(b.dataset.enter); }
       else if (b.dataset.watchRoom) { D.blip(880); enterRoom(b.dataset.watchRoom); }
       else if (b.dataset.watchLive) { D.blip(880); watchLive(b.dataset.watchLive); }
     });
   }
-  return { init, openLobby, live, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
+  return { init, openLobby, live, challenge, syncInvites, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
 })();
 
 </script>
@@ -8712,7 +8765,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "d2bf7a65c7";
+  const BUILD = "53b6db86ba";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -10056,7 +10109,7 @@ const Online = (() => {
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
-  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); Online.syncInvites(); });
   // one socket per open page, so the server can say how many people are online (shown in WORLD CHAT)
   if (!window.ACCT_HUB && !MATCH && EXAMBOT === null) Hub.sub("here", () => {});
   // first visit: offer an account once the loading screen is gone
@@ -10094,7 +10147,8 @@ const Online = (() => {
     const w = ev.win / ((ev.win + ev.loss) || 1);
     return { lead: blk ? ev.lead : -ev.lead, win: blk ? w : 1 - w };
   }
-  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead });
+  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead,
+    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); } });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   // the announcement of the newest mode: a pop-up the first time the menu is seen (once per browser), after the
@@ -10252,7 +10306,8 @@ const Online = (() => {
     const face = p.a && isFace(p.a) ? `chars/${p.a}_face.jpg` : "menu/guest.png";
     const loss = p.g - p.w;
     let h = `<div class="acct-box in pl-top"><span class="acct-av"><img src="${face}" alt="" width="160" height="160"></span><div class="t"><b>${escH(p.n)}${p.n === Account.name() ? " (คุณ)" : ""}</b>
-      <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div></div>`;
+      <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div>
+      ${p.n === Account.name() ? "" : `<div class="pf-btns"><button class="pf-an primary" id="plDuel">⚔ ท้าดวล</button></div>`}</div>`;
     h += `<div class="pf-tiles"><div class="pf-tile"><b>${p.g}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${p.w}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${loss}</b><span>แพ้</span></div><div class="pf-tile"><b>${p.g ? Math.round(p.w / p.g * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rankName(Rating.toRank(rt.R))}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
@@ -10268,6 +10323,7 @@ const Online = (() => {
   }
   $("plBack").onclick = () => { blip(660); if (plFrom === "chat") Social.openChat(); else Social.openBoard(); };
   $("plBody").addEventListener("click", e => {
+    if (e.target.closest("#plDuel") && plData) { blip(880); Online.challenge(plData.n); return; }
     const b = e.target.closest("button[data-pan]"); if (!b || !plData) return;
     const x = plData.games[+b.dataset.pan]; if (!x) return;
     unlockAudio(); blip(880); hideScreens(); trackMode("analysis");

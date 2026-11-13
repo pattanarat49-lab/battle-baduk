@@ -374,7 +374,7 @@ ${matchSection(s, ago)}
 // Player accounts, chat, leaderboard, online rooms and live games (worker/hub.js), kept apart from Stats so they never
 // touch its tables. Rows are written on sign-up, login, saves, chat messages and online moves; reads are by primary key.
 // Live positions of games against the AI ("lv…" keys) stay in memory only: they change every move and are not worth a row.
-const CODE = "2026-11-13a"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
+const CODE = "2026-11-13c"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
 export class Accounts extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -416,7 +416,7 @@ export class Accounts extends DurableObject {
     if (!m || typeof m !== "object") return;
     const att = ws.deserializeAttachment() || { subs: [] };
     if (Array.isArray(m.sub)) {
-      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|online|here|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
+      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|online|here|inv:[^\s]{1,32}|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
       ws.serializeAttachment(att);
       for (const k of att.subs) ws.send(JSON.stringify({ k, v: await this.value(k), now: Date.now() }));
       return;

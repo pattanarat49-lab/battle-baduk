@@ -2317,7 +2317,7 @@
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
-  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); });
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); Online.syncInvites(); });
   // one socket per open page, so the server can say how many people are online (shown in WORLD CHAT)
   if (!window.ACCT_HUB && !MATCH && EXAMBOT === null) Hub.sub("here", () => {});
   // first visit: offer an account once the loading screen is gone
@@ -2355,7 +2355,8 @@
     const w = ev.win / ((ev.win + ev.loss) || 1);
     return { lead: blk ? ev.lead : -ev.lead, win: blk ? w : 1 - w };
   }
-  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead });
+  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead,
+    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); } });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   // the announcement of the newest mode: a pop-up the first time the menu is seen (once per browser), after the
@@ -2513,7 +2514,8 @@
     const face = p.a && isFace(p.a) ? `chars/${p.a}_face.jpg` : "menu/guest.png";
     const loss = p.g - p.w;
     let h = `<div class="acct-box in pl-top"><span class="acct-av"><img src="${face}" alt="" width="160" height="160"></span><div class="t"><b>${escH(p.n)}${p.n === Account.name() ? " (คุณ)" : ""}</b>
-      <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div></div>`;
+      <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div>
+      ${p.n === Account.name() ? "" : `<div class="pf-btns"><button class="pf-an primary" id="plDuel">⚔ ท้าดวล</button></div>`}</div>`;
     h += `<div class="pf-tiles"><div class="pf-tile"><b>${p.g}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${p.w}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${loss}</b><span>แพ้</span></div><div class="pf-tile"><b>${p.g ? Math.round(p.w / p.g * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     h += `<div class="pf-h">ระดับฝีมือ (เรตติ้ง)</div>` + (rt ? `<div class="pf-rate"><div class="pf-rate-top"><span class="exam-rank">${rankName(Rating.toRank(rt.R))}</span><span class="pf-rate-r">${rt.R} แต้ม</span>
@@ -2529,6 +2531,7 @@
   }
   $("plBack").onclick = () => { blip(660); if (plFrom === "chat") Social.openChat(); else Social.openBoard(); };
   $("plBody").addEventListener("click", e => {
+    if (e.target.closest("#plDuel") && plData) { blip(880); Online.challenge(plData.n); return; }
     const b = e.target.closest("button[data-pan]"); if (!b || !plData) return;
     const x = plData.games[+b.dataset.pan]; if (!x) return;
     unlockAudio(); blip(880); hideScreens(); trackMode("analysis");

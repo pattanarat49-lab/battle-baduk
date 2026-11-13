@@ -3,7 +3,8 @@
 // Everything is kept in `store` under these keys; whoever is subscribed to a key gets its new value (worker/index.js
 // pushes it over the WebSocket, the preview watches the database):
 //   "rooms"      { list: { id -> summary } } open rooms and online games in progress
-//   "room:<id>"  one room: settings, players, moves [[x, y] | null for a pass], clocks, state, result
+//   "room:<id>"  one room: settings, players, moves [[x, y] | null for a pass], clocks, state, result; "to" = a challenge
+//   "inv:<name>" { list: [{ id, from, size, main, byo, per, pick, at }] } challenges waiting for that player
 //   "lvidx"      { list: { game id -> summary } } games against the AI being played now (kept in memory on the Worker)
 //   "lv:<game>"  the latest position of one of those games (memory too)
 // The server keeps the clocks (only time spent on the server's clock counts) and checks every move with the same rules
@@ -43,7 +44,7 @@ export function makeOnline(store, userOf) {
   const err = (status, msg) => ({ status, body: { error: msg } });
   const ok = (body, changed) => ({ status: 200, body, changed: changed || [] });
   const summary = r => ({ id: r.id, st: r.st, size: r.size, main: r.main, byo: r.byo, per: r.per, pick: r.pick, host: r.host, guest: r.guest,
-    black: r.black, white: r.white, moves: r.moves.length, at: r.turnAt || r.created });
+    black: r.black, white: r.white, to: r.to, moves: r.moves.length, at: r.turnAt || r.created });
   async function index(fn) {
     const ix = (await store.get("rooms")) || { list: {} };
     fn(ix.list);
@@ -51,7 +52,7 @@ export function makeOnline(store, userOf) {
   }
   async function saveRoom(r, changed) {
     await store.put("room:" + r.id, r);
-    await index(l => { if (r.st === "end") delete l[r.id]; else l[r.id] = summary(r); });
+    await index(l => { if (r.st === "end" || r.st === "declined") delete l[r.id]; else l[r.id] = summary(r); });
     return ["room:" + r.id, "rooms", ...(changed || [])];
   }
   function finish(r, winner, how, margin) {
@@ -78,6 +79,16 @@ export function makeOnline(store, userOf) {
   }
   async function room(id) { return typeof id === "string" && /^[A-Z0-9]{6}$/.test(id) ? await store.get("room:" + id) : null; }
   const seat = (r, name) => r.black === name ? "b" : r.white === name ? "w" : null;
+  // challenges: a room made for one named player ("to"); that player's "inv:<lower-case name>" lists the open ones,
+  // which their page shows as a bar at the top with accept / decline
+  const ikey = name => "inv:" + String(name).toLowerCase();
+  async function dropInvite(r) {
+    if (!r || !r.to) return [];
+    const k = ikey(r.to), v = (await store.get(k)) || { list: [] }, list = v.list.filter(x => x.id !== r.id);
+    if (list.length === v.list.length) return [];
+    await store.put(k, { list });
+    return [k];
+  }
 
   const ops = {
     async create(b) {
@@ -88,10 +99,27 @@ export function makeOnline(store, userOf) {
       if (!main && !byo) return err(400, "ต้องมีเวลาหลักหรือเบียวโยมิอย่างน้อยหนึ่งอย่าง");
       // one open room per player: a new one replaces the old
       const ix = (await store.get("rooms")) || { list: {} }, changed = [];
-      for (const s of Object.values(ix.list)) if (s.st === "open" && s.host && s.host.n === u.n) { await store.del("room:" + s.id); delete ix.list[s.id]; changed.push("room:" + s.id); }
+      let to = null;
+      if (b.to != null) {
+        const t = typeof b.to === "string" && b.to.length <= 32 ? await store.get("u:" + b.to.toLowerCase()) : null;
+        if (!t) return err(404, "ไม่พบผู้เล่นที่จะท้า");
+        if (t.name === u.n) return err(400, "ท้าตัวเองไม่ได้นะ");
+        to = t.name;
+      }
+      for (const s of Object.values(ix.list)) if (s.st === "open" && s.host && s.host.n === u.n) {
+        changed.push(...await dropInvite(await store.get("room:" + s.id)));
+        await store.del("room:" + s.id); delete ix.list[s.id]; changed.push("room:" + s.id);
+      }
       await store.put("rooms", ix);
       const r = { id: id6(), v: 1, size, main, byo, per, pick, komi: KOMI, host: u, guest: null, black: null, white: null, st: "open",
         moves: [], clk: { b: [main, per], w: [main, per] }, turnAt: 0, created: Date.now(), res: null, scores: null };
+      if (to) {
+        r.to = to;
+        const k = ikey(to), v = (await store.get(k)) || { list: [] }, now = Date.now();
+        const list = v.list.filter(x => now - x.at < OPEN_KEEP && x.from.n !== u.n).slice(-9);
+        list.push({ id: r.id, from: u, size, main, byo, per, pick, at: now });
+        await store.put(k, { list }); changed.push(k);
+      }
       return ok({ room: r }, await saveRoom(r, changed));
     },
     async join(b) {
@@ -101,18 +129,33 @@ export function makeOnline(store, userOf) {
       if (!r) return err(404, "ไม่พบห้องนี้ อาจถูกปิดไปแล้ว");
       if (r.st !== "open") return seat(r, u.n) ? ok({ room: r }) : err(409, "ห้องนี้มีคนเล่นแล้ว กดดูเกมแทนได้");
       if (r.host.n === u.n) return ok({ room: r });
+      if (r.to && r.to !== u.n) return err(403, `ห้องนี้เป็นคำท้าส่วนตัวถึง ${r.to}`);
       const hostBlack = r.pick === "b" || (r.pick === "r" && crypto.getRandomValues(new Uint8Array(1))[0] < 128);
       r.guest = u; r.black = hostBlack ? r.host.n : u.n; r.white = hostBlack ? u.n : r.host.n;
       r.st = "play"; r.turnAt = Date.now(); r.v++;
-      return ok({ room: r }, await saveRoom(r));
+      return ok({ room: r }, await saveRoom(r, await dropInvite(r)));
+    },
+    // the challenged player says no: the challenger's waiting room shows it, then it is gone
+    async decline(b) {
+      const u = await userOf(b.token), r = await room(b.id);
+      if (!u) return err(401, "ล็อกอินก่อน");
+      if (!r || r.st !== "open" || r.to !== u.n) {
+        const k = ikey(u.n), v = (await store.get(k)) || { list: [] }, list = v.list.filter(x => x.id !== b.id);
+        if (list.length === v.list.length) return ok({});
+        await store.put(k, { list }); return ok({}, [k]);
+      }
+      const changed = await dropInvite(r);
+      r.st = "declined"; r.v++; r.ended = Date.now();
+      return ok({}, await saveRoom(r, changed));
     },
     // the host closes a room nobody joined yet
     async close(b) {
       const u = await userOf(b.token), r = await room(b.id);
       if (!u || !r || r.st !== "open" || r.host.n !== u.n) return ok({});
+      const inv = await dropInvite(r);
       await store.del("room:" + r.id);
       await index(l => { delete l[r.id]; });
-      return ok({}, ["room:" + r.id, "rooms"]);
+      return ok({}, ["room:" + r.id, "rooms", ...inv]);
     },
     async move(b) {
       const u = await userOf(b.token), r = await room(b.id);
@@ -167,7 +210,7 @@ export function makeOnline(store, userOf) {
     async lobby() {
       const ix = (await store.get("rooms")) || { list: {} }, now = Date.now(), changed = [];
       for (const s of Object.values(ix.list)) {
-        if (s.st === "open" && now - s.at > OPEN_KEEP) { await store.del("room:" + s.id); delete ix.list[s.id]; changed.push("room:" + s.id); continue; }
+        if (s.st === "open" && now - s.at > OPEN_KEEP) { changed.push(...await dropInvite(await store.get("room:" + s.id))); await store.del("room:" + s.id); delete ix.list[s.id]; changed.push("room:" + s.id); continue; }
         if (s.st === "play" || s.st === "score") {
           const r = await store.get("room:" + s.id);
           if (!r) { delete ix.list[s.id]; continue; }
