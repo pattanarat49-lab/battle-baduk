@@ -8694,7 +8694,7 @@ const Online = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "6ee68525fa";
+  const BUILD = "97c2045c29";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -9442,18 +9442,43 @@ const Online = (() => {
     scoring = { dead: new Set(), loading: true, terr: null };
     render();
     const my = gen;
-    const ev = await AI.evaluate(n, history.slice(), KOMI);
+    const dead = await findDead(board, history.slice(), KOMI);
     if (my !== gen || !scoring) return;
-    const dead = new Set(), seen = new Set();
-    const ownBlack = q => { const [x, y] = board.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
-    for (const p of board.pts) {
-      const c = board.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
-      const chain = chainOf(p); let s = 0;
-      for (const q of chain) { seen.add(q); s += ownBlack(q); }
-      s /= chain.length;
-      if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
-    }
     scoring.dead = dead; scoring.loading = false; render();
+  }
+  // Dead stones from KataGo's ownership, averaged over the board's 8 rotations and reflections and both sides to move,
+  // since one raw evaluation can misread a long chain (the site owner: the count must be right on its own, with no taps). A chain is dead when its stones on average belong to the opponent. Two touching chains of opposite colours
+  // can't both be dead (whoever killed one owns the other), so when they are, the one the network is less sure of lives
+  // (a reported count: a living black wall was marked dead together with the white stones it had captured).
+  async function findDead(b, pts, komi) {
+    const m = b.n - 1, sym = (k, x, y) => { if (k & 1) x = m - x; if (k & 2) y = m - y; return k & 4 ? [y, x] : [x, y]; }, lists = [];
+    for (let k = 0; k < 8; k++) { const t = pts.map(p => p === PASS ? PASS : b.pt(...sym(k, ...b.xy(p)))); lists.push(t, t.concat(PASS)); }
+    const evs = await AI.evalMany(b.n, lists, komi);
+    const ownBlack = q => {
+      const [x, y] = b.xy(q); let o = 0;
+      evs.forEach((ev, j) => { const [a, c] = sym(j >> 1, x, y), v = ev.own[c * 19 + a]; o += ev.pla === BLACK ? v : -v; });
+      return o / evs.length;
+    };
+    const chains = [], chainAt = new Map();
+    for (const p of b.pts) {
+      const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || chainAt.has(p)) continue;
+      const ch = { c, stones: [p], d: 0 }; chainAt.set(p, ch);
+      for (let i = 0; i < ch.stones.length; i++) for (const d of b.dirs) {
+        const q = ch.stones[i] + d; if (b.color[q] === c && !chainAt.has(q)) { chainAt.set(q, ch); ch.stones.push(q); }
+      }
+      const s = ch.stones.reduce((a, q) => a + ownBlack(q), 0) / ch.stones.length;
+      ch.d = c === BLACK ? -s : s; // above 0: the opponent owns it
+      chains.push(ch);
+    }
+    const dead = new Set(chains.filter(ch => ch.d > 0.3));
+    for (const ch of [...dead].sort((a, b) => b.d - a.d)) {
+      if (!dead.has(ch)) continue;
+      for (const p of ch.stones) for (const d of b.dirs) {
+        const nb = chainAt.get(p + d); if (nb && nb.c !== ch.c && dead.has(nb)) dead.delete(nb);
+      }
+    }
+    const out = new Set(); for (const ch of dead) ch.stones.forEach(q => out.add(q));
+    return out;
   }
   // An open border is an empty point next to stones that neither side clearly owns yet (a gap in a wall, a neutral point),
   // leaving out self-ataris such as a shared liberty in seki. Hikaru (placement test) plays one instead of passing, even
@@ -9479,13 +9504,6 @@ const Online = (() => {
       for (const d of b.dirs) { const r = q + d; if (b.color[r] === EMPTY) libs.add(r); else if (b.color[r] === c && !seen.has(r)) { seen.add(r); st.push(r); } }
     }
     return libs.size;
-  }
-  function chainOf(p) {
-    const c = board.color[p], out = [p], seen = new Set([p]);
-    for (let i = 0; i < out.length; i++) for (const d of board.dirs) {
-      const q = out[i] + d; if (board.color[q] === c && !seen.has(q)) { seen.add(q); out.push(q); }
-    }
-    return out;
   }
   function areaCount(dead) {
     const terr = new Map(); let b = 0, w = 0; const seen = new Set();
@@ -9517,12 +9535,6 @@ const Online = (() => {
   cv.addEventListener("click", ev => {
     const p = pointAt(ev); if (p === null) return;
     if (reviewAt !== null) return;
-    if (scoring && !scoring.loading) {
-      const c = board.color[p]; if (c !== BLACK && c !== WHITE) return;
-      const ch = chainOf(p); const isDead = scoring.dead.has(p);
-      ch.forEach(q => isDead ? scoring.dead.delete(q) : scoring.dead.add(q));
-      render(); return;
-    }
     unlockAudio();
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     if (board.color[p] !== EMPTY) return;
@@ -9657,7 +9669,7 @@ const Online = (() => {
       if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b}${bB ? ` + ต่อแต้ม ${bB} = ${r.b + bB}` : ""} · ขาว ${r.w} + โคมิ ${KOMI}${bW ? ` + ต่อแต้ม ${bW}` : ""} = ${r.w + KOMI + bW}</div>
-        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
+        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย</p>` + examReport();
     } else res.hidden = true;
   }
   // the placement result so far: counts per grade, average points lost, share of non-Best moves and the estimated rank
@@ -10029,19 +10041,9 @@ const Online = (() => {
   async function countLead(n2, mv, komi) {
     const b = new Board(n2), pts = [];
     for (const m of mv) { const p = m ? b.pt(m[0], m[1]) : PASS; b.play(p); pts.push(p); }
-    const dead = new Set();
+    let dead = new Set();
     try {
-      if (AI) {
-        const ev = await AI.evaluate(n2, pts, komi), seen = new Set();
-        const ownBlack = q => { const [x, y] = b.xy(q); const o = ev.own[y * 19 + x]; return ev.pla === BLACK ? o : -o; };
-        for (const p of b.pts) {
-          const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || seen.has(p)) continue;
-          const chain = [p]; seen.add(p);
-          for (let i = 0; i < chain.length; i++) for (const d of b.dirs) { const q = chain[i] + d; if (b.color[q] === c && !seen.has(q)) { seen.add(q); chain.push(q); } }
-          const s = chain.reduce((a, q) => a + ownBlack(q), 0) / chain.length;
-          if ((c === BLACK && s < -0.3) || (c === WHITE && s > 0.3)) chain.forEach(q => dead.add(q));
-        }
-      }
+      if (AI) dead = await findDead(b, pts, komi);
     } catch (e) { console.error(e); }
     let bl = 0, wh = 0; const seen = new Set();
     for (const p of b.pts) {
