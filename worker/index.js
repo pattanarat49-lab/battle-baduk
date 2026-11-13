@@ -374,7 +374,7 @@ ${matchSection(s, ago)}
 // Player accounts, chat, leaderboard, online rooms and live games (worker/hub.js), kept apart from Stats so they never
 // touch its tables. Rows are written on sign-up, login, saves, chat messages and online moves; reads are by primary key.
 // Live positions of games against the AI ("lv…" keys) stay in memory only: they change every move and are not worth a row.
-const CODE = "2026-11-12e"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
+const CODE = "2026-11-13a"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
 export class Accounts extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);

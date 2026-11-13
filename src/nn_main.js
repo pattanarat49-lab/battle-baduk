@@ -958,7 +958,7 @@
   function liveNow(ended) {
     if (MATCH || !board || !gameId) return;
     const st = snapshot();
-    Online.live(gameId, { char: CHARS[gameChar].id, exam: !!exam, size: n, human, moves: st.moves, clocks: st.clocks, ended: ended || null });
+    Online.live(gameId, { char: CHARS[gameChar].id, exam: !!exam, size: n, human, moves: st.moves, clocks: st.clocks, komi: KOMI, ended: ended || null });
   }
   function liveUpdate() {
     liveNow();
@@ -2281,7 +2281,16 @@
     }
     return { lead: bl - wh - komi, dead: [...dead].map(p => b.xy(p)) };
   }
-  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead });
+  // WATCH: who is ahead after these moves ([x, y] | null for a pass), by the network alone: Black's lead and chance to win
+  async function estimateLead(n2, mv, komi) {
+    if (!AI || !engineReady) return null;
+    const b = new Board(n2), pts = [];
+    for (const m of mv) { const p = m ? b.pt(m[0], m[1]) : PASS; b.play(p); pts.push(p); }
+    const ev = await AI.evaluate(n2, pts, komi), blk = ev.pla === BLACK;
+    const w = ev.win / ((ev.win + ev.loss) || 1);
+    return { lead: blk ? ev.lead : -ev.lead, win: blk ? w : 1 - w };
+  }
+  Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   // the announcement of the newest mode: a pop-up the first time the menu is seen (once per browser), after the

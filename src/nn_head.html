@@ -830,6 +830,12 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
 .og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
 .og-act { padding: 0; }
+.og-rev { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; }
+.og-nav { display: grid; grid-template-columns: 44px 44px minmax(0, 1fr) 44px 44px; gap: 4px; align-items: center; }
+.og-nav button { min-height: 40px; padding: 0; font-size: 16px; } .og-nav button:disabled { opacity: .4; }
+.og-nav span { text-align: center; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; } .og-nav span b { color: var(--fg); }
+.og-nav span.og-old, .og-nav span.og-old b { color: var(--accent); }
+.og-est { grid-column: 1 / -1; margin: 0; min-height: 1.3em; font-size: 14px; color: var(--muted); } .og-est b { color: var(--accent); }
 .on-card { width: min(460px, 100%); max-height: 90dvh; overflow-y: auto; }
 .on-f { display: grid; gap: 4px; margin-bottom: 10px; font-size: 14px; color: var(--muted); }
 .on-f[hidden] { display: none; }
@@ -1225,6 +1231,11 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     <div class="og-side">
       <div class="og-bars"><div class="og-p" id="ogB"></div><div class="og-p" id="ogW"></div></div>
       <p class="og-status" id="ogStatus" aria-live="polite"></p>
+      <div class="og-rev" id="ogRev" hidden>
+        <div class="og-nav"><button id="ogFirst" aria-label="ตาแรก">⏮</button><button id="ogPrev" aria-label="ย้อนหนึ่งตา">◀</button><span id="ogRevN"></span><button id="ogNext" aria-label="ถัดไปหนึ่งตา">▶</button><button id="ogLast" aria-label="กลับไปตาล่าสุด">⏭</button></div>
+        <button class="pf-an" id="ogEst">ประเมินแต้ม</button>
+        <p class="og-est" id="ogEstOut" aria-live="polite"></p>
+      </div>
       <div class="actions two og-act"><button id="ogPass" hidden>ผ่าน</button><button id="ogResign" hidden>ยอมแพ้</button></div>
       <button class="pf-an" id="ogClose" hidden>ปิดห้องนี้</button>
     </div>

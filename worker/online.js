@@ -185,7 +185,7 @@ export function makeOnline(store, userOf) {
       if (typeof g !== "string" || !/^[a-z0-9]{6,32}$/.test(g) || !b.s || typeof b.s !== "object") return err(400, "bad");
       const s = b.s, u = b.token ? await userOf(b.token) : null;
       const st = { g, char: String(s.char || "").slice(0, 16), exam: !!s.exam, size: +s.size, human: s.human === 2 ? 2 : 1,
-        moves: Array.isArray(s.moves) ? s.moves.slice(0, 1000) : [], clocks: s.clocks || null, ended: s.ended || null,
+        moves: Array.isArray(s.moves) ? s.moves.slice(0, 1000) : [], clocks: s.clocks || null, komi: typeof s.komi === "number" && Math.abs(s.komi) <= 400 ? s.komi : undefined, ended: s.ended || null,
         who: u || { n: "ผู้เล่นทั่วไป", r: null, a: null }, at: Date.now() };
       if (!SIZES.includes(st.size)) return err(400, "bad");
       await store.put("lv:" + g, st);
