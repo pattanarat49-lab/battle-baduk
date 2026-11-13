@@ -1668,13 +1668,19 @@
     if (my !== gen || !scoring) return;
     scoring.dead = dead; scoring.loading = false; render();
   }
-  // Dead stones from KataGo's ownership, averaged over both sides to move, since one raw evaluation can misread a long
-  // chain. A chain is dead when its stones on average belong to the opponent. Two touching chains of opposite colours
+  // Dead stones from KataGo's ownership, averaged over the board's 8 rotations and reflections and both sides to move,
+  // since one raw evaluation can misread a long chain (the site owner: the count must be right on its own, with no taps). A chain is dead when its stones on average belong to the opponent. Two touching chains of opposite colours
   // can't both be dead (whoever killed one owns the other), so when they are, the one the network is less sure of lives
   // (a reported count: a living black wall was marked dead together with the white stones it had captured).
   async function findDead(b, pts, komi) {
-    const evs = await AI.evalMany(b.n, [pts, pts.concat(PASS)], komi);
-    const ownBlack = q => { const [x, y] = b.xy(q), i = y * 19 + x; let o = 0; for (const ev of evs) o += ev.pla === BLACK ? ev.own[i] : -ev.own[i]; return o / evs.length; };
+    const m = b.n - 1, sym = (k, x, y) => { if (k & 1) x = m - x; if (k & 2) y = m - y; return k & 4 ? [y, x] : [x, y]; }, lists = [];
+    for (let k = 0; k < 8; k++) { const t = pts.map(p => p === PASS ? PASS : b.pt(...sym(k, ...b.xy(p)))); lists.push(t, t.concat(PASS)); }
+    const evs = await AI.evalMany(b.n, lists, komi);
+    const ownBlack = q => {
+      const [x, y] = b.xy(q); let o = 0;
+      evs.forEach((ev, j) => { const [a, c] = sym(j >> 1, x, y), v = ev.own[c * 19 + a]; o += ev.pla === BLACK ? v : -v; });
+      return o / evs.length;
+    };
     const chains = [], chainAt = new Map();
     for (const p of b.pts) {
       const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || chainAt.has(p)) continue;
@@ -1721,13 +1727,6 @@
     }
     return libs.size;
   }
-  function chainOf(p) {
-    const c = board.color[p], out = [p], seen = new Set([p]);
-    for (let i = 0; i < out.length; i++) for (const d of board.dirs) {
-      const q = out[i] + d; if (board.color[q] === c && !seen.has(q)) { seen.add(q); out.push(q); }
-    }
-    return out;
-  }
   function areaCount(dead) {
     const terr = new Map(); let b = 0, w = 0; const seen = new Set();
     for (const p of board.pts) {
@@ -1758,12 +1757,6 @@
   cv.addEventListener("click", ev => {
     const p = pointAt(ev); if (p === null) return;
     if (reviewAt !== null) return;
-    if (scoring && !scoring.loading) {
-      const c = board.color[p]; if (c !== BLACK && c !== WHITE) return;
-      const ch = chainOf(p); const isDead = scoring.dead.has(p);
-      ch.forEach(q => isDead ? scoring.dead.delete(q) : scoring.dead.add(q));
-      render(); return;
-    }
     unlockAudio();
     if (!engineReady || over || scoring || thinking || board.toPlay !== human) return;
     if (board.color[p] !== EMPTY) return;
@@ -1898,7 +1891,7 @@
       if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
         <div class="nums">ดำ ${r.b}${bB ? ` + ต่อแต้ม ${bB} = ${r.b + bB}` : ""} · ขาว ${r.w} + โคมิ ${KOMI}${bW ? ` + ต่อแต้ม ${bW}` : ""} = ${r.w + KOMI + bW}</div>
-        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย แตะกลุ่มเพื่อแก้</p>` + examReport();
+        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย</p>` + examReport();
     } else res.hidden = true;
   }
   // the placement result so far: counts per grade, average points lost, share of non-Best moves and the estimated rank
