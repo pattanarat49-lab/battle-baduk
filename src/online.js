@@ -2,7 +2,7 @@
 // online board, and the spectator view of online games and of games against the AI / rank tests.
 // Server side: worker/online.js through Hub (src/hub.js).
 const Online = (() => {
-  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead }
+  let D = null; // from nn_main: { CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate }
   const $ = id => document.getElementById(id);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const charOf = id => D.CHARS.find(c => c.id === id);
@@ -211,7 +211,7 @@ const Online = (() => {
       btns = !!G.me && (r.st === "play");
       $("ogClose").hidden = !(r.st === "open" && G.me === null && r.host.n === Account.name());
     } else {
-      const l = G.live; if (!l) { $("ogStatus").textContent = "รอข้อมูลตาถัดไปจากผู้เล่น…"; $("ogB").innerHTML = $("ogW").innerHTML = ""; draw(); return; }
+      const l = G.live; if (!l) { $("ogStatus").textContent = "รอข้อมูลตาถัดไปจากผู้เล่น…"; $("ogB").innerHTML = $("ogW").innerHTML = ""; renderRev(); draw(); return; }
       const c = charOf(l.char) || { name: l.char, id: "" }, ai = { n: c.name, r: null, a: null, img: c.id ? `chars/${c.id}_face.jpg` : "menu/guest.png", ai: c.rank };
       black = l.human === 1 ? l.who : ai; white = l.human === 1 ? ai : l.who;
       turn = l.ended ? null : (l.moves.length % 2 === 0 ? "b" : "w");
@@ -225,7 +225,46 @@ const Online = (() => {
     $("ogStatus").innerHTML = status;
     $("ogPass").hidden = $("ogResign").hidden = !btns;
     $("ogTitle").textContent = G.kind === "room" ? (G.me ? "PLAY ONLINE" : "WATCH") : "WATCH";
-    renderClocks(); draw();
+    renderRev(); renderClocks(); draw();
+  }
+
+  // ---------- looking back through the game and asking the AI who is ahead (spectators, and players once it is over) ----------
+  // G.view: null = following the game live, otherwise the number of moves shown
+  const sizeOf = () => G.kind === "room" ? G.room.size : G.live.size;
+  function movesOf() { // [[x, y] | null for a pass]
+    if (!G) return null;
+    if (G.kind === "room") return G.room ? G.room.moves : null;
+    if (!G.live) return null;
+    const n = G.live.size; return G.live.moves.map(m => m < 0 ? null : [m % n, Math.floor(m / n)]);
+  }
+  const shown = () => { const mv = movesOf(), t = mv ? mv.length : 0; return G.view == null ? t : Math.min(G.view, t); };
+  const canReview = () => { const mv = movesOf(); if (!mv || !mv.length) return false; return G.kind === "live" || !G.me || G.room.st === "end"; };
+  function renderRev() {
+    const ok = canReview(); $("ogRev").hidden = !ok;
+    if (!ok) { if (G) G.view = null; return; }
+    const t = movesOf().length, k = shown(), liveNow = G.view == null;
+    $("ogRevN").innerHTML = `ตาที่ <b>${k}</b> / ${t}`; $("ogRevN").classList.toggle("og-old", !liveNow);
+    $("ogFirst").disabled = $("ogPrev").disabled = k === 0;
+    $("ogNext").disabled = $("ogLast").disabled = liveNow;
+  }
+  function step(to) {
+    if (!canReview()) return;
+    const t = movesOf().length, k = Math.max(0, Math.min(t, to));
+    G.view = k >= t ? null : k; // the last move again = back to following the game
+    G.est = (G.est || 0) + 1; $("ogEstOut").textContent = "";
+    D.blip(k >= t ? 880 : 740); renderRev(); draw();
+  }
+  async function estimate() {
+    if (!canReview()) return;
+    const tok = G.est = (G.est || 0) + 1, g = G, k = shown(), mv = movesOf().slice(0, k);
+    const komi = G.kind === "room" ? G.room.komi : typeof G.live.komi === "number" ? G.live.komi : 7.5;
+    $("ogEstOut").textContent = "กำลังประเมิน…"; $("ogEst").disabled = true;
+    let r = null; try { r = await D.estimate(sizeOf(), mv, komi); } catch (e) { console.error(e); }
+    $("ogEst").disabled = false;
+    if (G !== g || G.est !== tok) return;
+    if (!r) { $("ogEstOut").textContent = "สมอง AI ยังโหลดไม่เสร็จ รอสักครู่แล้วกดใหม่"; return; }
+    const lead = Math.round(Math.abs(r.lead) * 10) / 10, wb = Math.round(r.win * 100);
+    $("ogEstOut").innerHTML = `ตาที่ ${k}: <b>${lead < 0.5 ? "สูสี" : (r.lead > 0 ? "ดำ" : "ขาว") + "นำ ~" + lead + " แต้ม"}</b> · โอกาสชนะ ดำ ${wb}% · ขาว ${100 - wb}%`;
   }
 
   // ---------- drawing ----------
@@ -236,11 +275,13 @@ const Online = (() => {
     if (cv.width !== sz * dpr) { cv.width = cv.height = sz * dpr; cv.style.width = cv.style.height = sz + "px"; }
     const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0);
     let n = 19, stones = null, last = -1, dead = null;
-    if (G && G.kind === "room" && G.room) { n = G.room.size; const b = G.b; stones = []; for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) { const c = b.color[b.pt(i, y)]; stones.push(c === D.BLACK ? 1 : c === D.WHITE ? 2 : 0); }
-      const lm = G.room.moves[G.room.moves.length - 1]; last = lm ? lm[1] * n + lm[0] : -1; dead = G.dead ? new Set(G.dead.map(([i, j]) => j * n + i)) : null; }
-    else if (G && G.kind === "live" && G.live) { n = G.live.size; const b = new D.Board(n); for (const m of G.live.moves) b.play(m < 0 ? D.PASS : b.pt(m % n, Math.floor(m / n)));
+    const mv = movesOf();
+    if (mv) {
+      n = sizeOf(); const k = shown(), b = replayBoard(n, mv.slice(0, k));
       stones = []; for (let y = 0; y < n; y++) for (let i = 0; i < n; i++) { const c = b.color[b.pt(i, y)]; stones.push(c === D.BLACK ? 1 : c === D.WHITE ? 2 : 0); }
-      const lm = G.live.moves[G.live.moves.length - 1]; last = lm >= 0 ? lm : -1; }
+      const lm = k ? mv[k - 1] : null; last = lm ? lm[1] * n + lm[0] : -1;
+      dead = G.kind === "room" && G.view == null && G.dead ? new Set(G.dead.map(([i, j]) => j * n + i)) : null;
+    }
     const cell = sz / (n + 1);
     const skin = Skins.cur(); // the player's stone and board skins (src/skins.js)
     x.drawImage(Skins.boardLayer(cv.width), 0, 0, sz, sz);
@@ -289,6 +330,11 @@ const Online = (() => {
     $("ogPass").onclick = async () => { if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
     $("ogResign").onclick = async () => { if (!G || !G.room || !await D.askSure("ยอมแพ้?", "ยอมแพ้เกมนี้จริงไหม", "ยอมแพ้")) return; const x = await Hub.op("resign", { token: Account.token(), id: G.room.id }); if (x.status === 200 && x.body.room) setRoom(x.body.room); };
     $("ogCv").addEventListener("pointerup", onBoard);
+    $("ogFirst").onclick = () => step(0); $("ogPrev").onclick = () => step(shown() - 1);
+    $("ogNext").onclick = () => step(shown() + 1); $("ogLast").onclick = () => step(Infinity);
+    $("ogEst").onclick = () => { D.blip(880); estimate(); };
+    document.addEventListener("keydown", e => { if (!G || $("og").hidden || !canReview() || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); step(shown() - 1); } else if (e.key === "ArrowRight") { e.preventDefault(); step(shown() + 1); } });
     window.addEventListener("resize", () => { if (G) draw(); });
     $("onNew").addEventListener("click", e => {
       if (e.target === $("onNew") || e.target.id === "onX") { $("onNew").hidden = true; return; }
