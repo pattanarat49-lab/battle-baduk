@@ -68,7 +68,8 @@ const Tourney = (() => {
           : joined ? `<span class="tr-in">✔ คุณสมัครแล้ว</span><button class="pf-an" id="tourLeave">ถอนตัว</button>` : `<button class="px-start tr-join" id="tourJoin">JOIN</button>`) + `</div></div>`;
     } else {
       const live = t.rounds.flat().filter(m => m.room && !m.w).length;
-      h += `<h2>กำลังแข่ง!</h2><div class="tr-cnt">${t.ents.length} คน · เริ่ม ${when(t.began || t.at)} · กำลังเล่นอยู่ ${live} เกม</div></div><div class="tr-hb">${joined ? `<span class="tr-in">คุณอยู่ในทัวร์นาเมนต์นี้</span>` : ""}</div></div>`;
+      h += `<h2>กำลังแข่ง!</h2><div class="tr-cnt">${t.ents.length} คน · เริ่ม ${when(t.began || t.at)} · กำลังเล่นอยู่ ${live} เกม</div></div><div class="tr-hb">${(() => { const m = myMatch(t); if (m) return `<button class="px-start tr-join" data-tour-room="${m.room}">PLAY</button><span class="tr-in">แมตช์ของคุณเริ่มแล้ว!</span>`;
+        return joined ? `<span class="tr-in">${t.rounds.flat().some(x => x.w && x.how !== "bye" && [x.a, x.b].some(p => p && p.n === mine) && x[x.w].n !== mine) ? "คุณตกรอบแล้ว ดูเกมอื่นต่อได้" : "รอคู่แข่งจากรอบก่อน…"}</span>` : ""; })()}</div></div>`;
     }
     h += `<div class="tr-noai" role="note"><b>⚠ ห้ามใช้ AI ช่วยเล่นในทัวร์นาเมนต์</b> ทั้งโปรแกรม AI แอปวิเคราะห์ หรือให้คนอื่นเล่นแทน ถ้าพบว่าใช้ จะถูกตัดสิทธิ์และริบรางวัล</div>`;
     h += `<p class="ch-err" id="tourErr" aria-live="assertive"></p>`;
