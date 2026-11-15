@@ -835,6 +835,7 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
 .og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
 .og-act { padding: 0; }
+.og-an { min-height: 44px; font-weight: 700; }
 .og-chat { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
 .og-msgs { max-height: 128px; min-height: 36px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font-size: 14px; overflow-wrap: anywhere; }
 .og-msgs .og-m b { color: var(--accent); margin-right: 4px; } .og-msgs .og-m.me b { color: var(--muted); }
@@ -1358,6 +1359,7 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
       </div>
       <div class="actions two og-act"><button id="ogPass" hidden>ผ่าน</button><button id="ogResign" hidden>ยอมแพ้</button></div>
       <button class="pf-an" id="ogClose" hidden>ปิดห้องนี้</button>
+      <button class="pf-an primary og-an" id="ogAn" hidden>ANALYSIS · วิเคราะห์เกมนี้</button>
       <div class="og-chat" id="ogChat" hidden>
         <div class="og-msgs" id="ogMsgs" aria-live="polite"></div>
         <form class="og-say" id="ogSay"><input id="ogIn" maxlength="200" placeholder="พิมพ์คุยกับคู่แข่ง…" autocomplete="off" enterkeyhint="send" aria-label="ข้อความถึงคู่แข่ง"><button class="pf-an primary">ส่ง</button></form>
@@ -7879,6 +7881,8 @@ const Online = (() => {
     $("ogB").classList.toggle("turn", turn === "b"); $("ogW").classList.toggle("turn", turn === "w");
     $("ogStatus").innerHTML = status;
     $("ogPass").hidden = $("ogResign").hidden = !btns;
+    // a finished game (online or tournament) opens on the analysis board (owner 2026-11-15)
+    $("ogAn").hidden = !(G.kind === "room" && G.room && G.room.st === "end" && G.room.moves.length > 0);
     syncPass();
     // the room chat: once both players are in; only they can write, spectators read along
     const chatOn = G.kind === "room" && G.room && G.room.st !== "open" && G.room.st !== "declined" && !!G.room.guest;
@@ -8047,6 +8051,8 @@ const Online = (() => {
     $("ogBack").onclick = () => { D.blip(660); if (G && G.kind === "room" && G.room && G.room.tour) { leaveGame(); D.openTour(); return; }
       const from = G && G.kind === "room" && (G.me || (G.room && G.room.host.n === Account.name())) ? "play" : "watch"; leaveGame(); openLobby(from); };
     $("ogClose").onclick = async () => { if (!G || !G.room) return; await Hub.op("close", { token: Account.token(), id: G.room.id }); leaveGame(); openLobby("play"); };
+    $("ogAn").onclick = () => { if (!G || G.kind !== "room" || !G.room) return; const r = G.room, b = new D.Board(r.size);
+      D.blip(880); D.analyze({ n: r.size, moves: r.moves.map(m => m ? b.pt(m[0], m[1]) : D.PASS), human: G.me === "w" ? D.WHITE : D.BLACK, room: r.id }); };
     $("ogSay").onsubmit = e => { e.preventDefault(); say(); };
     $("ogPass").onclick = async () => { if (ghostOk()) { D.blip(880); send(G.ghost); return; }
       if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
@@ -9228,7 +9234,7 @@ const Tourney = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "697f3cca57";
+  const BUILD = "600f1da588";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -10471,6 +10477,7 @@ const Tourney = (() => {
     else if (from === "prof") showProfile();
     else if (from === "kifu") Kifu.resume();
     else if (from === "player" && plData) showPlayer(plData.n, plFrom);
+    else if (from === "online" && onlineAn) Online.enterRoom(onlineAn);
     else showMenu();
   };
   Tsumego.E = E;
@@ -10562,7 +10569,9 @@ const Tourney = (() => {
     return { lead: blk ? ev.lead : -ev.lead, win: blk ? w : 1 - w };
   }
   Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead,
-    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); }, openTour: () => Tourney.open() });
+    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); }, openTour: () => Tourney.open(),
+    analyze: g => { hideScreens(); trackMode("analysis"); onlineAn = g.room; Analysis.open({ n: g.n, moves: g.moves, human: g.human, at: 0, from: "online" }); } });
+  let onlineAn = null; // the online room whose finished game is on the analysis board (back returns to it)
   // the weekly tournament (src/tourney.js): its games are online rooms the server starts
   Tourney.init({ CHARS, rankName, hideScreens, showMenu, blip, askSure, enterRoom: id => Online.enterRoom(id), currentRoom: () => Online.currentRoom(), openPlayer: n => showPlayer(n, "tour") });
   // chat, leaderboard and the profile picture picker (src/social.js)

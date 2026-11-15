@@ -233,6 +233,8 @@ const Online = (() => {
     $("ogB").classList.toggle("turn", turn === "b"); $("ogW").classList.toggle("turn", turn === "w");
     $("ogStatus").innerHTML = status;
     $("ogPass").hidden = $("ogResign").hidden = !btns;
+    // a finished game (online or tournament) opens on the analysis board (owner 2026-11-15)
+    $("ogAn").hidden = !(G.kind === "room" && G.room && G.room.st === "end" && G.room.moves.length > 0);
     syncPass();
     // the room chat: once both players are in; only they can write, spectators read along
     const chatOn = G.kind === "room" && G.room && G.room.st !== "open" && G.room.st !== "declined" && !!G.room.guest;
@@ -401,6 +403,8 @@ const Online = (() => {
     $("ogBack").onclick = () => { D.blip(660); if (G && G.kind === "room" && G.room && G.room.tour) { leaveGame(); D.openTour(); return; }
       const from = G && G.kind === "room" && (G.me || (G.room && G.room.host.n === Account.name())) ? "play" : "watch"; leaveGame(); openLobby(from); };
     $("ogClose").onclick = async () => { if (!G || !G.room) return; await Hub.op("close", { token: Account.token(), id: G.room.id }); leaveGame(); openLobby("play"); };
+    $("ogAn").onclick = () => { if (!G || G.kind !== "room" || !G.room) return; const r = G.room, b = new D.Board(r.size);
+      D.blip(880); D.analyze({ n: r.size, moves: r.moves.map(m => m ? b.pt(m[0], m[1]) : D.PASS), human: G.me === "w" ? D.WHITE : D.BLACK, room: r.id }); };
     $("ogSay").onsubmit = e => { e.preventDefault(); say(); };
     $("ogPass").onclick = async () => { if (ghostOk()) { D.blip(880); send(G.ghost); return; }
       if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
