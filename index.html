@@ -1677,8 +1677,8 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
     </div>
   </aside>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-<script>if (!window.tf) document.write('<script src="tf.min.js"><\/script>');</script>
+<script src="tf.min.js"></script>
+<script>if (!window.tf) document.write('<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"><\/script>');</script>
 <script src="tf-backend-wasm.min.js"></script>
 <script>
 function GoEngine(ctx) {
@@ -9240,7 +9240,7 @@ const Tourney = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "1b9a69e7d9";
+  const BUILD = "fdeb4700a7";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
