@@ -612,10 +612,13 @@
   // an old index-only save predates Joker (inserted at 3) and the tutorial book (inserted at 0)
   if (byId >= 0) settings.char = byId; else if (savedId === null) settings.char += settings.char >= 3 ? 3 : 2; // and the coach (inserted at 1)
   if (!CHARS[settings.char]) settings.char = 5;
-  // komi 7.5 in an even game; 0.5 with handicap stones (Sai only), set per game by newGame / resumeGame
-  let KOMI = 7.5, handi = 0;
+  // Japanese rules (territory + prisoners, owner 2026-11-15): komi 6.5 in an even game; 0.5 with handicap stones (Sai
+  // only), set per game by newGame / resumeGame. RULES goes to the network inputs (F.setRules) and to the count
+  const RULES = "japanese", RULES_TH = "กติกาญี่ปุ่น", EVEN_KOMI = 6.5;
+  F.setRules(RULES);
+  let KOMI = EVEN_KOMI, handi = 0;
   // points given to the player against a special character (owner 2026-11-01): 0-100, added to the player's side at the
-  // count. The AI still thinks with komi 7.5, so it plays its normal game; only the score and the lead shown include them
+  // count. The AI still thinks with the normal komi, so it plays its normal game; only the score and the lead shown include them
   let bonus = 0;
   const bonusFor = (i, v) => CHARS[i].special && !CHARS[i].handicap ? Math.max(0, Math.min(100, Math.round((v | 0) / 10) * 10)) : 0;
   const bonusTxt = () => bonus ? `ต่อแต้มให้คุณ ${bonus} · ` : "";
@@ -1107,7 +1110,7 @@
   function newGame() {
     cancelAI(); gameAway = false; $("vd").hidden = true;
     n = boardSize(); human = settings.human; ai = 3 - human; gameChar = settings.char;
-    handi = 0; KOMI = 7.5;
+    handi = 0; KOMI = EVEN_KOMI;
     if (CHARS[gameChar].handicap) { human = BLACK; ai = WHITE; handi = Math.max(1, Math.min(9, settings.handi | 0)); KOMI = 0.5; }
     bonus = MATCH || EXAMBOT !== null ? 0 : bonusFor(gameChar, settings.bonus);
     fonLv = fonLvOf(settings.fonLv);
@@ -1116,7 +1119,7 @@
     for (const m of handiLine(board, handi)) { board.play(m); history.push(m); }
     if (CHARS[gameChar].brain && engineReady) loadBrain(CHARS[gameChar].brain).catch(() => {}); // start the download before the first AI move
     if (CHARS[gameChar].book) loadBook(CHARS[gameChar]); // fetch the opening book
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}${bonusTxt()}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
+    $("sub").textContent = `กระดาน ${n}×${n} · ${RULES_TH} · ${handi ? `หมากต่อ ${handi} · ` : ""}${bonusTxt()}โคมิ ${KOMI} · คู่ต่อสู้: ${CHARS[gameChar].name} (${CHARS[gameChar].rank} · ${STYLE[CHARS[gameChar].style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
@@ -1235,13 +1238,13 @@
     if (i < 0 || !Array.isArray(g.history) || ![9, 13, 19].includes(g.n)) return false;
     cancelAI();
     n = g.n; human = g.human === WHITE ? WHITE : BLACK; ai = 3 - human; gameChar = settings.char = i;
-    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : 7.5; bonus = bonusFor(i, g.bonus); fonLv = fonLvOf(g.lv);
+    handi = CHARS[i].handicap ? Math.max(1, Math.min(9, g.handi | 0)) : 0; KOMI = handi ? 0.5 : EVEN_KOMI; bonus = bonusFor(i, g.bonus); fonLv = fonLvOf(g.lv);
     board = new Board(n); history = []; hint = null; pending = null; over = null; scoring = null; winBlack = 0.5; leadBlack = 0; reviewAt = null; reviewBoard = null;
     try { for (const m of g.history) { if (m !== PASS && !board.isLegal(m, board.toPlay)) throw 0; board.play(m); history.push(m); } } catch (e) { return false; }
     if (board.passes >= 2) return false;
     exam = CHARS[gameChar].exam ? { grades: Array.isArray(g.grades) ? g.grades : [] } : null; ponder = null;
     const ch = CHARS[gameChar];
-    $("sub").textContent = `กระดาน ${n}×${n} · กติกาจีน · ${handi ? `หมากต่อ ${handi} · ` : ""}${bonusTxt()}โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
+    $("sub").textContent = `กระดาน ${n}×${n} · ${RULES_TH} · ${handi ? `หมากต่อ ${handi} · ` : ""}${bonusTxt()}โคมิ ${KOMI} · คู่ต่อสู้: ${ch.name} (${ch.rank} · ${STYLE[ch.style].label})`;
     document.querySelector(".komi b").textContent = KOMI;
     { const kb = document.querySelector(".komi .kbonus"); kb.hidden = !bonus; kb.textContent = bonus ? `คุณ +${bonus}` : ""; }
     for (const [col, k] of [[BLACK, "B"], [WHITE, "W"]]) {
@@ -1731,40 +1734,7 @@
     if (my !== gen || !scoring) return;
     scoring.dead = dead; scoring.loading = false; render();
   }
-  // Dead stones from KataGo's ownership, averaged over the board's 8 rotations and reflections and both sides to move,
-  // since one raw evaluation can misread a long chain (the site owner: the count must be right on its own, with no taps). A chain is dead when its stones on average belong to the opponent. Two touching chains of opposite colours
-  // can't both be dead (whoever killed one owns the other), so when they are, the one the network is less sure of lives
-  // (a reported count: a living black wall was marked dead together with the white stones it had captured).
-  async function findDead(b, pts, komi) {
-    const m = b.n - 1, sym = (k, x, y) => { if (k & 1) x = m - x; if (k & 2) y = m - y; return k & 4 ? [y, x] : [x, y]; }, lists = [];
-    for (let k = 0; k < 8; k++) { const t = pts.map(p => p === PASS ? PASS : b.pt(...sym(k, ...b.xy(p)))); lists.push(t, t.concat(PASS)); }
-    const evs = await AI.evalMany(b.n, lists, komi);
-    const ownBlack = q => {
-      const [x, y] = b.xy(q); let o = 0;
-      evs.forEach((ev, j) => { const [a, c] = sym(j >> 1, x, y), v = ev.own[c * 19 + a]; o += ev.pla === BLACK ? v : -v; });
-      return o / evs.length;
-    };
-    const chains = [], chainAt = new Map();
-    for (const p of b.pts) {
-      const c = b.color[p]; if ((c !== BLACK && c !== WHITE) || chainAt.has(p)) continue;
-      const ch = { c, stones: [p], d: 0 }; chainAt.set(p, ch);
-      for (let i = 0; i < ch.stones.length; i++) for (const d of b.dirs) {
-        const q = ch.stones[i] + d; if (b.color[q] === c && !chainAt.has(q)) { chainAt.set(q, ch); ch.stones.push(q); }
-      }
-      const s = ch.stones.reduce((a, q) => a + ownBlack(q), 0) / ch.stones.length;
-      ch.d = c === BLACK ? -s : s; // above 0: the opponent owns it
-      chains.push(ch);
-    }
-    const dead = new Set(chains.filter(ch => ch.d > 0.3));
-    for (const ch of [...dead].sort((a, b) => b.d - a.d)) {
-      if (!dead.has(ch)) continue;
-      for (const p of ch.stones) for (const d of b.dirs) {
-        const nb = chainAt.get(p + d); if (nb && nb.c !== ch.c && dead.has(nb)) dead.delete(nb);
-      }
-    }
-    const out = new Set(); for (const ch of dead) ch.stones.forEach(q => out.add(q));
-    return out;
-  }
+  const findDead = (b, pts, komi) => AI.findDead(b, pts, komi);
   // An open border is an empty point next to stones that neither side clearly owns yet (a gap in a wall, a neutral point),
   // leaving out self-ataris such as a shared liberty in seki. Hikaru (placement test) plays one instead of passing, even
   // right after the player passes, so the game ends with every area sealed; with none left the game is closed for every character.
@@ -1790,24 +1760,18 @@
     }
     return libs.size;
   }
-  function areaCount(dead) {
-    const terr = new Map(); let b = 0, w = 0; const seen = new Set();
-    for (const p of board.pts) {
-      const c = board.color[p];
-      if ((c === BLACK || c === WHITE) && !dead.has(p)) { if (c === BLACK) b++; else w++; continue; }
-      if (seen.has(p)) continue;
-      const region = [p]; seen.add(p); let tb = false, tw = false;
-      for (let i = 0; i < region.length; i++) for (const d of board.dirs) {
-        const q = region[i] + d, cq = board.color[q];
-        if (cq === 3) continue;
-        if ((cq === BLACK || cq === WHITE) && !dead.has(q)) { if (cq === BLACK) tb = true; else tw = true; }
-        else if (!seen.has(q)) { seen.add(q); region.push(q); }
-      }
-      const owner = tb && !tw ? BLACK : tw && !tb ? WHITE : 0;
-      for (const q of region) terr.set(q, owner);
-      if (owner === BLACK) b += region.length; else if (owner === WHITE) w += region.length;
-    }
-    return { b, w, terr };
+  const finalCount = dead => E.countScore(board, dead, RULES, KOMI, dead.own);
+  // the sums under the result: Japanese = territory + prisoners (+ komi for White); bB / bW: bonus points
+  function countLine(r, komi, bB = 0, bW = 0) {
+    const plus = (v, t) => v ? ` + ${t} ${v}` : "";
+    if (r.rules === "chinese") return `ดำ ${r.b}${plus(bB, "ต่อแต้ม")} = ${r.b + bB} · ขาว ${r.w} + โคมิ ${komi}${plus(bW, "ต่อแต้ม")} = ${r.w + komi + bW}`;
+    return `ดำ พื้นที่ ${r.terrB} + เชลย ${r.capB}${plus(bB, "ต่อแต้ม")} = ${r.b + bB} · ` +
+      `ขาว พื้นที่ ${r.terrW} + เชลย ${r.capW} + โคมิ ${komi}${plus(bW, "ต่อแต้ม")} = ${r.w + komi + bW}`;
+  }
+  function countNote(r) {
+    if (r.rules === "chinese") return "หมากที่มีกากบาทถูกนับว่าตาย";
+    return "นับแบบญี่ปุ่น: พื้นที่ที่ล้อมได้ + หมากเชลย · หมากที่มีกากบาทถูกนับว่าตายและเป็นเชลย · จุดที่ไม่มีสี่เหลี่ยมคือดาเมะ ไม่มีใครได้แต้ม" +
+      (r.seki.size ? " · มีเซกิ: หมากและตาในเซกิไม่นับแต้ม" : "");
   }
 
   // ---------- input ----------
@@ -1946,15 +1910,15 @@
     const res = $("result");
     if (over) { res.hidden = false; res.innerHTML = `<h2>${over.text}</h2><div class="nums">${over.detail}</div>` + examReport(); }
     else if (scoring && !scoring.loading) {
-      const r = areaCount(scoring.dead); scoring.terr = r.terr;
-      const bB = human === BLACK ? bonus : 0, bW = human === WHITE ? bonus : 0, diff = r.b + bB - (r.w + KOMI + bW);
+      const r = finalCount(scoring.dead); scoring.terr = r.terr;
+      const bB = human === BLACK ? bonus : 0, bW = human === WHITE ? bonus : 0, diff = r.lead + bB - bW;
       const winner = diff > 0 ? BLACK : WHITE;
       if (exam) exam.margin = Math.abs(diff);
       res.hidden = false;
       if (!scoring.spoke) { scoring.spoke = true; speak(winner === human ? "lose" : "win", { force: true }); reportEnd(winner === human, "score", Math.abs(diff)); }
       res.innerHTML = `<h2>${winner === human ? "คุณชนะ" : CHARS[gameChar].name + " ชนะ"} (${winner === BLACK ? "ดำ" : "ขาว"} ชนะ ${Math.abs(diff)} แต้ม)</h2>
-        <div class="nums">ดำ ${r.b}${bB ? ` + ต่อแต้ม ${bB} = ${r.b + bB}` : ""} · ขาว ${r.w} + โคมิ ${KOMI}${bW ? ` + ต่อแต้ม ${bW}` : ""} = ${r.w + KOMI + bW}</div>
-        <p class="note" style="margin-top:6px">หมากที่มีกากบาทถูกนับว่าตาย</p>` + examReport();
+        <div class="nums">${countLine(r, KOMI, bB, bW)}</div>
+        <p class="note" style="margin-top:6px">${countNote(r)}</p>` + examReport();
     } else res.hidden = true;
   }
   // the placement result so far: counts per grade, average points lost, share of non-Best moves and the estimated rank
@@ -2330,21 +2294,8 @@
     try {
       if (AI) dead = await findDead(b, pts, komi);
     } catch (e) { console.error(e); }
-    let bl = 0, wh = 0; const seen = new Set();
-    for (const p of b.pts) {
-      const c = b.color[p];
-      if ((c === BLACK || c === WHITE) && !dead.has(p)) { if (c === BLACK) bl++; else wh++; continue; }
-      if (seen.has(p)) continue;
-      const region = [p]; seen.add(p); let tb = false, tw = false;
-      for (let i = 0; i < region.length; i++) for (const d of b.dirs) {
-        const q = region[i] + d, cq = b.color[q];
-        if (cq === 3) continue;
-        if ((cq === BLACK || cq === WHITE) && !dead.has(q)) { if (cq === BLACK) tb = true; else tw = true; }
-        else if (!seen.has(q)) { seen.add(q); region.push(q); }
-      }
-      if (tb && !tw) bl += region.length; else if (tw && !tb) wh += region.length;
-    }
-    return { lead: bl - wh - komi, dead: [...dead].map(p => b.xy(p)) };
+    const r = E.countScore(b, dead, RULES, komi, dead.own);
+    return { lead: r.lead, dead: [...dead].map(p => b.xy(p)), count: r };
   }
   // WATCH: who is ahead after these moves ([x, y] | null for a pass), by the network alone: Black's lead and chance to win
   async function estimateLead(n2, mv, komi) {

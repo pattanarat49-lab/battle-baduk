@@ -15,7 +15,7 @@ function GoNNAI(E, F, net) {
     for (let i = 0; i < p.length; i++) p[i] /= s;
     return p;
   }
-  const keyOf = (n, moves, komi, pda) => n + ":" + komi + ":" + (pda || 0) + ":" + moves.join(",");
+  const keyOf = (n, moves, komi, pda) => F.rules() + ":" + n + ":" + komi + ":" + (pda || 0) + ":" + moves.join(",");
 
   // Evaluate several positions at once; values are from the view of the player to move.
   // pdaFor(moves) gives the playout-doubling-advantage input for the player to move in that position
@@ -54,6 +54,43 @@ function GoNNAI(E, F, net) {
   }
   async function evaluate(n, moves, komi, pdaFor) { return (await evalMany(n, [moves], komi, pdaFor))[0]; }
 
+  // Dead stones from KataGo's ownership, averaged over the board's 8 rotations and reflections and both sides to move,
+  // since one raw evaluation can misread a long chain (the site owner: the count must be right on its own, with no taps). A chain is dead when its stones on average belong to the opponent. Two touching chains of opposite colours
+  // can't both be dead (whoever killed one owns the other), so when they are, the one the network is less sure of lives
+  // (a reported count: a living black wall was marked dead together with the white stones it had captured).
+  async function findDead(b, pts, komi) {
+    const m = b.n - 1, sym = (k, x, y) => { if (k & 1) x = m - x; if (k & 2) y = m - y; return k & 4 ? [y, x] : [x, y]; }, lists = [];
+    for (let k = 0; k < 8; k++) { const t = pts.map(p => p === PASS ? PASS : b.pt(...sym(k, ...b.xy(p)))); lists.push(t, t.concat(PASS)); }
+    const evs = await evalMany(b.n, lists, komi);
+    const ownBlack = q => {
+      const [x, y] = b.xy(q); let o = 0;
+      evs.forEach((ev, j) => { const [a, c] = sym(j >> 1, x, y), v = ev.own[c * 19 + a]; o += ev.pla === E.BLACK ? v : -v; });
+      return o / evs.length;
+    };
+    const chains = [], chainAt = new Map();
+    for (const p of b.pts) {
+      const c = b.color[p]; if ((c !== E.BLACK && c !== E.WHITE) || chainAt.has(p)) continue;
+      const ch = { c, stones: [p], d: 0 }; chainAt.set(p, ch);
+      for (let i = 0; i < ch.stones.length; i++) for (const d of b.dirs) {
+        const q = ch.stones[i] + d; if (b.color[q] === c && !chainAt.has(q)) { chainAt.set(q, ch); ch.stones.push(q); }
+      }
+      const s = ch.stones.reduce((a, q) => a + ownBlack(q), 0) / ch.stones.length;
+      ch.d = c === E.BLACK ? -s : s; // above 0: the opponent owns it
+      chains.push(ch);
+    }
+    const dead = new Set(chains.filter(ch => ch.d > 0.3));
+    for (const ch of [...dead].sort((a, b) => b.d - a.d)) {
+      if (!dead.has(ch)) continue;
+      for (const p of ch.stones) for (const d of b.dirs) {
+        const nb = chainAt.get(p + d); if (nb && nb.c !== ch.c && dead.has(nb)) dead.delete(nb);
+      }
+    }
+    const out = new Set(); for (const ch of dead) ch.stones.forEach(q => out.add(q));
+    // the averaged ownership goes with the result, for the count of an area left open (E.countScore)
+    const own = new Map(); out.own = q => { if (!own.has(q)) own.set(q, ownBlack(q)); return own.get(q); };
+    return out;
+  }
+
   function Node() { this.N = 0; this.W = 0; this.L = 0; this.vl = 0; this.slots = null; this.priors = null; this.kids = null; this.pending = false; }
   function expandFrom(node, ev) {
     const slots = [], pri = [];
@@ -82,12 +119,12 @@ function GoNNAI(E, F, net) {
 
   function terminalValue(n, moves, komi, sw) {
     const b = new Board(n); for (const m of moves) b.play(m);
-    const v = (b.areaScore(komi) > 0 ? 1 : -1) * (1 + sw);
+    const v = (E.countScore(b, null, F.rules(), komi).lead > 0 ? 1 : -1) * (1 + sw);
     return b.toPlay === E.BLACK ? v : -v;
   }
   function terminalLead(n, moves, komi) {
     const b = new Board(n); for (const m of moves) b.play(m);
-    const d = b.areaScore(komi); return b.toPlay === E.BLACK ? d : -d;
+    const d = E.countScore(b, null, F.rules(), komi).lead; return b.toPlay === E.BLACK ? d : -d;
   }
   const slotToPoint = (b, slot) => slot === AREA ? PASS : b.pt(slot % 19, (slot / 19) | 0);
 
@@ -611,6 +648,6 @@ function GoNNAI(E, F, net) {
   }
   const gradeOf = g => g.same || g.loss <= 0.5 ? "best" : g.loss <= 2 ? "good" : g.loss <= 5 ? "normal" : "bad";
 
-  return { evaluate, evalMany, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear(), net };
+  return { evaluate, evalMany, findDead, think, teach, grade, gradeWith, gradeOf, clearCache: () => cache.clear(), net };
 }
 if (typeof module !== "undefined") module.exports = GoNNAI;

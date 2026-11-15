@@ -68,13 +68,14 @@ export function makeOnline(store, userOf) {
     if (r.st === "score" && now - r.scoreAt > SCORE_WAIT) { settle(r, true); return true; }
     return false;
   }
-  // both players' counts agree: that result; they differ, or one never came: a plain area count of the board
+  // both players' counts agree: that result; they differ, or one never came: a plain Japanese count of the board
+  // (territory + prisoners, every stone taken as alive)
   function settle(r, force) {
     const s = r.scores || {}, vals = Object.values(s);
     if (vals.length === 2 && Math.sign(vals[0]) === Math.sign(vals[1]) && vals[0] !== 0) { const m = (vals[0] + vals[1]) / 2; finish(r, m > 0 ? "b" : "w", "score", Math.abs(m)); return; }
     if (vals.length === 1 && force) { const m = vals[0]; if (m) { finish(r, m > 0 ? "b" : "w", "score", Math.abs(m)); return; } }
     if (vals.length < 2 && !force) return;
-    const b = replay(r.size, r.moves), m = b ? b.areaScore(r.komi) : 0;
+    const b = replay(r.size, r.moves), m = b ? eng().countScore(b, null, "japanese", r.komi).lead : 0;
     finish(r, m > 0 ? "b" : "w", "score", Math.abs(m));
   }
   async function room(id) { return typeof id === "string" && /^[A-Z0-9]{6}$/.test(id) ? await store.get("room:" + id) : null; }

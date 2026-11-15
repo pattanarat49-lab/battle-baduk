@@ -1,7 +1,7 @@
 // Tutorial ("คัมภีร์สอนเล่น"): step-by-step lessons on a 9x9 board for people who have never played.
 // Uncle Win teaches, Mek asks the beginner's questions. Self-contained: its own tiny rules board, no AI.
 const Tutorial = (function () {
-  const N = 9, KOMI = 7.5;
+  const N = 9, KOMI = 6.5; // Japanese rules, like the game
   const FACE = { win: "chars/win_face.jpg", mek: "chars/mek_face.jpg" };
   const NAME = { win: "UNCLE WIN · ลุงวิน", mek: "MEK · เมฆ" };
   const P = s => (N - parseInt(s.slice(1), 10)) * N + (s.charCodeAt(0) - 97); // "e5" -> index, row 1 at the bottom
@@ -38,7 +38,7 @@ const Tutorial = (function () {
     }
   }
 
-  // a finished 9x9 game used for the goal, territory and counting steps (Black 45, White 36 + 7.5)
+  // a finished 9x9 game used for the goal, territory and counting steps (Japanese count: Black 34 points of territory, White 25 + komi 6.5; no prisoners)
   const FINAL = { b: "e9 e8 e7 f6 f5 e4 e3 d2 d1 c6 b3", w: "f9 f8 f7 g6 g5 f4 f3 e2 e1 h7 g2" };
 
   const CH = ["เริ่มต้น", "ลมหายใจ", "การกิน", "จุดห้ามลง", "ห้องกับความเป็นตาย", "นับแต้ม"];
@@ -111,8 +111,8 @@ const Tutorial = (function () {
     { ch: 5, setup: FINAL, shade: true, mek: "แล้วเกมจบตอนไหนครับ",
       say: "เมื่อไม่มีที่ให้ลงที่ได้ประโยชน์แล้ว ทั้งสองฝ่ายกด<b>ผ่าน</b>ติดกัน เกมก็จบ ถ้ามีหมากที่ตายอยู่ในเขตคนอื่น ยกออกก่อนนับ" },
     { ch: 5, setup: FINAL, shade: true, score: true,
-      say: "เกมนี้ใช้<b>กติกาจีน</b> นับ<b>หมากบนกระดาน + ช่องที่ล้อมไว้</b> แล้วขาวได้แต้มต่อ<b>โคมิ 7.5</b> เพราะดำได้เดินก่อน ลองทายดูว่าใครชนะ",
-      task: { type: "choice", opts: ["ดำชนะ", "ขาวชนะ"], ans: 0, hint: "ดูตัวเลขรวมด้านบน", ok: "ถูกต้อง ดำชนะ 1.5 แต้ม ส่วน .5 ของโคมิทำให้ไม่มีเสมอ", bad: "ลองดูอีกที ขาวได้บวกโคมิแล้วยังน้อยกว่าดำอยู่นะ" } },
+      say: "เกมนี้ใช้<b>กติกาญี่ปุ่น</b> นับ<b>ช่องว่างที่ล้อมไว้ + หมากเชลยที่กินได้</b> (หมากบนกระดานไม่นับ) แล้วขาวได้แต้มต่อ<b>โคมิ 6.5</b> เพราะดำได้เดินก่อน ลองทายดูว่าใครชนะ",
+      task: { type: "choice", opts: ["ดำชนะ", "ขาวชนะ"], ans: 0, hint: "ดูตัวเลขรวมด้านบน", ok: "ถูกต้อง ดำชนะ 2.5 แต้ม ส่วน .5 ของโคมิทำให้ไม่มีเสมอ", bad: "ลองดูอีกที ขาวได้บวกโคมิแล้วยังน้อยกว่าดำอยู่นะ" } },
     { ch: 5, setup: FINAL, recap: true, mek: "ลุงครับ สรุปให้ผมหน่อย",
       say: "ได้เลย จำแค่นี้ก็เล่นได้แล้ว ไปลองเล่นจริงกับเมฆบนกระดาน 9×9 ดู ลุงเชียร์อยู่ตรงนี้" }
   ];
@@ -175,11 +175,12 @@ const Tutorial = (function () {
     $("tuTalk").innerHTML = (st.mek ? bubble("mek", st.mek) : "") + bubble("win", ST.say || st.say, ST.mood);
     let h = "";
     if (st.score) {
-      const own = ST.b.area(); let bs = 0, ws = 0, bt = 0, wt = 0;
-      for (let i = 0; i < N * N; i++) { if (ST.b.a[i] === 1) bs++; else if (ST.b.a[i] === 2) ws++; else if (own[i] === 1) bt++; else if (own[i] === 2) wt++; }
+      // Japanese count: empty points surrounded + prisoners (none in this game), stones on the board don't count
+      const own = ST.b.area(); let bt = 0, wt = 0;
+      for (let i = 0; i < N * N; i++) { if (ST.b.a[i]) continue; if (own[i] === 1) bt++; else if (own[i] === 2) wt++; }
       h += `<div class="tu-lbl">ผลนับ</div><div class="tu-score">
-        <span class="tu-dot b"></span><span>ดำ: หมาก ${bs} + พื้นที่ ${bt}</span><span class="tu-tot">${bs + bt}</span>
-        <span class="tu-dot w"></span><span>ขาว: หมาก ${ws} + พื้นที่ ${wt} + โคมิ ${KOMI}</span><span class="tu-tot">${ws + wt + KOMI}</span></div>`;
+        <span class="tu-dot b"></span><span>ดำ: พื้นที่ ${bt} + เชลย 0</span><span class="tu-tot">${bt}</span>
+        <span class="tu-dot w"></span><span>ขาว: พื้นที่ ${wt} + เชลย 0 + โคมิ ${KOMI}</span><span class="tu-tot">${wt + KOMI}</span></div>`;
     }
     if (st.seq) {
       const n = st.seq.length, end = ST.seq >= n;
@@ -200,7 +201,7 @@ const Tutorial = (function () {
         <li>ห้าม<b>ฆ่าตัวตาย</b> ยกเว้นลงแล้วกินได้</li>
         <li><b>โคะ</b>: ห้ามกินคืนทันที ต้องไปลงที่อื่นก่อน 1 ตา</li>
         <li>กลุ่มที่<b>สร้างสองห้อง</b>ได้ไม่มีวันตาย</li>
-        <li>ผ่านติดกันสองครั้งจบเกม นับ<b>หมาก + พื้นที่</b> ขาวได้โคมิ 7.5</li></ol>
+        <li>ผ่านติดกันสองครั้งจบเกม นับ<b>พื้นที่ + หมากเชลย</b> (กติกาญี่ปุ่น) ขาวได้โคมิ 6.5</li></ol>
         <div class="tu-row"><button class="tu-btn pri" data-act="play">เล่นกับเมฆ 9×9</button></div>`;
     }
     $("tuTask").innerHTML = h; $("tuTask").hidden = !h;
