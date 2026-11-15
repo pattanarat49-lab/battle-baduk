@@ -7,6 +7,7 @@
 //   "inv:<name>" { list: [{ id, from, size, main, byo, per, pick, at }] } challenges waiting for that player
 //   "lvidx"      { list: { game id -> summary } } games against the AI being played now (kept in memory on the Worker)
 //   "lv:<game>"  the latest position of one of those games (memory too)
+//   "rc:<id>"    { m: [last 50 messages { n, t, at }] } chat between the two players of a room (spectators read it too)
 // The server keeps the clocks (only time spent on the server's clock counts) and checks every move with the same rules
 // code as the game (src/engine.js). After two passes both players' browsers count the score with KataGo and report it.
 import GoEngine from "../src/engine.js";
@@ -15,6 +16,8 @@ let E = null; // made on first use (the preview page loads the rules code after 
 const eng = () => E || (E = GoEngine());
 const SIZES = [9, 13, 19], MAINS = [0, 60, 300, 600, 1200, 1800, 3600], BYOS = [0, 10, 20, 30, 60], PERS = [1, 3, 5];
 const KOMI = 6.5, NOSHOW = 5 * 60e3, SCORE_WAIT = 60e3, OPEN_KEEP = 30 * 60e3, LIVE_KEEP = 10 * 60e3, ENDED_KEEP = 10 * 60e3;
+const RC_KEEP = 50, RC_LEN = 200, RC_GAP = 1000; // room chat: messages kept, characters per message, ms between one player's messages
+const cleanSay = t => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g, " ").replace(/\s+/g, " ").trim().slice(0, RC_LEN);
 const id6 = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(6)); let s = ""; for (const b of r) s += a[b % a.length]; return s; };
 
 // the position after a list of moves; null when one of them is not legal
@@ -95,7 +98,24 @@ export function makeOnline(store, userOf, hooks = {}) {
     return [k];
   }
 
+  const saidAt = new Map(); // room chat: player -> time of their last message (memory only)
   const ops = {
+    // a message to the other player of the room (owner 2026-11-15: online and tournament games); only the two players write
+    async rsay(b) {
+      const u = await userOf(b.token), r = await room(b.id);
+      if (!u) return err(401, "ล็อกอินก่อน");
+      if (!r) return err(404, "ไม่พบเกมนี้");
+      if (!seat(r, u.n)) return err(403, "เฉพาะผู้เล่นสองคนในห้องนี้ที่พิมพ์ได้");
+      const t = cleanSay(b.t);
+      if (!t) return err(400, "พิมพ์ข้อความก่อนนะ");
+      const now = Date.now();
+      if (now - (saidAt.get(u.n) || 0) < RC_GAP) return err(429, "ส่งเร็วเกินไป รอสักครู่");
+      saidAt.set(u.n, now); if (saidAt.size > 5000) saidAt.clear();
+      const k = "rc:" + r.id, c = (await store.get(k)) || { m: [] };
+      c.m.push({ n: u.n, t, at: now }); c.m = c.m.slice(-RC_KEEP);
+      await store.put(k, c);
+      return ok({}, [k]);
+    },
     async create(b) {
       const u = await userOf(b.token);
       if (!u) return err(401, "ล็อกอินก่อนถึงจะสร้างห้องได้");
