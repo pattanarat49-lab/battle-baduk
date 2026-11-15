@@ -2255,6 +2255,8 @@
     { id: "chat", t: "WORLD CHAT", s: "คุยกับผู้เล่นคนอื่นทั่วโลก" }
   ];
   const ARROW = '<svg viewBox="0 0 9 9" aria-hidden="true"><path d="M5 1h1v1h1v1h1v1h1v1h-1v1h-1v1h-1v1h-1v-1h1v-1h1v-1h-6v-1h6v-1h-1v-1h-1z"/></svg>';
+  // one row per card (two columns on a wide screen): a fixed count once left the last card, WORLD CHAT, without a row
+  $("mnList").style.setProperty("--mn-n", MENU.length); $("mnList").style.setProperty("--mn-half", Math.ceil(MENU.length / 2));
   $("mnList").innerHTML = MENU.map(m => `<button class="mn-item" data-mn="${m.id}"${m.soon ? " disabled" : ""}><span class="mn-ic"><img src="${m.img || `menu/${m.id}.png`}" alt=""></span><i class="mn-div"></i>
     <span class="mn-lab"><b>${m.t}${m.rec ? ` <i class="mn-rec">(${m.rec === 1 ? "RECOMMEND" : m.rec})</i>` : ""}</b><small>${m.s}</small>${m.soon ? '<span class="mn-soon">COMING SOON</span>' : ""}</span><span class="mn-go">${ARROW}</span></button>`).join("");
   // a game in the history the pages can show: against a character of this version, or an online game (src/online.js)
