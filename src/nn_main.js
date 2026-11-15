@@ -582,9 +582,11 @@
     [1.14, -5], [1.18, -6], [1.22, -7], [1.36, -8], [1.50, -9], [1.65, -10], [1.80, -11], [Infinity, -12]
   ];
   const GRADE_LABEL = { best: "Best", good: "Good", normal: "Normal", bad: "Bad" };
+  // one rank per 100 rating points, counted from the start of each hundred, up to 9 dan (owner 2026-11-15: 2600-2699 =
+  // 6 dan, 2700 = 7 dan, ..., 2900 and above = 9 dan; 2100 = 1 dan, 2000-2099 = 1 kyu)
+  const TOP_RANK = 9;
   function rankName(v) {
-    if (v >= 5) return "5 ดั้งขึ้นไป";
-    const r = Math.round(v);
+    const r = Math.min(TOP_RANK, Math.floor(v + 1e-6));
     return r >= 1 ? r + " ดั้ง" : (1 - r) + " คิว";
   }
   function estimateRank(score) { return EXAM_BANDS.find(([under]) => score < under)[1]; }
@@ -1938,11 +1940,11 @@
     const winBonus = ex.won ? (ex.margin >= 10 ? 2 : 1) : 0;
     // few mistakes adds one more: Bad moves 2% or less and Normal moves 10% or less of graded moves (site owner, 2026-11-02)
     const clean = 100 * cnt.bad / gs.length <= 2 && 100 * cnt.normal / gs.length <= 10 ? 1 : 0;
-    // and Best moves over 80% of graded moves add one (site owner, 2026-11-02)
+    // and Best moves over 80% of graded moves add one (site owner, 2026-11-02). The bonuses can lift the result past
+    // the top band (5 dan) up to 9 dan (owner 2026-11-15)
     const sharp = 100 * cnt.best / gs.length > 80 ? 1 : 0, bonus = winBonus + clean + sharp;
-    const top = EXAM_BANDS[0][1];
     return { graded: gs.length, cnt, avg: sum / gs.length, notBest, score, bonus, winBonus, clean, sharp,
-      est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(top, estimateRank(score) + bonus) : null };
+      est: gs.length >= 20 && len >= EXAM_MIN_MOVES ? Math.min(TOP_RANK, estimateRank(score) + bonus) : null };
   }
   function examReport() {
     if (!exam) return "";
@@ -2437,7 +2439,7 @@
     lo = Math.floor((lo - 20) / step) * step; hi = Math.ceil((hi + 20) / step) * step; if (hi - lo < 2 * step) hi = lo + 2 * step;
     const X = i => L + (pts.length === 1 ? 0.5 : i / (pts.length - 1)) * (W - L - Rt), Y = R => T + (hi - R) / (hi - lo) * (H - T - B);
     let g = "";
-    for (let y = lo; y <= hi; y += step) g += `<line x1="${L}" x2="${W - Rt}" y1="${Y(y)}" y2="${Y(y)}" class="gl"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end">${rankName(Rating.toRank(y))}</text>`;
+    for (let y = lo; y <= hi; y += step) g += `<line x1="${L}" x2="${W - Rt}" y1="${Y(y)}" y2="${Y(y)}" class="gl"/><text x="${L - 8}" y="${Y(y) + 4}" text-anchor="end">${y > 2900 ? y : rankName(Rating.toRank(y))}</text>`; // past 9 dan every line would read 9 dan: the points instead
     const d = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.R).toFixed(1)}`).join("");
     const last = pts.length - 1;
     const first = v.hist[0].at, lastAt = v.hist[v.hist.length - 1].at, day = t => new Date(t).toLocaleDateString("th-TH", { day: "numeric", month: "short" });

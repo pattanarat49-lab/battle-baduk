@@ -283,7 +283,7 @@ function rankFrom(T, avg) {
   return T[T.length - 1].rank;
 }
 const estimateRank = v => EXAM_BANDS.find(([under]) => v < under)[1], estimateRankOld = v => rankFrom(EXAM_CALIB_OLD, v);
-const rankName = v => v >= 5 ? "5 ดั้งขึ้นไป" : v >= 1 ? Math.round(v) + " ดั้ง" : (1 - Math.round(v)) + " คิว";
+const rankName = v => { const r = Math.min(9, Math.floor(v + 1e-6)); return r >= 1 ? r + " ดั้ง" : (1 - r) + " คิว"; };
 const HOW_TH = { score: "นับแต้ม", resign: "ยอมแพ้", timeout: "หมดเวลา", cancel: "ยกเลิก" };
 // AI test matches: a standings table (wins, losses, average margin) and the latest games, each linked to its board
 function matchSection(s, ago) {
@@ -361,7 +361,7 @@ ${s.examRecent.length ? `<div class="wrap" style="margin-top:10px"><table style=
   const lo = i ? EXAM_BANDS[i - 1][0] : 0;
   return `<tr><th>${under === Infinity ? lo.toFixed(2) + " ขึ้นไป" : i ? lo.toFixed(2) + "–" + under.toFixed(2) : "ต่ำกว่า " + under.toFixed(2)}</th><td>${rankName(r)}</td></tr>`;
 }).join("")}</tbody></table></div>
-<p class="muted">โบนัส (บวกกันได้ สูงสุด 5 ดั้ง): ชนะฮิคารุ +1 (ชนะ 10 แต้มขึ้นไป +2) · Bad ไม่เกิน 2% และ Normal ไม่เกิน 10% +1 · Best เกิน 80% +1</p></details></section>
+<p class="muted">โบนัส (บวกกันได้ สูงสุด 9 ดั้ง): ชนะฮิคารุ +1 (ชนะ 10 แต้มขึ้นไป +2) · Bad ไม่เกิน 2% และ Normal ไม่เกิน 10% +1 · Best เกิน 80% +1</p></details></section>
 <section><h2>แยกตามตัวละคร</h2><div class="wrap"><table>
 <thead><tr><th style="text-align:left">ตัวละคร</th><th>เกม</th><th>ผู้เล่น</th><th>เล่นจบ</th><th>คนชนะ</th><th>AI ชนะ</th><th>คนชนะ %</th><th>ตาเฉลี่ย</th></tr></thead>
 <tbody>${rows}</tbody></table></div>
