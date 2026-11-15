@@ -1,12 +1,12 @@
 // The weekly TOURNAMENT: players press Join any time before Sunday 19:00 (Thai time); at 19:00 the entrants are drawn
 // into a random single-elimination bracket and every game is an online room the server starts by itself (19×19,
 // 15 min + one byo-yomi period of 30 s, Japanese rules, komi 6.5). A lost game knocks the player out; the winners meet in the next
-// round as soon as both are free, and the two semi-final losers play for third place at the same time as the final.
+// round as soon as both are free. There is no match for third: both semi-final losers are joint third.
 // Prizes (owner 2026-11-15): 1st +100 rating and the title "Champion of Tournament ครั้งที่ N", 2nd +50, 3rd +25.
 // Like acct.js and online.js this runs in the Accounts Durable Object (and in a test page); everything is in `store`:
 //   "tour"  { cur: the tournament taking entries or being played, last: the one before, champs: [{ no, n, a, at }] }
-//   a tournament: { no, at: start time, st: "signup"|"play"|"done"|"off", ents: [player], rounds: [[match]], third: match|null,
-//                   res: { first, second, third } names, ended }
+//   a tournament: { no, at: start time, st: "signup"|"play"|"done"|"off", ents: [player], rounds: [[match]],
+//                   res: { first, second, thirds: [names] }, ended }
 //   a match: { a: player|null, b: player|null, room: id|null, w: "a"|"b"|null, how }   (player = { n, r, R, a, t })
 // Nothing runs on a timer here: tick(now) does whatever is due (start at 19:00, clocks of the games). The Durable
 // Object calls it from an alarm (wake() says when), and every look at the tournament page calls it too.
@@ -28,7 +28,7 @@ const loser = m => m && m.w && m.how !== "bye" ? m[m.w === "a" ? "b" : "a"] : nu
 export function makeTourney(store, acct, online) {
   const err = (status, msg) => ({ status, body: { error: msg } });
   const ok = (body, changed) => ({ status: 200, body, changed: changed || [] });
-  const fresh = (no, now, ents) => ({ no, at: nextStart(now), st: "signup", ents: ents || [], rounds: [], third: null, res: null });
+  const fresh = (no, now, ents) => ({ no, at: nextStart(now), st: "signup", ents: ents || [], rounds: [], res: null });
   async function load(now) {
     let T = await store.get("tour");
     if (!T) { T = { cur: fresh(1, now), last: null, champs: [] }; await store.put("tour", T); }
@@ -55,22 +55,14 @@ export function makeTourney(store, acct, online) {
         await begin(t, m, k, i);
       }
     }
-    // third place: the two semi-final losers, once both semi-finals are over (with a single loser, that player is third)
-    if (R >= 2 && !t.third) {
-      const semi = t.rounds[R - 2];
-      if (semi.every(m => m.w)) {
-        const ls = semi.map(loser).filter(Boolean);
-        if (ls.length === 2) { t.third = { a: ls[0], b: ls[1], room: null, w: null, how: null }; await begin(t, t.third, "3rd", 0); }
-        else if (ls.length === 1) t.third = { a: ls[0], b: null, room: null, w: "a", how: "bye" };
-        else t.third = { a: null, b: null, room: null, w: "a", how: "none" };
-      }
-    }
+    // no match for third place (owner 2026-11-15): both semi-final losers share third and each get the third prize
     const fin = t.rounds[R - 1][0];
-    if (fin.w && (R < 2 || (t.third && t.third.w))) {
+    if (fin.w) {
       t.st = "done"; t.ended = now;
-      t.res = { first: winner(fin).n, second: loser(fin) ? loser(fin).n : null, third: R >= 2 ? (winner(t.third) || {}).n || null : null };
-      const places = [t.res.first, t.res.second, t.res.third];
-      for (let p = 0; p < 3; p++) if (places[p]) await acct.award(places[p], { id: `tour-${t.no}`, d: PRIZE[p], o: `ทัวร์นาเมนต์ครั้งที่ ${t.no} อันดับ ${p + 1}`, at: now, title: p === 0 ? champTitle(t.no) : null });
+      const thirds = R >= 2 ? t.rounds[R - 2].map(loser).filter(Boolean).map(p => p.n) : [];
+      t.res = { first: winner(fin).n, second: loser(fin) ? loser(fin).n : null, thirds };
+      const places = [[t.res.first], [t.res.second], thirds];
+      for (let p = 0; p < 3; p++) for (const n of places[p]) if (n) await acct.award(n, { id: `tour-${t.no}`, d: PRIZE[p], o: `ทัวร์นาเมนต์ครั้งที่ ${t.no} อันดับ ${p + 1}`, at: now, title: p === 0 ? champTitle(t.no) : null });
     }
   }
   // 19:00: the draw. Every entrant gets a random place; byes (when the number is not a power of two) are spread so
@@ -98,7 +90,7 @@ export function makeTourney(store, acct, online) {
     if (t.res && t.res.first) T.champs = [{ no: t.no, n: t.res.first, a: (winner(t.rounds[t.rounds.length - 1][0]) || {}).a || null, at: t.ended }].concat(T.champs || []).slice(0, 100);
     T.last = t; T.cur = fresh(t.no + 1, now);
   }
-  const matches = t => t.rounds.flat().concat(t.third ? [t.third] : []);
+  const matches = t => t.rounds.flat();
   // whatever is due now; returns the store keys that changed
   async function tick(now) {
     const T = await load(now), t = T.cur, changed = [];
@@ -116,7 +108,7 @@ export function makeTourney(store, acct, online) {
   async function onEnd(r) {
     const T = await store.get("tour"), t = T && T.cur;
     if (!t || t.st !== "play" || t.no !== r.tour.no) return [];
-    const m = r.tour.rd === "3rd" ? t.third : t.rounds[r.tour.rd] && t.rounds[r.tour.rd][r.tour.m];
+    const m = t.rounds[r.tour.rd] && t.rounds[r.tour.rd][r.tour.m];
     if (!m || m.room !== r.id || m.w) return [];
     const wn = r.res.winner === "b" ? r.black : r.white;
     m.w = m.a.n === wn ? "a" : "b"; m.how = r.res.how; m.margin = r.res.margin;

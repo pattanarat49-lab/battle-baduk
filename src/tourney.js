@@ -8,7 +8,7 @@ const Tourney = (() => {
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const face = a => a && D.CHARS.some(c => c.id === a || (c.pair && c.pair.some(p => p.id === a))) ? `chars/${a}_face.jpg` : "menu/guest.png";
   const rankOf = r => typeof r === "number" ? D.rankName(r) : "ยังไม่มีระดับ";
-  const PRIZE = [["🥇", "อันดับ 1", "+100 เรตติ้ง + ฉายา Champion of Tournament"], ["🥈", "อันดับ 2", "+50 เรตติ้ง"], ["🥉", "อันดับ 3", "+25 เรตติ้ง"]];
+  const PRIZE = [["🥇", "อันดับ 1", "+100 เรตติ้ง + ฉายา Champion of Tournament"], ["🥈", "อันดับ 2", "+50 เรตติ้ง"], ["🥉", "อันดับ 3 (2 คน)", "+25 เรตติ้ง"]];
   const HOW = { resign: "ยอมแพ้", timeout: "หมดเวลา", score: "นับแต้ม", noshow: "ไม่มาแข่ง", bye: "บาย" };
   const when = t => new Date(t).toLocaleString("th-TH", { timeZone: "Asia/Bangkok", weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + " น.";
   let T = null, open = false, timer = 0, offOpen = null, offBar = null, barName = null;
@@ -48,13 +48,12 @@ const Tourney = (() => {
   function bracket(t) {
     const R = t.rounds.length;
     let h = `<div class="tr-br" role="region" aria-label="ตารางการแข่งขัน" tabindex="0">` + t.rounds.map((rd, k) => `<div class="tr-col"><div class="tr-rh">${roundName(rd.length, k, R)}</div><div class="tr-ms">${rd.map(matchBox).join("")}</div></div>`).join("") + `</div>`;
-    if (t.third && t.third.how !== "none") h += `<div class="tr-third"><div class="tr-rh">ชิงอันดับ 3</div>${matchBox(t.third)}</div>`;
     return h;
   }
   function podium(t) {
     if (!t.res) return "";
-    const pl = [t.res.first, t.res.second, t.res.third], who = n => [].concat(t.ents || [], t.rounds.flat().flatMap(m => [m.a, m.b])).find(p => p && p.n === n);
-    return `<div class="tr-pod">${pl.map((n, i) => n ? `<div class="tr-pl p${i + 1}"><span class="tr-medal">${PRIZE[i][0]}</span><img src="${face((who(n) || {}).a)}" alt="" width="160" height="160"><b data-player="${esc(n)}">${esc(n)}</b><small>${PRIZE[i][2]}</small></div>` : "").join("")}</div>`;
+    const pl = [t.res.first, t.res.second].concat(t.res.thirds || []), who = n => [].concat(t.ents || [], t.rounds.flat().flatMap(m => [m.a, m.b])).find(p => p && p.n === n);
+    return `<div class="tr-pod">${pl.map((n, k) => { const i = Math.min(k, 2); return n ? `<div class="tr-pl p${i + 1}"><span class="tr-medal">${PRIZE[i][0]}</span><img src="${face((who(n) || {}).a)}" alt="" width="160" height="160"><b data-player="${esc(n)}">${esc(n)}</b><small>${PRIZE[i][2]}</small></div>` : ""; }).join("")}</div>`;
   }
   function render() {
     if (!open || !T) return;
@@ -65,17 +64,17 @@ const Tourney = (() => {
         + (!mine ? `<span class="note">ต้องมีแอคเคาท์ถึงจะลงแข่งได้</span><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button><button class="pf-an" data-acct="signup">สมัคร</button>`
           : joined ? `<span class="tr-in">✔ คุณสมัครแล้ว</span><button class="pf-an" id="tourLeave">ถอนตัว</button>` : `<button class="px-start tr-join" id="tourJoin">JOIN</button>`) + `</div></div>`;
     } else {
-      const live = t.rounds.flat().concat(t.third ? [t.third] : []).filter(m => m.room && !m.w).length;
+      const live = t.rounds.flat().filter(m => m.room && !m.w).length;
       h += `<h2>กำลังแข่ง!</h2><div class="tr-cnt">${t.ents.length} คน · เริ่ม ${when(t.began || t.at)} · กำลังเล่นอยู่ ${live} เกม</div></div><div class="tr-hb">${joined ? `<span class="tr-in">คุณอยู่ในทัวร์นาเมนต์นี้</span>` : ""}</div></div>`;
     }
     h += `<div class="tr-noai" role="note"><b>⚠ ห้ามใช้ AI ช่วยเล่นในทัวร์นาเมนต์</b> ทั้งโปรแกรม AI แอปวิเคราะห์ หรือให้คนอื่นเล่นแทน ถ้าพบว่าใช้ จะถูกตัดสิทธิ์และริบรางวัล</div>`;
     h += `<p class="ch-err" id="tourErr" aria-live="assertive"></p>`;
-    if (t.st === "play") h += `<div class="pf-h">ตารางการแข่งขัน</div>${bracket(t)}<p class="note">แพ้ 1 เกมตกรอบ · กด "ดูเกม" เพื่อดูเกมที่ยังเล่นอยู่แบบสด ๆ · ชิงที่ 3 เล่นพร้อมรอบชิงชนะเลิศ</p>`;
+    if (t.st === "play") h += `<div class="pf-h">ตารางการแข่งขัน</div>${bracket(t)}<p class="note">แพ้ 1 เกมตกรอบ · กด "ดูเกม" เพื่อดูเกมที่ยังเล่นอยู่แบบสด ๆ</p>`;
     if (t.st === "signup" && t.ents.length) h += `<div class="pf-h">ผู้สมัคร (${t.ents.length})</div><div class="tr-ents">${t.ents.map(e => pTag(e, e.n === mine ? "me" : "")).join("")}</div>`;
     h += `<div class="pf-h">รางวัล</div><div class="tr-prize">${PRIZE.map(p => `<div><span class="tr-medal">${p[0]}</span><b>${p[1]}</b><small>${p[2]}</small></div>`).join("")}</div>`;
     h += `<div class="pf-h">กติกา</div><ul class="tr-rules"><li>แข่งทุกวันอาทิตย์ 19:00 น. (เวลาไทย) กด JOIN ไว้ล่วงหน้าได้ ถอนตัวได้ก่อนเริ่ม</li><li>จับสายแบบสุ่ม แพ้คัดออก ถ้าจำนวนคนไม่ลงตัว บางคนได้บายผ่านรอบแรก</li>
       <li>กระดาน 19×19 · เวลา 15 นาที + เบียวโยมิ 30 วิ 1 ครั้ง · กติกาญี่ปุ่น โคมิ 6.5 · สุ่มสี</li><li>เกมเริ่มเองเมื่อรู้คู่ ต้องเดินตาแรกภายใน 5 นาที ไม่อย่างนั้นแพ้ (ไม่มาแข่ง)</li>
-      <li>เปิดเกมค้างไว้ได้ทุกหน้า พอแมตช์ของคุณเริ่ม จะมีแถบเรียกขึ้นด้านบน</li><li>แพ้ในรองชนะเลิศ ได้เล่นชิงอันดับ 3</li><li><b>ห้ามใช้ AI ช่วยเล่น</b> ต้องคิดเองทุกตา</li></ul>`;
+      <li>เปิดเกมค้างไว้ได้ทุกหน้า พอแมตช์ของคุณเริ่ม จะมีแถบเรียกขึ้นด้านบน</li><li>ไม่มีชิงที่ 3 คนที่แพ้ในรอบรองชนะเลิศทั้ง 2 คนได้อันดับ 3 ร่วมกัน (ได้ +25 ทั้งคู่)</li><li><b>ห้ามใช้ AI ช่วยเล่น</b> ต้องคิดเองทุกตา</li></ul>`;
     if (T.last && T.last.st === "done") h += `<div class="pf-h">ผลครั้งที่ ${T.last.no}</div>${podium(T.last)}<details class="tr-old"><summary>ดูตารางครั้งที่ ${T.last.no}</summary>${bracket(T.last)}</details>`;
     if (T.champs && T.champs.length) h += `<div class="pf-h">ทำเนียบแชมป์</div><div class="tr-champs">${T.champs.map(c => `<div class="tr-ch"><img src="${face(c.a)}" alt="" width="160" height="160"><span><b data-player="${esc(c.n)}">${esc(c.n)}</b><small>Champion of Tournament ครั้งที่ ${c.no}</small></span></div>`).join("")}</div>`;
     $("tourBody").innerHTML = h;
@@ -93,7 +92,7 @@ const Tourney = (() => {
   // ---------- the bar that calls a player to their match (every screen) ----------
   function myMatch(t) {
     const n = me(); if (!n || !t || t.st !== "play") return null;
-    return t.rounds.flat().concat(t.third ? [t.third] : []).find(m => m.room && !m.w && ((m.a && m.a.n === n) || (m.b && m.b.n === n))) || null;
+    return t.rounds.flat().find(m => m.room && !m.w && ((m.a && m.a.n === n) || (m.b && m.b.n === n))) || null;
   }
   function bar() {
     let el = $("tourBar");
@@ -126,7 +125,7 @@ const Tourney = (() => {
   function prize() {
     const L = T && T.last, n = me();
     if (!L || !L.res || !n) return;
-    const place = [L.res.first, L.res.second, L.res.third].indexOf(n);
+    const place = L.res.first === n ? 0 : L.res.second === n ? 1 : (L.res.thirds || []).includes(n) ? 2 : -1;
     if (place < 0) return;
     const key = "gonn.tourSeen";
     let seen = 0; try { seen = +localStorage.getItem(key) || 0; } catch (e) {}
