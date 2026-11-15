@@ -52,8 +52,11 @@ const Tourney = (() => {
   }
   function podium(t) {
     if (!t.res) return "";
-    const pl = [t.res.first, t.res.second].concat(t.res.thirds || []), who = n => [].concat(t.ents || [], t.rounds.flat().flatMap(m => [m.a, m.b])).find(p => p && p.n === n);
-    return `<div class="tr-pod">${pl.map((n, k) => { const i = Math.min(k, 2); return n ? `<div class="tr-pl p${i + 1}"><span class="tr-medal">${PRIZE[i][0]}</span><img src="${face((who(n) || {}).a)}" alt="" width="160" height="160"><b data-player="${esc(n)}">${esc(n)}</b><small>${PRIZE[i][2]}</small></div>` : ""; }).join("")}</div>`;
+    const who = n => [].concat(t.ents || [], t.rounds.flat().flatMap(m => [m.a, m.b])).find(p => p && p.n === n);
+    // a podium: 2nd on the left, 1st in the middle (tallest), the joint 3rds squeezed side by side on the right (owner 2026-11-15)
+    const box = (n, i, cls) => `<div class="tr-pl p${i + 1}${cls || ""}"><span class="tr-medal">${PRIZE[i][0]}</span><img src="${face((who(n) || {}).a)}" alt="" width="160" height="160"><b data-player="${esc(n)}">${esc(n)}</b><small>${PRIZE[i][2]}</small><div class="tr-step"><span>${i + 1}</span></div></div>`;
+    const th = (t.res.thirds || []).filter(Boolean);
+    return `<div class="tr-pod">${t.res.second ? box(t.res.second, 1) : "<div></div>"}${box(t.res.first, 0)}<div class="tr-p3s${th.length > 1 ? " two" : ""}">${th.map(n => box(n, 2, " sm")).join("")}</div></div>`;
   }
   function render() {
     if (!open || !T) return;

@@ -893,13 +893,20 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 @media (prefers-reduced-motion: reduce) { .tr-live { animation: none; } }
 .tr-btn { min-height: 32px; padding: 2px 12px; font-size: 13px; margin-left: auto; }
 .tr-third { max-width: 260px; margin-top: 4px; }
-.tr-pod { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: end; }
-.tr-pl { background: var(--surface); text-align: center; padding: 10px 6px; display: grid; justify-items: center; gap: 4px; min-width: 0; }
-.tr-pl.p1 { order: 2; padding-top: 18px; box-shadow: inset 0 0 0 2px #f5c542; } .tr-pl.p2 { order: 1; } .tr-pl.p3 { order: 3; }
-.tr-pod:has(.p3 + .p3) { grid-template-columns: repeat(4, minmax(0, 1fr)); } .tr-pl.p3 + .tr-pl.p3 { order: 4; }
-@media (max-width: 480px) { .tr-pod:has(.p3 + .p3) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .tr-pod:has(.p3 + .p3) .tr-pl.p1 { order: 1; } .tr-pod:has(.p3 + .p3) .tr-pl.p2 { order: 2; } }
-.tr-pl img { width: 52px; height: 52px; border: 2px solid var(--wood); } .tr-pl.p1 img { width: 64px; height: 64px; }
-.tr-pl b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.tr-pod { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 0 4px; align-items: end; padding-top: 6px; border-bottom: 3px solid var(--line); }
+.tr-pl { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.tr-pl img { width: 52px; height: 52px; border: 2px solid var(--wood); } .tr-pl.p1 img { width: 72px; height: 72px; border-color: #f5c542; }
+.tr-pl b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; } .tr-pl.p1 b { color: #f5c542; font-size: 17px; }
+.tr-pl small { min-height: 2.6em; }
+/* the podium blocks: 1st tallest in the middle, 2nd on the left, the joint 3rds small on the right */
+.tr-step { align-self: stretch; margin-top: 4px; display: grid; place-items: center; background: linear-gradient(var(--surface-2), var(--surface)); border-top: 4px solid; border-radius: 4px 4px 0 0; }
+.tr-step span { font-family: var(--f-px); font-size: 34px; line-height: 1; color: var(--fg); opacity: .9; }
+.tr-pl.p1 .tr-step { height: 120px; border-color: #f5c542; } .tr-pl.p1 .tr-step span { color: #f5c542; font-size: 46px; }
+.tr-pl.p2 .tr-step { height: 82px; border-color: #d9dde0; }
+.tr-pl.p3 .tr-step { height: 52px; border-color: #d08a4c; }
+.tr-p3s { display: grid; gap: 3px; align-items: end; min-width: 0; } .tr-p3s.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.tr-pl.sm .tr-medal { font-size: 18px; } .tr-pl.sm img { width: 32px; height: 32px; } .tr-pl.sm b { font-size: 11px; } .tr-pl.sm small { font-size: 10px; }
+.tr-pl.sm .tr-step span { font-size: 22px; }
 .tr-old { margin-top: 8px; } .tr-old summary { cursor: pointer; color: var(--accent); font-size: 13px; margin-bottom: 6px; }
 .tr-champs { display: grid; gap: 4px; }
 .tr-ch { display: flex; gap: 10px; align-items: center; background: var(--surface); padding: 6px 10px 6px 6px; }
