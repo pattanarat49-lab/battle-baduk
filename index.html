@@ -845,7 +845,8 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 /* TOURNAMENT (src/tourney.js) and titles after names */
 .ttl { display: inline-block; font-family: var(--f-body); font-size: 11px; font-weight: 600; line-height: 1.5; padding: 0 6px; margin-left: 4px; border-radius: 6px;
   background: linear-gradient(#f5d36b, #d69a2d); color: #3a2405; vertical-align: .1em; white-space: nowrap; letter-spacing: 0; }
-.lb-name b .ttl, .og-n .ttl, .ol-p .ttl { font-size: 10px; }
+.ttl, b .ttl, .acct-box .t span.ttl { color: #3a2405; } .acct-box .t span.ttl { display: inline-block; font-size: 11px; }
+.lb-name .ttl, .og-n .ttl, .ol-p .ttl { font-size: 10px; } .lb-name > .ttl { margin: 1px 0 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .ol-tag.tour { background: #a2731c; }
 .tr-hero { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; background: var(--surface); box-shadow: inset 0 0 0 2px var(--accent); padding: 14px 16px; margin-bottom: 4px; }
 .tr-hero h2 { font-family: var(--f-display); font-size: 22px; margin: 2px 0; }
@@ -7581,7 +7582,7 @@ const Social = (() => {
     if (!r || r.status !== 200) { $("lbBody").innerHTML = `<p class="pf-empty">โหลดอันดับไม่ได้ ลองใหม่อีกครั้ง</p>`; return; }
     const { list, total, me } = r.body;
     const row = (x, i) => `<div class="lb-row${me && x.n === me.n ? " me" : ""}${i < 3 ? " top" + (i + 1) : ""}" data-player="${esc(x.n)}" role="button" tabindex="0" aria-label="ดูโปรไฟล์ ${esc(x.n)}"><span class="lb-pos">${i + 1}</span>
-      <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}${titleTag(x.t)}</b><small>${typeof x.R === "number" ? `เรตติ้ง ${x.R} · ` : ""}ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
+      <img src="${face(x.a)}" alt="" width="160" height="160"><span class="lb-name"><b>${esc(x.n)}</b>${titleTag(x.t)}<small>${typeof x.R === "number" ? `เรตติ้ง ${x.R} · ` : ""}ชนะ ${x.w} จาก ${x.g} เกมล่าสุด</small></span>
       <span class="lb-rank${typeof x.r === "number" ? "" : " no"}">${esc(rankOf(x.r))}</span><span class="lb-go" aria-hidden="true">›</span></div>`;
     let h = me ? `<div class="lb-me">อันดับของคุณ <b>#${me.pos}</b> จาก ${total} คน · ${esc(rankOf(me.r))}</div>`
       : Account.name() ? "" : `<div class="lb-me">ล็อกอินในหน้า PROFILE เพื่อขึ้นกระดานอันดับ <button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div>`;
@@ -8165,7 +8166,7 @@ const Tourney = (() => {
     if (seen >= L.no) return;
     try { localStorage.setItem(key, String(L.no)); } catch (e) {}
     Account.pull();
-    D.askSure(`${PRIZE[place][0]} ทัวร์นาเมนต์ครั้งที่ ${L.no}`, place === 0 ? `ยินดีด้วย! คุณเป็นแชมป์ ได้ +100 เรตติ้ง และฉายา "Champion of Tournament ครั้งที่ ${L.no}" (เลือกใส่/ถอดฉายาได้ในหน้า PROFILE)` : `ยินดีด้วย! คุณได้อันดับ ${place + 1} รับ ${PRIZE[place][2]}`, "เยี่ยม!");
+    D.askSure(`${PRIZE[place][0]} ทัวร์นาเมนต์ครั้งที่ ${L.no}`, place === 0 ? `ยินดีด้วย! คุณเป็นแชมป์ ได้ +100 เรตติ้ง และฉายา "Champion of Tournament ครั้งที่ ${L.no}" (เลือกใส่/ถอดฉายาได้ในหน้า PROFILE)` : `ยินดีด้วย! คุณได้อันดับ ${place + 1} รับ ${PRIZE[place][2]}`, "เยี่ยม!", true);
   }
 
   // ---------- Profile: which title is worn after the name ----------
@@ -9175,7 +9176,7 @@ const Tourney = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "1345dc3a1d";
+  const BUILD = "ac7525d3dd";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
@@ -10027,10 +10028,12 @@ const Tourney = (() => {
   };
   // a second question before a button that ends or leaves the game in progress
   let sureDone = null;
-  function askSure(title, text, ok) {
+  // only = a notice with a single button (no cancel)
+  function askSure(title, text, ok, only) {
     if (sureDone) sureDone(false);
-    $("sureT").innerHTML = `<b>${title}</b>${text}`; $("sureOk").textContent = ok; $("sure").hidden = false; $("sureNo").focus();
-    return new Promise(r => { sureDone = v => { sureDone = null; $("sure").hidden = true; r(v); }; });
+    $("sureT").innerHTML = `<b>${title}</b>${text}`; $("sureOk").textContent = ok; $("sure").hidden = false;
+    $("sureNo").hidden = !!only; $("sureOk").parentElement.classList.toggle("two", !only); (only ? $("sureOk") : $("sureNo")).focus();
+    return new Promise(r => { sureDone = v => { sureDone = null; $("sure").hidden = true; $("sureNo").hidden = false; $("sureOk").parentElement.classList.add("two"); r(v); }; });
   }
   $("sureOk").onclick = () => sureDone && sureDone(true);
   $("sureNo").onclick = () => sureDone && sureDone(false);

@@ -133,7 +133,7 @@ const Tourney = (() => {
     if (seen >= L.no) return;
     try { localStorage.setItem(key, String(L.no)); } catch (e) {}
     Account.pull();
-    D.askSure(`${PRIZE[place][0]} ทัวร์นาเมนต์ครั้งที่ ${L.no}`, place === 0 ? `ยินดีด้วย! คุณเป็นแชมป์ ได้ +100 เรตติ้ง และฉายา "Champion of Tournament ครั้งที่ ${L.no}" (เลือกใส่/ถอดฉายาได้ในหน้า PROFILE)` : `ยินดีด้วย! คุณได้อันดับ ${place + 1} รับ ${PRIZE[place][2]}`, "เยี่ยม!");
+    D.askSure(`${PRIZE[place][0]} ทัวร์นาเมนต์ครั้งที่ ${L.no}`, place === 0 ? `ยินดีด้วย! คุณเป็นแชมป์ ได้ +100 เรตติ้ง และฉายา "Champion of Tournament ครั้งที่ ${L.no}" (เลือกใส่/ถอดฉายาได้ในหน้า PROFILE)` : `ยินดีด้วย! คุณได้อันดับ ${place + 1} รับ ${PRIZE[place][2]}`, "เยี่ยม!", true);
   }
 
   // ---------- Profile: which title is worn after the name ----------

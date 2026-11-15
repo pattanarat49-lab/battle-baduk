@@ -1828,10 +1828,12 @@
   };
   // a second question before a button that ends or leaves the game in progress
   let sureDone = null;
-  function askSure(title, text, ok) {
+  // only = a notice with a single button (no cancel)
+  function askSure(title, text, ok, only) {
     if (sureDone) sureDone(false);
-    $("sureT").innerHTML = `<b>${title}</b>${text}`; $("sureOk").textContent = ok; $("sure").hidden = false; $("sureNo").focus();
-    return new Promise(r => { sureDone = v => { sureDone = null; $("sure").hidden = true; r(v); }; });
+    $("sureT").innerHTML = `<b>${title}</b>${text}`; $("sureOk").textContent = ok; $("sure").hidden = false;
+    $("sureNo").hidden = !!only; $("sureOk").parentElement.classList.toggle("two", !only); (only ? $("sureOk") : $("sureNo")).focus();
+    return new Promise(r => { sureDone = v => { sureDone = null; $("sure").hidden = true; $("sureNo").hidden = false; $("sureOk").parentElement.classList.add("two"); r(v); }; });
   }
   $("sureOk").onclick = () => sureDone && sureDone(true);
   $("sureNo").onclick = () => sureDone && sureDone(false);
