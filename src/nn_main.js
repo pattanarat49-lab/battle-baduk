@@ -2315,17 +2315,18 @@
   Tourney.init({ CHARS, rankName, hideScreens, showMenu, blip, askSure, enterRoom: id => Online.enterRoom(id), currentRoom: () => Online.currentRoom(), openPlayer: n => showPlayer(n, "tour") });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
-  // the announcement of the newest mode: a pop-up each time the page opens on the menu, after the
+  // the announcement of the newest mode: a pop-up the first time the page opens on the menu, after the
   // first-visit welcome when that one is up
   $("newsX").onclick = () => { $("news").hidden = true; };
   $("newsGo").onclick = () => { $("news").hidden = true; unlockAudio(); blip(880); Tourney.open(); };
-  // TOURNAMENT is announced on every visit (owner 2026-11-15), not just once
-  if (!MATCH && EXAMBOT === null) (function news(settled) {
+  // TOURNAMENT is announced once per browser (owner 2026-11-15 10:42Z, was every visit)
+  const NEWS = "newsTour";
+  if (!MATCH && EXAMBOT === null && !load(NEWS, 0)) (function news(settled) {
     // one more round after the loading screen goes, so the welcome (which waits on it too) is up first
     if (!$("splash").hidden || document.querySelector(".sure:not([hidden]):not(#news)")) return setTimeout(news, 400);
     if (!settled) return setTimeout(news, 800, true);
     if ($("menu").hidden) return;
-    $("news").hidden = false;
+    save(NEWS, 1); $("news").hidden = false;
   })();
   $("mnGear").onclick = () => { const o = $("mnSet").hidden; $("mnSet").hidden = !o; $("mnGear").setAttribute("aria-expanded", String(o)); };
   $("mnSound").onclick = () => $("btnSound").click();
