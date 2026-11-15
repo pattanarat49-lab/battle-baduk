@@ -194,9 +194,6 @@ legend { font-size: 12px; color: var(--muted); padding: 0; margin-bottom: 6px; }
 .ld-bar { position: absolute; left: 18.98%; top: 61.46%; width: 60.46%; height: 9.76%; box-sizing: border-box; border: 2px solid #8da792; border-radius: 999px; padding: 3px; }
 .ld-bar i { display: block; height: 100%; width: 0; background: #f8e8c9; border-radius: 999px; transition: width .25s; }
 .ld-p { font-family: var(--f-px), var(--f-body); font-size: 26px; color: #f8e8c9; margin: 0; }
-/* notice for a load that hangs (owner 2026-11-15): plain CSS so it shows even when no script runs; appears after 6 s */
-.ld-warn { max-width: 320px; margin: 14px 16px 0; font-size: 14px; line-height: 1.5; color: #f3c98b; text-align: center; opacity: 0; animation: ldwarn .4s 6s forwards; }
-@keyframes ldwarn { to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ld-c { animation: none; } }
 .home .seg9 { gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 100%; }
 .home .seg9 button { padding: 2px 6px 2px 18px; font-size: 20px; }
@@ -1299,7 +1296,6 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
 <section class="ld" id="splash" aria-live="polite">
   <div class="ld-art"><img class="ld-bg" src="menu/load_bg.png" alt=""><img class="ld-c w" src="menu/load_w.png" alt=""><img class="ld-c b" src="menu/load_b.png" alt=""><div class="ld-bar"><i id="ldFill"></i></div></div>
   <p class="ld-p" id="ldPct">0%</p>
-  <p class="ld-warn">ตอนนี้เว็บมีปัญหาโหลดช้าหรือค้าง ทีมงานกำลังเร่งแก้ไข ขออภัยในความไม่สะดวก<br>ถ้าค้างนาน ลองรีเฟรชหน้าอีกครั้ง</p>
 </section>
 <section class="brainload" id="brainLoad" hidden aria-live="polite">
   <p class="bl-t" id="blTitle">กำลังโหลดสมอง AI</p>
@@ -9250,7 +9246,7 @@ const Tourney = (() => {
   }
   ping(); setInterval(ping, 12e4);
   // a tab left open across an update keeps the old game: look for a newer build now and then (static version.json, no Worker request)
-  const BUILD = "8233fe665f";
+  const BUILD = "080eb8aeb5";
   let verAt = 0, newBuild = false;
   function checkVersion() {
     if (newBuild || BUILD.startsWith("__") || MATCH || Date.now() - verAt < 6e4) return;
