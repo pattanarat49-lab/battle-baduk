@@ -25,6 +25,7 @@ page=head+'''<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/d
 '''+open('account.js').read()+'''
 '''+open('social.js').read()+'''
 '''+open('online.js').read()+'''
+'''+open('tourney.js').read()+'''
 </script>
 <script>
 '''+open('nn_main.js').read()+'''

@@ -2243,6 +2243,7 @@
     { id: "joseki", t: "JOSEKI", rec: "NEW", s: "คลังโจเซกิจากเกมจริง ดูว่ายุคนี้นิยมแบบไหน" },
     { id: "kifu", t: "KIFU", rec: "NEW", s: "คลังเกมมืออาชีพ 130,000+ เกม ค้นชื่อผู้เล่นได้" },
     { id: "exam", t: "RANK TEST", rec: 1, s: "สอบวัดระดับกับฮิคารุ รู้ว่าเราเก่งระดับไหน" },
+    { id: "tour", t: "TOURNAMENT", rec: "NEW", s: "ทัวร์นาเมนต์ทุกวันอาทิตย์ 18:00 น. กด Join ล่วงหน้า แชมป์ได้ฉายา" },
     { id: "online", t: "PLAY ONLINE", s: "เล่นกับคนจริง สร้างห้องหรือกด Join" },
     { id: "watch", t: "WATCH", s: "ดูเกมที่คนอื่นกำลังเล่นอยู่แบบสด ๆ" },
     { id: "ranking", t: "LEADERBOARD", s: "อันดับผู้เล่นทั้งหมด เรียงตามระดับฝีมือ" },
@@ -2277,11 +2278,11 @@
     // LEARN: progress line (its "RECOMMEND FOR BEGINNER" tag always shows, owner 2026-11-11)
     $("mnList").querySelector('[data-mn="learn"] small').textContent = Learn.summary();
   }
-  function hideScreens() { Social.closeChat(); Online.leave(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "game", "endAsk", "vd", "sure", "tsel", "jsel", "ksel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
+  function hideScreens() { Social.closeChat(); Online.leave(); Tourney.close(); for (const id of ["menu", "home", "prof", "chat", "lb", "pl", "onl", "wat", "og", "tour", "game", "endAsk", "vd", "sure", "tsel", "jsel", "ksel"]) $(id).hidden = true; document.body.classList.remove("arcade", "playing", "menuing"); }
   function showMenu() { hideScreens(); $("menu").hidden = false; $("mnSet").hidden = true; document.body.classList.add("arcade", "menuing"); renderMenuStats(); window.scrollTo(0, 0); checkVersion(); }
   renderMenuStats();
   // player accounts (src/account.js): progress pulled from or saved to the account redraws the menu card and the profile
-  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); Online.syncInvites(); });
+  Account.init(() => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); Social.refresh(); Online.syncInvites(); Tourney.follow(); });
   // one socket per open page, so the server can say how many people are online (shown in WORLD CHAT)
   if (!window.ACCT_HUB && !MATCH && EXAMBOT === null) Hub.sub("here", () => {});
   // first visit: offer an account once the loading screen is gone
@@ -2307,14 +2308,16 @@
     return { lead: blk ? ev.lead : -ev.lead, win: blk ? w : 1 - w };
   }
   Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead,
-    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); } });
+    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); }, openTour: () => Tourney.open() });
+  // the weekly tournament (src/tourney.js): its games are online rooms the server starts
+  Tourney.init({ CHARS, rankName, hideScreens, showMenu, blip, askSure, enterRoom: id => Online.enterRoom(id), currentRoom: () => Online.currentRoom(), openPlayer: n => showPlayer(n, "tour") });
   // chat, leaderboard and the profile picture picker (src/social.js)
   Social.init({ CHARS, rankName, hideScreens, showMenu, blip, openPlayer: (n, from) => showPlayer(n, from), onAvatar: () => { renderMenuStats(); if (!$("prof").hidden) renderProfile(); } });
   // the announcement of the newest mode: a pop-up the first time the menu is seen (once per browser), after the
   // first-visit welcome when that one is up
-  const NEWS = "newsKifu";
+  const NEWS = "newsTour";
   $("newsX").onclick = () => { $("news").hidden = true; };
-  $("newsGo").onclick = () => { $("news").hidden = true; unlockAudio(); blip(880); hideScreens(); trackMode("kifu"); Kifu.open(); };
+  $("newsGo").onclick = () => { $("news").hidden = true; unlockAudio(); blip(880); Tourney.open(); };
   if (!MATCH && EXAMBOT === null && !load(NEWS, 0)) (function news(settled) {
     // one more round after the loading screen goes, so the welcome (which waits on it too) is up first
     if (!$("splash").hidden || document.querySelector(".sure:not([hidden]):not(#news)")) return setTimeout(news, 400);
@@ -2337,6 +2340,7 @@
     else if (go === "kifu") { hideScreens(); trackMode("kifu"); Kifu.open(); }
     else if (go === "tutorial") { hideScreens(); tutorFrom = "menu"; Tutorial.open(); }
     else if (go === "learn") { hideScreens(); trackMode("learn"); trackLearnBackfill(); Learn.open(); }
+    else if (go === "tour") Tourney.open();
     else if (go === "online") Online.openLobby("play");
     else if (go === "watch") Online.openLobby("watch");
     else if (go === "ranking") Social.openBoard();
@@ -2381,7 +2385,7 @@
     const hist = load("history", []).filter(isRec);
     const charOf = id => CHARS.find(c => c.id === id);
     const wins = hist.filter(h => h.won).length;
-    let h = Account.card() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
+    let h = Account.card() + Tourney.titleSection() + `<div class="pf-tiles"><div class="pf-tile"><b>${hist.length}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${wins}</b><span>ชนะ</span></div>
       <div class="pf-tile"><b>${hist.length - wins}</b><span>แพ้</span></div><div class="pf-tile"><b>${hist.length ? Math.round(wins / hist.length * 100) : 0}%</b><span>อัตราชนะ</span></div></div>`;
     const ranked = bestRank(hist);
     const g = pausedGame();
@@ -2436,7 +2440,7 @@
       <path d="${d}" class="ln"/><circle cx="${X(last)}" cy="${Y(pts[last].R)}" r="4" class="dot"/>
       <line class="hv" x1="0" x2="0" y1="${T}" y2="${H - B}" visibility="hidden"/><circle class="hvd" r="5" visibility="hidden"/></svg><div class="pf-tip" hidden></div>`;
     const svg = box.querySelector("svg"), tip = box.querySelector(".pf-tip"), hv = svg.querySelector(".hv"), hvd = svg.querySelector(".hvd");
-    const KIND = { ai: "(AI)", online: "(ออนไลน์)" };
+    const KIND = { ai: "(AI)", online: "(ออนไลน์)", tour: "" };
     const hide = () => { tip.hidden = true; hv.setAttribute("visibility", "hidden"); hvd.setAttribute("visibility", "hidden"); };
     svg.addEventListener("pointermove", e => {
       const r = svg.getBoundingClientRect(), x = e.clientX - r.left;
@@ -2444,8 +2448,8 @@
       const i = Math.max(1, Math.min(last, Math.round((x - L) / (W - L - Rt) * last))), p = pts[i], h = p.h;
       hv.setAttribute("x1", X(i)); hv.setAttribute("x2", X(i)); hv.setAttribute("visibility", "visible");
       hvd.setAttribute("cx", X(i)); hvd.setAttribute("cy", Y(p.R)); hvd.setAttribute("visibility", "visible");
-      const res = h.k === "exam" ? "" : h.w ? " · ชนะ" : " · แพ้";
-      tip.innerHTML = `<b>${rateName(p.R)} · ${p.R}</b> <span class="pf-dr ${h.d >= 0 ? "up" : "dn"}">${h.d >= 0 ? "+" : "−"}${Math.abs(h.d)}</span><br>${h.k === "exam" ? "สอบวัดระดับกับฮิคารุ" : "vs " + String(h.o || "").replace(/[&<>"]/g, "") + " " + (KIND[h.k] || "")}${res}<br><small>${new Date(h.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small>`;
+      const res = h.k === "exam" || h.k === "tour" ? "" : h.w ? " · ชนะ" : " · แพ้";
+      tip.innerHTML = `<b>${rateName(p.R)} · ${p.R}</b> <span class="pf-dr ${h.d >= 0 ? "up" : "dn"}">${h.d >= 0 ? "+" : "−"}${Math.abs(h.d)}</span><br>${h.k === "exam" ? "สอบวัดระดับกับฮิคารุ" : h.k === "tour" ? "🏆 " + String(h.o || "").replace(/[&<>"]/g, "") : "vs " + String(h.o || "").replace(/[&<>"]/g, "") + " " + (KIND[h.k] || "")}${res}<br><small>${new Date(h.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</small>`;
       tip.hidden = false;
       const tw = tip.offsetWidth; tip.style.left = Math.max(0, Math.min(W - tw, X(i) - tw / 2)) + "px"; tip.style.top = Math.max(0, Y(p.R) - tip.offsetHeight - 12) + "px";
     });
@@ -2464,7 +2468,7 @@
     const p = plData = r.body, rt = p.rating;
     const face = p.a && isFace(p.a) ? `chars/${p.a}_face.jpg` : "menu/guest.png";
     const loss = p.g - p.w;
-    let h = `<div class="acct-box in pl-top"><span class="acct-av"><img src="${face}" alt="" width="160" height="160"></span><div class="t"><b>${escH(p.n)}${p.n === Account.name() ? " (คุณ)" : ""}</b>
+    let h = `<div class="acct-box in pl-top"><span class="acct-av"><img src="${face}" alt="" width="160" height="160"></span><div class="t"><b>${escH(p.n)}${titleTag(p.t)}${p.n === Account.name() ? " (คุณ)" : ""}</b>
       <span>${typeof p.r === "number" ? rankName(p.r) : "ยังไม่มีระดับ"}${typeof p.R === "number" ? ` · ${p.R} แต้ม` : ""}${p.since ? ` · สมัครเมื่อ ${new Date(p.since).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}` : ""}</span></div>
       ${p.n === Account.name() ? "" : `<div class="pf-btns"><button class="pf-an primary" id="plDuel">⚔ ท้าดวล</button></div>`}</div>`;
     h += `<div class="pf-tiles"><div class="pf-tile"><b>${p.g}</b><span>เกมทั้งหมด</span></div><div class="pf-tile"><b>${p.w}</b><span>ชนะ</span></div>
@@ -2480,7 +2484,7 @@
     $("plBody").innerHTML = h;
     drawRating(rt, $("plGraph"));
   }
-  $("plBack").onclick = () => { blip(660); if (plFrom === "chat") Social.openChat(); else Social.openBoard(); };
+  $("plBack").onclick = () => { blip(660); if (plFrom === "chat") Social.openChat(); else if (plFrom === "tour") Tourney.open(); else Social.openBoard(); };
   $("plBody").addEventListener("click", e => {
     if (e.target.closest("#plDuel") && plData) { blip(880); Online.challenge(plData.n); return; }
     const b = e.target.closest("button[data-pan]"); if (!b || !plData) return;

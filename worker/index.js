@@ -2,7 +2,7 @@
 // POST /api/event  {type: "start"|"move"|"end", game, player, char, size, color, winner, how, moves, state}
 // GET  /stats      summary page and games in progress,  GET /api/stats  the same numbers as JSON
 // GET  /watch?g=…  live board of one game,  GET /api/game?g=…  its latest position
-// POST /api/acct/<op>  accounts, leaderboard, chat, online rooms (worker/hub.js), in their own Durable Object
+// POST /api/acct/<op>  accounts, leaderboard, chat, online rooms, weekly tournament (worker/hub.js), in their own Durable Object
 // GET  /api/ws         the same over a WebSocket, with live updates of subscribed keys
 // GET  /api/cancel  always {n: 0}, without touching the Durable Object: game pages opened before the cancel button was removed still poll it
 import { DurableObject } from "cloudflare:workers";
@@ -374,7 +374,7 @@ ${matchSection(s, ago)}
 // Player accounts, chat, leaderboard, online rooms and live games (worker/hub.js), kept apart from Stats so they never
 // touch its tables. Rows are written on sign-up, login, saves, chat messages and online moves; reads are by primary key.
 // Live positions of games against the AI ("lv…" keys) stay in memory only: they change every move and are not worth a row.
-const CODE = "2026-11-15a"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
+const CODE = "2026-11-15t"; // bumped with server changes; /api/online reports it for the Worker and for the Accounts object
 export class Accounts extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -398,7 +398,21 @@ export class Accounts extends DurableObject {
       if (this.bad.size > 5000) this.bad.clear();
     }
     if (r.changed && r.changed.length) await this.push(r.changed);
+    if (op.startsWith("tour") || (r.changed && r.changed.includes("tour"))) await this.plan();
     return { status: r.status, body: r.body };
+  }
+  // the weekly tournament (worker/tourney.js) has no timer of its own: an alarm wakes this object at Sunday 18:00 and
+  // then every minute while games are on, to start the draw and end games whose clock ran out
+  async plan() {
+    const t = await this.handle.wake();
+    if (t == null) return;
+    const cur = await this.ctx.storage.getAlarm();
+    if (cur == null || cur > t) await this.ctx.storage.setAlarm(Math.max(Date.now() + 1000, t)); // an earlier alarm just ticks and plans again
+  }
+  async alarm() {
+    const r = await this.handle("tourTick", {});
+    if (r.changed && r.changed.length) await this.push(r.changed);
+    await this.plan();
   }
   // One WebSocket per open page (hibernation API: an idle socket costs nothing, messages sent out are free, messages in
   // are billed 20 to 1). The page subscribes to store keys ({sub: [keys]}, kept on the socket so it survives hibernation)
@@ -416,7 +430,7 @@ export class Accounts extends DurableObject {
     if (!m || typeof m !== "object") return;
     const att = ws.deserializeAttachment() || { subs: [] };
     if (Array.isArray(m.sub)) {
-      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|online|here|inv:[^\s]{1,32}|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
+      att.subs = m.sub.filter(k => typeof k === "string" && /^(chat|rooms|lvidx|online|here|tour|inv:[^\s]{1,32}|room:[A-Z0-9]{6}|lv:[a-z0-9]{6,32})$/.test(k)).slice(0, 8);
       ws.serializeAttachment(att);
       for (const k of att.subs) ws.send(JSON.stringify({ k, v: await this.value(k), now: Date.now() }));
       return;

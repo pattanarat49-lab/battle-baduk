@@ -3,6 +3,8 @@
 // settings (sound, board size), which belong to the device.
 // Requests go to the Worker (/api/acct/*, worker/acct.js); the private preview page swaps in its own backend with
 // Account.useBackend(). Progress is sent only when it changed: checked every 20 s and when the tab is hidden.
+// the title a player wears after their name (weekly tournament champion), as a small badge; "" when none
+const titleTag = t => t ? ` <span class="ttl" title="ฉายา">🏆 ${String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}</span>` : "";
 const Account = (() => {
   const SYNC = ["history", "bestRank", "tsume3", "tsume4", "tutStep", "beaten", "avatar", "rating", "learn", "skin"];
   const get = k => { try { const v = localStorage.getItem("gonn." + k); return v === null ? null : JSON.parse(v); } catch (e) { return null; } };
@@ -82,10 +84,28 @@ const Account = (() => {
 
   // ---------- talking to the server ----------
   const remember = () => put("acct", me);
+  // what only the server can give: titles won in the weekly tournament (and the one worn after the name), and rating
+  // points it awarded, which go into this device's rating once (src/rating.js) and are then saved like any game
+  function extras(r) {
+    if (!me || !r) return false;
+    const before = JSON.stringify([me.titles, me.title]);
+    if (Array.isArray(r.titles)) me.titles = r.titles;
+    if (r.title !== undefined) me.title = r.title;
+    const got = Rating.bonus(r.bonus);
+    return got || before !== JSON.stringify([me.titles, me.title]);
+  }
+  const titleText = () => { const t = me && me.title && (me.titles || []).find(x => x.id === me.title); return t ? t.t : null; };
+  async function setTitle(id) {
+    if (!me) return;
+    const r = await api("title", { token: me.token, id });
+    if (r.status === 200) { me.title = r.body.title; me.titles = r.body.titles; remember(); onChange(); }
+    return r;
+  }
   function signedIn(r) {
     const merged = merge(collect(), r.data);
     apply(merged);
     me = { token: r.token, name: r.name, ver: r.ver, sent: fp(r.data || {}), at: Date.now() };
+    extras(r);
     remember();
     onChange();
     return push();
@@ -117,7 +137,7 @@ const Account = (() => {
       if (r.status === 401) { me = null; remember(); lastErr = r.body.error; onChange(); return; }
       if (r.status !== 200) return;
       if (r.body.ver !== me.ver) { apply(merge(collect(), r.body.data)); me.ver = r.body.ver; me.sent = fp(r.body.data || {}); remember(); onChange(); }
-      me.at = Date.now(); remember();
+      me.at = Date.now(); if (extras(r.body)) onChange(); remember();
       await push();
     } catch (e) {}
   }
@@ -209,7 +229,7 @@ const Account = (() => {
   function card() {
     if (!me) return `<div class="acct-box"><div class="t"><b>เก็บความคืบหน้าไว้ในแอคเคาท์</b><span>ล็อกอินแล้วประวัติเกม ระดับที่สอบได้ และด่านโจทย์ จะตามไปทุกเครื่อง</span>${lastErr ? `<span class="bad">${esc(lastErr)}</span>` : ""}</div>
       <div class="pf-btns"><button class="pf-an" data-acct="signup">สมัคร</button><button class="pf-an primary" data-acct="login">เข้าสู่ระบบ</button></div></div>`;
-    return `<div class="acct-box in"><button class="acct-av" data-soc="avatar" title="เปลี่ยนรูปโปรไฟล์"><img src="${avatarSrc()}" alt="" width="160" height="160"><i>เปลี่ยนรูป</i></button><div class="t"><b>${esc(me.name)}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
+    return `<div class="acct-box in"><button class="acct-av" data-soc="avatar" title="เปลี่ยนรูปโปรไฟล์"><img src="${avatarSrc()}" alt="" width="160" height="160"><i>เปลี่ยนรูป</i></button><div class="t"><b>${esc(me.name)}${titleTag(titleText())}</b><span>${busy ? "กำลังบันทึก…" : lastErr ? `<span class="bad">${esc(lastErr)}</span>` : `บันทึกขึ้นแอคเคาท์แล้ว · ${timeTH(me.at)}`}</span></div>
       <div class="pf-btns"><button class="pf-an" data-acct="logout">ออกจากระบบ</button></div></div>`;
   }
   document.addEventListener("click", e => {
@@ -241,6 +261,7 @@ const Account = (() => {
     setInterval(() => { if (!document.hidden) push(); }, 20e3);
     document.addEventListener("visibilitychange", () => { if (document.hidden) push(); });
   }
-  return { init, welcome, card, open, push, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+  return { init, welcome, card, open, push, pull, merge, beaten, avatarSrc, name: () => me && me.name, token: () => me && me.token,
+    titles: () => (me && me.titles) || [], title: () => me && me.title || null, titleText, setTitle,
     call: (op, body) => api(op, Object.assign({ token: me && me.token }, body)), useBackend: f => { api = f; } };
 })();
