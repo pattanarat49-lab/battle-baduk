@@ -2,7 +2,9 @@
 // tsumego and tutorial progress) so it follows them to another device.
 // The same code runs in the Accounts Durable Object (worker/index.js) and, for the private preview page, in the browser
 // on top of the artifact's database: `store` only needs get(key) / put(key, value) / del(key) with JSON values.
-//   user:  "u:" + lower-case name -> { name, salt, hash, rsalt, rhash, data, ver, created, updated, fails, lockUntil }
+//   user:  "u:" + lower-case name -> { name, salt, hash, rsalt, rhash, data, ver, created, updated, fails, lockUntil,
+//          titles: [{ id, t, at }] won in tournaments, title: the id shown after the name (null = none),
+//          bonus: [{ id, d, o, at }] rating points the server awarded (tournament places); the game adds each to its rating once }
 //   login: "s:" + sha256(token)   -> { u: lower-case name, at }
 //   "lb":   leaderboard, { e: { lower-case name -> { n: name, r: rank from the rating (or best exam rank), R: rating, a: avatar, g: games, w: wins } } }
 //   "chat": world chat, { m: [last 50 messages { id, n, r, a, t, at }] }
@@ -50,6 +52,8 @@ export function makeAccounts(store) {
   const err = (status, msg) => ({ status, body: { error: msg } });
   const ok = body => ({ status: 200, body });
   const ukey = name => "u:" + String(name || "").toLowerCase();
+  // the title the player chose to show after their name (text), or null
+  const titleOf = u => { const t = u.title && (u.title === "*" ? null : (u.titles || []).find(x => x.id === u.title)); return t ? t.t : null; };
   async function session(u) {
     const token = newToken();
     await store.put("s:" + await sha(token), { u: ukey(u.name).slice(2), at: Date.now() });
@@ -64,7 +68,7 @@ export function makeAccounts(store) {
   // the leaderboard row of one account, rewritten only when something on it changed
   async function board(u) {
     const sum = summary(u.data), lb = (await store.get("lb")) || { e: {} }, k = ukey(u.name).slice(2);
-    const row = { n: u.name, r: sum.r, R: sum.R, a: sum.a, g: sum.g, w: sum.w };
+    const row = { n: u.name, r: sum.r, R: sum.R, a: sum.a, g: sum.g, w: sum.w, t: titleOf(u) };
     if (JSON.stringify(lb.e[k]) === JSON.stringify(row)) return;
     lb.e[k] = row;
     await store.put("lb", lb);
@@ -73,7 +77,8 @@ export function makeAccounts(store) {
   const order = (x, y) => pts(y) - pts(x) || y.w - x.w || (x.n < y.n ? -1 : 1);
   const lastSaid = new Map(); // name -> time of the last chat message (memory only)
   const dataOf = v => { if (v == null) return null; const s = JSON.stringify(v); return s.length > MAX_DATA ? undefined : s; };
-  const out = (u, token, extra) => Object.assign({ token, name: u.name, data: u.data ? JSON.parse(u.data) : null, ver: u.ver }, extra);
+  const out = (u, token, extra) => Object.assign({ token, name: u.name, data: u.data ? JSON.parse(u.data) : null, ver: u.ver,
+    titles: u.titles || [], title: u.title || null, bonus: u.bonus || [] }, extra);
   const ops = {
     async signup(b) {
       const name = String(b.name || "").trim(), pass = String(b.pass || "");
@@ -165,7 +170,7 @@ export function makeAccounts(store) {
         opp: h.opp && typeof h.opp === "object" ? { n: String(h.opp.n || "").slice(0, 16), r: h.opp.r, a: h.opp.a } : undefined }));
       const rv = d.rating && typeof d.rating === "object" && Array.isArray(d.rating.hist) && s.R !== null ? { R: s.R, n: d.rating.n | 0, base: d.rating.base,
         hist: d.rating.hist.slice(-300).map(h => ({ at: h.at, R: h.R, d: h.d, k: h.k, o: String(h.o || "").slice(0, 24), w: h.w })) } : null;
-      return ok({ n: u.name, a: s.a, r: s.r, R: s.R, g: s.g, w: s.w, best, by, games, rating: rv, since: u.created });
+      return ok({ n: u.name, a: s.a, r: s.r, R: s.R, g: s.g, w: s.w, t: titleOf(u), titles: (u.titles || []).map(x => x.t), best, by, games, rating: rv, since: u.created });
     },
     async chat() {
       const c = (await store.get("chat")) || { m: [] };
@@ -181,11 +186,21 @@ export function makeAccounts(store) {
       lastSaid.set(k, now);
       if (lastSaid.size > 5000) lastSaid.clear();
       const sum = summary(u.data);
-      const msg = { id: hex(rand(6)), n: u.name, r: sum.r, a: sum.a, t, at: now };
+      const msg = { id: hex(rand(6)), n: u.name, r: sum.r, a: sum.a, t, tt: titleOf(u), at: now };
       const c = (await store.get("chat")) || { m: [] };
       c.m.push(msg); c.m = c.m.slice(-CHAT_KEEP);
       await store.put("chat", c);
       return ok({ msg });
+    },
+    // which won title shows after the player's name (Profile); id null = none
+    async title(b) {
+      const u = await byToken(b.token);
+      if (!u) return err(401, "หมดเวลาเข้าสู่ระบบ กรุณาล็อกอินใหม่");
+      if (b.id != null && !(u.titles || []).some(x => x.id === b.id)) return err(400, "ยังไม่มีฉายานี้");
+      u.title = b.id == null ? "*" : b.id;
+      await store.put(ukey(u.name), u);
+      await board(u);
+      return ok({ title: u.title === "*" ? null : u.title, titles: u.titles || [] });
     },
     async logout(b) {
       if (typeof b.token === "string") await store.del("s:" + await sha(b.token));
@@ -200,6 +215,21 @@ export function makeAccounts(store) {
     return r;
   }
   // who a login token belongs to, as other players see them (name, rank, rating, picture); null when not signed in
-  handle.userOf = async token => { const u = await byToken(token); if (!u) return null; const s = summary(u.data); return { n: u.name, r: s.r, R: s.R, a: s.a }; };
+  const pub = u => { const s = summary(u.data), t = titleOf(u); return Object.assign({ n: u.name, r: s.r, R: s.R, a: s.a }, t ? { t } : {}); };
+  handle.userOf = async token => { const u = await byToken(token); return u ? pub(u) : null; };
+  handle.userByName = async name => { const u = typeof name === "string" ? await store.get(ukey(name)) : null; return u ? pub(u) : null; };
+  // the tournament (worker/tourney.js) gives a player rating points and maybe a title; a new title is worn straight away
+  // unless the player chose to show none. Each award has its own id, so giving it twice changes nothing.
+  handle.award = async (name, a) => {
+    const u = await store.get(ukey(name));
+    if (!u) return;
+    u.bonus = (u.bonus || []).filter(x => x.id !== a.id).concat(a.d ? [{ id: a.id, d: a.d, o: a.o, at: a.at }] : []).slice(-50);
+    if (a.title) {
+      u.titles = (u.titles || []).filter(x => x.id !== a.title.id).concat([{ id: a.title.id, t: a.title.t, at: a.at }]);
+      if (u.title !== "*") u.title = a.title.id;
+    }
+    await store.put(ukey(u.name), u);
+    await board(u);
+  };
   return handle;
 }

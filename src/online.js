@@ -28,11 +28,11 @@ const Online = (() => {
     offs.push(Hub.sub("lvidx", v => { lives = (v && v.list) || {}; renderLobby(); }));
     offs.push(Hub.onState(() => renderLobby()));
   }
-  const pRow = (p, extra) => `<span class="ol-p"><img src="${face(p && p.a)}" alt="" width="160" height="160"><b>${esc(p ? p.n : "?")}</b><span class="ch-rank${p && typeof p.r === "number" ? "" : " no"}">${esc(rankOf(p && p.r))}</span>${extra || ""}</span>`;
+  const pRow = (p, extra) => `<span class="ol-p"><img src="${face(p && p.a)}" alt="" width="160" height="160"><b>${esc(p ? p.n : "?")}</b>${titleTag(p && p.t)}<span class="ch-rank${p && typeof p.r === "number" ? "" : " no"}">${esc(rankOf(p && p.r))}</span>${extra || ""}</span>`;
   function gameRows(list) {
     return list.map(g => g.kind === "room"
       ? `<div class="ol-row"><div class="ol-who">${pRow(g.r.host, g.r.black === g.r.host.n ? " ⚫" : " ⚪")}<span class="ol-vs">vs</span>${pRow(g.r.guest, g.r.black === (g.r.guest && g.r.guest.n) ? " ⚫" : " ⚪")}</div>
-          <div class="ol-meta"><span class="ol-tag">คน vs คน</span> ${g.r.size}×${g.r.size} · ${esc(timeText(g.r))} · ตาที่ ${g.r.moves}</div><button class="pf-an" data-watch-room="${g.r.id}">ดู</button></div>`
+          <div class="ol-meta"><span class="ol-tag${g.r.tour ? " tour" : ""}">${g.r.tour ? `ทัวร์นาเมนต์ครั้งที่ ${g.r.tour}` : "คน vs คน"}</span> ${g.r.size}×${g.r.size} · ${esc(timeText(g.r))} · ตาที่ ${g.r.moves}</div><button class="pf-an" data-watch-room="${g.r.id}">ดู</button></div>`
       : (() => { const c = charOf(g.l.char) || { name: g.l.char, id: "" };
         return `<div class="ol-row"><div class="ol-who">${pRow(g.l.who, g.l.human === 1 ? " ⚫" : " ⚪")}<span class="ol-vs">vs</span><span class="ol-p"><img src="${c.id ? `chars/${c.id}_face.jpg` : "menu/guest.png"}" alt="" width="160" height="160"><b>${esc(c.name)}</b>${g.l.human === 1 ? " ⚪" : " ⚫"}</span></div>
           <div class="ol-meta"><span class="ol-tag${g.l.exam ? " exam" : " ai"}">${g.l.exam ? "สอบวัดระดับ" : "vs AI"}</span> ${g.l.size}×${g.l.size} · ตาที่ ${g.l.moves}${g.l.ended ? " · จบแล้ว" : ""}</div><button class="pf-an" data-watch-live="${g.l.g}">ดู</button></div>`; })()).join("");
@@ -199,7 +199,7 @@ const Online = (() => {
         $("og" + c + "C").innerHTML = m > 0 ? clockText(m) : `${Math.ceil(b)} <small>วิ · เหลือ ${per} ครั้ง</small>`; });
     }
   }
-  const RES = { resign: "ยอมแพ้", timeout: "หมดเวลา", score: "นับแต้ม" };
+  const RES = { resign: "ยอมแพ้", timeout: "หมดเวลา", score: "นับแต้ม", noshow: "ไม่มาเดินตาแรกใน 5 นาที" };
   function render() {
     if (!G) return;
     let black, white, status = "", btns = false, turn = null;
@@ -211,6 +211,7 @@ const Online = (() => {
       if (r.st === "open") status = (r.to ? `ส่งคำท้าถึง <b>${esc(r.to)}</b> แล้ว รอตอบรับ…` : `รอคู่แข่งกด Join · รหัสห้อง <b>${r.id}</b>`) + ` · ${r.size}×${r.size} · ${esc(timeText(r))} · ${pickText[r.pick]}`;
       else if (r.st === "declined") status = `<b>${esc(r.to)}</b> ปฏิเสธคำท้า ลองท้าใหม่ทีหลัง หรือสร้างห้องให้คนอื่น Join ได้`;
       else if (r.st === "play") status = G.me ? (turn === G.me ? "ตาคุณเดิน" : "รอคู่แข่งเดิน…") : `กำลังดู · ตาที่ ${r.moves.length + 1}`;
+      if (r.st === "play" && r.tour && G.me) status += ` · <span class="tr-noai-s">ทัวร์นาเมนต์: ห้ามใช้ AI ช่วยเล่น</span>`;
       else if (r.st === "score") status = "ผ่านกันทั้งคู่ กำลังนับแต้ม…";
       else if (r.res) { const w = r.res.winner === "b" ? "ดำ" : "ขาว", wn = r.res.winner === "b" ? r.black : r.white;
         status = `<b>${w}ชนะ</b> (${esc(wn)}) · ${RES[r.res.how] || ""}${r.res.margin != null ? ` ${r.res.margin} แต้ม` : ""}${G.me ? (r.res.winner === G.me ? " · คุณชนะ! 🎉" : " · คุณแพ้") : ""}`; }
@@ -224,13 +225,13 @@ const Online = (() => {
       status = l.ended ? "เกมนี้จบแล้ว" : `กำลังดูสด · ${l.exam ? "สอบวัดระดับ" : "vs AI"} · ตาที่ ${l.moves.length + 1}`;
       $("ogClose").hidden = true;
     }
-    const bar = (p, c) => p ? `<img src="${p.img || face(p.a)}" alt="" width="160" height="160"><span class="og-n"><span class="st ${c}"></span><b>${esc(p.n)}</b></span><span class="og-c2"><span class="og-c" id="og${c}C"></span><span class="ch-rank${p.ai || typeof p.r === "number" ? "" : " no"}">${esc(p.ai || rankOf(p.r))}</span></span>`
+    const bar = (p, c) => p ? `<img src="${p.img || face(p.a)}" alt="" width="160" height="160"><span class="og-n"><span class="st ${c}"></span><b>${esc(p.n)}</b>${titleTag(p.t)}</span><span class="og-c2"><span class="og-c" id="og${c}C"></span><span class="ch-rank${p.ai || typeof p.r === "number" ? "" : " no"}">${esc(p.ai || rankOf(p.r))}</span></span>`
       : `<span class="og-n"><span class="st ${c}"></span><b>รอคู่แข่ง…</b></span><span class="og-c2"><span class="og-c" id="og${c}C"></span></span>`;
     $("ogB").innerHTML = bar(black, "b"); $("ogW").innerHTML = bar(white, "w");
     $("ogB").classList.toggle("turn", turn === "b"); $("ogW").classList.toggle("turn", turn === "w");
     $("ogStatus").innerHTML = status;
     $("ogPass").hidden = $("ogResign").hidden = !btns;
-    $("ogTitle").textContent = G.kind === "room" ? (G.me ? "PLAY ONLINE" : "WATCH") : "WATCH";
+    $("ogTitle").textContent = G.kind === "room" ? (G.room.tour ? `TOURNAMENT ครั้งที่ ${G.room.tour.no}` + (G.me ? "" : " · WATCH") : G.me ? "PLAY ONLINE" : "WATCH") : "WATCH";
     renderRev(); renderClocks(); draw();
   }
 
@@ -370,7 +371,8 @@ const Online = (() => {
     D = deps;
     $("onlBack").onclick = () => { D.blip(660); unsubAll(); lobbyMode = null; D.showMenu(); };
     $("watBack").onclick = () => { D.blip(660); unsubAll(); lobbyMode = null; D.showMenu(); };
-    $("ogBack").onclick = () => { D.blip(660); const from = G && G.kind === "room" && (G.me || (G.room && G.room.host.n === Account.name())) ? "play" : "watch"; leaveGame(); openLobby(from); };
+    $("ogBack").onclick = () => { D.blip(660); if (G && G.kind === "room" && G.room && G.room.tour) { leaveGame(); D.openTour(); return; }
+      const from = G && G.kind === "room" && (G.me || (G.room && G.room.host.n === Account.name())) ? "play" : "watch"; leaveGame(); openLobby(from); };
     $("ogClose").onclick = async () => { if (!G || !G.room) return; await Hub.op("close", { token: Account.token(), id: G.room.id }); leaveGame(); openLobby("play"); };
     $("ogPass").onclick = async () => { if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
     $("ogResign").onclick = async () => { if (!G || !G.room || !await D.askSure("ยอมแพ้?", "ยอมแพ้เกมนี้จริงไหม", "ยอมแพ้")) return; const x = await Hub.op("resign", { token: Account.token(), id: G.room.id }); if (x.status === 200 && x.body.room) setRoom(x.body.room); };
@@ -399,5 +401,6 @@ const Online = (() => {
       else if (b.dataset.watchLive) { D.blip(880); watchLive(b.dataset.watchLive); }
     });
   }
-  return { init, openLobby, live, challenge, syncInvites, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
+  return { init, openLobby, live, challenge, syncInvites, enterRoom: (id, first) => { D.leaveAIGame(); enterRoom(id, first); },
+    currentRoom: () => G && G.kind === "room" && !$("og").hidden ? G.id : null, leave: () => { leaveGame(); unsubAll(); lobbyMode = null; } };
 })();

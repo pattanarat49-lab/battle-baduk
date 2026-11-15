@@ -1,6 +1,6 @@
 // The player's skill rating: the best rank test, plus or minus every finished game since (against the AI, online).
 // Elo on the EGF scale: 1 kyu = 2000, 1 dan = 2100, 15 kyu = 600; one rank = 100 points (about a 64% win rate).
-// Kept in localStorage gonn.rating { R, n: games counted, base: best exam rank it starts from, hist: [{ at, R, d: change, k: "ai"|"online"|"exam", o: opponent, w: won }] }
+// Kept in localStorage gonn.rating { R, n: games counted, base: best exam rank it starts from, hist: [{ at, R, d: change, k: "ai"|"online"|"exam"|"tour", o: opponent, w: won }] }
 // and synced with the account like the rest of the progress (src/account.js).
 const Rating = (() => {
   const KEY = "gonn.rating", START = 600, KEEP = 300;
@@ -69,6 +69,23 @@ const Rating = (() => {
     if (base > -99) out.base = base;
     return out;
   }
+  // points the server awarded (tournament places, worker/tourney.js): each { id, d, o, at } is added once, at its own
+  // time in the graph (games after it move up or down with it). Returns true when something was added.
+  function bonus(list) {
+    if (!Array.isArray(list) || !list.length) return false;
+    const cur = get() || { R: START, n: 0, hist: [] };
+    let added = false;
+    for (const b of list) {
+      if (!b || typeof b.id !== "string" || typeof b.d !== "number" || cur.hist.some(h => h.k === "tour" && h.id === b.id)) continue;
+      const at = b.at || Date.now(), i = cur.hist.findIndex(h => h.at > at), before = i < 0 ? cur.R : cur.hist[i].R - (cur.hist[i].d || 0);
+      const e = { at, R: Math.max(100, Math.min(2900, before + b.d)), d: b.d, k: "tour", o: String(b.o || "ทัวร์นาเมนต์"), w: true, id: b.id };
+      if (i < 0) cur.hist.push(e); else { cur.hist.splice(i, 0, e); for (let j = i + 1; j < cur.hist.length; j++) cur.hist[j].R = Math.max(100, Math.min(2900, cur.hist[j].R + b.d)); }
+      cur.R = Math.max(100, Math.min(2900, cur.R + b.d));
+      added = true;
+    }
+    if (added) { cur.hist = cur.hist.slice(-KEEP); put(cur); }
+    return added;
+  }
   const last = v => v.hist && v.hist.length ? v.hist[v.hist.length - 1].at : 0;
-  return { get, toR, toRank, parseRank, update, anchor, merge, START, rank: () => { const v = get(); return v ? toRank(v.R) : null; } };
+  return { get, toR, toRank, parseRank, update, anchor, merge, bonus, START, rank: () => { const v = get(); return v ? toRank(v.R) : null; } };
 })();

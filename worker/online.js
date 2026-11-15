@@ -14,7 +14,7 @@ import GoEngine from "../src/engine.js";
 let E = null; // made on first use (the preview page loads the rules code after this file)
 const eng = () => E || (E = GoEngine());
 const SIZES = [9, 13, 19], MAINS = [0, 60, 300, 600, 1200, 1800, 3600], BYOS = [0, 10, 20, 30, 60], PERS = [1, 3, 5];
-const KOMI = 6.5, SCORE_WAIT = 60e3, OPEN_KEEP = 30 * 60e3, LIVE_KEEP = 10 * 60e3, ENDED_KEEP = 10 * 60e3;
+const KOMI = 6.5, NOSHOW = 5 * 60e3, SCORE_WAIT = 60e3, OPEN_KEEP = 30 * 60e3, LIVE_KEEP = 10 * 60e3, ENDED_KEEP = 10 * 60e3;
 const id6 = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(6)); let s = ""; for (const b of r) s += a[b % a.length]; return s; };
 
 // the position after a list of moves; null when one of them is not legal
@@ -40,11 +40,11 @@ function spend(clk, el, byo) {
 }
 const deadline = (r, c) => r.turnAt + (r.clk[c][0] + (r.byo ? r.clk[c][1] * r.byo : 0)) * 1000;
 
-export function makeOnline(store, userOf) {
+export function makeOnline(store, userOf, hooks = {}) {
   const err = (status, msg) => ({ status, body: { error: msg } });
   const ok = (body, changed) => ({ status: 200, body, changed: changed || [] });
   const summary = r => ({ id: r.id, st: r.st, size: r.size, main: r.main, byo: r.byo, per: r.per, pick: r.pick, host: r.host, guest: r.guest,
-    black: r.black, white: r.white, to: r.to, moves: r.moves.length, at: r.turnAt || r.created });
+    black: r.black, white: r.white, to: r.to, tour: r.tour ? r.tour.no : undefined, moves: r.moves.length, at: r.turnAt || r.created });
   async function index(fn) {
     const ix = (await store.get("rooms")) || { list: {} };
     fn(ix.list);
@@ -53,7 +53,9 @@ export function makeOnline(store, userOf) {
   async function saveRoom(r, changed) {
     await store.put("room:" + r.id, r);
     await index(l => { if (r.st === "end" || r.st === "declined") delete l[r.id]; else l[r.id] = summary(r); });
-    return ["room:" + r.id, "rooms", ...(changed || [])];
+    // a tournament game that just ended moves its bracket on (worker/tourney.js)
+    const more = r.tour && r.st === "end" && hooks.onEnd ? await hooks.onEnd(r) : [];
+    return ["room:" + r.id, "rooms", ...(changed || []), ...more];
   }
   function finish(r, winner, how, margin) {
     r.st = "end"; r.ended = Date.now();
@@ -64,6 +66,8 @@ export function makeOnline(store, userOf) {
     if (r.st === "play") {
       const c = colorToPlay(r);
       if (now > deadline(r, c)) { r.clk[c] = [0, 0]; finish(r, c === "b" ? "w" : "b", "timeout"); return true; }
+      // tournament: a player who has not made a first move within five minutes of their first turn loses (did not show up)
+      if (r.tour && r.moves.length < 2 && now - r.turnAt > NOSHOW) { finish(r, c === "b" ? "w" : "b", "noshow"); return true; }
     }
     if (r.st === "score" && now - r.scoreAt > SCORE_WAIT) { settle(r, true); return true; }
     return false;
@@ -209,16 +213,18 @@ export function makeOnline(store, userOf) {
     },
     // the lobby: open rooms and games in progress (stale ones cleaned up), plus games against the AI being played now
     async lobby() {
-      const ix = (await store.get("rooms")) || { list: {} }, now = Date.now(), changed = [];
+      const ix = (await store.get("rooms")) || { list: {} }, now = Date.now(), changed = [], ended = [];
       for (const s of Object.values(ix.list)) {
         if (s.st === "open" && now - s.at > OPEN_KEEP) { changed.push(...await dropInvite(await store.get("room:" + s.id))); await store.del("room:" + s.id); delete ix.list[s.id]; changed.push("room:" + s.id); continue; }
         if (s.st === "play" || s.st === "score") {
           const r = await store.get("room:" + s.id);
           if (!r) { delete ix.list[s.id]; continue; }
-          if (check(r, now)) { r.v++; await store.put("room:" + r.id, r); delete ix.list[s.id]; changed.push("room:" + r.id); }
+          if (check(r, now)) { r.v++; await store.put("room:" + r.id, r); delete ix.list[s.id]; changed.push("room:" + r.id); if (r.tour) ended.push(r); }
         }
       }
       if (changed.length) { await store.put("rooms", ix); changed.push("rooms"); }
+      // tournament games move the bracket on only now, as that may start new games (written into "rooms" again)
+      for (const r of ended) if (hooks.onEnd) changed.push(...await hooks.onEnd(r));
       const lv = (await store.get("lvidx")) || { list: {} };
       const live = Object.values(lv.list).filter(g => now - g.at < LIVE_KEEP);
       return ok({ rooms: Object.values(ix.list), live }, changed);
@@ -243,10 +249,26 @@ export function makeOnline(store, userOf) {
       return ok({}, !old || !!old.ended !== !!st.ended ? ["lv:" + g, "lvidx"] : ["lv:" + g]);
     }
   };
-  return async function handle(op, body) {
+  async function handle(op, body) {
     const f = Object.prototype.hasOwnProperty.call(ops, op) && ops[op];
     if (!f) return null;
     return await f(body && typeof body === "object" ? body : {});
+  }
+  // for the tournament (worker/tourney.js): a game it sets up between two players, and a clock check of one game
+  handle.startGame = async (a, b, tour, set) => {
+    const black = crypto.getRandomValues(new Uint8Array(1))[0] < 128 ? a : b, white = black === a ? b : a, now = Date.now();
+    const r = { id: id6(), v: 1, size: set.size, main: set.main, byo: set.byo, per: set.per, pick: "r", komi: KOMI, host: a, guest: b, black: black.n, white: white.n,
+      st: "play", moves: [], clk: { b: [set.main, set.per], w: [set.main, set.per] }, turnAt: now, created: now, res: null, scores: null, tour };
+    await store.put("room:" + r.id, r);
+    await index(l => { l[r.id] = summary(r); });
+    return r;
   };
+  handle.checkGame = async (id, now) => {
+    const r = await room(id);
+    if (!r || !check(r, now)) return [];
+    r.v++;
+    return await saveRoom(r);
+  };
+  return handle;
 }
 export { spend, replay };
