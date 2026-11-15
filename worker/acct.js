@@ -41,9 +41,9 @@ function summary(data) {
   const a = typeof d.avatar === "string" && /^[a-z]{2,12}$/.test(d.avatar) && beaten.has(d.avatar) ? d.avatar : null;
   // the rating (src/rating.js, moved by every game and rank test) is the rank shown everywhere; the best exam rank
   // stands in for accounts that have no rating yet
-  const R = d.rating && typeof d.rating.R === "number" && isFinite(d.rating.R) ? Math.max(100, Math.min(2900, Math.round(d.rating.R))) : null;
+  const R = d.rating && typeof d.rating.R === "number" && isFinite(d.rating.R) ? Math.max(100, Math.min(5000, Math.round(d.rating.R))) : null;
   if (R !== null) r = (R - 2000) / 100;
-  return { r: r === null ? null : Math.round(r * 10) / 10, R, a, g: hist.length, w: hist.filter(h => h && h.won).length };
+  return { r: r === null ? null : Math.floor(r * 10 + 1e-6) / 10, R, a, g: hist.length, w: hist.filter(h => h && h.won).length };
 }
 const cleanText = t => String(t || "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e]/g, " ").replace(/\s+/g, " ").trim().slice(0, CHAT_LEN);
 const cleanCode = c => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/(.{4})(?=.)/g, "$1-");

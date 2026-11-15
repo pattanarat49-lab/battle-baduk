@@ -4,6 +4,8 @@
 // and synced with the account like the rest of the progress (src/account.js).
 const Rating = (() => {
   const KEY = "gonn.rating", START = 600, KEEP = 300;
+  // no ceiling at 9 dan any more (owner 2026-11-15: above 2900 is still 9 dan); MAX_R only stops a broken value
+  const MAX_R = 5000;
   const get = () => { try { const v = JSON.parse(localStorage.getItem(KEY)); return v && typeof v.R === "number" ? v : null; } catch (e) { return null; } };
   const put = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} };
   const toR = rank => 2000 + 100 * rank;           // rank: 1 kyu = 0, 1 dan = 1, 15 kyu = -14 (rankName() scale)
@@ -17,11 +19,13 @@ const Rating = (() => {
   }
   // provisional ratings move fast so a strong newcomer climbs quickly; small boards say less about strength
   const kOf = (n, size) => (n < 5 ? 150 : n < 15 ? 60 : 32) * (size >= 19 ? 1 : size >= 13 ? 0.6 : 0.4);
+  // a win against an AI character counts double (owner 2026-11-15: beating the bots should give more); losses stay as they are
+  const AI_WIN = 2;
   function update(oppR, won, size, kind, label, at) {
     const cur = get() || { R: START, n: 0, hist: [] };
     const exp = 1 / (1 + Math.pow(10, (oppR - cur.R) / 400));
-    const d = Math.round(kOf(cur.n, size) * ((won ? 1 : 0) - exp));
-    cur.R = Math.max(100, Math.min(2900, cur.R + d)); cur.n++;
+    const d = Math.round(kOf(cur.n, size) * ((won ? 1 : 0) - exp) * (won && kind === "ai" ? AI_WIN : 1));
+    cur.R = Math.max(100, Math.min(MAX_R, cur.R + d)); cur.n++;
     cur.hist.push({ at: at || Date.now(), R: cur.R, d, k: kind, o: label, w: !!won });
     cur.hist = cur.hist.slice(-KEEP);
     put(cur);
@@ -36,13 +40,13 @@ const Rating = (() => {
     if (cur && typeof cur.base === "number" && best.rank <= cur.base) return cur;
     const v = cur || { R: START, n: 0, hist: [] }, at = best.at || Date.now();
     const since = v.hist.filter(h => h.k !== "exam" && h.at > at).reduce((a, h) => a + (h.d || 0), 0);
-    const R = Math.max(100, Math.min(2900, toR(best.rank) + since)), d = R - v.R;
+    const R = Math.max(100, Math.min(MAX_R, toR(best.rank) + since)), d = R - v.R;
     v.R = R; v.base = best.rank; v.n = Math.max(v.n, 5); // a tested player is not a newcomer: normal steps from here
     v.hist = v.hist.filter(h => !(h.k === "exam" && h.at >= at));
     v.hist.push({ at, R: toR(best.rank), d, k: "exam", o: "ฮิคารุ (สอบวัดระดับ)", w: null });
     v.hist.sort((x, y) => x.at - y.at);
     // later points on the graph follow the new base
-    let r = toR(best.rank); for (const h of v.hist) if (h.at > at) { r = Math.max(100, Math.min(2900, r + (h.d || 0))); h.R = r; }
+    let r = toR(best.rank); for (const h of v.hist) if (h.at > at) { r = Math.max(100, Math.min(MAX_R, r + (h.d || 0))); h.R = r; }
     v.hist = v.hist.slice(-KEEP);
     put(v);
     return v;
@@ -78,9 +82,9 @@ const Rating = (() => {
     for (const b of list) {
       if (!b || typeof b.id !== "string" || typeof b.d !== "number" || cur.hist.some(h => h.k === "tour" && h.id === b.id)) continue;
       const at = b.at || Date.now(), i = cur.hist.findIndex(h => h.at > at), before = i < 0 ? cur.R : cur.hist[i].R - (cur.hist[i].d || 0);
-      const e = { at, R: Math.max(100, Math.min(2900, before + b.d)), d: b.d, k: "tour", o: String(b.o || "ทัวร์นาเมนต์"), w: true, id: b.id };
-      if (i < 0) cur.hist.push(e); else { cur.hist.splice(i, 0, e); for (let j = i + 1; j < cur.hist.length; j++) cur.hist[j].R = Math.max(100, Math.min(2900, cur.hist[j].R + b.d)); }
-      cur.R = Math.max(100, Math.min(2900, cur.R + b.d));
+      const e = { at, R: Math.max(100, Math.min(MAX_R, before + b.d)), d: b.d, k: "tour", o: String(b.o || "ทัวร์นาเมนต์"), w: true, id: b.id };
+      if (i < 0) cur.hist.push(e); else { cur.hist.splice(i, 0, e); for (let j = i + 1; j < cur.hist.length; j++) cur.hist[j].R = Math.max(100, Math.min(MAX_R, cur.hist[j].R + b.d)); }
+      cur.R = Math.max(100, Math.min(MAX_R, cur.R + b.d));
       added = true;
     }
     if (added) { cur.hist = cur.hist.slice(-KEEP); put(cur); }
