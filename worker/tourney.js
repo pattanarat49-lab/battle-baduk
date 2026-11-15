@@ -1,6 +1,6 @@
 // The weekly TOURNAMENT: players press Join any time before Sunday 18:00 (Thai time); at 18:00 the entrants are drawn
 // into a random single-elimination bracket and every game is an online room the server starts by itself (19×19,
-// 30 min + byo-yomi 30 s × 3, Japanese rules, komi 6.5). A lost game knocks the player out; the winners meet in the next
+// 15 min + one byo-yomi period of 30 s, Japanese rules, komi 6.5). A lost game knocks the player out; the winners meet in the next
 // round as soon as both are free, and the two semi-final losers play for third place at the same time as the final.
 // Prizes (owner 2026-11-15): 1st +100 rating and the title "Champion of Tournament ครั้งที่ N", 2nd +50, 3rd +25.
 // Like acct.js and online.js this runs in the Accounts Durable Object (and in a test page); everything is in `store`:
@@ -10,7 +10,7 @@
 //   a match: { a: player|null, b: player|null, room: id|null, w: "a"|"b"|null, how }   (player = { n, r, R, a, t })
 // Nothing runs on a timer here: tick(now) does whatever is due (start at 18:00, clocks of the games). The Durable
 // Object calls it from an alarm (wake() says when), and every look at the tournament page calls it too.
-const SET = { size: 19, main: 1800, byo: 30, per: 3 };
+const SET = { size: 19, main: 900, byo: 30, per: 1 }; // owner 2026-11-15: 15 min + one 30 s byo-yomi, tournament only
 const MAX = 64, PRIZE = [100, 50, 25];
 const DAY = 86400e3, WEEK = 7 * DAY;
 // the next Sunday 18:00 in Thailand (UTC+7, no daylight saving) = Sunday 11:00 UTC, after `now`
