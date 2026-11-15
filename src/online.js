@@ -89,13 +89,15 @@ const Online = (() => {
   // ---------- the online board: playing a room, or watching a room / a game against the AI ----------
   let G = null; // { kind: "room"|"live", id, room|live, off, me: "b"|"w"|null, ghost, b: Board, scored, ticked }
   let tickTimer = 0;
-  function leaveGame() { if (G) { G.off && G.off(); G = null; } clearInterval(tickTimer); }
+  function leaveGame() { if (G) { G.off && G.off(); G.offChat && G.offChat(); G = null; } clearInterval(tickTimer); $("ogChat").hidden = true; }
   function enterRoom(id, first) {
     leaveGame(); show("og");
     G = { kind: "room", id, room: null, me: null, ghost: null, scored: false, ticked: 0 };
     const g = G;
     if (first) setRoom(first);
     G.off = Hub.sub("room:" + id, r => { if (G === g) { if (!r) { $("ogStatus").textContent = "ห้องนี้ถูกปิดแล้ว"; return; } setRoom(r); } });
+    G.chat = []; $("ogMsgs").innerHTML = ""; $("ogIn").value = "";
+    G.offChat = Hub.sub("rc:" + id, v => { if (G !== g) return; const n0 = G.chat.length; G.chat = (v && v.m) || []; renderChat(n0); });
     tickTimer = setInterval(tick, 250);
     draw();
   }
@@ -148,7 +150,7 @@ const Online = (() => {
     if (G.me && r.st === "end") record(r);
     if (prev && r.moves.length > prev.moves.length && r.moves[r.moves.length - 1]) D.clack();
     G.b = replayBoard(r.size, r.moves);
-    G.ghost = null;
+    if (!prev || r.moves.length !== prev.moves.length || r.st !== "play") G.ghost = null;
     if (r.st === "score" && G.me && !G.scored && !(r.scores && r.scores[G.me] !== undefined)) countScore();
     render();
   }
@@ -231,6 +233,12 @@ const Online = (() => {
     $("ogB").classList.toggle("turn", turn === "b"); $("ogW").classList.toggle("turn", turn === "w");
     $("ogStatus").innerHTML = status;
     $("ogPass").hidden = $("ogResign").hidden = !btns;
+    // a finished game (online or tournament) opens on the analysis board (owner 2026-11-15)
+    $("ogAn").hidden = !(G.kind === "room" && G.room && G.room.st === "end" && G.room.moves.length > 0);
+    syncPass();
+    // the room chat: once both players are in; only they can write, spectators read along
+    const chatOn = G.kind === "room" && G.room && G.room.st !== "open" && G.room.st !== "declined" && !!G.room.guest;
+    $("ogChat").hidden = !chatOn; $("ogSay").hidden = !(chatOn && G.me);
     $("ogTitle").textContent = G.kind === "room" ? (G.room.tour ? `TOURNAMENT ครั้งที่ ${G.room.tour.no}` + (G.me ? "" : " · WATCH") : G.me ? "PLAY ONLINE" : "WATCH") : "WATCH";
     renderRev(); renderClocks(); draw();
   }
@@ -303,6 +311,7 @@ const Online = (() => {
     if (stones) stones.forEach((c, k) => { if (c) stone(k % n, Math.floor(k / n), c, dead && dead.has(k) ? 0.4 : 1); });
     if (last >= 0 && stones) { const i = last % n, j = Math.floor(last / n); x.strokeStyle = stones[last] === 1 ? "#fff" : "#000"; x.lineWidth = 2; x.beginPath(); x.arc(cell * (i + 1), cell * (j + 1), cell * 0.22, 0, 7); x.stroke(); }
     if (G && G.ghost) stone(G.ghost[0], G.ghost[1], G.me === "b" ? 1 : 2, 0.55);
+    if (G && G.ghost && G.view == null && ghostOk()) { x.fillStyle = "#e0402e"; x.beginPath(); x.arc(cell * (G.ghost[0] + 1), cell * (G.ghost[1] + 1), cell * 0.14, 0, 7); x.fill(); }
     if (dead) { x.strokeStyle = "#c0392b"; x.lineWidth = 2; for (const k of dead) { const i = k % n, j = Math.floor(k / n), cx = cell * (i + 1), cy = cell * (j + 1), d = cell * 0.18; x.beginPath(); x.moveTo(cx - d, cy - d); x.lineTo(cx + d, cy + d); x.moveTo(cx + d, cy - d); x.lineTo(cx - d, cy + d); x.stroke(); } }
   }
   // tap once to see the stone, again on the same point to play it (a mouse plays on the first click)
@@ -314,15 +323,35 @@ const Online = (() => {
     if (i < 0 || j < 0 || i >= n || j >= n) return;
     if (!G.b.isLegal(G.b.pt(i, j), G.me === "b" ? D.BLACK : D.WHITE)) { $("ogStatus").textContent = "เดินตรงนั้นไม่ได้"; return; }
     const touch = ev.pointerType === "touch" || ev.pointerType === "pen";
-    if (touch && !(G.ghost && G.ghost[0] === i && G.ghost[1] === j)) { G.ghost = [i, j]; draw(); $("ogStatus").textContent = "แตะจุดเดิมอีกครั้งเพื่อวางหมาก"; return; }
+    if (touch && !(G.ghost && G.ghost[0] === i && G.ghost[1] === j)) { G.ghost = [i, j]; D.blip(700); draw(); syncPass(); $("ogStatus").textContent = "กดปุ่ม วางหมาก หรือแตะจุดเดิมอีกครั้งเพื่อวาง"; return; }
     send([i, j]);
+  }
+  // like the game against the AI: while a stone waits to be placed (touch screens), the pass button is the confirm button
+  const ghostOk = () => { if (!G || G.kind !== "room" || !G.room || !G.ghost || G.sending || G.room.st !== "play" || !G.me) return false;
+    const r = G.room; return (r.moves.length % 2 === 0 ? "b" : "w") === G.me && G.b.isLegal(G.b.pt(G.ghost[0], G.ghost[1]), G.me === "b" ? D.BLACK : D.WHITE); };
+  function syncPass() { const b = $("ogPass"), ok = ghostOk(); b.textContent = ok ? "วางหมาก" : "ผ่าน"; b.classList.toggle("confirm", ok); }
+  // ---------- chat between the two players of a room ----------
+  function renderChat(n0) {
+    const box = $("ogMsgs"), me = Account.name(), list = G.chat;
+    const atEnd = box.scrollHeight - box.scrollTop - box.clientHeight < 30;
+    box.innerHTML = list.length ? list.map(m => `<div class="og-m${m.n === me ? " me" : ""}"><b>${esc(m.n)}</b>${esc(m.t)}</div>`).join("")
+      : `<div class="og-none">${G.me ? "พิมพ์ทักทายคู่แข่งได้เลย" : "ยังไม่มีข้อความ"}</div>`;
+    if (atEnd || n0 === 0 || (list.length && list[list.length - 1].n === me)) box.scrollTop = box.scrollHeight;
+    if (n0 && list.length > n0 && list[list.length - 1].n !== me) D.blip(990);
+  }
+  async function say() {
+    const inp = $("ogIn"), t = inp.value.trim(); if (!t || !G || !G.room || !G.me) return;
+    const g = G; inp.value = "";
+    const x = await Hub.op("rsay", { token: Account.token(), id: G.room.id, t });
+    if (x.status !== 200 && G === g) { inp.value = t; $("ogStatus").textContent = x.body.error || "ส่งข้อความไม่สำเร็จ"; }
   }
   async function send(p) {
     const r = G.room, g = G;
-    G.ghost = p ? p : null;
+    G.ghost = p ? p : null; G.sending = true; syncPass();
     const x = await Hub.op("move", { token: Account.token(), id: r.id, n: r.moves.length, p });
     if (G !== g) return;
-    if (x.status !== 200) { G.ghost = null; $("ogStatus").textContent = x.body.error || "ส่งตาเดินไม่สำเร็จ"; draw(); }
+    G.sending = false;
+    if (x.status !== 200) { G.ghost = null; syncPass(); $("ogStatus").textContent = x.body.error || "ส่งตาเดินไม่สำเร็จ"; draw(); }
     else if (x.body.room) setRoom(x.body.room);
   }
   // ---------- challenges to this player: a bar at the top of every screen with accept / decline ----------
@@ -374,7 +403,11 @@ const Online = (() => {
     $("ogBack").onclick = () => { D.blip(660); if (G && G.kind === "room" && G.room && G.room.tour) { leaveGame(); D.openTour(); return; }
       const from = G && G.kind === "room" && (G.me || (G.room && G.room.host.n === Account.name())) ? "play" : "watch"; leaveGame(); openLobby(from); };
     $("ogClose").onclick = async () => { if (!G || !G.room) return; await Hub.op("close", { token: Account.token(), id: G.room.id }); leaveGame(); openLobby("play"); };
-    $("ogPass").onclick = async () => { if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
+    $("ogAn").onclick = () => { if (!G || G.kind !== "room" || !G.room) return; const r = G.room, b = new D.Board(r.size);
+      D.blip(880); D.analyze({ n: r.size, moves: r.moves.map(m => m ? b.pt(m[0], m[1]) : D.PASS), human: G.me === "w" ? D.WHITE : D.BLACK, room: r.id }); };
+    $("ogSay").onsubmit = e => { e.preventDefault(); say(); };
+    $("ogPass").onclick = async () => { if (ghostOk()) { D.blip(880); send(G.ghost); return; }
+      if (G && G.room && await D.askSure("ผ่าน?", "ไม่วางหมากตานี้ (ถ้าผ่านกันทั้งคู่ เกมจะจบและนับแต้ม)", "ผ่าน")) send(null); };
     $("ogResign").onclick = async () => { if (!G || !G.room || !await D.askSure("ยอมแพ้?", "ยอมแพ้เกมนี้จริงไหม", "ยอมแพ้")) return; const x = await Hub.op("resign", { token: Account.token(), id: G.room.id }); if (x.status === 200 && x.body.room) setRoom(x.body.room); };
     $("ogCv").addEventListener("pointerup", onBoard);
     $("ogFirst").onclick = () => step(0); $("ogPrev").onclick = () => step(shown() - 1);

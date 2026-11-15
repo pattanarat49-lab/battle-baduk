@@ -2219,6 +2219,7 @@
     else if (from === "prof") showProfile();
     else if (from === "kifu") Kifu.resume();
     else if (from === "player" && plData) showPlayer(plData.n, plFrom);
+    else if (from === "online" && onlineAn) Online.enterRoom(onlineAn);
     else showMenu();
   };
   Tsumego.E = E;
@@ -2310,7 +2311,9 @@
     return { lead: blk ? ev.lead : -ev.lead, win: blk ? w : 1 - w };
   }
   Online.init({ CHARS, rankName, hideScreens, showMenu, blip, clack, askSure, Board, PASS, BLACK, WHITE, countLead, estimate: estimateLead,
-    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); }, openTour: () => Tourney.open() });
+    inGame: () => !$("game").hidden && !!board && !over && !scoring && history.length > 0, leaveAIGame: () => { if (!$("game").hidden) leaveGame(); }, openTour: () => Tourney.open(),
+    analyze: g => { hideScreens(); trackMode("analysis"); onlineAn = g.room; Analysis.open({ n: g.n, moves: g.moves, human: g.human, at: 0, from: "online" }); } });
+  let onlineAn = null; // the online room whose finished game is on the analysis board (back returns to it)
   // the weekly tournament (src/tourney.js): its games are online rooms the server starts
   Tourney.init({ CHARS, rankName, hideScreens, showMenu, blip, askSure, enterRoom: id => Online.enterRoom(id), currentRoom: () => Online.currentRoom(), openPlayer: n => showPlayer(n, "tour") });
   // chat, leaderboard and the profile picture picker (src/social.js)

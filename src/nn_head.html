@@ -835,6 +835,14 @@ canvas#board { display: block; width: calc(min(100cqw, 100cqh) - 12px); height: 
 .og-c { font: 600 20px/1.1 ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; } .og-c small { font-size: 11px; font-weight: 400; color: var(--muted); }
 .og-status { margin: 0; min-height: 1.3em; } .og-status b { color: var(--accent); }
 .og-act { padding: 0; }
+.og-an { min-height: 44px; font-weight: 700; }
+.og-chat { display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; }
+.og-msgs { max-height: 128px; min-height: 36px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font-size: 14px; overflow-wrap: anywhere; }
+.og-msgs .og-m b { color: var(--accent); margin-right: 4px; } .og-msgs .og-m.me b { color: var(--muted); }
+.og-msgs .og-none { color: var(--muted); font-size: 13px; }
+.og-say { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin: 0; }
+.og-say input { min-width: 0; font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.og-say button { min-height: 40px; }
 .inv-bar { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 9000; width: min(560px, calc(100% - 16px)); box-sizing: border-box;
   display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; background: #112b33; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.45); animation: endAskIn .2s ease-out; }
 .inv-bar[hidden] { display: none; }
@@ -1351,6 +1359,11 @@ circle.ln-new { transform-box: fill-box; transform-origin: center; animation: ln
       </div>
       <div class="actions two og-act"><button id="ogPass" hidden>ผ่าน</button><button id="ogResign" hidden>ยอมแพ้</button></div>
       <button class="pf-an" id="ogClose" hidden>ปิดห้องนี้</button>
+      <button class="pf-an primary og-an" id="ogAn" hidden>ANALYSIS · วิเคราะห์เกมนี้</button>
+      <div class="og-chat" id="ogChat" hidden>
+        <div class="og-msgs" id="ogMsgs" aria-live="polite"></div>
+        <form class="og-say" id="ogSay"><input id="ogIn" maxlength="200" placeholder="พิมพ์คุยกับคู่แข่ง…" autocomplete="off" enterkeyhint="send" aria-label="ข้อความถึงคู่แข่ง"><button class="pf-an primary">ส่ง</button></form>
+      </div>
     </div>
   </div>
 </section>
