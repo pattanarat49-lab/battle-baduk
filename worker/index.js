@@ -401,7 +401,7 @@ export class Accounts extends DurableObject {
     if (op.startsWith("tour") || (r.changed && r.changed.includes("tour"))) await this.plan();
     return { status: r.status, body: r.body };
   }
-  // the weekly tournament (worker/tourney.js) has no timer of its own: an alarm wakes this object at Sunday 18:00 and
+  // the weekly tournament (worker/tourney.js) has no timer of its own: an alarm wakes this object at Sunday 19:00 and
   // then every minute while games are on, to start the draw and end games whose clock ran out
   async plan() {
     const t = await this.handle.wake();

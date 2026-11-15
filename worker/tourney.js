@@ -1,4 +1,4 @@
-// The weekly TOURNAMENT: players press Join any time before Sunday 18:00 (Thai time); at 18:00 the entrants are drawn
+// The weekly TOURNAMENT: players press Join any time before Sunday 19:00 (Thai time); at 19:00 the entrants are drawn
 // into a random single-elimination bracket and every game is an online room the server starts by itself (19×19,
 // 15 min + one byo-yomi period of 30 s, Japanese rules, komi 6.5). A lost game knocks the player out; the winners meet in the next
 // round as soon as both are free, and the two semi-final losers play for third place at the same time as the final.
@@ -8,14 +8,14 @@
 //   a tournament: { no, at: start time, st: "signup"|"play"|"done"|"off", ents: [player], rounds: [[match]], third: match|null,
 //                   res: { first, second, third } names, ended }
 //   a match: { a: player|null, b: player|null, room: id|null, w: "a"|"b"|null, how }   (player = { n, r, R, a, t })
-// Nothing runs on a timer here: tick(now) does whatever is due (start at 18:00, clocks of the games). The Durable
+// Nothing runs on a timer here: tick(now) does whatever is due (start at 19:00, clocks of the games). The Durable
 // Object calls it from an alarm (wake() says when), and every look at the tournament page calls it too.
 const SET = { size: 19, main: 900, byo: 30, per: 1 }; // owner 2026-11-15: 15 min + one 30 s byo-yomi, tournament only
 const MAX = 64, PRIZE = [100, 50, 25];
 const DAY = 86400e3, WEEK = 7 * DAY;
-// the next Sunday 18:00 in Thailand (UTC+7, no daylight saving) = Sunday 11:00 UTC, after `now`
+// the next Sunday 19:00 in Thailand (UTC+7, no daylight saving) = Sunday 12:00 UTC (owner 2026-11-15), after `now`
 function nextStart(now) {
-  const d = new Date(now), base = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 11);
+  const d = new Date(now), base = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12);
   let t = base + ((7 - d.getUTCDay()) % 7) * DAY;
   if (t <= now) t += WEEK;
   return t;
@@ -73,7 +73,7 @@ export function makeTourney(store, acct, online) {
       for (let p = 0; p < 3; p++) if (places[p]) await acct.award(places[p], { id: `tour-${t.no}`, d: PRIZE[p], o: `ทัวร์นาเมนต์ครั้งที่ ${t.no} อันดับ ${p + 1}`, at: now, title: p === 0 ? champTitle(t.no) : null });
     }
   }
-  // 18:00: the draw. Every entrant gets a random place; byes (when the number is not a power of two) are spread so
+  // 19:00: the draw. Every entrant gets a random place; byes (when the number is not a power of two) are spread so
   // that no match is two byes, and a player with a bye simply goes through to the next round
   async function start(T, now) {
     const t = T.cur;

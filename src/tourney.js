@@ -1,5 +1,5 @@
-// TOURNAMENT: the weekly knockout every Sunday 18:00 (Thai time) between players with an account. Join beforehand;
-// at 18:00 the server draws a random bracket and starts every game (worker/tourney.js). This screen shows the bracket,
+// TOURNAMENT: the weekly knockout every Sunday 19:00 (Thai time) between players with an account. Join beforehand;
+// at 19:00 the server draws a random bracket and starts every game (worker/tourney.js). This screen shows the bracket,
 // who is out, and a button to watch each game still being played. Also here: the bar that calls a player to their
 // match from any screen, and the title picker of the Profile page (the champion's title is worn after the name).
 const Tourney = (() => {
@@ -27,7 +27,7 @@ const Tourney = (() => {
     const el = $("tourCd"); if (!el || !T || T.cur.st !== "signup") return;
     const s = Math.max(0, Math.floor((T.cur.at - Hub.now()) / 1000));
     el.textContent = s >= 86400 ? `อีก ${Math.floor(s / 86400)} วัน ${Math.floor(s % 86400 / 3600)} ชม.` : `อีก ${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-    // 18:00: ask the server, which then makes the draw (if its own alarm has not done it already)
+    // 19:00: ask the server, which then makes the draw (if its own alarm has not done it already)
     if (s === 0 && Date.now() - poked > 5000) { poked = Date.now(); Hub.op("tour", {}).then(r => { if (r.status === 200) { T = r.body; render(); } }); }
   }
   const me = () => Account.name();
@@ -73,7 +73,7 @@ const Tourney = (() => {
     if (t.st === "play") h += `<div class="pf-h">ตารางการแข่งขัน</div>${bracket(t)}<p class="note">แพ้ 1 เกมตกรอบ · กด "ดูเกม" เพื่อดูเกมที่ยังเล่นอยู่แบบสด ๆ · ชิงที่ 3 เล่นพร้อมรอบชิงชนะเลิศ</p>`;
     if (t.st === "signup" && t.ents.length) h += `<div class="pf-h">ผู้สมัคร (${t.ents.length})</div><div class="tr-ents">${t.ents.map(e => pTag(e, e.n === mine ? "me" : "")).join("")}</div>`;
     h += `<div class="pf-h">รางวัล</div><div class="tr-prize">${PRIZE.map(p => `<div><span class="tr-medal">${p[0]}</span><b>${p[1]}</b><small>${p[2]}</small></div>`).join("")}</div>`;
-    h += `<div class="pf-h">กติกา</div><ul class="tr-rules"><li>แข่งทุกวันอาทิตย์ 18:00 น. (เวลาไทย) กด JOIN ไว้ล่วงหน้าได้ ถอนตัวได้ก่อนเริ่ม</li><li>จับสายแบบสุ่ม แพ้คัดออก ถ้าจำนวนคนไม่ลงตัว บางคนได้บายผ่านรอบแรก</li>
+    h += `<div class="pf-h">กติกา</div><ul class="tr-rules"><li>แข่งทุกวันอาทิตย์ 19:00 น. (เวลาไทย) กด JOIN ไว้ล่วงหน้าได้ ถอนตัวได้ก่อนเริ่ม</li><li>จับสายแบบสุ่ม แพ้คัดออก ถ้าจำนวนคนไม่ลงตัว บางคนได้บายผ่านรอบแรก</li>
       <li>กระดาน 19×19 · เวลา 15 นาที + เบียวโยมิ 30 วิ 1 ครั้ง · กติกาญี่ปุ่น โคมิ 6.5 · สุ่มสี</li><li>เกมเริ่มเองเมื่อรู้คู่ ต้องเดินตาแรกภายใน 5 นาที ไม่อย่างนั้นแพ้ (ไม่มาแข่ง)</li>
       <li>เปิดเกมค้างไว้ได้ทุกหน้า พอแมตช์ของคุณเริ่ม จะมีแถบเรียกขึ้นด้านบน</li><li>แพ้ในรองชนะเลิศ ได้เล่นชิงอันดับ 3</li><li><b>ห้ามใช้ AI ช่วยเล่น</b> ต้องคิดเองทุกตา</li></ul>`;
     if (T.last && T.last.st === "done") h += `<div class="pf-h">ผลครั้งที่ ${T.last.no}</div>${podium(T.last)}<details class="tr-old"><summary>ดูตารางครั้งที่ ${T.last.no}</summary>${bracket(T.last)}</details>`;
@@ -140,7 +140,7 @@ const Tourney = (() => {
   function titleSection() {
     if (!Account.name()) return "";
     const list = Account.titles(), cur = Account.title();
-    if (!list.length) return `<div class="pf-h">ฉายา</div><div class="pf-rank"><span class="note" style="display:block">ยังไม่มีฉายา ชนะทัวร์นาเมนต์รายสัปดาห์ (วันอาทิตย์ 18:00 น.) เพื่อรับฉายา Champion of Tournament ไว้โชว์หลังชื่อ</span></div>`;
+    if (!list.length) return `<div class="pf-h">ฉายา</div><div class="pf-rank"><span class="note" style="display:block">ยังไม่มีฉายา ชนะทัวร์นาเมนต์รายสัปดาห์ (วันอาทิตย์ 19:00 น.) เพื่อรับฉายา Champion of Tournament ไว้โชว์หลังชื่อ</span></div>`;
     return `<div class="pf-h">ฉายา</div><div class="tr-titles"><button class="tr-tt${cur ? "" : " on"}" data-title="">ไม่ใช้ฉายา</button>${list.map(x => `<button class="tr-tt${cur === x.id ? " on" : ""}" data-title="${esc(x.id)}">🏆 ${esc(x.t)}</button>`).join("")}</div>
       <p class="note" style="margin-top:6px">ฉายาที่เลือกจะขึ้นหลังชื่อคุณในแชท กระดานอันดับ ห้องออนไลน์ และตารางทัวร์นาเมนต์</p>`;
   }
