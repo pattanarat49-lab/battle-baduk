@@ -1,10 +1,14 @@
-// KataGo V7 input features (22 spatial planes, 19 global), ported from KataGo's NNInputs::fillRowV7
-// for Chinese-style rules: area scoring, simple ko, no suicide, no tax, no encore.
+// KataGo V7 input features (22 spatial planes, 19 global), ported from KataGo's NNInputs::fillRowV7.
+// Rules (setRules): "japanese" (the game's rules since 2026-11-15: territory scoring, seki tax, simple ko, no suicide,
+// no encore) or "chinese" (area scoring, simple ko, no suicide, no tax).
 // Uses the Board class from GoEngine. Buffer is always 19x19, smaller boards sit in the top-left corner.
 function GoFeatures(E) {
   "use strict";
   const { Board, PASS, EMPTY, BLACK, WHITE } = E;
   const NN = 19, AREA = NN * NN, NSP = 22, NGL = 19;
+  let RULES = "japanese";
+  const setRules = r => { RULES = r === "chinese" ? "chinese" : "japanese"; };
+  const rules = () => RULES;
 
   // ---------- ladders ----------
   const LADDER_BUDGET = 25000;
@@ -129,10 +133,11 @@ function GoFeatures(E) {
     }
     if (cur.ko !== PASS) set(nnPos(cur, cur.ko), 6);
 
-    // area: stones plus empty regions bordered by a single colour
+    // area: stones plus empty regions bordered by a single colour (KataGo fills these planes under area scoring only)
+    const area = RULES === "chinese";
     let areaScore = 0;
     const seen = new Uint8Array(cur.L);
-    for (const p of cur.pts) {
+    if (area) for (const p of cur.pts) {
       const c = cur.color[p];
       if (c === BLACK || c === WHITE) { set(nnPos(cur, p), c === pla ? 18 : 19); areaScore += c === pla ? 1 : -1; continue; }
       if (seen[p]) continue;
@@ -169,9 +174,13 @@ function GoFeatures(E) {
     const bArea = n * n;
     selfKomi = Math.max(-bArea - 20, Math.min(bArea + 20, selfKomi));
     glob[5] = selfKomi / 20;
+    // territory scoring (glob 9) with seki tax (glob 10); ko simple and suicide illegal are the zero defaults
+    if (!area) { glob[9] = 1; glob[10] = 1; }
     glob[14] = L > 0 && moves[L - 1] === PASS ? 1 : 0;
     // playout doubling advantage: >0 plays as if stronger than the opponent (sharper), <0 more cautious
     if (pda) { glob[15] = 1; glob[16] = 0.5 * pda; }
+    // the komi parity wave is given under area scoring only
+    if (!area) return { spatial, global: glob, pla, board: cur };
     const even = (n * n) % 2 === 0;
     const komiFloor = even ? Math.floor(selfKomi / 2) * 2 : Math.floor((selfKomi - 1) / 2) * 2 + 1;
     let delta = Math.max(0, Math.min(2, selfKomi - komiFloor));
@@ -179,6 +188,6 @@ function GoFeatures(E) {
     return { spatial, global: glob, pla, board: cur };
   }
 
-  return { featurize, NN, AREA, NSP, NGL };
+  return { featurize, setRules, rules, NN, AREA, NSP, NGL };
 }
 if (typeof module !== "undefined") module.exports = GoFeatures;

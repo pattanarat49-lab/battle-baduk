@@ -158,6 +158,89 @@ function GoEngine(ctx) {
     }
   }
 
+  // ---------- the count at the end of a game ----------
+  // The game is played and counted under Japanese rules (since 2026-11-15, komi 6.5): a side's score is its territory
+  // (the empty points only its own living stones surround, plus the points of the opponent's dead stones) and its
+  // prisoners (stones it captured during the game plus the opponent's dead stones). Dame (points both sides touch) and
+  // the eyes of groups in seki count for nobody, and stones on the board are not counted. rules "chinese" gives the
+  // area count instead (living stones + surrounded points; the eyes of a seki group count, as in the Chinese rules).
+  // b: the final Board, dead: Set of points whose stones are dead. Returns the totals and terr: Map point -> owner
+  // (BLACK / WHITE, 0 for nobody) for every empty or dead point, seki: Set of the points of the stones in seki.
+  // own (optional, from the network: point -> Black's ownership, -1..1) settles an area whose border was left open when
+  // both sides passed (a gap in a wall lets the region reach the other colour): each of its points that touches no living
+  // opponent stone goes to the side the network gives it to (above 0.6), the gap itself and real dame to nobody
+  // (closing the gap would cost a stone there under Japanese rules).
+  function countScore(b, dead, rules, komi, own) {
+    dead = dead || new Set();
+    const jp = rules !== "chinese", col = new Uint8Array(b.color), d = b.dirs;
+    let deadB = 0, deadW = 0;
+    for (const p of dead) { if (col[p] === BLACK) { deadB++; col[p] = EMPTY; } else if (col[p] === WHITE) { deadW++; col[p] = EMPTY; } }
+    // chains of the living stones and their liberties
+    const chainOf = new Int32Array(b.L).fill(-1), chains = [];
+    for (const p of b.pts) {
+      const c = col[p]; if ((c !== BLACK && c !== WHITE) || chainOf[p] >= 0) continue;
+      const ch = { c, stones: [p], libs: new Set() }, k = chains.length; chains.push(ch); chainOf[p] = k;
+      for (let i = 0; i < ch.stones.length; i++) for (const dd of d) {
+        const q = ch.stones[i] + dd;
+        if (col[q] === c && chainOf[q] < 0) { chainOf[q] = k; ch.stones.push(q); } else if (col[q] === EMPTY) ch.libs.add(q);
+      }
+    }
+    // a stone of colour c at the empty point p: would it capture, and how many liberties would its chain have?
+    function libsAfter(p, c) {
+      const libs = new Set(), seen = new Set();
+      for (const dd of d) {
+        const q = p + dd, cq = col[q];
+        if (cq === EMPTY) libs.add(q);
+        else if (cq === c) { const k = chainOf[q]; if (!seen.has(k)) { seen.add(k); for (const l of chains[k].libs) if (l !== p) libs.add(l); } }
+        else if (cq === 3 - c && chains[chainOf[q]].libs.size === 1) return 99; // it captures
+      }
+      return libs.size;
+    }
+    // seki: a shared empty point that neither side can fill without putting its own stones in atari. The chains next
+    // to it are in seki, and so are the eyes they surround (Japanese rules give those eyes to nobody)
+    const sekiChain = new Set();
+    if (jp) for (const p of b.pts) {
+      if (col[p] !== EMPTY) continue;
+      let nb = false, nw = false;
+      for (const dd of d) { if (col[p + dd] === BLACK) nb = true; else if (col[p + dd] === WHITE) nw = true; }
+      if (!nb || !nw || libsAfter(p, BLACK) > 1 || libsAfter(p, WHITE) > 1) continue;
+      for (const dd of d) { const k = chainOf[p + dd]; if (k >= 0) sekiChain.add(k); }
+    }
+    const terr = new Map(), seen = new Uint8Array(b.L);
+    let terrB = 0, terrW = 0, stB = 0, stW = 0;
+    for (const p of b.pts) {
+      const c = col[p];
+      if (c === BLACK) { stB++; continue; } if (c === WHITE) { stW++; continue; }
+      if (seen[p]) continue;
+      // an eye in seki: every chain around it is in seki (a living group that only touches a seki keeps its territory)
+      const region = [p]; seen[p] = 1; let tb = false, tw = false, inSeki = true;
+      for (let i = 0; i < region.length; i++) for (const dd of d) {
+        const q = region[i] + dd, cq = col[q];
+        if (cq === BLACK || cq === WHITE) { if (cq === BLACK) tb = true; else tw = true; if (!sekiChain.has(chainOf[q])) inSeki = false; }
+        else if (cq === EMPTY && !seen[q]) { seen[q] = 1; region.push(q); }
+      }
+      inSeki = inSeki && (tb || tw);
+      const owner = tb && !tw && !inSeki ? BLACK : tw && !tb && !inSeki ? WHITE : 0;
+      // the Chinese count gives a seki group its eyes
+      const ow = jp ? owner : tb && !tw ? BLACK : tw && !tb ? WHITE : 0;
+      if (tb && tw && own) {
+        for (const q of region) {
+          let nb = false, nw = false;
+          for (const dd of d) { if (col[q + dd] === BLACK) nb = true; else if (col[q + dd] === WHITE) nw = true; }
+          const o = own(q), c = o > 0.6 && !nw ? BLACK : o < -0.6 && !nb ? WHITE : 0;
+          terr.set(q, c); if (c === BLACK) terrB++; else if (c === WHITE) terrW++;
+        }
+        continue;
+      }
+      for (const q of region) terr.set(q, ow);
+      if (ow === BLACK) terrB += region.length; else if (ow === WHITE) terrW += region.length;
+    }
+    const capB = b.caps[BLACK] + deadW, capW = b.caps[WHITE] + deadB; // prisoners each side holds
+    const sb = jp ? terrB + capB : terrB + stB, sw = jp ? terrW + capW : terrW + stW;
+    const seki = new Set(); for (const k of sekiChain) for (const q of chains[k].stones) seki.add(q);
+    return { rules: jp ? "japanese" : "chinese", b: sb, w: sw, lead: sb - sw - komi, terrB, terrW, capB, capW, stB, stW, deadB, deadW, terr, seki };
+  }
+
   // ---------- playout policy ----------
   const near = [0, 0, 0, 0, 0];
   function policyMove(b, c) {
@@ -348,6 +431,6 @@ function GoEngine(ctx) {
   }
 
   if (ctx) ctx.onmessage = e => handle(e.data, m => ctx.postMessage(m));
-  return { Board, handle, search, ownership, Node, bestChild, PASS, EMPTY, BLACK, WHITE, BORDER };
+  return { Board, countScore, handle, search, ownership, Node, bestChild, PASS, EMPTY, BLACK, WHITE, BORDER };
 }
 if (typeof module !== "undefined") module.exports = GoEngine;

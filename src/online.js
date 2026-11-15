@@ -263,7 +263,7 @@ const Online = (() => {
   async function estimate() {
     if (!canReview()) return;
     const tok = G.est = (G.est || 0) + 1, g = G, k = shown(), mv = movesOf().slice(0, k);
-    const komi = G.kind === "room" ? G.room.komi : typeof G.live.komi === "number" ? G.live.komi : 7.5;
+    const komi = G.kind === "room" ? G.room.komi : typeof G.live.komi === "number" ? G.live.komi : 6.5;
     $("ogEstOut").textContent = "กำลังประเมิน…"; $("ogEst").disabled = true;
     let r = null; try { r = await D.estimate(sizeOf(), mv, komi); } catch (e) { console.error(e); }
     $("ogEst").disabled = false;

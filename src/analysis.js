@@ -4,7 +4,7 @@
 // board itself: no server and no language model, so the player asks by tapping ready-made questions.
 const Analysis = (function () {
   const api = {}; // the game sets api.E, api.ai() (the GoNNAI in use or null), api.evalMs(), api.onBack, api.sound() (the stone click), api.onPhoto() (a picture was chosen)
-  const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 7.5;
+  const LETTERS = "ABCDEFGHJKLMNOPQRST", KOMI = 6.5; // Japanese rules, like the game
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const CN = [null, "ดำ", "ขาว"];
